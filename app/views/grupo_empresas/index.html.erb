@@ -1,0 +1,43 @@
+
+
+
+
+<div class="rooms" style="max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex
+;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 3.5rem;
+    flex-direction: row;
+    flex-wrap: nowrap;">
+  <% @grupo_empresas.each do |empresa| %>
+    <div class="participant-card" style="display: flex; gap: 1rem; padding: 1rem; border-radius: 12px; background: #444; box-shadow: 0 0 10px #0006; align-items: center;">
+      
+      <!-- LOGO -->
+      <% if empresa.logo.attached? %>
+        <%= image_tag url_for(empresa.logo), style: "width: 80px; height: 80px; border-radius: 8px; object-fit: contain; background: #fff;" %>
+      <% else %>
+        <div style="width: 80px; height: 80px; background: #ccc; display: flex; align-items: center; justify-content: center; border-radius: 8px;">
+          🏢
+        </div>
+      <% end %>
+
+      <!-- INFORMAÇÕES -->
+      <div class="participant-info" style="display: flex; flex-direction: column; justify-content: space-between; flex: 1;">
+        <strong><%= empresa.nome %></strong><br>
+        Sala: <%= empresa.sala.presence || "Não definida" %><br>
+        Andar: <%= empresa.andar.presence || "Não definido" %><br>
+        <span style="font-size: 0.8rem; color: #ccc;">Cadastrada em: <%= empresa.created_at.strftime("%d/%m/%Y %H:%M") %></span>
+
+        <div style="margin-top: 0.5rem;">
+          <%= link_to edit_grupo_empresa_path(empresa), class: "btn edit" do %>
+<i class="fa-solid fa-pen-to-square"></i> EDITAR
+            <% end %>
+        </div>
+      </div>
+
+    </div>
+  <% end %>
+</div>
+

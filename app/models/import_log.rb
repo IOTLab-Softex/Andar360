@@ -1,0 +1,2 @@
+class ImportLog < ApplicationRecord
+end

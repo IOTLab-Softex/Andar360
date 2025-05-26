@@ -1,0 +1,35 @@
+
+<h2 class="subtitle">SALAS</h2>
+
+<div class="rooms">
+  <% @rooms.each do |room| %>
+    <% background = room.photo.attached? ? "--bg-url: url(#{url_for(room.photo)});" : "background-color: black;" %>
+<%= link_to room_reservations_path(room), class: "room-card-link" do %>
+  <div class="room-card" style="<%= background %>">
+
+        <div class="room-header">
+          <strong><%= room.name %></strong><br>
+          RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
+          
+        </div>
+         <% if current_user&.admin? %>
+        <div class="room-actions">
+          <%= link_to edit_room_path(room), class: 'btn edit', onclick: 'event.stopPropagation();' do %>
+            <i class="fa-solid fa-pen-to-square"></i> EDITAR
+            <% end %>
+          <%= button_to open_door_room_path(room), method: :post, class: 'btn open-door', form: { data: { turbo: false } }, onclick: 'event.stopPropagation();' do %>
+              <i class="fa-solid fa-door-open me-2"></i> ABRIR PORTA
+            <% end %>
+          <%= button_to room_path(room), method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' }, class: 'btn delete-room', onclick: 'event.stopPropagation();' do %>
+            <i class="fa-solid fa-trash"></i> EXCLUIR
+            <% end %>
+          
+        </div>
+        <% end %>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+
+

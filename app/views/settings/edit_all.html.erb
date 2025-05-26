@@ -1,0 +1,48 @@
+<% content_for :title, "Configurações do Sistema" %>
+
+<div class="settings-container">
+  <h1 class="page-title">⚙️ Configurações do Sistema</h1>
+
+ <%= form_with url: settings_path, method: :patch, scope: nil, local: true do |f| %>
+
+
+    <div class="settings-form">
+
+      <div class="form-group">
+        <%= f.label :backup_dir, "Diretório de Backup Icontrol" %>
+        <%= f.text_field :backup_dir, value: Setting.get("backup_dir"), class: "form-control" %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :tempo_liberacao_solicitante, "Tempo para liberação do solicitante/responsável" %>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_liberacao_solicitante, value: Setting.get("tempo_liberacao_solicitante"), class: "form-control" %>
+          <%= select_tag :tempo_liberacao_solicitante_unidade, options_for_select([["Minutos", "minutos"], ["Segundos", "segundos"]], Setting.get("tempo_liberacao_solicitante_unidade")), class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :tempo_liberacao_participante, "Tempo para liberação dos participantes" %>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_liberacao_participante, value: Setting.get("tempo_liberacao_participante"), class: "form-control" %>
+          <%= select_tag :tempo_liberacao_participante_unidade, options_for_select([["Minutos", "minutos"], ["Segundos", "segundos"]], Setting.get("tempo_liberacao_participante_unidade")), class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :tempo_verificacao_online, "Tempo para checar dispositivo online" %>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_verificacao_online, value: Setting.get("tempo_verificacao_online"), class: "form-control" %>
+          <%= select_tag :tempo_verificacao_online_unidade, options_for_select([["Minutos", "minutos"], ["Segundos", "segundos"]], Setting.get("tempo_verificacao_online_unidade")), class: "form-control" %>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :horario_rotina_importacao, "Horário da rotina de importação (HH:MM)" %>
+        <%= f.time_field :horario_rotina_importacao, value: Setting.get("horario_rotina_importacao"), class: "form-control" %>
+      </div>
+
+      <%= f.submit "💾 Salvar Configurações", class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,20 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Settings" %>
+
+<h1>Settings</h1>
+
+<div id="settings">
+  <% @settings.each do |setting| %>
+    <%= render setting %>
+    <p>
+      <%= link_to "Show this setting", setting %>
+ 
+
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New setting", new_setting_path %>
+<%= link_to 'Logs de Importação', import_logs_path %>
+<%= link_to 'Gerenciar empresas', grupo_empresas_path %>

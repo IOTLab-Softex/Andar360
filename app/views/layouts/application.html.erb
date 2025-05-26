@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+  <head>
+ 
+
+
+
+    <title><%= content_for(:title) || "Reservas Salas" %></title>
+    
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+<%= javascript_include_tag "flash_notification", "data-turbo-track": "reload" %>
+
+    <%= yield :head %>
+
+    <%# Ícones e PWA %>
+    <link rel="icon" href="/icon.png" type="image/png">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.png">
+    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
+
+    <%# CSS externos %>
+    <%= stylesheet_link_tag "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css", media: "all" %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+    <%# CSS da aplicação %>
+    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+
+    <%# JS (via importmap) %>
+    <%= javascript_importmap_tags "application" %>
+
+    <%# Outros scripts externos %>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+   
+  </head>
+
+  <body>
+<% unless tela_de_alteracao_de_senha? %>
+   <% unless controller_path == "users/registrations" && action_name == "edit" %>
+  <div class="user-info">
+    <% if user_signed_in? %>
+      <% participant = current_user.participant %>
+      <% if participant&.photo&.attached? %>
+        <%= image_tag url_for(participant.photo), class: "user-avatar" %>
+      <% else %>
+        <div class="user-avatar">
+          <i class="fa-solid fa-circle-user"></i>
+        </div>
+      <% end %>
+      <div class="hide-on-mobile user-name">
+        Bem-vindo, <%= participant&.name || current_user.email %>
+      </div>
+    <% end %>
+  </div>
+<% end %>
+
+
+
+    <main>
+    
+    <div class="banner">
+    
+      <% unless (controller_path == "users/registrations" && action_name == "edit") || 
+          (controller_path == "devise/sessions" && action_name == "new") %>
+
+  <div class="title-wrapper">
+    <button id="toggleSidebarBtn" class="menu-toggle-btn" title="Abrir Menu">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+    <img src="/logo.png" alt="Logo" class="logo-title">
+    <h1 class="hide-on-mobile title"><%= page_title %></h1>
+  </div>
+
+  <% if page_menu.present? %>
+    <div class="fade-border menu">
+      <%= page_menu %>
+    </div>
+  <% end %>
+</div>
+  <nav class="sidebar sidebar-hidden">
+    <ul class="sidebar-links">
+      <%= sidebar_menu %>
+    </ul>
+  </nav>
+
+
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+<br>
+
+<% end %>
+<% end %>
+      <%= yield %>
+    </main>
+
+    <%# Notificação dinâmica com JS externo %>
+    <% if flash[:notice] || flash[:alert] %>
+    <div
+  id="notification-flash"
+  data-message="<%= flash[:notice] || flash[:alert] %>"
+  data-type="<%= flash[:notice] ? 'success' : 'error' %>"
+  style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: #323131;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px 0px 6px 6px;
+    font-weight: bold;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.6s ease;
+    display: block;
+  ">
+  <%= flash[:notice] || flash[:alert] %>
+</div>
+
+  
+    <% end %>
+
+    
+  </body>
+</html>
+
+<script>
+ // Quando a página começar a carregar
+  window.addEventListener("DOMContentLoaded", () => {
+    document.querySelector(".menu").classList.add("fade-border");
+  });
+
+  // Quando a página terminar de carregar tudo
+  window.addEventListener("load", () => {
+    setTimeout(() => {
+      document.querySelector(".menu").classList.remove("fade-border");
+document.querySelector(".menu").classList.add("fade-border-stop");
+
+     
+    }, 1000); // espera 1s para sumir suavemente
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const sidebar = document.querySelector(".sidebar");
+    const toggleBtn = document.getElementById("toggleSidebarBtn");
+
+    toggleBtn.addEventListener("click", function () {
+      sidebar.classList.toggle("sidebar-hidden");
+    });
+  });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggles = document.querySelectorAll(".submenu-toggle");
+
+    toggles.forEach(toggle => {
+      toggle.addEventListener("click", function () {
+        const targetSelector = toggle.dataset.target;
+        const submenu = document.querySelector(targetSelector);
+        const chevron = toggle.querySelector(".chevron-icon");
+
+        if (submenu.style.display === "none" || submenu.style.display === "") {
+          submenu.style.display = "block";
+          chevron.style.transform = "rotate(180deg)";
+        } else {
+          submenu.style.display = "none";
+          chevron.style.transform = "rotate(0deg)";
+        }
+      });
+    });
+  });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const toggle = document.getElementById("toggle-theme");
+    const root = document.documentElement;
+
+    if (localStorage.getItem("theme") === "dark") {
+      root.setAttribute("data-theme", "dark");
+    }
+
+    toggle.addEventListener("click", () => {
+      const isDark = root.getAttribute("data-theme") === "dark";
+      root.setAttribute("data-theme", isDark ? "light" : "dark");
+      localStorage.setItem("theme", isDark ? "light" : "dark");
+    });
+  });
+
+
+  
+
+</script>

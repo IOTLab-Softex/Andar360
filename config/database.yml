@@ -1,0 +1,40 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: localhost
+  username: postgres
+  password: softexpe@infra#srs
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+
+development:
+  <<: *default
+  database: reservas_salas_development
+
+test:
+  <<: *default
+  database: reservas_salas_test
+
+production:
+  primary:
+    <<: *default
+    database: reservas_salas_production
+    username: postgres
+    password: softexpe@infra#srs
+
+  cable:
+    <<: *default
+    database: reservas_salas_production_cable
+    username: postgres
+    password: softexpe@infra#srs
+
+  queue:
+    <<: *default
+    database: reservas_salas_production_queue
+    username: postgres
+    password: softexpe@infra#srs
+
+  cache:
+    <<: *default
+    database: reservas_salas_production_cache
+    username: postgres
+    password: softexpe@infra#srs

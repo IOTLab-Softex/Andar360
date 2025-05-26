@@ -1,0 +1,338 @@
+
+
+<%= form_with(model: participant, local: true, class: "device-form") do |form| %>
+
+  <div class="form-group">
+    <%= form.label :name do %>
+<i class="fa-solid fa-font-awesome"></i> Nome
+      <% end %>
+    <%= form.text_field :name, class: "form-control" %>
+    <small class="form-text text-muted">Digite o nome completo do usuário.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :cpf do %>
+<i class="fa-solid fa-address-card"></i> CPF
+<% end %>
+    <%= form.text_field :cpf, class: "form-control" %>
+    <small class="form-text text-muted">Informe o CPF válido do usuário.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :telefone do %>
+      <i class="fa-solid fa-phone"></i> Telefone 
+      <% end %>
+    <%= form.text_field :telefone, class: "form-control" %>
+    <small class="form-text text-muted">Informe um número de telefone para contato.</small>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :email do %>
+      <i class="fa-solid fa-envelope"></i> Email
+      <% end %>
+    <%= form.email_field :email, class: "form-control" %>
+    <small class="form-text text-muted">E-mail de contato (Recomendado).</small>
+  </div>
+
+<div class="form-group">
+  <%= form.label :grupo_empresa_id do %>
+    <i class="fa-solid fa-group-arrows-rotate"></i> Grupo Empresa
+    <% end %>
+  <%= form.collection_select :grupo_empresa_id, scoped_grupo_empresas, :id, :nome,
+        { prompt: "Selecione uma empresa" },
+        { class: "form-control", id: "grupo_empresa_select" } %>
+       <small class="form-text text-muted">Selecione a empresa à qual o usuário pertence.</small>
+</div>
+
+
+<div class="form-group">
+  <%= form.label :sub_grupo_empresa_id do %>
+   <i class="fa-solid fa-group-arrows-rotate"></i> Setor (Subgrupo da empresa)
+   <% end %>
+  <%= form.select :sub_grupo_empresa_id, [], { prompt: "Selecione um setor" },
+        class: "form-control", id: "subgrupo_select" %>
+    <small class="form-text text-muted">Escolha o setor (subgrupo) correspondente à empresa.</small>
+</div>
+
+
+
+  <div class="form-group">
+  <%= form.label :photo_base64 do %>
+    <i class="fa-solid fa-camera"></i> Foto
+    <% end %><br>
+
+  <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 10px;" />
+  <div id="image-feedback" style="color: #f66; margin-bottom: 5px;"></div>
+
+  <div style="margin-bottom: 10px;">
+    <img id="photo-preview" style="max-width: 150px; max-height: 300px; display: none;" />
+  </div>
+
+  <%= form.hidden_field :photo_base64, id: "photo-base64" %>
+  <button type="button" class="btn submit" onclick="openCamera()">Capturar com Câmera</button><br>
+
+  <small class="form-text text-muted">Anexe ou capture uma foto nítida do rosto do usuário (tamanho ideal: 150x300px).</small><br><br>
+    <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i>
+  A foto será usada para reconhecimento facial. Garanta que o rosto esteja visível, centralizado e com boa iluminação.
+</small>
+</div>
+<% if current_user&.admin? %>
+<div class="form-group">
+  <label>
+    <%= check_box_tag :criar_usuario, "1", participant.user.present?, id: "criar_usuario_checkbox", onclick: "togglePermissoes()" %>
+
+    Conceder acesso ao sistema
+  </label>
+</div>
+
+<div class="form-group" id="permissoes_wrap" style="display: none;">
+  <%= label_tag :user_role, "Permissão de Acesso" %>
+  <%= select_tag :user_role, options_for_select([["Admin", "admin"], ["Client", "client"]], participant.user&.role), class: "form-control" %>
+  <%= hidden_field_tag :senha_gerada, "", id: "senha_gerada_input" %>
+
+</div>
+
+<div class="form-group" id="senha_wrap" style="display: none;">
+  <label>Senha gerada:</label>
+  <div id="senha_gerada_label"></div>
+  <label style="margin-top: 10px;">
+    <%= check_box_tag :manter_senha, "1", true, id: "manter_senha_checkbox" %>
+    Manter senha atual
+  </label>
+</div>
+  
+<% end %>
+  <div class="form-actions" style="text-align: center;">
+    <%= form.submit participant.new_record? ? "Criar Participante" : "Atualizar Participante", class: "btn submit" %>
+  </div>
+<% end %>
+
+<!-- Sobreposição da câmera -->
+<div id="camera-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:98vh; background:#000000cc; z-index:9999; justify-content:center; align-items:center;align-items: stretch; padding-top: 42px;">
+<div style="position:relative;">
+  <iframe id="camera-frame" src="/camera" width="510px" height="90%" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
+  <button type="button" onclick="closeCamera()" style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">X</button>
+</div>
+</div>
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", () => {
+  const cpfInput = document.querySelector("input[name='participant[cpf]']");
+
+  cpfInput?.addEventListener("input", function (e) {
+    let value = e.target.value.replace(/\D/g, ""); // Remove tudo que não for número
+    if (value.length > 11) value = value.slice(0, 11);
+
+    if (value.length > 9) {
+      value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
+    } else if (value.length > 6) {
+      value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
+    } else if (value.length > 3) {
+      value = `${value.slice(0, 3)}.${value.slice(3)}`;
+    }
+
+    e.target.value = value;
+  });
+});
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.querySelector("input[name='participant[telefone]']");
+
+  input?.addEventListener("input", function (e) {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 11) value = value.slice(0, 11);
+
+    if (value.length > 6) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7)}`;
+    } else if (value.length > 2) {
+      value = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+    } else if (value.length > 0) {
+      value = `(${value}`;
+    }
+
+    e.target.value = value;
+  });
+});
+
+
+
+function openCamera() {
+const overlay = document.getElementById("camera-overlay");
+overlay.style.display = "flex";
+overlay.style.position = "fixed";
+}
+
+function closeCamera() {
+document.getElementById("camera-overlay").style.display = "none";
+}
+
+// Recebe base64 do iframe
+window.addEventListener("message", function (e) {
+if (e.data.photoBase64) {
+  const base64 = e.data.photoBase64;
+  document.getElementById("photo-base64").value = base64;
+
+  // Atualiza preview
+  document.getElementById("photo-preview")?.remove();
+  const img = document.createElement("img");
+  img.src = base64;
+  img.id = "photo-preview";
+  img.style.maxWidth = "150px";
+  img.style.maxHeight = "300px";
+  document.getElementById("photo-base64").insertAdjacentElement("beforebegin", img);
+
+  closeCamera();
+}
+});
+
+  document.addEventListener("DOMContentLoaded", () => {
+    const checkbox = document.getElementById("criar_usuario_checkbox");
+    if (checkbox && checkbox.checked) {
+      togglePermissoes();
+    }
+  });
+
+
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+async function handleImageUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async function (e) {
+    const base64 = e.target.result;
+
+    const img = new Image();
+    img.src = base64;
+    img.onload = async () => {
+      // cria canvas proporcional 150x300
+      const canvas = document.createElement("canvas");
+      canvas.width = 150;
+      canvas.height = 300;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // Verifica rosto na imagem
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models/tiny_face_detector');
+      const detections = await faceapi.detectAllFaces(canvas, new faceapi.TinyFaceDetectorOptions());
+
+      const preview = document.getElementById("photo-preview");
+      const feedback = document.getElementById("image-feedback");
+
+      if (detections.length === 0) {
+        feedback.textContent = "Nenhum rosto detectado na imagem.";
+        preview.style.display = "none";
+        return;
+      }
+
+      const { width, height } = detections[0].box;
+      const ratioW = width / canvas.width;
+      const ratioH = height / canvas.height;
+
+      if (ratioW < 0.1 || ratioH < 0.1) {
+        feedback.textContent = "Rosto muito distante.";
+        preview.style.display = "none";
+        return;
+      }
+
+      if (ratioW > 0.8 || ratioH > 0.8) {
+        feedback.textContent = "Rosto muito próximo.";
+        preview.style.display = "none";
+        return;
+      }
+
+      feedback.textContent = "";
+      preview.src = canvas.toDataURL("image/png");
+      preview.style.display = "block";
+      document.getElementById("photo-base64").value = canvas.toDataURL("image/png");
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function togglePermissoes() {
+  const checked = document.getElementById("criar_usuario_checkbox").checked;
+  document.getElementById("permissoes_wrap").style.display = checked ? "block" : "none";
+  document.getElementById("senha_wrap").style.display = checked ? "block" : "none";
+
+  const manterSenha = document.getElementById("manter_senha_checkbox")?.checked;
+
+  if (checked && !manterSenha) {
+    const senha = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 10);
+    document.getElementById("senha_gerada_label").textContent = senha;
+    document.getElementById("senha_gerada_input").value = senha;
+  } else if (checked && manterSenha) {
+    document.getElementById("senha_gerada_label").textContent = "(senha mantida)";
+    document.getElementById("senha_gerada_input").value = ""; // não envia nova senha
+  } else {
+    document.getElementById("senha_gerada_label").textContent = "";
+    document.getElementById("senha_gerada_input").value = "";
+  }
+}
+
+ document.addEventListener("DOMContentLoaded", () => {
+    const checkbox = document.getElementById("criar_usuario_checkbox");
+    const manterSenhaCheckbox = document.getElementById("manter_senha_checkbox");
+
+    if (checkbox && checkbox.checked) {
+      togglePermissoes();
+    }
+
+    if (manterSenhaCheckbox) {
+      manterSenhaCheckbox.addEventListener("change", togglePermissoes);
+    }
+  });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const empresaSelect = document.getElementById("grupo_empresa_select");
+  const subgrupoSelect = document.getElementById("subgrupo_select");
+
+  if (empresaSelect) {
+    empresaSelect.addEventListener("change", function () {
+      const empresaId = this.value;
+
+      subgrupoSelect.innerHTML = '<option value="">Carregando...</option>';
+
+      fetch(`/sub_grupo_empresas/por_empresa/${empresaId}`)
+        .then(response => response.json())
+        .then(data => {
+          subgrupoSelect.innerHTML = '<option value="">Selecione um setor</option>';
+          data.forEach(sub => {
+            const option = document.createElement("option");
+            option.value = sub.id;
+            option.textContent = sub.nome;
+            subgrupoSelect.appendChild(option);
+          });
+
+          // Marca como selecionado se já tiver valor salvo no form
+          const selectedId = "<%= @participant.sub_grupo_empresa_id %>";
+          if (selectedId) {
+            subgrupoSelect.value = selectedId;
+          }
+
+        })
+        .catch(() => {
+          subgrupoSelect.innerHTML = '<option value="">Erro ao carregar setores</option>';
+        });
+    });
+
+    // 👉 dispara o carregamento se já tiver uma empresa selecionada
+    if (empresaSelect.value) {
+      const event = new Event('change');
+      empresaSelect.dispatchEvent(event);
+    }
+  }
+});
+
+
+
+</script>
+
+

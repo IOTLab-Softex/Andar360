@@ -1,0 +1,114 @@
+<%= form_with model: @grupo_empresa, local: true do |form| %>
+  <div class="form-group">
+    <%= form.label :nome %>
+    <%= form.text_field :nome, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :sala %>
+    <%= form.text_field :sala, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :andar %>
+    <%= form.text_field :andar, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :logo %>
+    <%= form.file_field :logo, class: "form-control" %>
+  </div>
+<div class="form-group">
+  <%= label_tag "Subgrupos (Setores)" %>
+
+ <div style="display: flex; gap: 0.5rem; align-items: center;">
+  <%= select_tag "subgrupo_list", options_from_collection_for_select(@grupo_empresa.sub_grupo_empresas, :id, :nome), multiple: true, size: 5, class: "form-control", id: "subgrupo-listbox", style: "flex: 1;" %>
+
+  <button type="button" onclick="abrirModalSubgrupo()" class="btn btn-success">+</button>
+  <button type="button" onclick="removerSubgrupos()" class="btn btn-danger">–</button>
+</div>
+
+</div>
+
+  <%= form.submit "Salvar alterações", class: "btn btn-primary" %>
+<% end %>
+
+
+<!-- Modal customizado -->
+<div id="modal-subgrupo" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100vw; height: 100vh;
+  background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
+  <div class="modal-dialog-subgrupo">
+    <h3>Adicionar Subgrupo</h3>
+
+    <%= form_with url: sub_grupo_empresas_path, method: :post, local: true do |f| %>
+      <%= hidden_field_tag :grupo_empresa_id, @grupo_empresa.id %>
+
+      <div class="form-group" style="margin-top: 1rem;">
+        <%= f.label :nome, "Nome do Subgrupo" %>
+        <%= f.text_field :nome, class: "form-control", required: true %>
+      </div>
+
+      <div style="margin-top: 1.5rem;
+    display: flex
+;
+    justify-content: center;
+    gap: 1rem;
+    flex-direction: row-reverse;">
+        <button type="button" onclick="fecharModalSubgrupo()" class="btn-primary btn">Cancelar</button>
+        <%= f.submit "Adicionar", class: "btn btn-primary" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+
+<script>
+  function abrirModalSubgrupo() {
+    document.getElementById('modal-subgrupo').style.display = 'flex';
+  }
+
+  function fecharModalSubgrupo() {
+    document.getElementById('modal-subgrupo').style.display = 'none';
+  }
+
+  // Fechar modal se clicar fora do conteúdo
+  window.addEventListener('click', function (e) {
+    const modal = document.getElementById('modal-subgrupo');
+    if (e.target === modal) {
+      fecharModalSubgrupo();
+    }
+  });
+function removerSubgrupos() {
+    const listbox = document.getElementById("subgrupo-listbox");
+    const selected = Array.from(listbox.selectedOptions);
+
+    if (selected.length === 0) {
+      alert("Selecione pelo menos um subgrupo para remover.");
+      return;
+    }
+
+    if (!confirm("Deseja realmente remover os subgrupos selecionados?")) {
+      return;
+    }
+
+    selected.forEach(option => {
+      const id = option.value;
+
+      fetch(`/sub_grupo_empresas/${id}`, {
+        method: "DELETE",
+        headers: {
+          "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content,
+          "Content-Type": "application/json"
+        }
+      })
+      .then(response => {
+        if (response.ok) {
+          // Remove o <option> da listbox
+          option.remove();
+        } else {
+          alert("Erro ao remover subgrupo " + option.text);
+        }
+      });
+    });
+  }
+</script>

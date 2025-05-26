@@ -1,0 +1,64 @@
+<h1 class="subtitle">Logs de Importação</h1>
+
+<%= form_with url: import_logs_path, method: :get, local: true, class: "filter-form" do %>
+    <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+      <div>
+        <%= label_tag :data, "Data da Importação" %><br>
+        <%= select_tag :data,
+          options_for_select([["Todas", ""]] + @datas_disponiveis.map { |d| [d.strftime("%d/%m/%Y"), d] }, params[:data]),
+          class: "form-control" %>
+      </div>
+  
+      <div>
+        <%= label_tag :filtro, "Tipo" %><br>
+        <%= select_tag :filtro,
+          options_for_select([
+            ["Todos", ""],
+            ["Somente Erros", "erro"],
+            ["Somente Sucesso", "sucesso"]
+          ], params[:filtro]),
+          class: "form-control" %>
+      </div>
+  
+      <div style="align-self: flex-end;">
+        <%= submit_tag "Filtrar", class: "btn btn-filter" %>
+      </div>
+    </div>
+  <% end %>
+  
+  
+  
+<div class="rooms">
+  <% @import_logs.each do |log| %>
+    <div class="participant-card" style="background: <%= log.dados_incompletos || log.sem_foto || log.status == 'erro' ? '#ffe6e6' : '#e0ffe6' %>;">
+      <div class="participant-photo">
+        <div class="photo-wrapper" style="font-size: 2rem;">
+          <% if log.dados_incompletos || log.sem_foto || log.status == 'erro' %>
+            ⚠️
+          <% else %>
+            ✔️
+          <% end %>
+        </div>
+      </div>
+
+      <div class="participant-info">
+        <strong><%= log.nome %></strong><br>
+        CPF: <%= log.cpf %><br>
+        Status: <%= log.status.capitalize %><br>
+        <span style="font-size: 0.9rem;">Mensagem: <%= truncate(log.mensagem, length: 100) %></span><br><br>
+
+        <% if log.dados_incompletos %>
+          <span class="participant-tag">Dados incompletos</span>
+        <% end %>
+
+        <% if log.sem_foto %>
+          <span class="participant-tag">Sem foto</span>
+        <% end %>
+
+        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">
+          Registrado em: <%= log.created_at.strftime("%d/%m/%Y %H:%M") %>
+        </div>
+      </div>
+    </div>
+  <% end %>
+</div>

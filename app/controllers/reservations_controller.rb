@@ -1,0 +1,276 @@
+class ReservationsController < ApplicationController
+  before_action :set_reservation, only: %i[show edit update destroy status cancel]
+
+  # GET /reservations
+def index
+  if current_user.admin?
+    @reservations = Reservation.includes(:room).order(starts_at: :desc)
+  else
+    empresa_id = current_user.participant&.grupo_empresa_id
+    @reservations = Reservation.includes(:room)
+                               .where(grupo_empresa_id: empresa_id)
+                               .order(starts_at: :desc)
+  end
+end
+
+
+
+  
+
+  # GET /reservations/1
+  def show
+    @participants = @reservation.participants
+  end
+
+  # GET /reservations/new
+  def new
+    @reservation = Reservation.new
+  
+    if current_user.admin?
+      @participants = Participant.all
+      @grupo_empresas = GrupoEmpresa.all
+    else
+      empresa_id = current_user.participant&.grupo_empresa_id
+      @participants = Participant.where(grupo_empresa_id: empresa_id)
+      @grupo_empresas = GrupoEmpresa.where(id: empresa_id)
+    end
+  end
+  
+
+  # GET /reservations/1/edit
+  def edit
+    @participants = scoped_participants
+  end
+
+  # POST /reservations
+  def create
+  @reservation = Reservation.new(reservation_params)
+  @reservation.grupo_empresa_id = current_user.participant&.grupo_empresa_id if @reservation.grupo_empresa_id.nil?
+
+  if conflict_exists?(@reservation)
+    respond_to do |format|
+      format.json { render json: { error: "Já existe uma reserva nesse horário para essa sala." }, status: :unprocessable_entity }
+      format.html { redirect_back fallback_location: new_reservation_path, alert: "⚠️ Já existe uma reserva nesse horário para essa sala." }
+    end
+    return
+  end
+
+  respond_to do |format|
+    duracao = ((@reservation.ends_at - @reservation.starts_at) / 3600.0).round(2)
+    turno = turno_da_reserva(@reservation.starts_at)
+    settings = Setting.first
+
+    limite = case turno
+             when :manha then settings.limite_horas_turno_reservas_manha
+             when :tarde then settings.limite_horas_turno_reservas_tarde
+             when :noite then settings.limite_horas_turno_reservas_noite
+             end
+
+    if limite && duracao > limite.hour + (limite.min / 60.0)
+      msg = "A duração da reserva excede o limite permitido para o turno da #{turno.to_s}. Limite: #{limite.hour} horas."
+      format.json { render json: { error: msg }, status: :unprocessable_entity }
+      format.html { redirect_back fallback_location: new_reservation_path, alert: "⚠️ #{msg}" }
+      return
+    end
+
+    Reservation.transaction do
+      Room.lock.find(@reservation.room_id)
+
+      if conflict_exists?(@reservation)
+        format.json { render json: { error: "Já existe uma reserva nesse horário para essa sala." }, status: :unprocessable_entity }
+        format.html { redirect_back fallback_location: new_reservation_path, alert: "⚠️ Já existe uma reserva nesse horário para essa sala." }
+        raise ActiveRecord::Rollback
+      end
+
+      if @reservation.save
+        format.json {
+          render json: {
+            success: true,
+            message: "Reserva criada com sucesso.",
+            redirect_url: room_reservations_path(@reservation.room_id)
+          }, status: :created
+        }
+        format.html { redirect_to room_reservations_path(@reservation.room_id), notice: "Reserva criada com sucesso." }
+      else
+        format.json { render json: { error: @reservation.errors.full_messages.join(", ") }, status: :unprocessable_entity }
+        format.html do
+          flash[:alert] = @reservation.errors.full_messages.map { |msg| "⚠️ #{msg}" }.join(" • ")
+          redirect_back fallback_location: new_reservation_path
+        end
+      end
+    end # <- fim do transaction
+  end # <- fim do respond_to
+end
+
+
+  
+  
+  def reservations
+    room = Room.find(params[:room_id])
+    now = Time.current
+  
+    reservations = room.reservations
+                      .where(cancelada_em: nil)
+                      .where("ends_at > ?", now)
+                      .order(:starts_at)
+  
+    render json: reservations.map { |r|
+      {
+        id: r.id,
+        title: r.title,
+        starts_at: r.starts_at.strftime("%d/%m %H:%M"),
+        ends_at: r.ends_at.strftime("%d/%m %H:%M")
+      }
+    }
+  end
+  
+  def turno_da_reserva(hora)
+  hora = hora.strftime("%H:%M")
+
+  settings = Setting.first
+  manha = settings.limite_horas_turno_reservas_manha.strftime("%H:%M") rescue "12:00"
+  tarde = settings.limite_horas_turno_reservas_tarde.strftime("%H:%M") rescue "18:00"
+
+  if hora < manha
+    :manha
+  elsif hora < tarde
+    :tarde
+  else
+    :noite
+  end
+end
+  
+  def update
+    if conflict_exists?(@reservation, updating: true)
+      respond_to do |format|
+        format.html { redirect_back fallback_location: edit_reservation_path(@reservation), alert: "Já existe uma reserva nesse horário para essa sala." }
+        format.json { render json: { error: "Já existe uma reserva nesse horário para essa sala." }, status: :unprocessable_entity }
+      end
+      return
+    end
+  
+    respond_to do |format|
+      if @reservation.update(reservation_params)
+        format.html { redirect_to @reservation, notice: "Reserva atualizada com sucesso." }
+        format.json { render :show, status: :ok, location: @reservation }
+      else
+        format.html { render :edit, status: :unprocessable_entity }
+        format.json { render json: @reservation.errors, status: :unprocessable_entity }
+      end
+    end
+  end
+  
+
+  # DELETE /reservations/1
+  # DELETE /reservations/1
+  def destroy
+    now = Time.current
+  
+    participantes_ids = []
+  
+    if @reservation.sent_to_facial
+      # Remove todos: solicitante, responsável e participantes
+      participantes_ids << @reservation.solicitante_id if @reservation.solicitante_id.present?
+      participantes_ids << @reservation.responsavel_id if @reservation.responsavel_id.present?
+      participantes_ids += @reservation.participants.pluck(:id)
+    else
+      # Remove apenas solicitante e responsável se foram enviados
+      participantes_ids << @reservation.solicitante_id if @reservation.solicitantes_enviados_em.present?
+      participantes_ids << @reservation.responsavel_id if @reservation.solicitantes_enviados_em.present?
+    end
+  
+    participantes_ids.uniq!
+  
+    # Limpar os access_logs manualmente para evitar erro de foreign key
+    AccessLog.where(reservation_id: @reservation.id).delete_all
+  
+    if @reservation.room&.device.present? && participantes_ids.any?
+      RemoverParticipantesDoDispositivoJob.perform_later(participantes_ids, @reservation.room.device.id)
+    end
+  
+    @reservation.destroy!
+  
+    redirect_back fallback_location: reservations_path, status: :see_other, notice: "Reserva excluída com sucesso."
+  end
+  
+  
+
+
+  # DELETE /reservations/:id/cancel
+  # DELETE /reservations/:id/cancel
+  def cancel
+    now = Time.current
+  
+    if now < @reservation.starts_at
+      # Reserva ainda não iniciou → apenas cancela no banco
+      @reservation.update(cancelada_em: now)
+      redirect_back fallback_location: reservations_path, notice: "Reserva cancelada (antes do início). Nenhum dado foi enviado ao dispositivo."
+      return
+    end
+  
+    participantes_ids = []
+  
+    if @reservation.sent_to_facial
+      # Remove todos: solicitante, responsável e participantes
+      participantes_ids << @reservation.solicitante_id if @reservation.solicitante_id.present?
+      participantes_ids << @reservation.responsavel_id if @reservation.responsavel_id.present?
+      participantes_ids += @reservation.participants.pluck(:id)
+    else
+      # Remove apenas solicitante e responsável se foram enviados
+      participantes_ids << @reservation.solicitante_id if @reservation.solicitantes_enviados_em.present?
+      participantes_ids << @reservation.responsavel_id if @reservation.solicitantes_enviados_em.present?
+    end
+  
+    participantes_ids.uniq!
+    @reservation.update(cancelada_em: now)
+  
+    if @reservation.room&.device.present? && participantes_ids.any?
+      RemoverParticipantesDoDispositivoJob.perform_later(participantes_ids, @reservation.room.device.id)
+    end
+  
+    redirect_back fallback_location: reservations_path, notice: "Reserva cancelada com sucesso."
+  end
+  
+  
+
+
+  # GET /reservations/:id/status
+  def status
+    render json: { sent_to_facial: @reservation.sent_to_facial || false }
+  end
+
+  # GET /rooms/:room_id/reservations
+  def by_room
+    @room = Room.find(params[:room_id])
+    @reservations = @room.reservations.order(starts_at: :asc)
+  end
+
+  private
+
+  def conflict_exists?(reservation, updating: false)
+    query = Reservation.where(room_id: reservation.room_id)
+                       .where("starts_at < ? AND ends_at > ?", reservation.ends_at, reservation.starts_at)
+                       .where(cancelada_em: nil)
+                       .where("ends_at > ?", Time.current) # <-- ignora encerradas
+  
+    # Se for atualização (update), ignora ele mesmo
+    query = query.where.not(id: reservation.id) if updating
+  
+    query.exists?
+  end
+  
+
+def set_reservation
+  @reservation = Reservation.find(params[:id])
+  authorize_empresa!(@reservation)
+end
+
+
+  def reservation_params
+    params.require(:reservation).permit(
+      :title, :starts_at, :ends_at, :room_id,
+      :solicitante_id, :responsavel_id,
+      participant_ids: []
+    )
+  end
+end

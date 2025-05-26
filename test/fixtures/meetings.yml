@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  title: MyString
+  starts_at: 2025-04-08 11:06:29
+  ends_at: 2025-04-08 11:06:29
+  room: one
+
+two:
+  title: MyString
+  starts_at: 2025-04-08 11:06:29
+  ends_at: 2025-04-08 11:06:29
+  room: two

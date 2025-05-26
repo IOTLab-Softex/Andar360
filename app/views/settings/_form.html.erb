@@ -1,0 +1,81 @@
+<div class="settings-container">
+  <%= form_with model: @setting, local: true do |f| %>
+    <div class="settings-form">
+
+      <!-- Diretório de Backup -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-folder-open me-2"></i> Diretório de Backup do Icontrol</label>
+        <%= f.text_field :backup_dir, class: "form-control", placeholder: "Ex: C:\\temp\\" %>
+        <small class="form-text text-muted">Informe o caminho onde os dados do Icontrol serão extraídos.</small>
+      </div>
+
+      <!-- Checagem de Reservas -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-calendar-check me-2"></i> Frequência de checagem de reservas</label>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_checagem_reservas, class: "form-control", min: 2, max: 10, step: 1 %>
+          <%= f.select :tempo_checagem_reservas_unidade, ["minutos", "segundos"], class: "form-control" %>
+        </div>
+        <small class="form-text text-muted">Intervalo para buscar novas reservas (entre 2 e 10).</small>
+      </div>
+
+      <!-- Checagem de Acesso -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-user-check me-2"></i> Frequência de checagem de acesso</label>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_checagem_acesso, class: "form-control", min: 10, max: 20, step: 1 %>
+          <%= f.select :tempo_checagem_acesso_unidade, ["segundos", "minutos"], class: "form-control" %>
+        </div>
+        <small class="form-text text-muted">Intervalo para verificar se o solicitante/responsável acessou a sala (entre 10 e 20).</small>
+      </div>
+
+      <!-- Verificação de Dispositivos -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-plug me-2"></i> Frequência de verificação dos dispositivos</label>
+        <div class="d-flex gap-2">
+          <%= f.number_field :tempo_verificacao_online, class: "form-control", min: 1, max: 10, step: 1 %>
+          <%= f.select :tempo_verificacao_online_unidade, ["minutos", "segundos"], class: "form-control" %>
+        </div>
+        <small class="form-text text-muted">Verifica se os dispositivos de reconhecimento facial estão online (entre 1 e 10).</small>
+      </div>
+
+      <!-- Rotina de Importação -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-clock me-2"></i> Horário da rotina de importação</label>
+        <%= f.time_field :horario_rotina_importacao, class: "form-control" %>
+        <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
+      </div>
+
+      <h2 class="subtitle mt-4 mb-3">⏰ Limite de Horas por Turno</h2>
+
+      <!-- Turno Manhã -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-sun me-2"></i> Limite para turno da manhã</label>
+        <%= f.time_field :limite_horas_turno_reservas_manha, class: "form-control" %>
+        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela manhã.</small>
+      </div>
+
+      <!-- Turno Tarde -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-cloud-sun me-2"></i> Limite para turno da tarde</label>
+        <%= f.time_field :limite_horas_turno_reservas_tarde, class: "form-control" %>
+        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela tarde.</small>
+      </div>
+
+      <!-- Turno Noite -->
+      <div class="form-group">
+        <label><i class="fa-solid fa-moon me-2"></i> Limite para turno da noite</label>
+        <%= f.time_field :limite_horas_turno_reservas_noite, class: "form-control" %>
+        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas à noite.</small>
+      </div>
+
+      <!-- Botão de salvar -->
+      <div class="text-end mt-4">
+        <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
+          <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
+        <% end %>
+      </div>
+
+    </div>
+  <% end %>
+</div>

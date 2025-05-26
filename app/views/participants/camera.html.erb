@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Captura de Foto</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: white;
+      text-align: center;
+      font-family: Arial, sans-serif;
+    }
+
+    #videoContainer {
+      position: relative;
+      display: inline-block;
+      border: 2px solid #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #video, #canvas {
+      width: 500px;
+      height: 400px;
+      display: block;
+      border-radius: 10px;
+    }
+
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 2;
+    }
+
+    #video {
+      z-index: 1;
+    }
+
+    h2 {
+      margin: 20px;
+      font-weight: normal;
+      color: #f0f0f0;
+    }
+
+    #captureBtn {
+      margin-top: 15px;
+      padding: 12px 25px;
+      background-color: #28a745;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    #captureBtn:hover:enabled {
+      background-color: #218838;
+    }
+
+    #captureBtn:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="faceStatus">Detectando rosto...</h2>
+
+  <div id="videoContainer">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <br>
+  <button id="captureBtn" onclick="capturePhoto()" disabled>Sem rosto...</button>
+
+  <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+  <script>
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const captureBtn = document.getElementById("captureBtn");
+    const faceStatus = document.getElementById("faceStatus");
+
+    async function startVideo() {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+      } catch (err) {
+        alert("Erro ao acessar a câmera: " + err.message);
+      }
+    }
+
+    async function loadModels() {
+      await faceapi.nets.tinyFaceDetector.loadFromUri('/models/tiny_face_detector');
+      checkFaceLoop();
+    }
+
+    function checkFaceLoop() {
+      video.addEventListener('play', () => {
+        const displaySize = { width: video.videoWidth, height: video.videoHeight };
+        faceapi.matchDimensions(canvas, displaySize);
+
+        setInterval(async () => {
+          const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          if (detection && detection.box) {
+            const { width, height } = detection.box;
+            const faceWidthRatio = width / displaySize.width;
+            const faceHeightRatio = height / displaySize.height;
+
+            // ... dentro do setInterval (mantendo o resto do código igual)
+if (detection && detection.box) {
+  const { width, height } = detection.box;
+  const faceWidthRatio = width / displaySize.width;
+  const faceHeightRatio = height / displaySize.height;
+
+  const isCloseEnough = faceWidthRatio >= 0.1 && faceHeightRatio >= 0.1;
+  const isTooClose = faceWidthRatio >= 0.5 || faceHeightRatio >= 0.5;
+
+  if (isTooClose) {
+    captureBtn.disabled = true;
+    captureBtn.textContent = "Muito perto!";
+    faceStatus.textContent = "Rosto muito próximo, afaste-se um pouco.";
+  } else if (isCloseEnough) {
+    captureBtn.disabled = false;
+    captureBtn.textContent = "📸 Capturar";
+    faceStatus.textContent = "Rosto detectado com boa nitidez!";
+  } else {
+    captureBtn.disabled = true;
+    captureBtn.textContent = "Aproxime o rosto...";
+    faceStatus.textContent = "Muito distante, aproxime-se da câmera.";
+  }
+
+  const resized = faceapi.resizeResults(detection, displaySize);
+  faceapi.draw.drawDetections(canvas, resized);
+}
+
+
+            const resized = faceapi.resizeResults(detection, displaySize);
+            faceapi.draw.drawDetections(canvas, resized);
+          } else {
+            captureBtn.disabled = true;
+            captureBtn.textContent = "Sem rosto...";
+            faceStatus.textContent = "Nenhum rosto detectado.";
+          }
+        }, 700);
+      });
+    }
+
+    function capturePhoto() {
+      const ctx = canvas.getContext("2d");
+    
+      // Define as dimensões fixas do canvas para proporção 150x300
+      const canvasWidth = 150;
+      const canvasHeight = 300;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
+    
+      // Escala automaticamente o vídeo para caber no canvas, sem corte
+      ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+    
+      const base64 = canvas.toDataURL("image/png");
+      parent.postMessage({ photoBase64: base64 }, "*");
+    }
+    
+
+    startVideo().then(loadModels);
+  </script>
+</body>
+</html>

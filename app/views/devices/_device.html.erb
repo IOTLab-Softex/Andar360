@@ -1,0 +1,22 @@
+<div class="device-card">
+  <div class="device-main">
+    <div class="device-icon">
+      <i class="fa-solid fa-mobile-screen-button"></i> <!-- Ícone FontAwesome -->
+    </div>
+
+    <div class="device-info">
+      <strong><%= device.name %></strong><br>
+      IP: <%= device.ip %><br>
+      Usuário: <%= device.user %><br>
+      <% if device.status == 'online' %>
+        <span class="device-status online">Online</span>
+      <% else %>
+        <span class="device-status offline">Offline</span>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="device-actions">
+    <%= link_to "Editar", edit_device_path(device), class: "btn edit" %>
+  </div>
+</div>

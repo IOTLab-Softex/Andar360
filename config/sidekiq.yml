@@ -1,0 +1,10 @@
+# config/sidekiq.yml
+:concurrency: 5
+
+:queues:
+  - default
+
+:cron:
+  check_upcoming_reservations:
+    cron: "*/1 * * * *"
+    class: "CheckUpcomingReservationsJob"

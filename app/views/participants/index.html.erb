@@ -1,0 +1,171 @@
+<!-- app/views/participants/index.html.erb -->
+<%= form_with url: participants_path, method: :get, local: true, class: "filter-form" do %>
+  <div style="display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    justify-content: center;">
+
+  <div>
+  <i class="fa-solid fa-filter"></i>
+  <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
+
+  <% if current_user.admin? %>
+    <%= select_tag :grupo_empresa_id,
+      options_for_select(
+        [["TODOS", ""]] + GrupoEmpresa.all.map { |g| [g.nome, g.id] },
+        params[:grupo_empresa_id]
+      ),
+      class: "form-control" %>
+  <% else %>
+    <% empresa = current_user.participant&.grupo_empresa %>
+    <% if empresa.present? %>
+      <%= select_tag :grupo_empresa_id,
+        options_for_select([[empresa.nome, empresa.id]], empresa.id),
+        class: "form-control",
+        disabled: true %>
+    <% else %>
+      <%= select_tag :grupo_empresa_id,
+        options_for_select([["Nenhuma empresa", ""]], ""),
+        class: "form-control",
+        disabled: true %>
+    <% end %>
+  <% end %>
+</div>
+
+
+
+  
+
+
+<div>
+  <%= label_tag :sub_grupo_empresa_id, "Setor (Sub Grupos Empresa)" %><br>
+  <%= select_tag :sub_grupo_empresa_id, 
+    options_for_select([["TODOS", ""]], params[:sub_grupo_empresa_id]),
+    class: "form-control", id: "subgrupo_filter" %>
+</div>
+
+    <div>
+    
+      <%= label_tag :search, "Buscar por nome ou CPF" %><br>
+      <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Digite nome ou CPF" %>
+    </div>
+
+    <div style="align-self: flex-end;">
+      <%= submit_tag "Filtrar", class: "btn btn-filter" %>
+    </div>
+  </div>
+<% end %>
+
+<div class="rooms">
+  <% if @participants.any? %>
+    <% @participants.each do |participant| %>
+      <div class="participant-card">
+      <div class="participant-photo">
+      <% if participant.photo.attached? %>
+        <div class="photo-wrapper">
+          
+          <img
+            class="participant-img lazy"
+            data-src="<%= url_for(participant.photo) %>"
+            alt="<%= participant.name %>">
+        </div>
+        <i class="fa-solid fa-spinner loading-emoji"></i>
+      <% else %>
+        <div class="participant-placeholder">Sem Foto</div>
+      <% end %>
+    </div>
+    
+
+        <div class="participant-info">
+          <strong><%= participant.name %></strong><br>
+          CPF: <%= participant.cpf %><br>
+          Tel: <%= participant.telefone %><br>
+          <% if participant.email.present? %>Email: <%= participant.email %><br><% end %>
+
+          <div class="reservation-actions" style="margin-top: 1rem;">
+            <%= link_to edit_participant_path(participant), class: "btn edit" do %>
+              <i class="fa-solid fa-user-pen"></i> Editar
+              <% end %>
+            <%= button_to participant_path(participant),
+                method: :delete,
+                data: { confirm: "Tem certeza que deseja excluir este participante?" },
+                class: "btn cancel",
+                form: { style: "display: contents;" } do %>
+ <i class="fa-solid fa-user-xmark"></i> Excluir
+                  <% end %>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <p style="text-align: center; color: #000;">Nenhum participante cadastrado.</p>
+  <% end %>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const lazyImages = [].slice.call(document.querySelectorAll("img.lazy"));
+
+    if ("IntersectionObserver" in window) {
+      const observer = new IntersectionObserver(function (entries, observer) {
+        entries.forEach(function (entry) {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove("lazy");
+            observer.unobserve(img);
+          }
+        });
+      });
+
+      lazyImages.forEach(function (img) {
+        observer.observe(img);
+      });
+    } else {
+      // Fallback para navegadores antigos
+      lazyImages.forEach(function (img) {
+        img.src = img.dataset.src;
+      });
+    }
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const empresaSelect = document.querySelector("select[name='grupo_empresa_id']");
+    const subgrupoSelect = document.getElementById("subgrupo_filter");
+
+    function carregarSubgrupos(grupoId, selectedId = null) {
+      subgrupoSelect.innerHTML = '<option value="">Carregando...</option>';
+
+      fetch(`/sub_grupo_empresas/por_empresa/${grupoId}`)
+        .then(response => response.json())
+        .then(data => {
+          subgrupoSelect.innerHTML = '<option value="">TODOS</option>';
+          data.forEach(sub => {
+            const option = document.createElement("option");
+            option.value = sub.id;
+            option.textContent = sub.nome;
+            if (selectedId && selectedId == sub.id) {
+              option.selected = true;
+            }
+            subgrupoSelect.appendChild(option);
+          });
+        });
+    }
+
+    if (empresaSelect) {
+      empresaSelect.addEventListener("change", function () {
+        if (this.value) {
+          carregarSubgrupos(this.value);
+        } else {
+          subgrupoSelect.innerHTML = '<option value="">TODOS</option>';
+        }
+      });
+
+      // Se já houver empresa selecionada, carregar os subgrupos ao iniciar
+      if (empresaSelect.value) {
+        const selectedSubgrupo = "<%= params[:sub_grupo_empresa_id].to_s %>";
+        carregarSubgrupos(empresaSelect.value, selectedSubgrupo);
+      }
+    }
+  });
+</script>

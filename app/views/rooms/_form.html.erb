@@ -1,0 +1,26 @@
+<%= form_with(model: room, local: true, html: { multipart: true }, class: 'device-form') do |form| %>
+  <div class="form-group">
+    <%= form.label :name, "Nome da Sala" %>
+    <%= form.text_field :name, class: 'form-control' %>
+  </div>
+
+  <div class="form-group">
+    <%= form.label :floor, "Andar" %>
+    <%= form.text_field :floor, class: 'form-control' %>
+  </div>
+
+  <div class="form-group">
+  <%= form.label :device_id, "Dispositivo" %>
+  <%= form.collection_select :device_id, Device.all, :id, :name, prompt: "Selecione o dispositivo", class: "form-control", required: true %>
+</div>
+
+
+  <div class="form-group">
+    <%= form.label :photo, "Foto da Sala" %>
+    <%= form.file_field :photo, class: 'form-control' %>
+  </div>
+
+  <div class="form-actions" style="text-align: center;">
+    <%= form.submit room.new_record? ? "Criar Sala" : "Atualizar Sala", class: 'btn submit' %>
+  </div>
+<% end %>

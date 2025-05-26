@@ -1,0 +1,72 @@
+<div class="device-form" style="margin-top: 2rem;">
+  <p><strong>Início:</strong> <%= l(@reservation.starts_at, format: :long) %></p>
+  <p><strong>Término:</strong> <%= l(@reservation.ends_at, format: :long) %></p>
+  <p><strong>Sala:</strong> <%= @reservation.room.name %></p>
+
+  <p><strong>Status:</strong>
+    <% if @reservation.cancelada_em.present? %>
+      ⛔ Cancelada em <%= l(@reservation.cancelada_em, format: :short) %>
+    <% elsif @reservation.finalizada_em.present? %>
+      ✔️ Encerrada em <%= l(@reservation.finalizada_em, format: :short) %>
+    <% else %>
+      🟢 Ativa
+    <% end %>
+  </p>
+</div>
+
+<h2 class="subtitle" style="margin-top: 2rem;">Solicitante / Responsável</h2>
+<div class="rooms">
+  <% [
+    { id: @reservation.solicitante_id, role: "Solicitante" },
+    { id: @reservation.responsavel_id, role: "Responsável" }
+  ].each do |entry| %>
+    <% participant = Participant.find_by(id: entry[:id]) %>
+    <% if participant %>
+      <div class="participant-card">
+        <div class="participant-photo">
+        <% if participant.photo.attached? %>
+  <%= image_tag url_for(participant.photo), class: "participant-img" %>
+<% else %>
+
+            <div class="participant-placeholder">Sem Foto</div>
+          <% end %>
+        </div>
+        <div class="participant-info">
+          <strong><%= participant.name %> — <%= entry[:role] %></strong><br>
+          CPF: <%= participant.cpf %><br>
+          Tel: <%= participant.telefone %><br>
+          <% if participant.email.present? %>Email: <%= participant.email %><br><% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>
+
+<h2 class="subtitle" style="margin-top: 2rem;">Participantes</h2>
+<div class="rooms">
+  <% extras = @participants.reject { |p| [@reservation.solicitante_id, @reservation.responsavel_id].include?(p.id) } %>
+  <% if extras.any? %>
+    <% extras.each do |p| %>
+      <div class="participant-card">
+        <div class="participant-photo">
+        <% if p.photo.attached? %>
+        <%= image_tag url_for(p.photo), class: "participant-img" %>
+
+        <% else %>
+        <div class="participant-placeholder">Sem Foto</div>
+        <% end %>
+      
+        </div>
+        <div class="participant-info">
+          <strong><%= p.name %> — Participante</strong><br>
+          CPF: <%= p.cpf %><br>
+          Tel: <%= p.telefone %><br>
+          <% if p.email.present? %>Email: <%= p.email %><br><% end %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <p style="color: #000; text-align: center;">Nenhum participante extra registrado.</p>
+  <% end %>
+</div>
+

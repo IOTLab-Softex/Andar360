@@ -1,0 +1,87 @@
+
+<div class="rooms">
+  <% if @reservations.any? %>
+    <% @reservations.each do |reservation| %>
+      <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
+
+      <div class="reservation-card" style="<%= background %>">
+        <div class="reservation-header">
+         <strong>Empresa:</strong> <%= reservation.grupo_empresa&.nome || "Não informado" %><br>
+
+          <% if reservation.grupo_empresa&.logo&.attached? %>
+  <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 60px;" %>
+<% end %><br>
+
+          Nome da Reserva: <strong><%= reservation.title %></strong><br>
+          Sala: <%= reservation.room.name %><br>
+          Início: <%= l(reservation.starts_at, format: :short) %><br>
+          Fim: <%= l(reservation.ends_at, format: :short) %><br>
+         <% if reservation.cancelada_em.present? %>
+            <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
+          <% elsif reservation.finalizada_em.present? %>
+            <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
+          <% else %>
+            <span class="status ativa">🟢 Ativa</span><br>
+            <%# Status de envio dos participantes %>
+          <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
+            <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
+          </span>
+          <% end %><br>
+
+          
+
+  
+</span>
+
+
+        </div>
+        <div class="reservation-actions">
+          <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+              <%= link_to "Editar", edit_reservation_path(reservation), class: "btn edit" %>
+              <% end %>
+          <%= link_to "Ver", reservation_path(reservation), class: "btn reservation" %>
+      <%= button_to "Cancelar", reservation_path(reservation),
+  method: :delete,
+  data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+  class: "btn cancel",
+  form: { style: "display: contents;" } %>
+
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <p style="text-align: center; color: #000;">Nenhuma reserva cadastrada.</p>
+  <% end %>
+</div>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const reservationIds = <%= raw @reservations.map(&:id).to_json %>;
+
+    function updateStatuses() {
+      reservationIds.forEach(id => {
+        fetch(`/reservations/${id}/status`)
+          .then(response => response.json())
+          .then(data => {
+            const el = document.getElementById(`status-${id}`);
+            if (el) {
+              if (data.sent_to_facial) {
+                el.textContent = "Participantes já enviados";
+                el.classList.remove("warning");
+                el.classList.add("success");
+              } else {
+                el.textContent = "Aguardando envio";
+                el.classList.remove("success");
+                el.classList.add("warning");
+              }
+            }
+          });
+      });
+    }
+
+    
+    // Atualiza a cada 15 segundos
+    setInterval(updateStatuses, 15000);
+  });
+</script>
