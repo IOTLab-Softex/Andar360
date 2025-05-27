@@ -1,6 +1,6 @@
 @echo off
 cd %~dp0
-set RAILS_ENV=production
+set RAILS_ENV=development
 
 echo ==========================
 echo Verificando atualizações de código...
@@ -38,7 +38,7 @@ start /b cmd /c "ruby bin\delayed_job run"
 
 :: Iniciar Rails server (Puma) em segundo plano
 echo Iniciando Rails server...
-start /b cmd /c "bundle exec puma -C config/puma.rb -e production"
+start /b cmd /c "ruby bin\rails server -e production"
 
 echo ==========================
 echo Todos os serviços foram iniciados.

@@ -1,4 +1,5 @@
 # app/lib/scheduler_manager.rb
+
 class SchedulerManager
   def self.reload_all
     puts "[🔁] Reiniciando todos os schedulers..."
