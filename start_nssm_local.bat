@@ -14,6 +14,8 @@ echo [3] Exibir Rails server no terminal
 echo [4] Exibir Delayed Job no terminal
 echo [5] Encerrar o SRS
 echo [6] Sair
+echo [7] Iniciar o SRS (sem atualização, visível nos CMDs)
+
 echo ==========================
 set /p choice="Digite a opcao desejada (1-6): "
 
@@ -57,6 +59,12 @@ if "%choice%"=="6" (
     exit /b
 )
 
+if "%choice%"=="7" (
+    call :iniciar visivel
+    pause
+    goto menu
+)
+
 goto menu
 
 :atualizar
@@ -77,8 +85,28 @@ del git_output.txt
 goto :eof
 
 :iniciar
+
 :: Parametro %1 pode ser "oculto"
 set modo=%1
+
+echo Iniciando delayed_job...
+if "%modo%"=="oculto" (
+    start /b "" cmd /c "ruby bin\delayed_job run > nul 2>&1"
+) else if "%modo%"=="visivel" (
+    start "Delayed Job Worker" cmd /k "ruby bin\delayed_job run"
+) else (
+    ruby bin\delayed_job run
+)
+
+echo Iniciando Rails server...
+if "%modo%"=="oculto" (
+    start /b "" cmd /c "ruby bin\rails server -e production > nul 2>&1"
+) else if "%modo%"=="visivel" (
+    start "Rails Server" cmd /k "ruby bin\rails server -e production"
+) else (
+    ruby bin\rails server -e production
+)
+
 
 echo ==========================
 echo Verificando nginx...
