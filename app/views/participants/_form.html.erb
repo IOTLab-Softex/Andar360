@@ -96,9 +96,10 @@
   <label>Senha gerada:</label>
   <div id="senha_gerada_label"></div>
   <label style="margin-top: 10px;">
-    <%= check_box_tag :manter_senha, "1", true, id: "manter_senha_checkbox" %>
-    Manter senha atual
-  </label>
+  <%= check_box_tag :manter_senha, "1", participant.user&.encrypted_password.present?, id: "manter_senha_checkbox" %>
+  Manter senha atual
+</label>
+
 </div>
   
 <% end %>
