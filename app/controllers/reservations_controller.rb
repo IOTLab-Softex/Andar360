@@ -3,7 +3,7 @@ class ReservationsController < ApplicationController
 
   # GET /reservations
 def index
-  if current_user.admin?
+  if current_user.admin? || current_user.operador?
     @reservations = Reservation.includes(:room).order(starts_at: :desc)
   else
     empresa_id = current_user.participant&.grupo_empresa_id
@@ -26,7 +26,7 @@ end
   def new
     @reservation = Reservation.new
   
-    if current_user.admin?
+    if current_user.admin? || current_user.operador?
       @participants = Participant.all
       @grupo_empresas = GrupoEmpresa.all
     else

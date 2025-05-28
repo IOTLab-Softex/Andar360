@@ -12,20 +12,30 @@
           RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
           
         </div>
-         <% if current_user&.admin? %>
+        
         <div class="room-actions">
+
+         <% if current_user&.admin? %>
           <%= link_to edit_room_path(room), class: 'btn edit', onclick: 'event.stopPropagation();' do %>
             <i class="fa-solid fa-pen-to-square"></i> EDITAR
             <% end %>
+             <% end %>
+
+              <% if current_user&.admin? || current_user.operador? %>
           <%= button_to open_door_room_path(room), method: :post, class: 'btn open-door', form: { data: { turbo: false } }, onclick: 'event.stopPropagation();' do %>
               <i class="fa-solid fa-door-open me-2"></i> ABRIR PORTA
             <% end %>
+            <% end %>
+          
+
+             <% if current_user&.admin? %>
           <%= button_to room_path(room), method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' }, class: 'btn delete-room', onclick: 'event.stopPropagation();' do %>
             <i class="fa-solid fa-trash"></i> EXCLUIR
             <% end %>
+          <% end %>
           
         </div>
-        <% end %>
+       
       </div>
     <% end %>
   <% end %>

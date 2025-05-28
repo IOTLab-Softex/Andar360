@@ -92,7 +92,7 @@ end
   def index
   @participants = scoped_participants
 
-  if params[:grupo_empresa_id].present? && current_user.admin?
+  if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
     @participants = @participants.where(grupo_empresa_id: params[:grupo_empresa_id])
   end
 

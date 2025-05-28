@@ -76,7 +76,7 @@
   A foto será usada para reconhecimento facial. Garanta que o rosto esteja visível, centralizado e com boa iluminação.
 </small>
 </div>
-<% if current_user&.admin? %>
+<% if current_user.admin? %>
 <div class="form-group">
   <label>
     <%= check_box_tag :criar_usuario, "1", participant.user.present?, id: "criar_usuario_checkbox", onclick: "togglePermissoes()" %>
@@ -87,7 +87,7 @@
 
 <div class="form-group" id="permissoes_wrap" style="display: none;">
   <%= label_tag :user_role, "Permissão de Acesso" %>
-  <%= select_tag :user_role, options_for_select([["Admin", "admin"], ["Client", "client"]], participant.user&.role), class: "form-control" %>
+  <%= select_tag :user_role, options_for_select([["Admin", "admin"], ["Client", "client"], ["Operador", "operador"]], participant.user&.role), class: "form-control" %>
   <%= hidden_field_tag :senha_gerada, "", id: "senha_gerada_input" %>
 
 </div>

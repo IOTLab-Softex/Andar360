@@ -1,7 +1,8 @@
 class RoomsController < ApplicationController
         before_action :authenticate_user!
-  before_action :authorize_admin!
-  before_action :set_room, only: %i[ show edit update destroy ]
+before_action :authorize_admin!, except: [:open_door]
+before_action :authorize_admin_or_operator!, only: [:open_door]
+before_action :set_room, only: %i[show edit update destroy open_door]
 
   # GET /rooms or /rooms.json
   def index
@@ -77,6 +78,14 @@ class RoomsController < ApplicationController
       redirect_to root_path, alert: "Acesso não autorizado."
     end
   end
+
+  def authorize_admin_or_operator!
+  unless current_user&.admin? || current_user&.operador?
+    redirect_to root_path, alert: "Acesso não autorizado."
+  end
+end
+
+
     # Use callbacks to share common setup or constraints between actions.
     def set_room
       @room = Room.find(params.expect(:id))

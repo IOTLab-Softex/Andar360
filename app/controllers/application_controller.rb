@@ -13,7 +13,8 @@ class ApplicationController < ActionController::Base
   end
 
   def scoped_grupo_empresas
-    if current_user.admin?
+    if current_user.admin? || current_user.operador?
+
       GrupoEmpresa.all
     else
       GrupoEmpresa.where(id: current_user.participant&.grupo_empresa_id)
@@ -21,7 +22,8 @@ class ApplicationController < ActionController::Base
   end
 
   def scoped_participants
-  if current_user.admin?
+  if current_user.admin? || current_user.operador?
+
     Participant.all
   else
     Participant.where(grupo_empresa_id: current_user.participant&.grupo_empresa_id)

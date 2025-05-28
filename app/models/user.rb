@@ -6,7 +6,8 @@ class User < ApplicationRecord
          :recoverable, :rememberable, :validatable,
          authentication_keys: [:cpf]
 
-  enum :role, { client: "client", admin: "admin" }
+ enum :role, { client: "client", operador: "operador", admin: "admin" }
+
 
   validates :cpf, presence: true, uniqueness: true
   validates :role, presence: true

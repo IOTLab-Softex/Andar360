@@ -1,6 +1,8 @@
 <!-- app/views/participants/index.html.erb -->
 <%= form_with url: participants_path, method: :get, local: true, class: "filter-form" do %>
-  <div style="display: flex;
+  <div style="    display: flex
+;
+    flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 1.5rem;
     justify-content: center;">
@@ -9,7 +11,7 @@
   <i class="fa-solid fa-filter"></i>
   <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
 
-  <% if current_user.admin? %>
+  <% if current_user.admin? || current_user.operador? %>
     <%= select_tag :grupo_empresa_id,
       options_for_select(
         [["TODOS", ""]] + GrupoEmpresa.all.map { |g| [g.nome, g.id] },
