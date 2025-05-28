@@ -1395,3 +1395,9 @@ p {
     border-radius: 10px;
 }
 
+.fa-stack .fa-crown {
+  color: gold;
+}
+.fa-stack .fa-user {
+  color: var(--color-text);
+}

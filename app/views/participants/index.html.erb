@@ -88,6 +88,11 @@
   <i style="position: absolute; right: 22px; font-size: x-large;"
      class="fa-solid fa-user-tie role-icon"
      title="Operador"></i>
+     <% elsif participant.user&.admin? %>
+     <span  title="Administrador" style="position: absolute; right: 22px; font-size: x-large;" class="fa-stack fa-2x">
+  <i class="fa-solid fa-user fa-stack-1x"></i>
+  <i class="fa-solid fa-crown fa-stack-2x" style="font-size: 0.6em; position: absolute; top: 3px;"></i>
+</span>
 <% end %>
 
 
