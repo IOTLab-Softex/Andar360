@@ -62,6 +62,7 @@
   <% if @participants.any? %>
     <% @participants.each do |participant| %>
       <div class="participant-card">
+      
       <div class="participant-photo">
       <% if participant.photo.attached? %>
         <div class="photo-wrapper">
@@ -79,6 +80,17 @@
     
 
         <div class="participant-info">
+       <% if participant.user&.client? %>
+  <i style="position: absolute; right: 22px; font-size: x-large;"
+     class="fa-solid fa-user role-icon"
+     title="Cliente"></i>
+<% elsif participant.user&.operador? %>
+  <i style="position: absolute; right: 22px; font-size: x-large;"
+     class="fa-solid fa-user-tie role-icon"
+     title="Operador"></i>
+<% end %>
+
+
           <strong><%= participant.name %></strong><br>
           CPF: <%= participant.cpf %><br>
           Tel: <%= participant.telefone %><br>
