@@ -66,24 +66,16 @@ width: 6% !important;
 }
 
 .fade-border-stop::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  height: 3px;
-  width: 100%;
-  background: linear-gradient(
-    to right,
-    #ff8c4100,
-    #FF8C41 30%,
-    #FF8C41 70%,
-    #ff8c4100
-  );
- 
-  background-position: 100% 0;
-  
-  z-index: 10;
-  opacity: 1;
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 17px;
+    height: 3px;
+    width: 98%;
+    background: linear-gradient(to right, #6969691c, #FF8C41 30%, #FF8C41 70%, #69696914);
+    background-position: 100% 0;
+    z-index: 10;
+    opacity: 1;
 }
 
 @keyframes loadingBar {
@@ -143,7 +135,7 @@ width: 6% !important;
 :root[data-theme="dark"] {
   --color-bg: #121212;
   --color-header: #2b2b2b;
-  --color-card: #1e1e1e;
+  --color-card: #393939;
   --color-text: #ffffff;
   --color-muted: #999;
 
@@ -293,7 +285,7 @@ body {
   border-radius: 10px;
   border: 2px solid var(--color-accent);
   background: #f9f9f9;
-  
+  font-size: smaller;
 }
 
 .form-control:focus {
@@ -467,6 +459,7 @@ body {
      display: flex;
     align-items: center;
     color: var(--color-btn--text);
+
 }
 
 .edit:hover {
@@ -687,22 +680,18 @@ body {
 }
 /* PARTICIPANT MODAL STYLE */
 #participantModal {
- 
-  padding: 30px;
- 
-  border: none;
-  
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  font-family: 'Segoe UI', sans-serif;
-  color: var(--color-text);
-
-  position: fixed;
+    padding: 7px;
+    border: none;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    font-family: 'Segoe UI', sans-serif;
+    color: var(--color-text);
+    position: fixed;
     top: 1%;
     left: 50%;
     transform: translateX(-50%);
     width: 87%;
     max-width: 800px;
-    height: 89%;
+    height: 96%;
     background: var(--color-modal-bg);
     border-radius: 8px;
     z-index: 999;
@@ -710,7 +699,9 @@ body {
     flex-direction: column;
     overflow: hidden;
     color: var(--color-text);
+    font-size: small;
 }
+
 .modal-controll{
   
 padding: 15px 20px;
@@ -725,7 +716,7 @@ flex-direction: column;
 left: 0;
 }
 #participantModal h2 {
-  font-size: 1.5rem;
+  font-size: large;
   font-weight: 600;
   margin-bottom: 1rem;
   text-align: center;
@@ -1092,7 +1083,7 @@ left: 0;
     color: #fff;
     padding: 20px 15px;
     position: fixed;
-    top: 119px;
+    top: 89px;
     bottom: 0;
     left: 0;
     transition: transform 0.3s ease;
@@ -1174,7 +1165,7 @@ left: 0;
   justify-content: center;
   gap: 1rem;
   background: var(--color-header);
-  padding: 1rem;
+  padding: 0rem;
   border-radius: 0; /* remove cantos arredondados */
   overflow: hidden; /* impede que elementos ultrapassem */
   z-index: 5;
@@ -1394,3 +1385,116 @@ p {
     padding: 6px;
     border-radius: 10px;
 }
+
+.modal-btn-cadastrar-participante{
+text-align: center;
+}
+    
+.modal-btn-close {
+    text-align: center;
+    color: var(--color-btn--text);
+    background-color: var(--color-btn);
+}
+
+
+
+#participantsTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  margin-top: 1rem;
+}
+
+#participantsTable thead {
+  background-color: var(--color-accent);
+  color: var(--color-btn--text);
+}
+
+#participantsTable th, 
+#participantsTable td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+#participantsTable tbody tr:nth-child(even) {
+  background-color: rgba(0,0,0,0.03);
+}
+
+#participantsTable tbody tr:hover {
+  background-color: var(--color-accent-hover);
+  color: var(--color-btn--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#participantsTable img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+#participantsTable .btn {
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  margin-right: 4px;
+}
+
+
+
+#reservationsTable {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: var(--color-card);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  margin-top: 1rem;
+}
+
+#reservationsTable thead {
+  background-color: var(--color-accent);
+  color: var(--color-btn--text);
+}
+
+#reservationsTable th, 
+#reservationsTable td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid rgba(0,0,0,0.1);
+}
+
+#reservationsTable tbody tr:nth-child(even) {
+  background-color: rgba(0,0,0,0.03);
+}
+
+#reservationsTable tbody tr:hover {
+  background-color: var(--color-accent-hover);
+  color: var(--color-btn--text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#reservationsTable img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+}
+
+#reservationsTable .btn {
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  margin-right: 4px;
+}
+.reservationsTableAction{
+    display: flex;
+}
+
+#toggleViewBtn{
+  background-color: var(--color-accent);
+  color: var(--color-text);
+}
+  

@@ -4,7 +4,8 @@ class Reservation < ApplicationRecord
   has_many :access_logs, dependent: :delete_all
   belongs_to :grupo_empresa, optional: true
 
-
+  belongs_to :solicitante, class_name: "Participant", foreign_key: "solicitante_id", optional: true
+  belongs_to :responsavel, class_name: "Participant", foreign_key: "responsavel_id", optional: true
 
   validates :title, :starts_at, :ends_at, :room_id, :solicitante_id, :responsavel_id, presence: true
 

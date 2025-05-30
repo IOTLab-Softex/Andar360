@@ -58,6 +58,13 @@
   </div>
 <% end %>
 
+<div style="text-align: center; margin-bottom: 1rem;">
+  <button id="toggleViewBtn" class="btn">
+    <i class="fa-solid fa-table"></i> Alternar Visualização
+  </button>
+</div>
+
+
 <div class="rooms">
   <% if @participants.any? %>
     <% @participants.each do |participant| %>
@@ -103,6 +110,50 @@
     <p style="text-align: center; color: #000;">Nenhum participante cadastrado.</p>
   <% end %>
 </div>
+
+<table id="participantsTable" style="width: 100%; display: none;">
+  <thead>
+    <tr>
+      <th>Foto</th>
+      <th>Nome</th>
+      <th>CPF</th>
+      <th>Telefone</th>
+      <th>Email</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @participants.each do |participant| %>
+      <tr>
+        <td>
+          <% if participant.photo.attached? %>
+            <img src="<%= url_for(participant.photo) %>" alt="Foto" style="width: 50px; height: 50px; border-radius: 50%;">
+          <% else %>
+            Sem Foto
+          <% end %>
+        </td>
+        <td><%= participant.name %></td>
+        <td><%= participant.cpf %></td>
+        <td><%= participant.telefone %></td>
+        <td><%= participant.email.presence || "-" %></td>
+        <td>
+         <%= link_to edit_participant_path(participant), class: "btn edit", style: "display: inline-block;" do %>
+  <i class="fa-solid fa-user-pen"></i>
+<% end %>
+
+          <%= button_to participant_path(participant),
+              method: :delete,
+              data: { confirm: "Tem certeza que deseja excluir este participante?" },
+              class: "btn cancel",
+              form: { style: "display: contents;" } do %>
+            <i class="fa-solid fa-user-xmark"></i>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -170,4 +221,35 @@
       }
     }
   });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const toggleBtn = document.getElementById("toggleViewBtn");
+  const cardsContainer = document.querySelector(".rooms");
+  const tableContainer = document.getElementById("participantsTable");
+
+  function applyViewMode(mode) {
+    if (mode === "table") {
+      tableContainer.style.display = "table";
+      cardsContainer.style.display = "none";
+      toggleBtn.innerHTML = '<i class="fa-solid fa-id-card"></i> Alternar Visualização';
+    } else {
+      tableContainer.style.display = "none";
+      cardsContainer.style.display = "flex";
+      toggleBtn.innerHTML = '<i class="fa-solid fa-table"></i> Alternar Visualização';
+    }
+  }
+
+  // Carrega do localStorage (padrão: cards)
+  const savedMode = localStorage.getItem("viewMode") || "cards";
+  applyViewMode(savedMode);
+
+  toggleBtn.addEventListener("click", function () {
+    const currentMode = tableContainer.style.display === "table" ? "table" : "cards";
+    const newMode = currentMode === "table" ? "cards" : "table";
+    localStorage.setItem("viewMode", newMode);
+    applyViewMode(newMode);
+  });
+});
+
 </script>

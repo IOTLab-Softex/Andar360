@@ -1,5 +1,11 @@
+<div style="text-align: center; margin-bottom: 1rem;">
+  <button id="toggleViewBtn" class="btn">
+    <i class="fa-solid fa-table"></i> Alternar Visualização
+  </button>
+</div>
 
-<div class="rooms">
+<div class="rooms" id="reservationsCards">
+
   <% if @reservations.any? %>
     <% @reservations.each do |reservation| %>
       <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
@@ -37,14 +43,21 @@
         </div>
         <div class="reservation-actions">
           <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
-              <%= link_to "Editar", edit_reservation_path(reservation), class: "btn edit" %>
+              <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
+              <i class="fa-solid fa-pen"></i> Editar
               <% end %>
-          <%= link_to "Ver", reservation_path(reservation), class: "btn reservation" %>
-      <%= button_to "Cancelar", reservation_path(reservation),
-  method: :delete,
-  data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-  class: "btn cancel",
-  form: { style: "display: contents;" } %>
+              <% end %>
+          <%= link_to reservation_path(reservation), class: "btn reservation" do %>
+            <i class="fa-solid fa-eye"></i> Ver
+            <% end %>
+      <%= button_to reservation_path(reservation),
+    method: :delete,
+    data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+    class: "btn cancel",
+    form: { style: "display: contents;" } do %>
+  <i class="fa-solid fa-rectangle-xmark"></i>  Cancelar
+<% end %>
+
 
         </div>
       </div>
@@ -53,6 +66,61 @@
     <p style="text-align: center; color: #000;">Nenhuma reserva cadastrada.</p>
   <% end %>
 </div>
+
+<table id="reservationsTable" style="width: 100%; display: none;">
+  <thead>
+    <tr>
+      <th>Empresa</th>
+      <th>Nome Reserva</th>
+      <th>Sala</th>
+      <th>Início</th>
+      <th>Fim</th>
+      <th>Status</th>
+      <th>Ações</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% @reservations.each do |reservation| %>
+      <tr>
+        <td><%= reservation.grupo_empresa&.nome || "Não informado" %></td>
+        <td><%= reservation.title %></td>
+        <td><%= reservation.room.name %></td>
+        <td><%= l(reservation.starts_at, format: :short) %></td>
+        <td><%= l(reservation.ends_at, format: :short) %></td>
+        <td>
+          <% if reservation.cancelada_em.present? %>
+            ⛔ Cancelada
+          <% elsif reservation.finalizada_em.present? %>
+            ✔️ Encerrada
+          <% else %>
+            🟢 Ativa
+          <% end %>
+        </td>
+        <td class="reservationsTableAction">
+          <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+            <%= link_to edit_reservation_path(reservation), class: "btn edit", style: "display: inline-block;" do %>
+              <i class="fa-solid fa-pen"></i> 
+              <% end %>
+          <% end %>
+        <%= link_to reservation_path(reservation), class: "btn reservation", style: "display: inline-block;"  do %>
+          <i class="fa-solid fa-eye"></i>
+        <% end %>
+
+          <%= button_to reservation_path(reservation),
+              method: :delete,
+              data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+              class: "btn cancel",
+              style: "display: flow-root",
+              form: { style: "display: contents;" } do %>
+              <i class="fa-solid fa-rectangle-xmark"></i> 
+          <% end %>
+
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
+
 
 
 <script>
@@ -84,4 +152,35 @@
     // Atualiza a cada 15 segundos
     setInterval(updateStatuses, 15000);
   });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const toggleBtn = document.getElementById("toggleReservationsViewBtn");
+  const cardsContainer = document.getElementById("reservationsCards");
+  const tableContainer = document.getElementById("reservationsTable");
+
+  function applyViewMode(mode) {
+    if (mode === "table") {
+      tableContainer.style.display = "table";
+      cardsContainer.style.display = "none";
+      toggleBtn.innerHTML = '<i class="fa-solid fa-id-card"></i> Alternar Visualização';
+    } else {
+      tableContainer.style.display = "none";
+      cardsContainer.style.display = "flex";
+      toggleBtn.innerHTML = '<i class="fa-solid fa-table"></i> Alternar Visualização';
+    }
+  }
+
+  // Carrega do localStorage (padrão: cards)
+  const savedMode = localStorage.getItem("reservationsViewMode") || "cards";
+  applyViewMode(savedMode);
+
+  toggleBtn.addEventListener("click", function () {
+    const currentMode = tableContainer.style.display === "table" ? "table" : "cards";
+    const newMode = currentMode === "table" ? "cards" : "table";
+    localStorage.setItem("reservationsViewMode", newMode);
+    applyViewMode(newMode);
+  });
+});
+
 </script>

@@ -2,15 +2,14 @@
 
 
 
-<div class="rooms" style="max-width: 1200px;
+<div class="rooms" style="
     margin: 0 auto;
     padding: 2rem;
     display: flex
 ;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 3.5rem;
-    flex-direction: row;
-    flex-wrap: nowrap;">
+    flex-wrap: wrap;">
   <% @grupo_empresas.each do |empresa| %>
     <div class="participant-card" style="display: flex; gap: 1rem; padding: 1rem; border-radius: 12px; background: #444; box-shadow: 0 0 10px #0006; align-items: center;">
       

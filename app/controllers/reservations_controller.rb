@@ -140,25 +140,56 @@ end
   end
 end
   
-  def update
-    if conflict_exists?(@reservation, updating: true)
-      respond_to do |format|
-        format.html { redirect_back fallback_location: edit_reservation_path(@reservation), alert: "Já existe uma reserva nesse horário para essa sala." }
-        format.json { render json: { error: "Já existe uma reserva nesse horário para essa sala." }, status: :unprocessable_entity }
-      end
+ def update
+  old_solicitante_id = @reservation.solicitante_id
+  old_responsavel_id = @reservation.responsavel_id
+  old_participant_ids = @reservation.participant_ids.sort
+
+  incoming_params = reservation_params
+
+  new_solicitante_id = incoming_params[:solicitante_id].to_i
+  new_responsavel_id = incoming_params[:responsavel_id].to_i
+  new_participant_ids = (incoming_params[:participant_ids] || []).map(&:to_i).sort
+
+  solicitante_changed = old_solicitante_id != new_solicitante_id
+  responsavel_changed = old_responsavel_id != new_responsavel_id
+  participants_changed = old_participant_ids != new_participant_ids
+
+  # 🚨 BLOQUEIO: não permite trocar solicitante/responsável se já enviados
+  if Time.current >= @reservation.starts_at && @reservation.sent_to_facial
+    if solicitante_changed || responsavel_changed
+      redirect_back fallback_location: edit_reservation_path(@reservation),
+                    alert: "⚠️ Não é permitido alterar o solicitante ou responsável após o solicitante ou responsável ter acessado a sala."
       return
     end
-  
-    respond_to do |format|
-      if @reservation.update(reservation_params)
-        format.html { redirect_to @reservation, notice: "Reserva atualizada com sucesso." }
-        format.json { render :show, status: :ok, location: @reservation }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @reservation.errors, status: :unprocessable_entity }
+  end
+
+  respond_to do |format|
+    if @reservation.update(incoming_params)
+      if Time.current >= @reservation.starts_at
+        if solicitante_changed || responsavel_changed
+          Rails.logger.info "[Facial Sync] Solicitante ou responsável alterados → disparando AddParticipantToFacialJob"
+          AddParticipantToFacialJob.perform_later(@reservation.id)
+        end
+
+        if participants_changed
+          Rails.logger.info "[Facial Sync] Participantes alterados → disparando EnviarParticipantesJob"
+          EnviarParticipantesJob.perform_later(@reservation.id, force: true)
+        end
       end
+
+      format.html { redirect_to @reservation, notice: "Reserva atualizada com sucesso." }
+      format.json { render :show, status: :ok, location: @reservation }
+    else
+      format.html { render :edit, status: :unprocessable_entity }
+      format.json { render json: @reservation.errors, status: :unprocessable_entity }
     end
   end
+end
+
+
+
+
   
 
   # DELETE /reservations/1

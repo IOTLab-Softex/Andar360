@@ -34,7 +34,7 @@ module LayoutHelper
       when "devices#new"
       "Adicionar Dispositivos"
       when "participants#index"
-      "Usuarios"
+      "Usuários"
         when "import_logs#index"
       "Logs de Importação"
       when "grupo_empresas#index"

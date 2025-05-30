@@ -64,7 +64,12 @@
       <div class="form-group">
   <label>Solicitante</label><br>
   <button type="button" class="btn submit" onclick="openParticipantModal('solicitante')">Adicionar Solicitante</button>
-  <div id="solicitante-display" style="margin-top: 5px;"></div>
+ <div id="solicitante-display" style="margin-top: 5px;">
+  <% if reservation.solicitante %>
+    <div class="participant-tag"><%= reservation.solicitante.name %></div>
+    <input type="hidden" name="reservation[solicitante_id]" value="<%= reservation.solicitante.id %>">
+  <% end %>
+</div>
   <div id="solicitante-hidden"></div>
     <small class="form-text text-muted">Escolha quem está solicitando esta reserva.</small>
 </div>
@@ -72,7 +77,12 @@
 <div class="form-group">
   <label>Responsável</label><br>
   <button type="button" class="btn submit" onclick="openParticipantModal('responsavel')">Adicionar Responsável</button>
-  <div id="responsavel-display" style="margin-top: 5px;"></div>
+  <div id="responsavel-display" style="margin-top: 5px;">
+  <% if reservation.responsavel %>
+    <div class="participant-tag"><%= reservation.responsavel.name %></div>
+    <input type="hidden" name="reservation[responsavel_id]" value="<%= reservation.responsavel.id %>">
+  <% end %>
+</div>
   <div id="responsavel-hidden"></div>
    <small class="form-text text-muted">Escolha um responsável, caso o solicitante não esteja presente no momento.</small><br>
     <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> A sala só será liberada se o solicitante ou o responsável fizerem acesso.</small>
@@ -81,7 +91,12 @@
 <div class="form-group">
   <label>Participantes</label><br>
   <button type="button" class="btn submit" onclick="openParticipantModal('participantes')">Adicionar Participantes</button>
-  <div id="participantes-display" style="margin-top: 5px;"></div>
+ <div id="participantes-display" style="margin-top: 5px;">
+  <% reservation.participants.each do |p| %>
+    <div class="participant-tag" id="participant-display-<%= p.id %>"><%= p.name %></div>
+    <input type="hidden" name="reservation[participant_ids][]" value="<%= p.id %>">
+  <% end %>
+</div>
   <div id="participantes-hidden"></div>
   <small class="form-text text-muted">Adicione os participantes que irão acompanhar na reserva.</small><br>
   <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> Os participantes só terão acesso após o solicitante ou responsável.</small>
@@ -110,9 +125,11 @@
     font-size: 19px;"><i class="fa-solid fa-circle-exclamation"></i>Clique para desmarcar</small>
 <div class="modal-controll">
 
-<%= link_to "Cadastrar Novo Participante", new_participant_path, class: "btn btn-close" %>
+<%= link_to new_participant_path, class: "modal-btn-cadastrar-participante btn btn-close" do %>
+<i class="fa-solid fa-user-plus"></i> Cadastrar Novo Participante
+  <% end %>
 
-<button onclick="closeParticipantModal()" class="btn-close btn">Fechar</button>
+<button onclick="closeParticipantModal()" class="modal-btn-close btn-close btn"><i class="fa-solid fa-xmark"></i> Fechar</button>
 </div>
 <div class="modal-body-scroll" style="flex: 1;
     overflow-y: auto;
@@ -174,7 +191,7 @@
 </div>
 
 <div id="participant-list" 
-     style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 6px;"
+     style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 4px; border-radius: 6px;"
      data-participants='<%= @participants.map { |p| {
   id: p.id,
   name: p.name,
