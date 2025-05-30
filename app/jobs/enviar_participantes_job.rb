@@ -1,10 +1,11 @@
 class EnviarParticipantesJob < ApplicationJob
   queue_as :default
 
-  def perform(reservation_id)
+  def perform(reservation_id, force: false)
+    
     reservation = Reservation.find_by(id: reservation_id)
     return unless reservation
-    return if reservation.sent_to_facial # evitar reenvio
+    return if reservation.sent_to_facial && !force
 
     device = reservation.room&.device
     return unless device.present?
