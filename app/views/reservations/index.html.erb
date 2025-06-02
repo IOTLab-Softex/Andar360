@@ -5,67 +5,139 @@
 </div>
 
 <div class="rooms" id="reservationsCards">
-
   <% if @reservations.any? %>
-    <% @reservations.each do |reservation| %>
-      <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
+    <% minhas_reservas = @reservations.select { |r| r.grupo_empresa_id == current_user.participant&.grupo_empresa_id } %>
+    <% outras_reservas = @reservations.reject { |r| r.grupo_empresa_id == current_user.participant&.grupo_empresa_id } %>
 
-      <div class="reservation-card" style="<%= background %>">
-        <div class="reservation-header">
-         <strong>Empresa:</strong> <%= reservation.grupo_empresa&.nome || "Não informado" %><br>
+    <!-- BLOCO: MINHAS RESERVAS -->
+    <% grouped_reservas = {
+      'Ativas' => minhas_reservas.select { |r| r.cancelada_em.blank? && r.finalizada_em.blank? },
+      'Encerradas' => minhas_reservas.select { |r| r.finalizada_em.present? },
+      'Canceladas' => minhas_reservas.select { |r| r.cancelada_em.present? }
+    } %>
 
-          <% if reservation.grupo_empresa&.logo&.attached? %>
-  <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 60px;" %>
-<% end %><br>
+    <% if grouped_reservas.values.flatten.any? %>
+      <div class="reservation-section">
+        <h2 class="section-title">Minhas Reservas</h2>
+        <% grouped_reservas.each do |status_label, reservas| %>
+          <% if reservas.any? %>
+            <div class="reservation-group">
+              <h3 class="group-title"><%= status_label %></h3>
+              <div class="reservation-list">
+                <% reservas.each do |reservation| %>
+                  <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
+                  <div class="reservation-card" style="<%= background %>">
+                    <div class="reservation-header">
+                      <strong>Empresa:</strong> <%= reservation.grupo_empresa&.nome || "Não informado" %><br>
+                      <% if reservation.grupo_empresa&.logo&.attached? %>
+                        <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 40px; margin: 5px 0;" %>
+                      <% end %><br>
+                      
+                      Nome da Reserva: <strong><%= reservation.title %></strong><br>
+                      Sala: <%= reservation.room.name %><br>
+                      Início: <%= l(reservation.starts_at, format: :short) %><br>
+                      Fim: <%= l(reservation.ends_at, format: :short) %><br>
 
-          Nome da Reserva: <strong><%= reservation.title %></strong><br>
-          Sala: <%= reservation.room.name %><br>
-          Início: <%= l(reservation.starts_at, format: :short) %><br>
-          Fim: <%= l(reservation.ends_at, format: :short) %><br>
-         <% if reservation.cancelada_em.present? %>
-            <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
-          <% elsif reservation.finalizada_em.present? %>
-            <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
-          <% else %>
-            <span class="status ativa">🟢 Ativa</span><br>
-            <%# Status de envio dos participantes %>
-          <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
-            <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
-          </span>
-          <% end %><br>
+                      <% if reservation.cancelada_em.present? %>
+                        <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
+                      <% elsif reservation.finalizada_em.present? %>
+                        <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
+                      <% else %>
+                        <span class="status ativa">🟢 Ativa</span><br>
+                        <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
+                          <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
+                        </span>
+                      <% end %>
+                    </div>
+                    <div class="reservation-actions">
+                      <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+                        <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
+                          <i class="fa-solid fa-pen"></i> Editar
+                        <% end %>
+                      <% end %>
+                      <%= link_to reservation_path(reservation), class: "btn reservation" do %>
+                        <i class="fa-solid fa-eye"></i> Ver
+                      <% end %>
+                      <%= button_to reservation_path(reservation),
+                          method: :delete,
+                          data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                          class: "btn cancel",
+                          form: { style: "display: contents;" } do %>
+                          <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+    <% end %>
 
-          
-
-  
-</span>
-
-
-        </div>
-        <div class="reservation-actions">
-          <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
-              <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
-              <i class="fa-solid fa-pen"></i> Editar
+    <!-- BLOCO: OUTRAS RESERVAS POR EMPRESA -->
+    <% if outras_reservas.any? %>
+      <div class="reservation-section">
+        <h2 class="section-title">Outras Reservas</h2>
+        <% outras_reservas.group_by(&:grupo_empresa).each do |empresa, reservas| %>
+          <div class="reservation-group">
+            <h3 class="group-title">
+              Empresa: <%= empresa&.nome || "Não informado" %>
+              <% if empresa&.logo&.attached? %>
+                <%= image_tag empresa.logo, alt: "Logo da empresa", style: "max-height: 40px; margin-left: 10px;" %>
               <% end %>
+            </h3>
+            <div class="reservation-list">
+              <% reservas.each do |reservation| %>
+                <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
+                <div class="reservation-card" style="<%= background %>">
+                  <div class="reservation-header">
+                    Nome da Reserva: <strong><%= reservation.title %></strong><br>
+                    Sala: <%= reservation.room.name %><br>
+                    Início: <%= l(reservation.starts_at, format: :short) %><br>
+                    Fim: <%= l(reservation.ends_at, format: :short) %><br>
+
+                    <% if reservation.cancelada_em.present? %>
+                      <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
+                    <% elsif reservation.finalizada_em.present? %>
+                      <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
+                    <% else %>
+                      <span class="status ativa">🟢 Ativa</span><br>
+                      <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
+                        <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
+                      </span>
+                    <% end %>
+                  </div>
+                  <div class="reservation-actions">
+                    <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+                      <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
+                        <i class="fa-solid fa-pen"></i> Editar
+                      <% end %>
+                    <% end %>
+                    <%= link_to reservation_path(reservation), class: "btn reservation" do %>
+                      <i class="fa-solid fa-eye"></i> Ver
+                    <% end %>
+                    <%= button_to reservation_path(reservation),
+                        method: :delete,
+                        data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                        class: "btn cancel",
+                        form: { style: "display: contents;" } do %>
+                        <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
+                    <% end %>
+                  </div>
+                </div>
               <% end %>
-          <%= link_to reservation_path(reservation), class: "btn reservation" do %>
-            <i class="fa-solid fa-eye"></i> Ver
-            <% end %>
-      <%= button_to reservation_path(reservation),
-    method: :delete,
-    data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-    class: "btn cancel",
-    form: { style: "display: contents;" } do %>
-  <i class="fa-solid fa-rectangle-xmark"></i>  Cancelar
-<% end %>
-
-
-        </div>
+            </div>
+          </div>
+        <% end %>
       </div>
     <% end %>
   <% else %>
     <p style="text-align: center; color: #000;">Nenhuma reserva cadastrada.</p>
   <% end %>
 </div>
+
+
 
 <table id="reservationsTable" style="width: 100%; display: none;">
   <thead>

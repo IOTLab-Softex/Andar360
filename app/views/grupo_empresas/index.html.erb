@@ -1,4 +1,20 @@
 
+<%= form_with url: grupo_empresas_path, method: :get, local: true, class: "filter-form" do %>
+  <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem; justify-content: center;">
+    <div>
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <%= label_tag :search, "Buscar empresa por nome" %><br>
+      <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Digite o nome da empresa" %>
+    </div>
+
+    <div style="align-self: flex-end;">
+  <%= button_tag type: "submit", class: "btn btn-filter" do %>
+    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+  <% end %>
+</div>
+
+  </div>
+<% end %>
 
 
 
@@ -11,7 +27,14 @@
     gap: 3.5rem;
     flex-wrap: wrap;">
   <% @grupo_empresas.each do |empresa| %>
-    <div class="participant-card" style="display: flex; gap: 1rem; padding: 1rem; border-radius: 12px; background: #444; box-shadow: 0 0 10px #0006; align-items: center;">
+    <div class="participant-card" style="    display: flex
+;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 12px;
+    background: var(--color-header);
+    box-shadow: 0 0 10px #0006;
+    align-items: center;">
       
       <!-- LOGO -->
       <% if empresa.logo.attached? %>
@@ -24,7 +47,7 @@
 
       <!-- INFORMAÇÕES -->
       <div class="participant-info" style="display: flex; flex-direction: column; justify-content: space-between; flex: 1;">
-        <strong><%= empresa.nome %></strong><br>
+        <strong style="color: var(--color-btn--text);"><%= empresa.nome %></strong><br>
         Sala: <%= empresa.sala.presence || "Não definida" %><br>
         Andar: <%= empresa.andar.presence || "Não definido" %><br>
         <span style="font-size: 0.8rem; color: #ccc;">Cadastrada em: <%= empresa.created_at.strftime("%d/%m/%Y %H:%M") %></span>

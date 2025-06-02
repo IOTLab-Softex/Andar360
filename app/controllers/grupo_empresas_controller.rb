@@ -5,6 +5,9 @@ class GrupoEmpresasController < ApplicationController
 
   def index
     @grupo_empresas = scoped_grupo_empresas
+     if params[:search].present?
+    @grupo_empresas = @grupo_empresas.where("nome ILIKE ?", "%#{params[:search]}%")
+  end
   end
 
   def new

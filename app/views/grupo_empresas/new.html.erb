@@ -1,26 +1,38 @@
 
 <%= form_with model: @grupo_empresa, local: true, html: { multipart: true }, class: "device-form" do |form| %>
   <div class="form-group">
-    <%= form.label :nome, "Nome da Empresa" %>
+    <%= form.label :nome do %>
+      <i class="fa-solid fa-building"></i> Nome da Empresa
+      <% end %> 
     <%= form.text_field :nome, class: "form-control" %>
   </div>
 
   <div class="form-group">
-    <%= form.label :logo, "Logo da Empresa" %><br>
+    <%= form.label :logo do %>
+      <i class="fa-solid fa-building"></i> Logo da Empresa
+      <% end %>
+      <br>
     <%= form.file_field :logo, class: "form-control" %>
   </div>
 
   <div class="form-group">
-    <%= form.label :sala, "Sala" %>
+    <%= form.label :sala do %>
+<span class="icon-rectangle"></span> Sala
+      <% end %>
     <%= form.text_field :sala, class: "form-control" %>
   </div>
 
   <div class="form-group">
-    <%= form.label :andar, "Andar" %>
+    <%= form.label :andar do %>
+<i class="fa-solid fa-arrows-up-down"></i> Andar
+      <% end %>
     <%= form.text_field :andar, class: "form-control" %>
   </div>
 
   <div class="form-actions" style="text-align: center;">
-    <%= form.submit "Salvar Empresa", class: "btn submit" %>
+  <%= form.button type: "submit", class: "btn submit" do %>
+  <i class="fa-solid fa-floppy-disk"></i> Salvar Empresa
+<% end %>
+
   </div>
 <% end %>

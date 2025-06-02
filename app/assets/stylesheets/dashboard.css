@@ -559,7 +559,7 @@ body {
   border-radius: 20px;
   height: 18em;
   width: auto;
-  padding: 1rem;
+  padding: 22px;
   display: flex
 ;
   flex-direction: column;
@@ -590,7 +590,7 @@ body {
 }
 
 .reservation-header {
-  background: rgb(255 255 255 / 45%);
+  background: rgb(121 121 121 / 45%);
   backdrop-filter: blur(6px);
   border-radius: 12px;
   padding: 0.8rem;
@@ -669,14 +669,14 @@ body {
 }
 
 .participant-info {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgb(107 107 107 / 40%);
   backdrop-filter: blur(4px);
   padding: 1rem;
   border-radius: 15px;
   flex-grow: 1;
   box-shadow: inset 0 0 4px #ccc;
   font-size: small;
-
+  color: var(--color-btn--text);
 }
 /* PARTICIPANT MODAL STYLE */
 #participantModal {
@@ -1239,6 +1239,7 @@ left: 0;
   flex-wrap: wrap;
   gap: 2rem;
   margin-bottom: 2rem;
+  justify-content: center;
 }
 
 .banner{
@@ -1498,3 +1499,133 @@ text-align: center;
   color: var(--color-text);
 }
   
+.face-viewfinder {
+position: absolute;
+    width: 85px;
+    height: 91px;
+    background: none;
+    z-index: 5;
+    top: 34px;
+    right: 0;
+}
+
+.face {
+    width: 32px;
+    height: 34px;
+    background: #11bd07;
+    border-radius: 50%;
+    position: absolute;
+    top: 43px;
+    left: 41px;
+}
+
+.eye {
+width: 8px;
+    height: 8px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 11px;
+}
+
+.eye.left {
+    left: 6px;
+}
+
+.eye.right {
+right: 7px;
+}
+
+.mouth {
+width: 19px;
+    height: 5px;
+    border-bottom: 4px solid white;
+    border-radius: 0 0 30px 30px;
+    position: absolute;
+    bottom: 4px;
+    left: 6px;
+}
+
+.corner {
+    width: 12px;
+    height: 12px;
+    border: 4px solid #10ff00;
+    position: absolute;
+}
+
+.corner.top-left {
+    top: 37px;
+    left: 33px;
+    border-right: none;
+    border-bottom: none;
+}
+
+.corner.top-right {
+    top: 37px;
+    right: 6px;
+    border-left: none;
+    border-bottom: none;
+}
+
+.corner.bottom-left {
+  bottom: 6px;
+    left: 34px;
+    border-right: none;
+    border-top: none;
+}
+
+.corner.bottom-right {
+  bottom: 6px;
+    right: 7px;
+    border-left: none;
+    border-top: none;
+}
+
+
+
+
+.participant-card.participant-accessed {
+  border: 2px solid #ccc;
+  border-color: #4caf50; /* borda verde */
+  
+}
+
+
+.reservation-section {
+  margin-bottom: 3rem;
+  width: -webkit-fill-available;
+}
+
+.section-title {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 1.6rem;
+  border-bottom: 2px solid #ccc;
+  margin-bottom: 1rem;
+  color: var(--color-text);
+  
+}
+
+.reservation-group {
+  margin-bottom: 2rem;
+  
+}
+
+.group-title {
+  margin-left: 1rem;
+  font-size: 1.3rem;
+  color: var(--color-text);
+  margin-bottom: 0.5rem;
+}
+
+.reservation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+
+
+.reservation-card:hover {
+  transform: scale(1.03);
+}

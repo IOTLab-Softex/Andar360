@@ -22,14 +22,31 @@
   ].each do |entry| %>
     <% participant = Participant.find_by(id: entry[:id]) %>
     <% if participant %>
-      <div class="participant-card">
+      <% accessed = AccessLog.exists?(participant_id: participant.id, reservation_id: @reservation.id) %>
+      <div class="participant-card <%= 'participant-accessed' if accessed %>">
         <div class="participant-photo">
-        <% if participant.photo.attached? %>
-  <%= image_tag url_for(participant.photo), class: "participant-img" %>
-<% else %>
-
-            <div class="participant-placeholder">Sem Foto</div>
-          <% end %>
+          <div class="photo-wrapper" style="position: relative; display: inline-block;">
+            <% if participant.photo.attached? %>
+              <%= image_tag url_for(participant.photo), class: "participant-img" %>
+            <% else %>
+              <div class="participant-placeholder">Sem Foto</div>
+            <% end %>
+            <% if accessed %>
+              <div class="icon-visto-acesso">
+                <div class="face-viewfinder">
+                  <div class="face">
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="mouth"></div>
+                  </div>
+                  <div class="corner top-left"></div>
+                  <div class="corner top-right"></div>
+                  <div class="corner bottom-left"></div>
+                  <div class="corner bottom-right"></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </div>
         <div class="participant-info">
           <strong><%= participant.name %> — <%= entry[:role] %></strong><br>
@@ -47,15 +64,31 @@
   <% extras = @participants.reject { |p| [@reservation.solicitante_id, @reservation.responsavel_id].include?(p.id) } %>
   <% if extras.any? %>
     <% extras.each do |p| %>
-      <div class="participant-card">
+      <% accessed = AccessLog.exists?(participant_id: p.id, reservation_id: @reservation.id) %>
+      <div class="participant-card <%= 'participant-accessed' if accessed %>">
         <div class="participant-photo">
-        <% if p.photo.attached? %>
-        <%= image_tag url_for(p.photo), class: "participant-img" %>
-
-        <% else %>
-        <div class="participant-placeholder">Sem Foto</div>
-        <% end %>
-      
+          <div class="photo-wrapper" style="position: relative; display: inline-block;">
+            <% if p.photo.attached? %>
+              <%= image_tag url_for(p.photo), class: "participant-img" %>
+            <% else %>
+              <div class="participant-placeholder">Sem Foto</div>
+            <% end %>
+            <% if accessed %>
+              <div class="icon-visto-acesso">
+                <div class="face-viewfinder">
+                  <div class="face">
+                    <div class="eye left"></div>
+                    <div class="eye right"></div>
+                    <div class="mouth"></div>
+                  </div>
+                  <div class="corner top-left"></div>
+                  <div class="corner top-right"></div>
+                  <div class="corner bottom-left"></div>
+                  <div class="corner bottom-right"></div>
+                </div>
+              </div>
+            <% end %>
+          </div>
         </div>
         <div class="participant-info">
           <strong><%= p.name %> — Participante</strong><br>
@@ -69,4 +102,3 @@
     <p style="color: #000; text-align: center;">Nenhum participante extra registrado.</p>
   <% end %>
 </div>
-

@@ -27,13 +27,36 @@
   <% end %>
   
   
-  
+  <% total_sucesso = @import_logs.count { |log| !(log.dados_incompletos || log.sem_foto || log.status == 'erro') } %>
+<% total_erro = @import_logs.count { |log| log.dados_incompletos || log.sem_foto || log.status == 'erro' } %>
+
+<div style="text-align: center; margin-bottom: 1rem;">
+  <span style="font-size: 1.2rem; margin-right: 2rem;">
+    ✔️ Sucesso: <strong><%= total_sucesso %></strong>
+  </span>
+  <span style="font-size: 1.2rem;">
+    ⚠️ Erros: <strong><%= total_erro %></strong>
+  </span>
+</div>
+
+
 <div class="rooms">
   <% @import_logs.each do |log| %>
-    <div class="participant-card" style="background: <%= log.dados_incompletos || log.sem_foto || log.status == 'erro' ? '#ffe6e6' : '#e0ffe6' %>;">
+    <% is_error = log.dados_incompletos || log.sem_foto || log.status == 'erro' %>
+
+    <% participant = nil %>
+    <% if log.cpf.present? && log.cpf != "Desconhecido" %>
+      <% participant = Participant.find_by(cpf: log.cpf) %>
+    <% end %>
+
+    <% if participant.nil? %>
+      <% participant = Participant.where("LOWER(name) = ?", log.nome.downcase).first %>
+    <% end %>
+
+    <div class="participant-card" style="background: <%= is_error ? '#ffe6e6' : '#e0ffe6' %>;">
       <div class="participant-photo">
         <div class="photo-wrapper" style="font-size: 2rem;">
-          <% if log.dados_incompletos || log.sem_foto || log.status == 'erro' %>
+          <% if is_error %>
             ⚠️
           <% else %>
             ✔️
@@ -42,7 +65,7 @@
       </div>
 
       <div class="participant-info">
-        <strong><%= log.nome %></strong><br>
+        <strong style="color: var(--color-btn--text);"><%= log.nome %></strong><br>
         CPF: <%= log.cpf %><br>
         Status: <%= log.status.capitalize %><br>
         <span style="font-size: 0.9rem;">Mensagem: <%= truncate(log.mensagem, length: 100) %></span><br><br>
@@ -58,7 +81,21 @@
         <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">
           Registrado em: <%= log.created_at.strftime("%d/%m/%Y %H:%M") %>
         </div>
+
+        <% if is_error && participant.present? %>
+          <div style="margin-top: 0.5rem;">
+            <%= link_to edit_participant_path(participant), class: "btn edit" do %>
+              <i class="fa-solid fa-pen-to-square"></i> Ajustar Usuário
+            <% end %>
+          </div>
+        <% elsif is_error %>
+          <div style="margin-top: 0.5rem; color: #b00; font-size: 0.85rem;">
+            ⚠️ Participante não encontrado
+          </div>
+        <% end %>
       </div>
     </div>
   <% end %>
 </div>
+
+
