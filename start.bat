@@ -3,6 +3,14 @@ cd %~dp0
 setlocal EnableDelayedExpansion
 set RAILS_ENV=production
 
+:: Se chamado com argumento "auto", inicia direto na opção 2
+if "%1"=="auto" (
+    call :iniciar oculto
+    exit /b
+)
+
+
+
 :menu
 cls
 echo ==========================
@@ -10,14 +18,16 @@ echo     MENU SOFTEX RESERVAS
 echo ==========================
 echo [1] Iniciar o SRS (com atualização, oculto)
 echo [2] Iniciar o SRS (sem atualização, oculto)
-echo [3] Exibir Rails server no terminal
-echo [4] Exibir Delayed Job no terminal
-echo [5] Encerrar o SRS
-echo [6] Sair
-echo [7] Iniciar o SRS (sem atualização, visível nos CMDs)
-
+echo [3] Iniciar o SRS (sem atualização, visível nos CMDs)
+echo [4] Exibir Rails server no terminal
+echo [5] Exibir Delayed Job no terminal
+echo [6] Encerrar o SRS
+echo [7] Sair
+echo [8] Ativar inicialização automática no Windows (opção 2)
+echo [9] Desativar inicialização automática no Windows
 echo ==========================
-set /p choice="Digite a opcao desejada (1-6): "
+
+set /p choice="Digite a opcao desejada (1-8): "
 
 if "%choice%"=="1" (
     call :atualizar
@@ -33,6 +43,12 @@ if "%choice%"=="2" (
 )
 
 if "%choice%"=="3" (
+    call :iniciar visivel
+    pause
+    goto menu
+)
+
+if "%choice%"=="4" (
     call :encerrar
     echo Iniciando Rails server no terminal...
     ruby bin\rails server -e production
@@ -40,7 +56,7 @@ if "%choice%"=="3" (
     goto menu
 )
 
-if "%choice%"=="4" (
+if "%choice%"=="5" (
     call :encerrar
     echo Iniciando Delayed Job no terminal...
     ruby bin\delayed_job run
@@ -48,24 +64,78 @@ if "%choice%"=="4" (
     goto menu
 )
 
-if "%choice%"=="5" (
+if "%choice%"=="6" (
     call :encerrar
+    echo Todos os serviços foram encerrados.
     pause
     goto menu
 )
 
-if "%choice%"=="6" (
+if "%choice%"=="7" (
     echo Saindo...
     exit /b
 )
 
-if "%choice%"=="7" (
-    call :iniciar visivel
+if "%choice%"=="8" (
+    call :ativar_auto_startup
     pause
     goto menu
 )
 
+if "%choice%"=="9" (
+    call :desativar_auto_startup
+    pause
+    goto menu
+)
+
+
 goto menu
+
+:desativar_auto_startup
+echo ==========================
+echo Removendo atalho da inicialização do Windows...
+
+:: Caminho para a pasta Startup do usuário
+set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+
+:: Nome do atalho
+set shortcutName=SRS_Iniciar_Automaticamente.lnk
+
+:: Remover o atalho, se existir
+if exist "%startupFolder%\%shortcutName%" (
+    del "%startupFolder%\%shortcutName%"
+    echo ✔ Inicialização automática desativada com sucesso!
+) else (
+    echo ⚠ Nenhum atalho encontrado para remover.
+)
+
+goto :eof
+
+
+
+:ativar_auto_startup
+echo ==========================
+echo Criando atalho na inicialização do Windows...
+
+:: Caminho para a pasta Startup do usuário
+set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+
+:: Nome do atalho
+set shortcutName=SRS_Iniciar_Automaticamente.lnk
+
+:: Criar atalho usando PowerShell
+powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%startupFolder%\%shortcutName%'); $s.TargetPath='%~dp0start.bat'; $s.Arguments='auto'; $s.Save()"
+
+if exist "%startupFolder%\%shortcutName%" (
+    echo ✔ Inicialização automática configurada com sucesso!
+) else (
+    echo ⚠ Falha ao criar o atalho. Execute este script como administrador.
+)
+
+goto :eof
+
+
+
 
 :atualizar
 echo ==========================

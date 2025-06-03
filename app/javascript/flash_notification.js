@@ -2,11 +2,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const notif = document.getElementById("notification-flash");
   if (!notif) return;
 
-  const msg = notif.getAttribute("data-message");
   const type = notif.getAttribute("data-type");
 
-  if (msg && msg.trim() !== "") {
-    notif.innerHTML = msg;
+  if (notif.innerHTML.trim() !== "") {
+    // Só ajusta a cor de fundo, não mexe no conteúdo (deixa o ícone + texto renderizados pelo ERB)
     notif.style.backgroundColor = type === "success" ? "#52c41a" : "#ff4d4f";
     notif.style.opacity = "1";
 

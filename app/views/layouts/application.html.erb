@@ -3,6 +3,9 @@
   <head>
  
 
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+
 
     <link rel="icon" href="/icon.png" type="image/png">
 
@@ -34,6 +37,7 @@
 
     <%# CSS da aplicação %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <%= stylesheet_link_tag "choices.min", media: "all" %>
 
     <%# JS (via importmap) %>
     <%= javascript_importmap_tags "application" %>
@@ -107,30 +111,38 @@
 
     <%# Notificação dinâmica com JS externo %>
     <% if flash[:notice] || flash[:alert] %>
-    <div
+<div
   id="notification-flash"
   data-message="<%= flash[:notice] || flash[:alert] %>"
   data-type="<%= flash[:notice] ? 'success' : 'error' %>"
   style="
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background-color: #323131;
+    bottom: 20px;
+    right: 15px;
+    background-color: rgb(255, 77, 79);
     color: white;
     padding: 12px 20px;
     border-radius: 6px 0px 6px 6px;
     font-weight: bold;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 10px;
     z-index: 9999;
     opacity: 1;
-    transition: opacity 0.6s ease;
-    display: block;
+    transition: opacity 0.6s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   ">
-  <%= flash[:notice] || flash[:alert] %>
-</div>
+  <% if flash[:notice] %>
+  <i class="fa-solid fa-circle-check"></i>
+  <%= flash[:notice] %>
+<% elsif flash[:alert] %>
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  <%= flash[:alert] %>
+<% end %>
 
-  
-    <% end %>
+</div>
+<% end %>
+
 
     
   </body>

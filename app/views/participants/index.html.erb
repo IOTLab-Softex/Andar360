@@ -269,4 +269,22 @@
   });
 });
 
+document.addEventListener("DOMContentLoaded", function () {
+  const empresaSelect = document.querySelector("select[name='grupo_empresa_id']");
+  if (empresaSelect) {
+    const choices = new Choices(empresaSelect, {
+      searchEnabled: true,
+      itemSelectText: '',
+      placeholderValue: 'Selecione uma empresa',
+      shouldSort: false // ⚠ importante: NÃO reordenar os itens
+    });
+
+    // Força “TODOS” como selecionado se não vier nada
+    if (!empresaSelect.value) {
+      choices.setChoiceByValue('');
+    }
+  }
+});
+
+
 </script>
