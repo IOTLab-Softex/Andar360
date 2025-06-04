@@ -213,21 +213,5 @@ document.querySelector(".menu").classList.add("fade-border-stop");
 
 
 
-   document.addEventListener("DOMContentLoaded", function () {
-    const flash = document.getElementById("notification-flash");
-
-    if (flash) {
-      const message = flash.dataset.message;
-      const type = flash.dataset.type;
-
-      Swal.fire({
-        icon: type,
-        title: type === "success" ? "Sucesso!" : "Atenção",
-        text: message,
-        timer: 4000,
-        showConfirmButton: false
-      });
-    }
-  });
 
 </script>
