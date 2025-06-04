@@ -59,10 +59,16 @@
 <% end %>
 
 <div style="text-align: center; margin-bottom: 1rem;">
+ <button id="delete-all-btn" class="btn btn-danger">
+    🗑️ Excluir todos os usuários
+  </button>
   <button id="toggleViewBtn" class="btn">
     <i class="fa-solid fa-table"></i> Alternar Visualização
   </button>
+   
 </div>
+
+
 
 
 <div class="rooms">
@@ -171,6 +177,11 @@
   </tbody>
 </table>
 
+<%= form_with url: delete_all_participants_path, method: :delete, local: true, id: "delete-all-form", style: "display: none;" do %>
+  <%= hidden_field_tag :grupo_empresa_id, params[:grupo_empresa_id] %>
+  <%= hidden_field_tag :sub_grupo_empresa_id, params[:sub_grupo_empresa_id] %>
+  <%= hidden_field_tag :search, params[:search] %>
+<% end %>
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -285,6 +296,40 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 });
+
+
+document.getElementById("delete-all-btn").addEventListener("click", function (e) {
+  e.preventDefault();
+
+  Swal.fire({
+    title: 'Tem certeza?',
+    text: "Todos os participantes exibidos no filtro atual serão excluídos permanentemente.",
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonColor: '#d33',
+    cancelButtonColor: '#aaa',
+    confirmButtonText: 'Sim, excluir todos',
+    cancelButtonText: 'Cancelar'
+  }).then((result) => {
+    if (result.isConfirmed) {
+      // Exibe notificação de carregamento
+      Swal.fire({
+        title: 'Excluindo usuários...',
+        text: 'Aguarde enquanto processamos os dados',
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      // Aguarda pequeno delay antes de submeter para garantir que o loading apareça
+      setTimeout(() => {
+        document.getElementById("delete-all-form").submit();
+      }, 900);
+    }
+  });
+});
+
 
 
 </script>

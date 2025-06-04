@@ -106,6 +106,28 @@ end
 end
 
 
+def delete_all
+  participants = scoped_participants
+  total = 0
+  pulados = []
+
+  participants.each do |p|
+    if Reservation.where("solicitante_id = :id OR responsavel_id = :id", id: p.id).exists? ||
+       Reservation.joins(:participants).where(participants: { id: p.id }).exists?
+      pulados << p.name
+      next
+    end
+
+    p.destroy
+    total += 1
+  end
+
+  mensagem = "🗑️ #{total} participante(s) foram excluídos com sucesso."
+  mensagem += " ⚠️ Pulados: #{pulados.join(', ')}" if pulados.any?
+
+  redirect_to participants_path, notice: mensagem
+end
+
   
   
   
@@ -130,12 +152,32 @@ end
   redirect_to participants_path, notice: "Participante excluído com sucesso."
 end
 
+private
 
-  private
+def scoped_participants
+  participants = Participant.all
 
- def participant_params
+  if current_user.client?
+    participants = participants.none # cliente não pode acessar nada
+  elsif current_user.participant&.grupo_empresa_id.present?
+    participants = participants.where(grupo_empresa_id: current_user.participant.grupo_empresa_id)
+  end
+
+  participants = participants.where(grupo_empresa_id: params[:grupo_empresa_id]) if params[:grupo_empresa_id].present?
+  participants = participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id]) if params[:sub_grupo_empresa_id].present?
+
+  if params[:search].present?
+    search = params[:search].downcase
+    participants = participants.where("LOWER(name) LIKE ? OR cpf LIKE ?", "%#{search}%", "%#{search}%")
+  end
+
+  participants
+end
+
+def participant_params
   params.require(:participant).permit(:name, :email, :cpf, :telefone, :photo, :photo_base64, :grupo_empresa_id, :sub_grupo_empresa_id)
 end
+
 
   
 end

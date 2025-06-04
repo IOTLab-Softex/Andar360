@@ -13,12 +13,17 @@ devise_for :users, controllers: {
   get "import_logs/index"
   resources :settings
   resources :devices
-  resources :import_logs, only: [:index]
+
   resources :grupo_empresas, only: [:index, :new, :create]
 resources :grupo_empresas
 resources :sub_grupo_empresas, only: [:create, :destroy]
 
+delete 'participants/delete_all', to: 'participants#delete_all', as: :delete_all_participants
 
+
+resources :import_logs, only: [:index] do
+  delete :clear_all, on: :collection
+end
 
 
   resources :rooms do

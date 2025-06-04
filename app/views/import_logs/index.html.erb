@@ -4,9 +4,14 @@
     <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
       <div>
         <%= label_tag :data, "Data da Importação" %><br>
-        <%= select_tag :data,
-          options_for_select([["Todas", ""]] + @datas_disponiveis.map { |d| [d.strftime("%d/%m/%Y"), d] }, params[:data]),
-          class: "form-control" %>
+       <%= select_tag :data,
+  options_for_select(
+    [["Todas", ""]] + @datas_disponiveis.map { |d| [d.strftime("%d/%m/%Y"), d.to_s] },
+    params[:data]
+  ),
+  class: "form-control" %>
+
+
       </div>
   
       <div>
@@ -23,10 +28,17 @@
       <div style="align-self: flex-end;">
         <%= submit_tag "Filtrar", class: "btn btn-filter" %>
       </div>
+     
+
     </div>
   <% end %>
-  
-  
+ <div style="text-align: center; padding-top: 10px;">
+ <button id="clear-logs-btn" class="btn btn-danger">
+  🗑️ Limpar logs da data filtrada
+</button>
+
+</div>
+
   <% total_sucesso = @import_logs.count { |log| !(log.dados_incompletos || log.sem_foto || log.status == 'erro') } %>
 <% total_erro = @import_logs.count { |log| log.dados_incompletos || log.sem_foto || log.status == 'erro' } %>
 
@@ -99,3 +111,28 @@
 </div>
 
 
+<form id="clear-logs-form" action="<%= clear_all_import_logs_path %>" method="post" style="display: none;">
+  <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+  <input type="hidden" name="_method" value="delete">
+  <input type="hidden" name="data" value="<%= params[:data] %>">
+</form>
+
+<script>
+  document.getElementById("clear-logs-btn").addEventListener("click", function (e) {
+    e.preventDefault();
+    Swal.fire({
+      title: 'Tem certeza?',
+      text: "Deseja apagar os logs de <%= params[:data].presence || 'TODAS as datas' %>? Esta ação não poderá ser desfeita.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#aaa',
+      confirmButtonText: 'Sim, apagar!',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        document.getElementById("clear-logs-form").submit();
+      }
+    });
+  });
+</script>
