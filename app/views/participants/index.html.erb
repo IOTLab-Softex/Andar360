@@ -59,9 +59,11 @@
 <% end %>
 
 <div style="text-align: center; margin-bottom: 1rem;">
+<% if current_user&.admin? %> 
  <button id="delete-all-btn" class="btn btn-danger">
     🗑️ Excluir todos os usuários
   </button>
+  <% end %>
   <button id="toggleViewBtn" class="btn">
     <i class="fa-solid fa-table"></i> Alternar Visualização
   </button>

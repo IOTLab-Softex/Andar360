@@ -107,6 +107,11 @@ end
 
 
 def delete_all
+  unless current_user.admin?
+    redirect_to participants_path, alert: "⚠️ Apenas administradores podem excluir todos os usuários."
+    return
+  end
+
   participants = scoped_participants
   total = 0
   pulados = []
@@ -155,24 +160,11 @@ end
 private
 
 def scoped_participants
-  participants = Participant.all
-
-  if current_user.client?
-    participants = participants.none # cliente não pode acessar nada
-  elsif current_user.participant&.grupo_empresa_id.present?
-    participants = participants.where(grupo_empresa_id: current_user.participant.grupo_empresa_id)
-  end
-
-  participants = participants.where(grupo_empresa_id: params[:grupo_empresa_id]) if params[:grupo_empresa_id].present?
-  participants = participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id]) if params[:sub_grupo_empresa_id].present?
-
-  if params[:search].present?
-    search = params[:search].downcase
-    participants = participants.where("LOWER(name) LIKE ? OR cpf LIKE ?", "%#{search}%", "%#{search}%")
-  end
-
-  participants
+  super # ← chama o scoped_participants do ApplicationController
+        # que já considera admin e operador como tendo acesso a tudo
+        # e restringe clientes
 end
+
 
 def participant_params
   params.require(:participant).permit(:name, :email, :cpf, :telefone, :photo, :photo_base64, :grupo_empresa_id, :sub_grupo_empresa_id)
