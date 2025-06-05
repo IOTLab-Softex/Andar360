@@ -1,5 +1,85 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
 /* Oculta apenas em telas menores que 768px (celulares) */
+@media (max-width: 260px) {
+    .form-group {
+           padding: 6px !important;
+    }
+    .reservation-container{
+          padding: 0rem !important;
+    }
+.room-card-scroll{
+      width: 100% !important;
+}
+.fade-left{
+  left: 37px !important;
+}
+.fade-right{
+  right: 37px !important;
+}
+.room-info {
+  margin-top: 5.5rem !important;
+  font-size: 12px !important;
+}
+.room-card-scroll input[type="radio"]{
+         top: 106px !important;
+        left: 15px !important;
+        width: 14px !important;
+
+}
+.menu-btn-home{
+  font-size: 73% !important;
+        padding: 4% 2% !important;
+}
+.menu-btn{
+  display: none !important;
+}
+.logo-title {
+   
+    height: 80%;
+    
+}
+.fade-border-stop::before {
+   
+    left: 21px !important;
+    
+    width: 81% !important;
+
+}
+
+.room-actions {
+    display: flex !important;
+    gap: 0.5rem !important;
+    justify-content: flex-start !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+}
+
+.participant-info{
+  font-size: 40% !important;
+  
+}
+
+.reservation-actions {
+
+    width: 100% !important;
+}
+.btn{
+  padding: 4% 10% !important;
+}
+    .participant-info {
+        font-size: 40% !important;
+        height: 100% !important;
+        padding: 3% !important;
+        width: 7rem !important;
+    }
+    
+.usuarios-index-btns{
+
+  padding: 10%;
+}
+}
+
+
 @media (max-width: 480px) {
     .participant-card {
         /* flex-direction: column;   /* empilha os blocos verticalmente */
@@ -21,20 +101,29 @@
     flex: 1 1 200px;         /* ele pode crescer, mas tem limite mínimo */
     box-sizing: border-box;  /* garante que padding conte no tamanho total */
 }
+
+.fade-left{
+ left: 33px !important;
 }
+.fade-right{
+  right: 33px !important;
+}
+}
+
+
 
 @media (max-width: 768px) {
   .hide-on-mobile {
     display: none !important;
   }
  .fade-left-mobile {
-  left: 40px !important;
-width: 6% !important;
+  left: 33px !important;
+width: 12% !important;
 }
 
 .fade-right-mobile {
-  right: 40px !important;
- width: 6% !important;
+  right: 33px !important;
+ width: 12% !important;
 }
 }
 
@@ -166,6 +255,7 @@ body,.device-form, .form-group, .form-control, .menu, .room-card, .reservation-c
   transition: background-color 0.5s ease, color 0.5s ease, box-shadow 0.5s ease, border-color 0.5s ease;
 }
 
+
 .btn.open-door {
    display: flex;
     align-items: center;
@@ -175,7 +265,7 @@ body,.device-form, .form-group, .form-control, .menu, .room-card, .reservation-c
     text-decoration: none;
     color: var(--color-btn--text);
     font-weight: bold;
-    font-size: 1rem;
+    font-size: 100%;
     border: 2px solid;
     transition: 0.3s ease;
 }
@@ -239,6 +329,10 @@ body {
   transition: background-image 0.5s ease-in-out;
 }
 
+.reservation-container{
+position: relative; z-index: 1; padding: 2rem;
+
+}
 
 .title {
   text-align: center;
@@ -331,7 +425,7 @@ body {
 .menu-btn {
   border-radius: 12px;
   padding: 0.6rem 0.5rem;
-  font-size: 0.8rem;
+  font-size: 73%;
   color: #fff;
   background: transparent;
   text-decoration: none;
@@ -344,7 +438,7 @@ body {
 .menu-btn-home {
   border-radius: 12px;
   padding: 0.6rem 1.5rem;
-  font-size: 0.9rem;
+  font-size: 100%;
   color: #000000;
   background: #fffffffa;
   text-decoration: none;
@@ -448,7 +542,7 @@ body {
   text-decoration: none;
   color: var(--color-text);
   font-weight: bold;
-  font-size: 1rem;
+  font-size: 100%;
   border: 2px solid;
   transition: 0.3s ease;
 }
@@ -676,6 +770,9 @@ body {
   flex-grow: 1;
   font-size: small;
   color: var(--color-text);
+   white-space: nowrap;         /* impede quebra de linha */
+  overflow: hidden;            /* oculta o que ultrapassa */
+  text-overflow: ellipsis;     /* adiciona "..." no final */
 }
 /* PARTICIPANT MODAL STYLE */
 #participantModal {
@@ -1632,3 +1729,7 @@ width: 19px;
 
 
 
+.usuarios-index-btns{
+  text-align: center; margin-bottom: 3%;
+
+}

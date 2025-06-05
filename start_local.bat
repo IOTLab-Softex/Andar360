@@ -3,7 +3,7 @@ cd %~dp0
 setlocal EnableDelayedExpansion
 set RAILS_ENV=production
 
-:: Se chamado com argumento "auto", inicia direto na opção 2
+:: Se chamado com argumento "auto", inicia direto na opÃ§Ã£o 2
 if "%1"=="auto" (
     call :iniciar oculto
     exit /b
@@ -16,15 +16,15 @@ cls
 echo ==========================
 echo     MENU SOFTEX RESERVAS
 echo ==========================
-echo [1] Iniciar o SRS (com atualização, oculto)
-echo [2] Iniciar o SRS (sem atualização, oculto)
-echo [3] Iniciar o SRS (sem atualização, visível nos CMDs)
+echo [1] Iniciar o SRS (com atualizaÃ§Ã£o, oculto)
+echo [2] Iniciar o SRS (sem atualizaÃ§Ã£o, oculto)
+echo [3] Iniciar o SRS (sem atualizaÃ§Ã£o, visÃ­vel nos CMDs)
 echo [4] Exibir Rails server no terminal
 echo [5] Exibir Delayed Job no terminal
 echo [6] Encerrar o SRS
 echo [7] Sair
-echo [8] Ativar inicialização automática no Windows (opção 2)
-echo [9] Desativar inicialização automática no Windows
+echo [8] Ativar inicializaÃ§Ã£o automÃ¡tica no Windows (opÃ§Ã£o 2)
+echo [9] Desativar inicializaÃ§Ã£o automÃ¡tica no Windows
 echo ==========================
 
 set /p choice="Digite a opcao desejada (1-8): "
@@ -66,7 +66,7 @@ if "%choice%"=="5" (
 
 if "%choice%"=="6" (
     call :encerrar
-    echo Todos os serviços foram encerrados.
+    echo Todos os serviÃ§os foram encerrados.
     pause
     goto menu
 )
@@ -93,9 +93,9 @@ goto menu
 
 :desativar_auto_startup
 echo ==========================
-echo Removendo atalho da inicialização do Windows...
+echo Removendo atalho da inicializaÃ§Ã£o do Windows...
 
-:: Caminho para a pasta Startup do usuário
+:: Caminho para a pasta Startup do usuÃ¡rio
 set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 
 :: Nome do atalho
@@ -104,9 +104,9 @@ set shortcutName=SRS_Iniciar_Automaticamente.lnk
 :: Remover o atalho, se existir
 if exist "%startupFolder%\%shortcutName%" (
     del "%startupFolder%\%shortcutName%"
-    echo ✔ Inicialização automática desativada com sucesso!
+    echo âœ” InicializaÃ§Ã£o automÃ¡tica desativada com sucesso!
 ) else (
-    echo ⚠ Nenhum atalho encontrado para remover.
+    echo âš  Nenhum atalho encontrado para remover.
 )
 
 goto :eof
@@ -115,9 +115,9 @@ goto :eof
 
 :ativar_auto_startup
 echo ==========================
-echo Criando atalho na inicialização do Windows...
+echo Criando atalho na inicializaÃ§Ã£o do Windows...
 
-:: Caminho para a pasta Startup do usuário
+:: Caminho para a pasta Startup do usuÃ¡rio
 set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
 
 :: Nome do atalho
@@ -127,9 +127,9 @@ set shortcutName=SRS_Iniciar_Automaticamente.lnk
 powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%startupFolder%\%shortcutName%'); $s.TargetPath='%~dp0start.bat'; $s.Arguments='auto'; $s.Save()"
 
 if exist "%startupFolder%\%shortcutName%" (
-    echo ✔ Inicialização automática configurada com sucesso!
+    echo âœ” InicializaÃ§Ã£o automÃ¡tica configurada com sucesso!
 ) else (
-    echo ⚠ Falha ao criar o atalho. Execute este script como administrador.
+    echo âš  Falha ao criar o atalho. Execute este script como administrador.
 )
 
 goto :eof
@@ -139,13 +139,13 @@ goto :eof
 
 :atualizar
 echo ==========================
-echo Atualizando código...
+echo Atualizando cÃ³digo...
 git pull > git_output.txt
 findstr /C:"Already up to date" git_output.txt >nul
 if !errorlevel! equ 0 (
-    echo Código já está atualizado. Pulando etapas de build.
+    echo CÃ³digo jÃ¡ estÃ¡ atualizado. Pulando etapas de build.
 ) else (
-    echo Código atualizado! Executando dependências e migrações...
+    echo CÃ³digo atualizado! Executando dependÃªncias e migraÃ§Ãµes...
     bundle install
     yarn install
     rails db:migrate
@@ -185,9 +185,7 @@ if !errorlevel! equ 0 (
     echo nginx.exe ja esta rodando. Reiniciando...
     taskkill /IM nginx.exe /F
 )
-pushd C:\nginx-1.28.0
-start nginx.exe
-popd
+start "" /D "C:\nginx-1.28.0" nginx.exe -c "C:\nginx-1.28.0\conf\nginx.conf"
 
 echo ==========================
 echo Verificando delayed_job...
@@ -257,17 +255,17 @@ echo Verificando status final...
 :: Checar nginx
 tasklist /FI "IMAGENAME eq nginx.exe" | find /I "nginx.exe" >nul
 if !errorlevel! equ 0 (
-    echo ✔ nginx rodando.
+    echo âœ” nginx rodando.
 ) else (
-    echo ⚠ nginx nao detectado.
+    echo âš  nginx nao detectado.
 )
 
 :: Checar delayed_job (olhamos por ruby.exe + janela)
 tasklist /FI "WINDOWTITLE eq Delayed Job Worker*" | find /I "Delayed Job Worker" >nul
 if !errorlevel! equ 0 (
-    echo ✔ delayed_job rodando.
+    echo âœ” delayed_job rodando.
 ) else (
-    echo ⚠ delayed_job nao detectado.
+    echo âš  delayed_job nao detectado.
 )
 
 echo ==========================
@@ -280,7 +278,7 @@ set rails_ready=false
 netstat -an | find ":3000" | find "LISTENING" >nul
 if !errorlevel! equ 0 (
     set rails_ready=true
-    echo ✔ Rails server agora esta ouvindo na porta 3000.
+    echo âœ” Rails server agora esta ouvindo na porta 3000.
 ) else (
     set /a retries+=1
     if !retries! leq 10 (
@@ -288,7 +286,7 @@ if !errorlevel! equ 0 (
         timeout /t 2 >nul
         goto wait_for_rails_port
     ) else (
-        echo ⚠ Rails server nao abriu a porta 3000 apos 10 tentativas.
+        echo âš  Rails server nao abriu a porta 3000 apos 10 tentativas.
     )
 )
 
@@ -310,5 +308,5 @@ ruby bin\delayed_job stop
 echo Encerrando Rails server...
 taskkill /IM ruby.exe /F
 
-echo Todos os serviços foram encerrados.
+echo Todos os serviÃ§os foram encerrados.
 goto :eof

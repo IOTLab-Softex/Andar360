@@ -6,7 +6,7 @@
 
  
   <!-- Conteúdo acima do fundo -->
-  <div style="position: relative; z-index: 1; padding: 2rem;">
+  <div class="reservation-container">
   <%= form_with(model: reservation, local: true, data: { turbo: false }, id: "reservation-form") do |form| %>
 
       <div class="form-group">
@@ -781,6 +781,23 @@ function getSelectedParticipantIds() {
   };
 }
 
+
+document.addEventListener("DOMContentLoaded", function () {
+    const flash = document.getElementById("notification-flash");
+
+    if (flash) {
+      const message = flash.dataset.message;
+      const type = flash.dataset.type;
+
+      Swal.fire({
+        icon: type,
+        title: type === "success" ? "Sucesso!" : "Atenção",
+        text: message,
+        timer: 4000,
+        showConfirmButton: false
+      });
+    }
+  });
 
 
 </script>

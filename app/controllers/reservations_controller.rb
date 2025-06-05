@@ -45,7 +45,10 @@ end
   # POST /reservations
   def create
   @reservation = Reservation.new(reservation_params)
-  @reservation.grupo_empresa_id = current_user.participant&.grupo_empresa_id if @reservation.grupo_empresa_id.nil?
+  @reservation.grupo_empresa_id ||= current_user.participant&.grupo_empresa_id
+
+
+
 
   if conflict_exists?(@reservation)
     respond_to do |format|
@@ -54,6 +57,41 @@ end
     end
     return
   end
+
+  campos = [:title, :starts_at, :ends_at, :room_id, :solicitante_id, :responsavel_id]
+  vazios = campos.select { |campo| @reservation.send(campo).blank? }
+
+  if vazios.size == campos.size
+    respond_to do |format|
+      format.json { render json: { error: "⚠️ Preencha o formulário antes de enviar." }, status: :unprocessable_entity }
+      format.html do
+        flash[:alert] = "⚠️ Preencha o formulário antes de enviar."
+        redirect_back fallback_location: new_reservation_path
+      end
+    end
+    return
+  elsif @reservation.starts_at.blank? || @reservation.ends_at.blank?
+    respond_to do |format|
+      format.json { render json: { error: "⚠️ Preencha os campos de início e término da reserva." }, status: :unprocessable_entity }
+      format.html do
+        flash[:alert] = "⚠️ Preencha os campos de início e término da reserva."
+        redirect_back fallback_location: new_reservation_path
+      end
+    end
+    return
+  end
+
+  if @reservation.ends_at <= @reservation.starts_at
+  respond_to do |format|
+    msg = "⚠️ A data/hora final deve ser maior que a data/hora inicial."
+    format.json { render json: { error: msg }, status: :unprocessable_entity }
+    format.html do
+      flash[:alert] = msg
+      redirect_back fallback_location: new_reservation_path
+    end
+  end
+  return
+end
 
   respond_to do |format|
     duracao = ((@reservation.ends_at - @reservation.starts_at) / 3600.0).round(2)
@@ -98,9 +136,10 @@ end
           redirect_back fallback_location: new_reservation_path
         end
       end
-    end # <- fim do transaction
-  end # <- fim do respond_to
+    end
+  end
 end
+
 
 
   

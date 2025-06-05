@@ -24,7 +24,7 @@
   .logo-title {
       position: absolute;
     left: 80px;
-    height: 65px;
+    height: 100%;
     /* margin-left: 20px; */
     top: 0;
     z-index: 5;
