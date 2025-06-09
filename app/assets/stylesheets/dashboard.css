@@ -265,7 +265,7 @@ body,.device-form, .form-group, .form-control, .menu, .room-card, .reservation-c
     text-decoration: none;
     color: var(--color-btn--text);
     font-weight: bold;
-    font-size: 100%;
+    font-size: 65%;
     border: 2px solid;
     transition: 0.3s ease;
 }
@@ -553,7 +553,7 @@ position: relative; z-index: 1; padding: 2rem;
      display: flex;
     align-items: center;
     color: var(--color-btn--text);
-
+    font-size: 72%;
 }
 
 .edit:hover {

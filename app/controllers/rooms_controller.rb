@@ -14,9 +14,11 @@ before_action :set_room, only: %i[show edit update destroy open_door]
   end
 
   # GET /rooms/new
-  def new
-    @room = Room.new
-  end
+ def new
+  @room = Room.new
+  @room.room_items.build
+end
+
 
   # GET /rooms/1/edit
   def edit
@@ -88,14 +90,17 @@ end
 
     # Use callbacks to share common setup or constraints between actions.
     def set_room
-      @room = Room.find(params.expect(:id))
+       @room = Room.find(params[:id])
     end
 
     # Only allow a list of trusted parameters through.
     def room_params
-      params.require(:room).permit(:name, :floor, :device_id, :photo)
+  params.require(:room).permit(
+    :name, :floor, :device_id, :photo,
+    room_items_attributes: [:id, :name, :quantity, :_destroy]
+  )
+end
 
-    end
     
     
     

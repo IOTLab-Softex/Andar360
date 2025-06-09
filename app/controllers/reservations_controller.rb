@@ -145,23 +145,29 @@ end
   
   
   def reservations
-    room = Room.find(params[:room_id])
-    now = Time.current
-  
-    reservations = room.reservations
-                      .where(cancelada_em: nil)
-                      .where("ends_at > ?", now)
-                      .order(:starts_at)
-  
-    render json: reservations.map { |r|
+  room = Room.find(params[:room_id])
+  now = Time.current
+
+  reservations = room.reservations
+                    .where(cancelada_em: nil)
+                    .where("ends_at > ?", now)
+                    .order(:starts_at)
+
+  render json: {
+    reservas: reservations.map { |r|
       {
         id: r.id,
         title: r.title,
         starts_at: r.starts_at.strftime("%d/%m %H:%M"),
         ends_at: r.ends_at.strftime("%d/%m %H:%M")
       }
+    },
+    itens: room.room_items.map { |i|
+      { name: i.name, quantity: i.quantity }
     }
-  end
+  }
+end
+
   
   def turno_da_reserva(hora)
   hora = hora.strftime("%H:%M")

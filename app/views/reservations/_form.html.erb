@@ -240,34 +240,54 @@
 
 function loadRoomReservations(roomId) {
   const container = document.getElementById("room-reservations");
-  container.innerHTML = "<p>Carregando reservas...</p>";
+  container.innerHTML = "<p>Carregando informações da sala...</p>";
 
   fetch(`/rooms/${roomId}/reservations/json`)
-
     .then(response => response.json())
-    .then(reservations => {
-      if (reservations.length === 0) {
-        container.innerHTML = "<p>✅ Nenhuma reserva nesta sala.</p>";
-        return;
+    .then(data => {
+      const reservas = data.reservas || [];
+      const itens = data.itens || [];
+
+      let html = "";
+
+      if (reservas.length === 0) {
+        html += "<p>✅ Nenhuma reserva nesta sala.</p>";
+      } else {
+        const reservasHtml = reservas.map(r => `
+          <div class="reserva-card" style="background: #cecece; border-left: 3px solid #555; padding: 6px; margin-bottom: 5px; border-radius: 4px;">
+            <span><strong>${r.starts_at} - ${r.ends_at}</strong></span>
+          </div>
+        `).join("");
+
+        html += `<h4 style="margin-top: 1rem;">📅 Reservas desta sala:</h4>${reservasHtml}`;
       }
 
-      const html = reservations.map(r => `
-  <div class="reserva-card" style="background: #cecece; border-left: 3px solid #555; padding: 6px; margin-bottom: 5px; border-radius: 4px;">
-    <span><strong>${r.starts_at} - ${r.ends_at}</strong></span>
-  </div>
-`).join("");
+      if (itens.length > 0) {
+        const itensHtml = itens.map(i => {
+          const descricao = i.quantity > 1 ? `<strong>${i.name}</strong>: ${i.quantity}` : `<strong>${i.name}</strong>`;
+          return `<li style="list-style: none; display: flex; align-items: center; gap: 0.5rem;">
+                    <i class="fa-solid fa-circle-check" style="color: #2ecc71;"></i> ${descricao}
+                  </li>`;
+        }).join("");
 
+        html += `
+          <h4 style="margin-top: 1rem;">🧰 Itens disponíveis na sala:</h4>
+          <ul style="margin-left: 1rem; padding-left: 0;">${itensHtml}</ul>
+        `;
+      } else {
+        html += `<p style="margin-top: 1rem;">🧰 Nenhum item cadastrado nesta sala.</p>`;
+      }
 
-      container.innerHTML = `
-        <h4 style="margin-top: 1rem;">📅 Reservas desta sala:</h4>
-        ${html}
-      `;
+      container.innerHTML = html;
     })
     .catch(err => {
-      console.error("Erro ao carregar reservas:", err);
-      container.innerHTML = "<p style='color: red;'>Erro ao carregar reservas.</p>";
+      console.error("Erro ao carregar dados da sala:", err);
+      container.innerHTML = "<p style='color: red;'>Erro ao carregar informações da sala.</p>";
     });
 }
+
+
+
 
 document.addEventListener("DOMContentLoaded", function() {
 

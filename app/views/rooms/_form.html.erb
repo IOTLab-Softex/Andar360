@@ -9,6 +9,22 @@
     <%= form.text_field :floor, class: 'form-control' %>
   </div>
 
+  <h3 style="margin-top: 2rem;">Itens da Sala</h3>
+<div id="room-items">
+  <%= form.fields_for :room_items do |item_form| %>
+    <div class="item-row" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+      <%= item_form.text_field :name, placeholder: "Ex: Cadeira, TV, Cabo HDMI", class: "form-control", style: "width: 50%;" %>
+      <%= item_form.number_field :quantity, min: 1, class: "form-control", placeholder: "Qtd", style: "width: 100px;" %>
+      <%= link_to "Remover", "#", class: "remove-item btn btn-danger" %>
+    </div>
+  <% end %>
+</div>
+
+<div style="margin-bottom: 1rem;">
+  <%= link_to "Adicionar Item", "#", id: "add-item", class: "btn btn-secondary" %>
+</div>
+
+
   <div class="form-group">
   <%= form.label :device_id, "Dispositivo" %>
   <%= form.collection_select :device_id, Device.all, :id, :name, prompt: "Selecione o dispositivo", class: "form-control", required: true %>
@@ -24,3 +40,37 @@
     <%= form.submit room.new_record? ? "Criar Sala" : "Atualizar Sala", class: 'btn submit' %>
   </div>
 <% end %>
+
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const addItemBtn = document.getElementById("add-item");
+    const roomItemsDiv = document.getElementById("room-items");
+
+    if (!addItemBtn || !roomItemsDiv) return;
+
+    let index = document.querySelectorAll("#room-items .item-row").length;
+
+    addItemBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+
+      const template = `
+        <div class="item-row" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
+          <input type="text" name="room[room_items_attributes][${index}][name]" class="form-control" placeholder="Ex: TV, Cabo HDMI" style="width: 50%;" />
+          <input type="number" name="room[room_items_attributes][${index}][quantity]" class="form-control" min="1" placeholder="Qtd" style="width: 100px;" />
+          <a href="#" class="remove-item btn btn-danger">Remover</a>
+        </div>
+      `;
+
+      roomItemsDiv.insertAdjacentHTML("beforeend", template);
+      index++;
+    });
+
+    roomItemsDiv.addEventListener("click", function (e) {
+      if (e.target && e.target.classList.contains("remove-item")) {
+        e.preventDefault();
+        e.target.closest(".item-row").remove();
+      }
+    });
+  });
+</script>
