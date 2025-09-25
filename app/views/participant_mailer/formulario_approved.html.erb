@@ -1,0 +1,11 @@
+<h2>Seu pré-cadastro foi aprovado 🎉</h2>
+<p>Olá <strong><%= @formulario.nome %></strong>,</p>
+<p>Seu pré-cadastro foi <strong>aprovado</strong> e seu acesso será providenciado conforme as políticas da empresa.</p>
+
+<p><strong>Dados:</strong></p>
+<ul>
+  <li>CPF: <%= @formulario.cpf %></li>
+  <li>Empresa: <%= @formulario.grupo_empresa&.nome || GrupoEmpresa.find_by(id: @formulario.grupo_empresa_id)&.nome || "-" %></li>
+</ul>
+
+<p>Qualquer dúvida, responda este e-mail.</p>

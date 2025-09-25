@@ -1,4 +1,6 @@
 class Reservation < ApplicationRecord
+  include Avisavel
+
   belongs_to :room
   has_and_belongs_to_many :participants
   has_many :access_logs, dependent: :delete_all
@@ -18,6 +20,7 @@ class Reservation < ApplicationRecord
   before_destroy :remover_participantes_do_dispositivo_se_necessario
   
 
+  
   private
 
   def remover_participantes_do_dispositivo_se_necessario

@@ -1,0 +1,2 @@
+module ArquivoAnexosHelper
+end

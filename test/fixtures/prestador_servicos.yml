@@ -1,0 +1,47 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  nome: MyString
+  publicado_no_app: MyString
+  bloqueado: MyString
+  cpf: MyString
+  rg: MyString
+  outro_documento: MyString
+  fone1: MyString
+  fone2: MyString
+  whatsapp: MyString
+  email: MyString
+  site: MyString
+  idoso_ou_pne: MyString
+  tipo_veiculo: MyString
+  placa: MyString
+  fabricante: MyString
+  modelo: MyString
+  cor: MyString
+  nome_fantasia: MyString
+  cnpj: MyString
+  servicos: MyText
+  observacao: MyText
+
+two:
+  nome: MyString
+  publicado_no_app: MyString
+  bloqueado: MyString
+  cpf: MyString
+  rg: MyString
+  outro_documento: MyString
+  fone1: MyString
+  fone2: MyString
+  whatsapp: MyString
+  email: MyString
+  site: MyString
+  idoso_ou_pne: MyString
+  tipo_veiculo: MyString
+  placa: MyString
+  fabricante: MyString
+  modelo: MyString
+  cor: MyString
+  nome_fantasia: MyString
+  cnpj: MyString
+  servicos: MyText
+  observacao: MyText

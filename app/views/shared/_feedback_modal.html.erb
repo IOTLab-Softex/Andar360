@@ -1,0 +1,317 @@
+﻿<%# -*- coding: UTF-8 -*- %>
+<div id="feedback-modal" class="feedback-modal-overlay" aria-hidden="true" style="display:none;">
+  <div class="feedback-modal" role="dialog" aria-modal="true" aria-labelledby="fm-title">
+    <button type="button" class="feedback-modal-close" aria-label="Fechar">&times;</button>
+
+    <header class="fm-header">
+      <%= image_tag "message-dots.svg", alt: "", class: "fm-icon" %>
+      <div class="fm-titles">
+        <h3 id="fm-title">Enviar feedback</h3>
+        <p class="fm-sub">Conte rapidamente o que aconteceu nesta página. Isso nos ajuda a melhorar.</p>
+      </div>
+    </header>
+
+    <%= form_with model: Feedback.new, url: feedbacks_path, local: true, html: { multipart: true, class: "fm-form" } do |f| %>
+      <div class="fm-grid">
+        <div class="fm-field">
+          <%= f.label :category, "Categoria" %>
+          <%= f.select :category, Feedback.categories.keys.map { [_1.humanize, _1] }, {}, class: "form-select fm-control" %>
+        </div>
+        <div class="fm-field">
+          <%= f.label :severity, "Severidade" %>
+          <%= f.select :severity, Feedback.severities.keys.map { [_1.humanize, _1] }, {}, class: "form-select fm-control" %>
+        </div>
+      </div>
+
+      <div class="fm-field">
+        <%= f.label :message, "Mensagem" %>
+       <%= f.text_area :message,
+      rows: 1,
+      class: "form-control fm-control js-autogrow",
+      style: "height:55px",
+      data: { minheight: 55 },
+      placeholder: "Descreva o problema, o que esperava acontecer e como reproduzir..." %>
+
+      </div>
+
+      <details class="fm-advanced">
+        <summary>Opções avançadas</summary>
+        <div class="fm-advanced-grid">
+          <div class="fm-field">
+            <%= f.label :selected_text, "Trecho selecionado (opcional)" %>
+            <%= f.text_area :selected_text, rows: 2, class: "form-control fm-control", id: "feedback_selected_text" %>
+          </div>
+
+          <div class="fm-field">
+            <label>Anexos (prints, logs)</label>
+            <label for="feedback_attachments" class="fm-drop" id="fm-drop">
+              <span class="fm-drop-icon">⬆</span>
+              <span class="fm-drop-text">Arraste aqui ou <u>clique para escolher</u></span>
+            </label>
+            <%= f.file_field :attachments, multiple: true, class: "form-control d-none", id: "feedback_attachments", accept: "image/*,.txt,.log,.pdf" %>
+            <ul class="fm-files" id="fm-files"></ul>
+          </div>
+        </div>
+      </details>
+
+      <%= f.hidden_field :page_title, id: "feedback_page_title" %>
+      <%= f.hidden_field :page_path,  id: "feedback_page_path" %>
+      <%= f.hidden_field :page_url,   id: "feedback_page_url" %>
+      <%= f.hidden_field :user_agent, id: "feedback_user_agent" %>
+      <%= f.hidden_field :url_params, id: "feedback_url_params" %>
+
+      <footer class="fm-actions">
+        <button type="button" class="btn btn-outline-light feedback-cancel">Cancelar</button>
+        <%= f.submit "Enviar", class: "btn btn-primary fm-submit" %>
+      </footer>
+    <% end %>
+  </div>
+</div>
+
+<style>
+/* Overlay com blur */
+.feedback-modal-overlay{
+  position: fixed; inset: 0;
+  background: rgba(15,18,24,.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: none; /* controlado via JS */
+  z-index: 12000;           /* acima dos outros overlays */
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* Card central moderno */
+.feedback-modal{
+  margin: clamp(32px, 6vh, 80px) auto;
+  width: min(720px, 96%);
+  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--bg-main, #1e2a38);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  color: var(--color-text, #e7eef7);
+  position: relative;
+  animation: fm-pop .18s ease-out;
+}
+@keyframes fm-pop{ from { transform: scale(.98); opacity: 0 } to { transform: scale(1); opacity: 1 } }
+
+.feedback-modal-close{
+  position: absolute; top: 10px; right: 12px;
+  width: 36px; height: 36px; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,.12);
+  background: rgba(0,0,0,.2);
+  color: #fff; font-size: 22px; line-height: 1;
+  cursor: pointer;
+  transition: transform .15s ease, background .15s ease;
+}
+.feedback-modal-close:hover{ transform: scale(1.04); background: rgba(255,255,255,.08); }
+
+.fm-header{
+  display: grid; grid-template-columns: auto 1fr; gap: 12px;
+  padding: 18px 18px 12px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.08);
+}
+.fm-icon{ width: 28px; height: 28px; filter: brightness(0) invert(1); align-self: start; }
+.fm-titles h3{ margin: 0; font-size: 1.1rem; }
+.fm-sub{ margin: 4px 0 0 0; font-size: .9rem; color: #a8b3c7; }
+
+.fm-form{ padding: 14px 18px 18px 18px; }
+
+.fm-grid{
+  display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+}
+@media (max-width: 640px){ .fm-grid{ grid-template-columns: 1fr; } }
+
+.fm-field label{ display: block; margin: 8px 0 6px; font-weight: 600; font-size: .92rem; }
+.fm-control.form-select,
+.fm-control.form-control{
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.14);
+  color: var(--color-text, #e7eef7);
+  border-radius: 10px;
+}
+.fm-control.form-select:focus,
+.fm-control.form-control:focus{
+  border-color: #0d6efd; box-shadow: 0 0 0 3px rgba(13,110,253,.25);
+}
+
+/* bloco de “opções avançadas” */
+.fm-advanced{
+  margin-top: 10px;
+  background: rgba(255,255,255,.04);
+  border: 1px dashed rgba(255,255,255,.12);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.fm-advanced > summary{
+  cursor: pointer; font-weight: 600; color: #c8d3e2; outline: none;
+}
+.fm-advanced[open]{ border-style: solid; }
+.fm-advanced-grid{ display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 8px; }
+
+/* dropzone de arquivos */
+.fm-drop{
+  display: grid; place-items: center;
+  height: 110px; border: 2px dashed rgba(255,255,255,.2);
+  border-radius: 12px;
+  background: rgba(0,0,0,.15);
+  color: #dce3ee; text-align: center; padding: 8px;
+  transition: border-color .15s ease, background .15s ease;
+}
+.fm-drop:hover{ border-color: #0d6efd; background: rgba(13,110,253,.08); }
+.fm-drop-icon{ font-size: 22px; margin-bottom: 6px; }
+.fm-drop-text{ font-size: .92rem; }
+.fm-drop.drag{ border-color:#0d6efd; background: rgba(13,110,253,.12); }
+
+.fm-files{ list-style: none; margin: 8px 0 0; padding: 0; }
+.fm-files li{
+  font-size: .9rem; color: #cfd7e6; padding: 4px 0;
+  border-bottom: 1px dashed rgba(255,255,255,.08);
+}
+
+.fm-actions{
+  display: flex; gap: 10px; justify-content: flex-end;
+  padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08);
+}
+.fm-submit{ min-width: 120px; }
+
+@media (prefers-reduced-motion: reduce){
+  .feedback-modal{ animation: none; }
+  .feedback-modal-close{ transition: none; }
+}
+
+/* Overlay centraliza o card e permite rolar quando falta altura */
+.feedback-modal-overlay{
+  display: flex;
+  align-items: flex-start;          /* cola no topo com um respiro */
+  justify-content: center;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+/* O card vira um container flex com rolagem interna controlada */
+.feedback-modal{
+  width: min(720px, 96%);
+  max-height: min(86svh, 900px);    /* limita a altura total */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;                 /* evita o conteúdo “vazar” */
+}
+
+/* O corpo (form) rola se precisar */
+.fm-form{
+  overflow-y: auto;
+  padding: 14px 18px 18px 18px;
+}
+
+/* Campos sempre respeitam a largura do card */
+.fm-control.form-control,
+.fm-control.form-select{
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Textareas: só deixam redimensionar na vertical e não estouram a altura do card */
+.fm-control.form-control{
+  resize: vertical;                 /* impede redimensionar na horizontal */
+  max-height: 50svh;                /* segurança para não passar do card */
+}
+
+/* Dropzone ocupa 100% e não “salta” */
+.fm-drop{ width: 100%; }
+
+/* Caso tenha mantido a classe d-none em algum lugar, garanta que exista: */
+.d-none{ display: none !important; }
+
+.form-select{
+    height: 37px;
+}
+
+/* peça tema escuro nativo p/ controles (Chrome/Edge/Firefox suportam) */
+.fm-control.form-select {
+  color-scheme: dark;
+}
+
+/* Fallback: force as cores das opções quando o popup vier claro */
+html[data-theme="dark"] .fm-control.form-select option,
+html[data-theme="dark"] .fm-control.form-select optgroup {
+  background-color: #121821;   /* fundo escuro */
+  color: #e7eef7;              /* texto claro */
+}
+
+/* Tema claro (caso você mude o tema) */
+html:not([data-theme="dark"]) .fm-control.form-select option,
+html:not([data-theme="dark"]) .fm-control.form-select optgroup {
+  background-color: #ffffff;   /* fundo claro */
+  color: #0e1420;              /* texto escuro */
+}
+
+</style>
+
+<script>
+
+// Esc fecha o modal
+document.addEventListener("keydown", (e)=>{
+  if (e.key === "Escape" && overlay.style.display === "block") {
+    overlay.style.display = "none";
+    document.body.style.overflow = "";
+  }
+});
+
+// Dropzone: clique/arraste para anexar + lista de arquivos
+const drop = document.getElementById("fm-drop");
+const fileInput = document.getElementById("feedback_attachments");
+const fileList = document.getElementById("fm-files");
+if (drop && fileInput && fileList){
+  const showFiles = () => {
+    fileList.innerHTML = "";
+    Array.from(fileInput.files || []).forEach(f => {
+      const li = document.createElement("li");
+      li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
+      fileList.appendChild(li);
+    });
+  };
+  drop.addEventListener("click", () => fileInput.click());
+  fileInput.addEventListener("change", showFiles);
+
+  ["dragenter","dragover"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); })
+  );
+  ["dragleave","drop"].forEach(ev =>
+    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); })
+  );
+  drop.addEventListener("drop", e => {
+    e.preventDefault();
+    if (e.dataTransfer?.files?.length){
+      // Nem todos browsers permitem set direto; na maioria funciona em desktop
+      fileInput.files = e.dataTransfer.files;
+      showFiles();
+    }
+  });
+}
+
+// Auto-grow na textarea
+// Auto-grow na textarea (altura inicial fixa em data-minheight ou 10px)
+document.querySelectorAll(".js-autogrow").forEach(el=>{
+  const min = parseInt(el.dataset.minheight || "10", 10);       // px
+  const max = Math.round(window.innerHeight * 0.5);             // limite (50% da viewport)
+
+  // começa exatamente com 10px
+  el.style.height = min + "px";
+
+  const grow = () => {
+    // volta ao mínimo e mede o conteúdo
+    el.style.height = min + "px";
+    const next = Math.min(el.scrollHeight, max);
+    el.style.height = Math.max(min, next) + "px";
+  };
+
+  // só cresce quando o usuário interage
+  el.addEventListener("input", grow);
+  el.addEventListener("change", grow);
+  el.addEventListener("focus", grow); // se colar texto, cresce ao focar
+});
+
+
+
+</script>

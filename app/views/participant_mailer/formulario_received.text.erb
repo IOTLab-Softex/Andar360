@@ -1,0 +1,12 @@
+
+Pré-cadastro recebido
+
+Nome: <%= @formulario.nome %>
+CPF: <%= @formulario.cpf %>
+Telefone: <%= @formulario.telefone %>
+Email: <%= @formulario.email.presence || "-" %>
+Cargo: <%= @formulario.cargo.presence || "-" %>
+Dias de trabalho: <%= @formulario.dias_trabalho.to_s.presence || "-" %>
+Horário de trabalho: <%= @formulario.horario_trabalho.to_s.presence || "-" %>
+
+Aprovação em: Participantes -> Aguardando aprovação

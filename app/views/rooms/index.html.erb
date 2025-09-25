@@ -1,16 +1,579 @@
-<p style="color: green"><%= notice %></p>
 
-<% content_for :title, "Rooms" %>
+<div class="form-group" style="
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+">
+<div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+  <% if operador_ou_admin? %>
+    <button type="button" class="btn btn-success" id="open-import-modal">
+      <i class="fa-solid fa-file-import"></i> Importar XLS/CSV
+    </button>
 
-<h1>Rooms</h1>
+  <% end %>
+</div>
+  <small style="    color: var(--color-btn);">
+            Importe .xls, .xlsx ou .csv, com salas ja existente.
+          </small>
+</div>
 
-<div id="rooms">
-  <% @rooms.each do |room| %>
-    <%= render room %>
-    <p>
-      <%= link_to "Show this room", room %>
-    </p>
+<span class="filtro-label">
+    <i class="fa-solid fa-filter"></i>
+    Filtrar
+  </span>
+ <br>
+
+
+
+
+
+<div class="mb-3" id="filtros-salas">
+  
+  <input type="text" id="filtro-nome" class="form-control" placeholder="Filtrar por nome...">
+  <input type="text" id="filtro-empresa" class="form-control" placeholder="Empresa proprietária...">
+  <input type="text" id="filtro-inquilino" class="form-control" placeholder="Inquilino...">
+  <select id="filtro-ativo" class="form-control" >
+    <option value="">Ativo?</option>
+    <option value="Sim">Sim</option>
+    <option value="Não">Não</option>
+  </select>
+  <select id="filtro-virtual" class="form-control">
+    <option value="">Virtual?</option>
+    <option value="Sim">Sim</option>
+    <option value="Não">Não</option>
+  </select>
+  <select id="filtro-alugado" class="form-control">
+    <option value="">Alugado?</option>
+    <option value="Sim">Sim</option>
+    <option value="Não">Não</option>
+  </select>
+</div>
+
+
+
+
+
+<div id="salas-section" class="rooms expanded">
+  <%= form_with url: bulk_destroy_rooms_path, method: :delete, local: true, id: "rooms-bulk-form" do %>
+ <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+    <!-- Barra de ações em massa (aparece ao ativar seleção) -->
+    <div id="rooms-bulk-toolbar"
+         class="hidden"
+         style="display:flex; gap:.6rem; align-items:center; justify-content:space-between; background:#ff8c42; color:var(--color-btn); padding:.6rem .9rem; border-radius:10px; margin-bottom:.8rem;">
+      <div>
+        <strong id="rooms-selected-count">0</strong> selecionada(s)
+      </div>
+      <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
+        <button type="button" id="rooms-bulk-delete" class="btn btn-warning">🗑️ Excluir selecionadas</button>
+        <!-- se quiser, adicione outros botões em massa aqui (Ativar/Desativar etc.) -->
+      </div>
+    </div>
+
+    <table class="table table-salas selection-table" id="rooms-table">
+      <thead class="table-secondary text-dark">
+        <tr>
+          <!-- célula de seleção (oculta até ativar modo seleção) -->
+          <th class="sel-cell" style="display:none; width:36px; text-align:center;">
+            <input type="checkbox" id="rooms-check-all">
+          </th>
+
+          <th>Nome</th>
+          <th>Empresa Proprietária</th>
+          <th>Inquilino</th>
+          <th>CNPJ do Inquilino</th>
+          <th>Grupo</th>
+          <th>Ativo</th>
+          <th>Virtual</th>
+          <th>Unidade Vazia</th>
+          <th>Alugado</th>
+
+          <th class="th-actions">
+            <span>Ações</span>
+            <div class="kebab-wrapper">
+              <button id="rooms-kebab" type="button" class="btn" title="Mais opções" style="padding:6px 10px;font-size:1rem;">⋮</button>
+              <div id="rooms-menu" class="kebab-menu" hidden>
+                <button type="button" class="menu-item js-rooms-toggle-selection">Selecionar</button>
+                <button type="button" class="menu-item js-rooms-select-all hidden">Selecionar todos</button>
+                <button type="button" class="menu-item js-rooms-clear-selection hidden">Limpar seleção</button>
+              </div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <% @rooms.reject(&:espaco_comun).each do |room| %>
+          <tr>
+            <!-- checkbox por linha (oculto fora do modo seleção) -->
+            <td class="sel-cell" style="display:none; text-align:center;">
+              <input type="checkbox" class="rooms-row-check" name="ids[]" value="<%= room.id %>">
+            </td>
+
+            <td><strong><%= room.name %></strong></td>
+            <td><%= room.empresa_proprietaria.presence || "-" %></td>
+            <td><%= room.dados_do_inquilino.presence || "-" %></td>
+            <td>
+              <% cnpj = room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] rescue nil %>
+              <%= cnpj || "-" %>
+            </td>
+            <td><%= room.grupo.presence || "-" %></td>
+            <td><%= room.ativo? ? "Sim" : "Não" %></td>
+            <td><%= room.virtual? ? "Sim" : "Não" %></td>
+            <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
+            <td><%= room.alugado? ? "Sim" : "Não" %></td>
+
+            <td>
+              <%= link_to room_path(room), class: "btn btn-sm btn-outline-primary btn-success" do %>
+                <i class="fa-solid fa-eye"></i> Ver
+              <% end %>
+<% if operador_ou_admin? %>
+  <%= link_to edit_room_path(room), class: 'btn btn-sm edit' do %>
+    <i class="fa-solid fa-pen-to-square"></i> Edite
+  <% end %>
+
+  <%= link_to room_path(room),
+        class: "btn btn-sm btn-warning btn-excluir-sala",
+        data: { turbo_method: :delete, room_name: room.name } do %>
+    <i class="fa-solid fa-trash"></i> Excluir
+  <% end %>
+<% end %>
+
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
   <% end %>
 </div>
 
-<%= link_to "New room", new_room_path %>
+
+<% if operador_ou_admin? %>
+<div id="importRoomsModal" class="v-modal" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="importRoomsTitle">
+  <div class="v-modal__backdrop" data-close="true"></div>
+
+  <div class="v-modal__dialog" role="document">
+    <div class="v-modal__header">
+      <h5 id="importRoomsTitle" class="v-modal__title">Importar unidades (XLS/XLSX/CSV)</h5>
+      <button type="button" class="v-modal__close" aria-label="Fechar" data-close="true">×</button>
+    </div>
+
+    <%= form_with url: import_rooms_path,
+                  method: :post,
+                  multipart: true,
+                  data: { turbo: false },
+                  html: { id: "import-rooms-form" } do |f| %>
+      <div class="v-modal__body">
+        <div class="mb-3">
+          <label class="form-label">Selecione o arquivo</label>
+          <%= f.file_field :file, accept: ".xlsx,.xls,.csv", class: "form-control", required: true %>
+          <small class="text-muted">
+            Aceita .xls, .xlsx ou .csv. Se o <em>Grupo</em> não existir, será criado em <code>room_groups</code> e vinculado à unidade.
+          </small>
+        </div>
+      </div>
+
+      <div class="v-modal__footer">
+         <button type="submit" class="btn btn-success" id="submit-import" disabled>
+          <span class="v-spinner d-none btn-success" aria-hidden="true"></span>
+          Importar
+        </button>
+        <button type="button" class="btn btn-light" data-close="true">Cancelar</button>
+       
+         <%= link_to template_rooms_path, class: "btn btn-outline-secondary", title: "Baixar modelo" do %>
+      <i class="fa-solid fa-download"></i> Modelo
+    <% end %><br>
+     <small class="text-muted">
+            Baixe a planilha de exemplo para importar.
+          </small>
+      </div>
+    <% end %>
+  </div>
+</div>
+<% end %>
+
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const rows = document.querySelectorAll("#salas-section tbody tr");
+
+  function filtrar() {
+    const nome = document.getElementById('filtro-nome').value.toLowerCase();
+    const empresa = document.getElementById('filtro-empresa').value.toLowerCase();
+    const inquilino = document.getElementById('filtro-inquilino').value.toLowerCase();
+    const ativo = document.getElementById('filtro-ativo').value;
+    const virtual = document.getElementById('filtro-virtual').value;
+    const alugado = document.getElementById('filtro-alugado').value;
+
+    rows.forEach(row => {
+      const tds = row.querySelectorAll('td');
+      const [tdNome, tdEmpresa, tdInquilino, , , tdAtivo, tdVirtual, , tdAlugado] = tds;
+
+      let show = true;
+      if (nome && !tdNome.textContent.toLowerCase().includes(nome)) show = false;
+      if (empresa && !tdEmpresa.textContent.toLowerCase().includes(empresa)) show = false;
+      if (inquilino && !tdInquilino.textContent.toLowerCase().includes(inquilino)) show = false;
+      if (ativo && tdAtivo.textContent.trim() !== ativo) show = false;
+      if (virtual && tdVirtual.textContent.trim() !== virtual) show = false;
+      if (alugado && tdAlugado.textContent.trim() !== alugado) show = false;
+
+      row.style.display = show ? "" : "none";
+    });
+  }
+
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select').forEach(el => {
+    el.addEventListener('input', filtrar);
+    el.addEventListener('change', filtrar);
+  });
+});
+
+document.addEventListener("click", async (e) => {
+  const link = e.target.closest(".btn-excluir-sala");
+  if (!link) return;
+
+  // Impede o GET (show) do href
+  e.preventDefault();
+
+  const nomeSala = link.dataset.roomName || "esta sala";
+  const action    = link.getAttribute("href");
+  let confirmado  = true;
+
+  if (window.Swal) {
+    const res = await Swal.fire({
+      title: "Excluir sala?",
+      html: `Tem certeza que deseja excluir <b>${nomeSala}</b> e todas as reservas associadas?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sim, excluir",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    confirmado = res.isConfirmed;
+  } else {
+    confirmado = confirm(`Tem certeza que deseja excluir ${nomeSala} e todas as reservas associadas?`);
+  }
+  if (!confirmado) return;
+
+  // Cria form temporário com CSRF e _method=delete
+  const token = document.querySelector('meta[name="csrf-token"]')?.content;
+  const form  = document.createElement("form");
+  form.method = "POST";
+  form.action = action;
+
+  const inputMethod = document.createElement("input");
+  inputMethod.type  = "hidden";
+  inputMethod.name  = "_method";
+  inputMethod.value = "delete";
+
+  const inputToken = document.createElement("input");
+  inputToken.type  = "hidden";
+  inputToken.name  = "authenticity_token";
+  inputToken.value = token || "";
+
+  form.appendChild(inputMethod);
+  form.appendChild(inputToken);
+
+  // Evita interferência do form de bulk
+  document.body.appendChild(form);
+  form.submit();
+});
+
+(function() {
+  function qs(sel, root=document){ return root.querySelector(sel); }
+
+  function openModal() {
+    const modal = qs('#importRoomsModal');
+    if (!modal) return;
+    modal.classList.add('is-open');
+    document.body.classList.add('v-no-scroll');
+
+    // foco acessível: foca no input file
+    const file = qs('#import-rooms-form input[type="file"]', modal);
+    if (file) setTimeout(() => file.focus(), 50);
+
+    // ESC fecha
+    modal._escHandler = (e) => {
+      if (e.key === 'Escape') closeModal();
+    };
+    document.addEventListener('keydown', modal._escHandler);
+  }
+
+  function closeModal() {
+    const modal = qs('#importRoomsModal');
+    if (!modal) return;
+    modal.classList.remove('is-open');
+    document.body.classList.remove('v-no-scroll');
+    if (modal._escHandler) {
+      document.removeEventListener('keydown', modal._escHandler);
+      modal._escHandler = null;
+    }
+  }
+
+  function setupImportModal() {
+    const openBtn = qs('#open-import-modal');
+    const modal   = qs('#importRoomsModal');
+    if (!modal || !openBtn) return;
+
+    openBtn.addEventListener('click', openModal);
+
+    // fechar por [x], "Cancelar" ou clicar no backdrop
+    modal.addEventListener('click', (e) => {
+      if (e.target.matches('[data-close="true"]')) closeModal();
+      if (e.target === qs('.v-modal__backdrop', modal)) closeModal();
+    });
+
+    // habilitar submit ao escolher arquivo + spinner ao enviar
+    const form    = qs('#import-rooms-form', modal);
+    const input   = qs('input[type="file"]', form);
+    const submit  = qs('#submit-import', form);
+    const spinner = qs('.v-spinner', form);
+
+    input.addEventListener('change', () => {
+      submit.disabled = !(input.files && input.files.length > 0);
+    });
+
+    form.addEventListener('submit', () => {
+      submit.disabled = true;
+      spinner.classList.remove('d-none');
+      // fecha o modal só depois do redirect? Você pode fechar já:
+      // closeModal();
+    });
+  }
+
+  document.addEventListener('turbo:load', setupImportModal);
+  document.addEventListener('DOMContentLoaded', setupImportModal);
+})();
+
+(function initRoomsSelection(){
+  function once(el){ if (!el) return false; if (el.dataset.bound === "1") return false; el.dataset.bound = "1"; return true; }
+
+  function qs(s,root=document){ return root.querySelector(s); }
+  function qsa(s,root=document){ return Array.from(root.querySelectorAll(s)); }
+
+  function updateCount(table, counterEl){
+    const count = qsa('.rooms-row-check', table).filter(ch => ch.checked).length;
+    if (counterEl) counterEl.textContent = count;
+    return count;
+  }
+
+  function enableSelectionMode(table, toolbar, enable){
+    // mostra/oculta coluna de seleção e toolbar
+    qsa('.sel-cell', table).forEach(td => td.style.display = enable ? "table-cell" : "none");
+    table.classList.toggle('table--select', !!enable);
+    if (toolbar) toolbar.classList.toggle('hidden', !enable);
+    // alterna itens do menu
+    const menu = qs('#rooms-menu');
+    const btnAll   = menu?.querySelector('.js-rooms-select-all');
+    const btnClear = menu?.querySelector('.js-rooms-clear-selection');
+    btnAll  && btnAll.classList.toggle('hidden', !enable);
+    btnClear&& btnClear.classList.toggle('hidden', !enable);
+  }
+
+  function bind(){
+    const wrapper  = qs('.kebab-wrapper');
+    const kebabBtn = qs('#rooms-kebab');
+    const menu     = qs('#rooms-menu');
+    const table    = qs('#rooms-table');
+    const toolbar  = qs('#rooms-bulk-toolbar');
+    if (!wrapper || !kebabBtn || !menu || !table || !toolbar) return;
+    if (!once(wrapper)) return;
+
+    const checkAll   = qs('#rooms-check-all');
+    const counterEl  = qs('#rooms-selected-count');
+    const bulkForm   = qs('#rooms-bulk-form');
+    const btnDelete  = qs('#rooms-bulk-delete');
+
+    const btnToggle  = menu.querySelector('.js-rooms-toggle-selection');
+    const btnAll     = menu.querySelector('.js-rooms-select-all');
+    const btnClear   = menu.querySelector('.js-rooms-clear-selection');
+
+    // abrir/fechar menu
+    kebabBtn.addEventListener('click', (e)=>{ e.preventDefault(); e.stopPropagation(); menu.hidden = !menu.hidden; });
+    document.addEventListener('click', (e)=>{ if (!menu.hidden && !menu.contains(e.target) && e.target !== kebabBtn) menu.hidden = true; });
+
+    // ativar modo seleção
+    btnToggle?.addEventListener('click', ()=>{ enableSelectionMode(table, toolbar, true); menu.hidden = true; updateCount(table, counterEl); });
+
+    // selecionar todos / limpar
+    btnAll?.addEventListener('click', ()=>{
+      qsa('.rooms-row-check', table).forEach(ch => ch.checked = true);
+      checkAll && (checkAll.checked = true);
+      updateCount(table, counterEl);
+      menu.hidden = true;
+    });
+    btnClear?.addEventListener('click', ()=>{
+      qsa('.rooms-row-check', table).forEach(ch => ch.checked = false);
+      checkAll && (checkAll.checked = false);
+      updateCount(table, counterEl);
+      menu.hidden = true;
+    });
+
+    // cabeçalho "check-all"
+    checkAll?.addEventListener('change', function(){
+      qsa('.rooms-row-check', table).forEach(ch => ch.checked = this.checked);
+      updateCount(table, counterEl);
+    });
+
+    // contagem por linha
+    table.addEventListener('change', (e)=>{
+      if (e.target.classList.contains('rooms-row-check')) {
+        const total = updateCount(table, counterEl);
+        if (!e.target.checked && checkAll) checkAll.checked = false;
+        if (total === qsa('.rooms-row-check', table).length && checkAll) checkAll.checked = true;
+      }
+    });
+
+    // exclusão em massa
+    btnDelete?.addEventListener('click', async ()=>{
+      const total = updateCount(table, counterEl);
+      if (total === 0) {
+        window.Swal && Swal.fire({ icon:'warning', title:'Atenção', text:'Selecione pelo menos uma sala.' });
+        return;
+      }
+      let confirmed = true;
+      if (window.Swal) {
+        confirmed = (await Swal.fire({
+          title: 'Excluir salas selecionadas?',
+          text: 'Essa ação removerá as salas e reservas associadas.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonText: 'Sim, excluir',
+          cancelButtonText: 'Cancelar',
+          reverseButtons: true
+        })).isConfirmed;
+      } else {
+        confirmed = confirm('Excluir as salas selecionadas?');
+      }
+      if (!confirmed) return;
+
+      // submit “real”
+      if (bulkForm.requestSubmit) bulkForm.requestSubmit();
+      else bulkForm.submit();
+    });
+
+    // fecha menu antes do cache Turbo
+    document.addEventListener('turbo:before-cache', ()=>{ if (menu) menu.hidden = true; });
+  }
+
+  document.addEventListener('DOMContentLoaded', bind);
+  document.addEventListener('turbo:load',    bind);
+})();
+</script>
+<style>
+#filtros-salas .form-control {
+  min-width: 160px;
+  font-size: 0.95rem;
+}
+@media (max-width: 700px) {
+  #filtros-salas {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
+
+#filtros-salas{
+display: flex;
+    gap: 1rem;
+    flex-wrap: nowrap;
+}
+
+/* ===== Modal Vanilla ===== */
+.v-modal {
+  position: fixed;
+  inset: 0;
+  display: none;               /* oculto por padrão */
+  z-index: 20000;              /* acima de tudo */
+}
+.v-modal.is-open { display: block; }
+
+.v-modal__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.45);
+  backdrop-filter: blur(1px);
+}
+
+.v-modal__dialog {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(.98);
+  width: min(92vw, 640px);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+  overflow: hidden;
+  opacity: 0;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.is-open .v-modal__dialog { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+.v-modal__header, .v-modal__footer {
+  padding: 16px 18px;
+  background: #f7f7f9;
+}
+.v-modal__title { margin: 0; font-size: 1.1rem; }
+.v-modal__body  { padding: 18px; background: #fff; }
+
+.v-modal__close {
+  border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
+  cursor: pointer; margin-left: auto;
+}
+
+/* Evita rolagem do body quando modal aberto */
+body.v-no-scroll { overflow: hidden; }
+
+/* Spinner minimalista */
+.v-spinner {
+  display: inline-block;
+  width: 1rem; height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -2px;
+  margin-right: .5rem;
+  animation: vspin .6s linear infinite;
+}
+@keyframes vspin { to { transform: rotate(360deg); } }
+
+.d-none { display: none !important; }
+.text-muted{
+      color: var(--color-btn--text);
+}
+.form-label{
+  color: var(--color-btn--text);
+}
+.v-modal__header{
+
+      color: var(--color-btn--text);
+}
+
+.form-control{
+
+      color: var(--color-muted)
+}
+.v-modal__footer{
+
+      display: flex
+;
+}
+
+/*modo select*/
+
+.hidden { display: none !important; }
+
+.kebab-wrapper { position: relative; z-index: 20; }
+.kebab-menu[hidden]{ display:none !important; }
+.kebab-menu{
+  position: absolute; right: 30px; top: -11px;
+  background: var(--color-btn); color: var(--color-btn);
+  border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
+  overflow: hidden; z-index: 9999;
+}
+.kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
+.kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
+
+/* Seleção em massa */
+.selection-table .sel-cell{ display:none; }
+.selection-table.table--select .sel-cell{ display:table-cell !important; }
+
+</style>

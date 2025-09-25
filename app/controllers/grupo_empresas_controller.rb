@@ -1,6 +1,6 @@
 class GrupoEmpresasController < ApplicationController
  before_action :authenticate_user!
-  before_action :authorize_admin!, only: [:new, :create, :destroy]
+  before_action :authorize_admin!, only: [:new, :create, :edit, :update, :destroy]
   before_action :set_grupo_empresa, only: [:edit, :update]
 
   def index
@@ -55,6 +55,6 @@ end
 end
 
   def grupo_empresa_params
-    params.require(:grupo_empresa).permit(:nome, :logo, :sala, :andar)
+    params.require(:grupo_empresa).permit(:nome, :logo, :sala, :andar, :cnpj)
   end
 end

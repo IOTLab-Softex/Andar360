@@ -1,189 +1,368 @@
 <!-- app/views/participants/index.html.erb -->
 <%= form_with url: participants_path, method: :get, local: true, class: "filter-form" do %>
+  <%= hidden_field_tag :tab, params[:tab] %>
   <div style="    display: flex
 ;
     flex-wrap: wrap;
     gap: 1rem;
     margin-bottom: 1.5rem;
     justify-content: center;">
-
-  <div>
-  <i class="fa-solid fa-filter"></i>
-  <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
-
-  <% if current_user.admin? || current_user.operador? %>
-    <%= select_tag :grupo_empresa_id,
+    <div>
+      <i class="fa-solid fa-filter"></i>
+      <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
+      <% if current_user.admin? || current_user.operador? %>
+        <%= select_tag :grupo_empresa_id,
       options_for_select(
         [["TODOS", ""]] + GrupoEmpresa.all.map { |g| [g.nome, g.id] },
         params[:grupo_empresa_id]
       ),
       class: "form-control" %>
-  <% else %>
-    <% empresa = current_user.participant&.grupo_empresa %>
-    <% if empresa.present? %>
-      <%= select_tag :grupo_empresa_id,
+      <% else %>
+        <% empresa = current_user.participant&.grupo_empresa %>
+        <% if empresa.present? %>
+          <%= select_tag :grupo_empresa_id,
         options_for_select([[empresa.nome, empresa.id]], empresa.id),
         class: "form-control",
         disabled: true %>
-    <% else %>
-      <%= select_tag :grupo_empresa_id,
+        <% else %>
+          <%= select_tag :grupo_empresa_id,
         options_for_select([["Nenhuma empresa", ""]], ""),
         class: "form-control",
         disabled: true %>
-    <% end %>
-  <% end %>
-</div>
-
-
-
-  
-
-
-<div>
-  <%= label_tag :sub_grupo_empresa_id, "Setor (Sub Grupos Empresa)" %><br>
-  <%= select_tag :sub_grupo_empresa_id, 
+        <% end %>
+      <% end %>
+    </div>
+    <div>
+      <%= label_tag :sub_grupo_empresa_id, "Setor (Sub Grupos Empresa)" %><br>
+      <%= select_tag :sub_grupo_empresa_id, 
     options_for_select([["TODOS", ""]], params[:sub_grupo_empresa_id]),
     class: "form-control", id: "subgrupo_filter" %>
-</div>
-
+    </div>
     <div>
-    
       <%= label_tag :search, "Buscar por nome ou CPF" %><br>
       <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Digite nome ou CPF" %>
     </div>
-
     <div style="align-self: flex-end;">
       <%= submit_tag "Filtrar", class: "btn btn-filter" %>
     </div>
   </div>
 <% end %>
-
 <div class="usuarios-index-btns" >
-<% if current_user&.admin? %> 
- <button id="delete-all-btn" class="btn btn-danger">
-    🗑️ Excluir todos os usuários
-  </button>
+  <% if current_user&.admin? %>
+    <button id="delete-all-btn" class="btn btn-danger">
+      🗑️ Excluir todos os usuários
+    </button>
   <% end %>
-  <button id="toggleViewBtn" class="btn">
-    <i class="fa-solid fa-table"></i> Alternar Visualização
-  </button>
-   
 </div>
-
-
-
-
-<div class="rooms">
-  <% if @participants.any? %>
-    <% @participants.each do |participant| %>
-      <div class="participant-card">
-      
-      <div class="participant-photo">
-      <% if participant.photo.attached? %>
-        <div class="photo-wrapper">
-          
-          <img
-            class="participant-img lazy"
-            data-src="<%= url_for(participant.photo) %>"
-            alt="<%= participant.name %>">
-        </div>
-        <i class="fa-solid fa-spinner loading-emoji"></i>
-      <% else %>
-        <div class="participant-placeholder">Sem Foto</div>
-      <% end %>
-    </div>
-    
-
-        <div class="participant-info">
-       <% if participant.user&.client? %>
-  <i style="position: absolute; right: 22px; font-size: x-large;"
-     class="fa-solid fa-user role-icon"
-     title="Cliente"></i>
-<% elsif participant.user&.operador? %>
-  <i style="position: absolute; right: 22px; font-size: x-large;"
-     class="fa-solid fa-user-tie role-icon"
-     title="Operador"></i>
-     <% elsif participant.user&.admin? %>
-     <span  title="Administrador" style="position: absolute; right: 22px; font-size: x-large;" class="fa-stack fa-2x">
-  <i class="fa-solid fa-user fa-stack-1x"></i>
-  <i class="fa-solid fa-crown fa-stack-2x" style="font-size: 0.6em; position: absolute; top: 3px;"></i>
-</span>
-<% end %>
-
-
-          <strong><%= participant.name %></strong><br>
-          CPF: <%= participant.cpf %><br>
-          Tel: <%= participant.telefone %><br>
-          <% if participant.email.present? %>Email: <%= participant.email %><br><% end %>
-
-          <div class="reservation-actions" style="margin-top: 1rem;">
-            <%= link_to edit_participant_path(participant), class: "btn edit" do %>
-              <i class="fa-solid fa-user-pen"></i> Editar
-              <% end %>
-            <%= button_to participant_path(participant),
-                method: :delete,
-                data: { confirm: "Tem certeza que deseja excluir este participante?" },
-                class: "btn cancel",
-                form: { style: "display: contents;" } do %>
- <i class="fa-solid fa-user-xmark"></i> Excluir
-                  <% end %>
-          </div>
-        </div>
+<div class="tabs">
+  <%= link_to "Usuários", participants_path(tab: 'ativos'), class: params[:tab] == 'ativos' ? 'active' : '' %>
+  <%= link_to "Pendentes", participants_path(tab: 'pendentes'), class: params[:tab] == 'pendentes' ? 'active' : '' %>
+  <%= link_to "Aguardando aprovação", participants_path(tab: 'aprovacoes'), class: params[:tab] == 'aprovacoes' ? 'active' : '' %>
+  <%= link_to "Reprovados", participants_path(tab: 'reprovados'), class: params[:tab] == 'reprovados' ? 'active' : '' %>
+  <% if current_user.admin? %>
+    <%= link_to "Excluídos", participants_path(tab: 'excluidos'), class: params[:tab] == 'excluidos' ? 'active' : '' %>
+  <% end %>
+</div>
+<% if params[:tab] == 'aprovacoes' %>
+  <!-- Form único para enviar para approve ou reject (definimos a action via JS) -->
+  <%= form_with url: bulk_approve_formulario_cadastros_path, method: :post, local: true, id: "bulk-form" do %>
+    <%= hidden_field_tag :authenticity_token,
+      form_authenticity_token(form_options: { action: bulk_approve_formulario_cadastros_path }),
+      id: "bulk-csrf" %>
+    <%= hidden_field_tag :_csrf_reject,
+      form_authenticity_token(form_options: { action: bulk_reject_formulario_cadastros_path }),
+      id: "bulk-csrf-reject" %>
+    <div id="bulk-toolbar"
+         class="hidden"
+         data-approve-url="<%= bulk_approve_formulario_cadastros_path %>"
+         data-reject-url="<%= bulk_reject_formulario_cadastros_path %>"
+         style="display:flex; gap:.6rem; align-items:center; justify-content:space-between; background: #ff8c42; color: var(--color-btn); padding:.6rem .9rem; border-radius: 10px; margin-bottom: .8rem;">
+      <div>
+        <strong id="selected-count">0</strong> selecionado(s)
       </div>
-    <% end %>
-  <% else %>
-    <p style="text-align: center; color: #000;">Nenhum participante cadastrado.</p>
-  <% end %>
-</div>
+      <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
+        <button type="button" id="btn-bulk-approve" class="btn btn-success">✅ Aprovar selecionados</button>
+        <button type="button" id="btn-bulk-reject"  class="btn btn-warning">❌ Reprovar selecionados</button>
+      </div>
+      <input type="hidden" name="motivo" id="bulk-motivo">
+    </div>
+    <table id="participantsTable" class="selection-table" style="width: 100%;">
+      <thead>
+        <tr>
+          <th class="sel-cell" style="display:none; width:36px; text-align:center;">
+            <input type="checkbox" id="check-all">
+          </th>
+          <th>Foto</th>
+          <th>Nome</th>
+          <th>CPF</th>
+          <th>Telefone</th>
+          <th>Email</th>
+          <th>Cargo</th>
+          <th>Dias</th>
+          <th>Horário</th>
+          <th class="th-actions">
+            <span>Ações</span>
+            <div class="kebab-wrapper">
+              <button id="aprovacoes-kebab" type="button" class="btn" title="Mais opções" style="padding:6px 10px;font-size: 1rem;">⋮</button>
+              <div id="aprovacoes-menu" class="kebab-menu" hidden>
+                <button type="button" class="menu-item js-toggle-selection">Selecionar</button>
+                <button type="button" class="menu-item js-select-all hidden">Selecionar todos</button>
+                <button type="button" class="menu-item js-clear-selection hidden">Limpar seleção</button>
+              </div>
+            </div>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (@formularios_pendentes || []).any? %>
+          <% @formularios_pendentes.each do |f| %>
+            <tr>
+              <td class="sel-cell" style="display:none; text-align:center;">
+                <input type="checkbox" class="row-check" name="ids[]" value="<%= f.id %>">
+              </td>
+              <td>
+  <% if f.foto&.attached? %>
+  <% preview_url  = url_for(f.foto) %>
+  <% download_url = rails_blob_url(f.foto, disposition: "attachment") %>
+  <% filename     = f.foto.filename.to_s %>
 
-<table id="participantsTable" style="width: 100%; display: none;">
-  <thead>
-    <tr>
-      <th>Foto</th>
-      <th>Nome</th>
-      <th>CPF</th>
-      <th>Telefone</th>
-      <th>Email</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @participants.each do |participant| %>
-      <tr>
-        <td>
-          <% if participant.photo.attached? %>
-            <img src="<%= url_for(participant.photo) %>" alt="Foto" style="width: 50px; height: 50px; border-radius: 50%;">
-          <% else %>
-            Sem Foto
-          <% end %>
-        </td>
-        <td><%= participant.name %></td>
-        <td><%= participant.cpf %></td>
-        <td><%= participant.telefone %></td>
-        <td><%= participant.email.presence || "-" %></td>
-        <td>
-         <%= link_to edit_participant_path(participant), class: "btn edit", style: "display: inline-block;" do %>
-  <i class="fa-solid fa-user-pen"></i>
+  <a href="#"
+     class="js-show-photo"
+     data-src="<%= preview_url %>"
+     data-download="<%= download_url %>"
+     data-filename="<%= filename %>"
+     data-alt="Foto de <%= f.nome %>">
+    <img src="<%= preview_url %>"
+         alt="Foto"
+         style="width:50px;height:50px;border-radius:50%;object-fit:cover;">
+  </a>
+<% else %>
+  Sem Foto
 <% end %>
 
-          <%= button_to participant_path(participant),
-              method: :delete,
-              data: { confirm: "Tem certeza que deseja excluir este participante?" },
-              class: "btn cancel",
-              form: { style: "display: contents;" } do %>
-            <i class="fa-solid fa-user-xmark"></i>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
+</td>
 
+              <td><%= f.nome %></td>
+              <td><%= f.cpf %></td>
+              <td><%= f.telefone %></td>
+              <td><%= f.email.presence || "-" %></td>
+              <td><%= f.cargo.presence || "-" %></td>
+              <td><%= f.dias_trabalho.to_s.presence || "-" %></td>
+              <td><%= f.horario_trabalho.to_s.presence || "-" %></td>
+              <td style="display:flex; gap:.5rem; flex-wrap: wrap;">
+                <% if current_user.admin? || current_user.operador? %>
+                  <button type="button"
+            class="btn btn-success js-approve-one"
+            style= "width: -webkit-fill-available; text-align: center;"
+            data-id="<%= f.id %>">
+                    <i class="fa-solid fa-check"></i> Aprovar
+                  </button>
+                  <button type="button"
+            class="btn btn-warning js-reject-one"
+            style= "width: -webkit-fill-available; text-align: center;"
+            data-id="<%= f.id %>"
+            data-default-motivo="Reprovado pelo administrador">
+                    <i class="fa-solid fa-ban"></i> Reprovar
+                  </button>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        <% else %>
+          <tr>
+            <td colspan="10" style="text-align:center; padding: 1rem;">Nenhum pré-cadastro pendente.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+
+  <% elsif params[:tab] == 'reprovados' %>
+  <table id="participantsTable" class="selection-table" style="width: 100%;">
+    <thead>
+      <tr>
+        <!-- mantém a sel-cell oculta para bater estrutura -->
+        <th class="sel-cell" style="display:none; width:36px; text-align:center;"></th>
+        <th>Foto</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th>Telefone</th>
+        <th>Email</th>
+        <th>Cargo</th>
+        <th>Motivo da reprovação</th>
+        <th class="th-actions">
+          <span>Ações</span>
+          <!-- kebab “fantasma” só para preservar o mesmo layout/altura -->
+          
+        </th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (@formularios_reprovados || []).any? %>
+        <% @formularios_reprovados.each do |f| %>
+          <tr>
+            <td class="sel-cell" style="display:none;"></td>
+            <td>
+              <% if f.foto&.attached? %>
+                <img src="<%= url_for(f.foto) %>" alt="Foto" style="width:50px;height:50px;border-radius:50%;">
+              <% else %>Sem Foto<% end %>
+            </td>
+            <td><%= f.nome %></td>
+            <td><%= f.cpf %></td>
+            <td><%= f.telefone %></td>
+            <td><%= f.email.presence || "-" %></td>
+            <td><%= f.cargo.presence || "-" %></td>
+            <td><%= f.motivo_reprovacao.presence || "-" %></td>
+            <td>
+              <%= link_to edit_formulario_cadastro_path(f),
+                    class: "btn edit",
+                    style: "width: -webkit-fill-available; text-align: center;" do %>
+                <i class="fa-solid fa-pen-to-square"></i> Editar
+              <% end %>
+
+              <%= button_to reenviar_para_aprovacao_formulario_cadastro_path(f),
+                    method: :post,
+                    class: "btn btn-success",
+                    style: "width: -webkit-fill-available; text-align: center;",
+                    data: { confirm: "Enviar novamente este pré-cadastro para aprovação?" } do %>
+                <i class="fa-solid fa-arrows-rotate"></i> Reenviar para aprovação
+              <% end %>
+
+              <% if current_user.admin? %>
+                <%= button_to formulario_cadastro_path(f),
+                      method: :delete,
+                      class: "btn btn-warning",
+                      style: "width: -webkit-fill-available; text-align: center;",
+                      data: { confirm: "Deseja excluir este pré-cadastro reprovado?" } do %>
+                  <i class="fa-solid fa-trash"></i> Excluir
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="9" style="text-align:center; padding: 1rem;">Nenhum pré-cadastro reprovado.</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+
+  
+<% else %>
+  <!-- Lista de PARTICIPANTES (seu código original, sem mexer no CSS) -->
+  <table id="participantsTable" style="width: 100%;">
+    <thead>
+      <tr>
+        <th>Foto</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th>Telefone</th>
+        <th>Email</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% (@participants || []).each do |participant| %>
+        <tr>
+          <td>
+            <% if participant.photo.attached? %>
+              <img src="<%= url_for(participant.photo) %>" alt="Foto" style="width: 50px; height: 50px; border-radius: 50%;">
+            <% else %>
+              Sem Foto
+            <% end %>
+          </td>
+          <td><%= participant.name %></td>
+          <td><%= participant.cpf %></td>
+          <td><%= participant.telefone %></td>
+          <td><%= participant.email.presence || "-" %></td>
+          <td>
+            <% if params[:tab] == 'excluidos' %>
+              <%= button_to resgatar_participant_path(participant), method: :post, class: "btn btn-success", data: { confirm: "Deseja resgatar este participante?" } do %>
+                <i class="fa-solid fa-rotate-left"></i> Resgatar
+              <% end %>
+              <%= button_to participant_path(participant),
+                    method: :delete,
+                    data: { confirm: "Tem certeza que deseja excluir este participante? Esta ação não poderá ser desfeita!" },
+                    class: "btn btn-warning",
+                    form: { style: "display: contents;" } do %>
+                <i class="fa-solid fa-user-xmark"></i> Excluir
+              <% end %>
+            <% else %>
+              <% if participant.solicitacao_exclusao_pendente.blank? %>
+                <%= link_to edit_participant_path(participant), class: "btn edit", style: "width: -webkit-fill-available; text-align: center;" do %>
+                  <i class="fa-solid fa-user-pen"></i> Editar
+                <% end %>
+                <% if current_user.admin? %>
+                  <%= button_to participant_path(participant),
+                        method: :delete,
+                        data: { confirm: "Tem certeza que deseja excluir este participante?" },
+                        class: "btn btn-warning",
+                        style: "width: -webkit-fill-available; text-align: center;",
+                        form: { style: "display: contents;" } do %>
+                    <i class="fa-solid fa-user-xmark"></i> Excluir
+                  <% end %>
+                <% end %>
+              <% end %>
+              <% if params[:tab] == 'pendentes' %>
+                <% if current_user.admin? %>
+                  <%= button_to aprovar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;", data: { confirm: "Deseja realmente aprovar a exclusão deste participante?" } do %>
+                    <i class="fa-solid fa-check"></i> Aprovar Exclusão
+                  <% end %>
+                <% end %>
+                <% is_client = current_user.client? %>
+                <% label_text   = is_client ? "Cancelar solicitação" : "Reprovar Solicitação" %>
+                <% confirm_text = is_client ? "Deseja cancelar sua solicitação de exclusão deste participante?"
+                                            : "Deseja reprovar a solicitação de exclusão deste participante?" %>
+                <%= button_to reprovar_exclusao_participant_path(participant),
+                      method: :post,
+                      class: "btn btn-warning",
+                      style: "width: -webkit-fill-available; text-align: center;",
+                      data: { confirm: confirm_text } do %>
+                  <i class="fa-solid fa-ban"></i> <%= label_text %>
+                <% end %>
+              <% elsif participant.solicitacao_exclusao_pendente.blank? %>
+                <%= button_to solicitar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;" do %>
+                  <i class="fa-solid fa-paper-plane"></i> Solicitar Exclusão
+                <% end %>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
 <%= form_with url: delete_all_participants_path, method: :delete, local: true, id: "delete-all-form", style: "display: none;" do %>
   <%= hidden_field_tag :grupo_empresa_id, params[:grupo_empresa_id] %>
   <%= hidden_field_tag :sub_grupo_empresa_id, params[:sub_grupo_empresa_id] %>
   <%= hidden_field_tag :search, params[:search] %>
 <% end %>
+
+
+
+<div id="photo-modal" class="photo-modal" hidden>
+  <div class="photo-modal__backdrop"></div>
+  <div class="photo-modal__dialog" role="dialog" aria-modal="true" aria-label="Visualização da foto">
+    <button type="button" class="photo-modal__close" title="Fechar (Esc)">×</button>
+    <img id="photo-modal-img" src="" alt="" />
+    <div id="photo-modal-caption" class="photo-modal__caption"></div>
+    <div class="photo-modal__actions">
+  <a id="photo-download"
+     class="btn btn-download"
+     href="#"
+     download
+     rel="noopener">
+    <i class="fa-solid fa-download"></i> Baixar
+  </a>
+</div>
+
+  </div>
+</div>
+
+
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
@@ -253,84 +432,24 @@
   });
 
 
-  document.addEventListener("DOMContentLoaded", function () {
-  const toggleBtn = document.getElementById("toggleViewBtn");
-  const cardsContainer = document.querySelector(".rooms");
-  const tableContainer = document.getElementById("participantsTable");
 
-  function applyViewMode(mode) {
-    if (mode === "table") {
-      tableContainer.style.display = "table";
-      cardsContainer.style.display = "none";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-id-card"></i> Alternar Visualização';
-    } else {
-      tableContainer.style.display = "none";
-      cardsContainer.style.display = "flex";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-table"></i> Alternar Visualização';
-    }
-  }
-
-  // Carrega do localStorage (padrão: cards)
-  const savedMode = localStorage.getItem("viewMode") || "cards";
-  applyViewMode(savedMode);
-
-  toggleBtn.addEventListener("click", function () {
-    const currentMode = tableContainer.style.display === "table" ? "table" : "cards";
-    const newMode = currentMode === "table" ? "cards" : "table";
-    localStorage.setItem("viewMode", newMode);
-    applyViewMode(newMode);
-  });
-});
 
 document.addEventListener("DOMContentLoaded", function () {
   const empresaSelect = document.querySelector("select[name='grupo_empresa_id']");
-  if (empresaSelect) {
+  if (empresaSelect && window.Choices) {           // ✅ só usa se existir
     const choices = new Choices(empresaSelect, {
       searchEnabled: true,
       itemSelectText: '',
       placeholderValue: 'Selecione uma empresa',
-      shouldSort: false // ⚠ importante: NÃO reordenar os itens
+      shouldSort: false
     });
-
-    // Força “TODOS” como selecionado se não vier nada
-    if (!empresaSelect.value) {
-      choices.setChoiceByValue('');
-    }
+    if (!empresaSelect.value) choices.setChoiceByValue('');
   }
 });
 
 
-document.getElementById("delete-all-btn").addEventListener("click", function (e) {
-  e.preventDefault();
 
-  Swal.fire({
-    title: 'Tem certeza?',
-    text: "Todos os participantes exibidos no filtro atual serão excluídos permanentemente.",
-    icon: 'warning',
-    showCancelButton: true,
-    confirmButtonColor: '#d33',
-    cancelButtonColor: '#aaa',
-    confirmButtonText: 'Sim, excluir todos',
-    cancelButtonText: 'Cancelar'
-  }).then((result) => {
-    if (result.isConfirmed) {
-      // Exibe notificação de carregamento
-      Swal.fire({
-        title: 'Excluindo usuários...',
-        text: 'Aguarde enquanto processamos os dados',
-        allowOutsideClick: false,
-        didOpen: () => {
-          Swal.showLoading();
-        }
-      });
-
-      // Aguarda pequeno delay antes de submeter para garantir que o loading apareça
-      setTimeout(() => {
-        document.getElementById("delete-all-form").submit();
-      }, 900);
-    }
-  });
-});
+  
 
 
 
@@ -350,4 +469,475 @@ document.getElementById("delete-all-btn").addEventListener("click", function (e)
       });
     }
   });
+
+
+
+
+
+  // ... (seu código anterior)
+
+
+
+  // ✅ Só mostra o flash se Swal existir
+  document.addEventListener("DOMContentLoaded", function () {
+    const flash = document.getElementById("notification-flash");
+    if (flash && window.Swal) {
+      Swal.fire({ icon: flash.dataset.type, title: flash.dataset.type === "success" ? "Sucesso!" : "Atenção", text: flash.dataset.message, timer: 4000, showConfirmButton: false });
+    }
+  });
+
+  // ✅ Kebab / Seleção em massa (com bind seguro)
+  function initAprovacoesMenu(){
+    const kebabBtn  = document.getElementById("aprovacoes-kebab");
+    const kebabMenu = document.getElementById("aprovacoes-menu");
+    if (!kebabBtn || !kebabMenu) return;
+
+    if (kebabBtn.dataset.bound === "1") return; // evita bind duplicado (Turbo)
+    kebabBtn.dataset.bound = "1";
+
+    const bulkBar    = document.getElementById("bulk-toolbar");
+    const selectAll  = document.getElementById("select-all");
+    const clearSel   = document.getElementById("clear-selection");
+    const toggleSel  = document.getElementById("toggle-selection");
+    const table      = document.querySelector("table.selection-table");
+    const checkAll   = document.getElementById("check-all");
+    const selectedCt = document.getElementById("selected-count");
+    const bulkForm   = document.getElementById("bulk-form");
+    const approveBtn = document.getElementById("btn-bulk-approve");
+    const rejectBtn  = document.getElementById("btn-bulk-reject");
+    const motivoInp  = document.getElementById("bulk-motivo");
+    const approveURL = bulkBar ? bulkBar.dataset.approveUrl : null;
+    const rejectURL  = bulkBar ? bulkBar.dataset.rejectUrl  : null;
+
+    // abre/fecha o menu
+    kebabBtn.addEventListener("click", (e) => {
+      e.preventDefault(); e.stopPropagation();
+      kebabMenu.hidden = !kebabMenu.hidden;
+    });
+    document.addEventListener("click", (e) => {
+      if (!kebabMenu.hidden && !kebabMenu.contains(e.target) && e.target !== kebabBtn) kebabMenu.hidden = true;
+    });
+
+    const selCells  = () => table ? table.querySelectorAll(".sel-cell") : [];
+    const rowChecks = () => table ? table.querySelectorAll(".row-check") : [];
+    function updateCount(){ if (selectedCt) selectedCt.textContent = Array.from(rowChecks()).filter(ch=>ch.checked).length; }
+    function enableSelectionMode(enable){
+      selCells().forEach(td => td.style.display = enable ? "table-cell" : "none");
+      if (bulkBar)  bulkBar.classList.toggle("hidden", !enable);
+      if (selectAll) selectAll.classList.toggle("hidden", !enable);
+      if (clearSel)  clearSel.classList.toggle("hidden", !enable);
+      updateCount();
+    }
+
+    if (toggleSel) toggleSel.addEventListener("click", () => { enableSelectionMode(true); kebabMenu.hidden = true; });
+    if (selectAll) selectAll.addEventListener("click", () => {
+      rowChecks().forEach(ch => ch.checked = true);
+      if (checkAll) checkAll.checked = true;
+      updateCount(); kebabMenu.hidden = true;
+    });
+    if (clearSel) clearSel.addEventListener("click", () => {
+      rowChecks().forEach(ch => ch.checked = false);
+      if (checkAll) checkAll.checked = false;
+      updateCount(); kebabMenu.hidden = true;
+    });
+
+    if (checkAll) checkAll.addEventListener("change", function(){
+      rowChecks().forEach(ch => ch.checked = this.checked);
+      updateCount();
+    });
+    if (table) table.addEventListener("change", (e) => { if (e.target.classList.contains("row-check")) updateCount(); });
+
+    if (approveBtn) approveBtn.addEventListener("click", () => {
+      if (Array.from(rowChecks()).every(ch => !ch.checked)) { window.Swal && Swal.fire({ icon:'warning', title:'Atenção', text:'Selecione pelo menos um pré-cadastro.' }); return; }
+      bulkForm.setAttribute("action", approveURL); bulkForm.submit();
+    });
+
+    if (rejectBtn) rejectBtn.addEventListener("click", async () => {
+      if (Array.from(rowChecks()).every(ch => !ch.checked)) { window.Swal && Swal.fire({ icon:'warning', title:'Atenção', text:'Selecione pelo menos um pré-cadastro.' }); return; }
+      if (window.Swal) {
+        const { value: motivo } = await Swal.fire({ title:'Motivo da reprovação', input:'text', inputPlaceholder:'Digite o motivo (opcional)', showCancelButton:true, confirmButtonText:'Reprovar', cancelButtonText:'Cancelar' });
+        if (motivo === undefined) return;
+        motivoInp.value = motivo || "Reprovado em massa";
+      }
+      bulkForm.setAttribute("action", rejectURL); bulkForm.submit();
+    });
+  }
+
+  // roda com Turbo e no load normal
+  document.addEventListener("turbo:load", initAprovacoesMenu);
+  document.addEventListener("DOMContentLoaded", initAprovacoesMenu);
+  document.addEventListener("turbo:before-cache", () => { const m = document.getElementById("aprovacoes-menu"); if (m) m.hidden = true; });
+
+
+  function initAprovacoesMenu(){
+    const wrapper   = document.querySelector(".kebab-wrapper");
+    const kebabBtn  = document.getElementById("aprovacoes-kebab");
+    const kebabMenu = document.getElementById("aprovacoes-menu");
+    if (!wrapper || !kebabBtn || !kebabMenu) return;
+    if (wrapper.dataset.bound === "1") return; // evita bind duplicado (Turbo)
+    wrapper.dataset.bound = "1";
+
+    const table      = document.querySelector("table.selection-table");
+    const bulkBar    = document.getElementById("bulk-toolbar");
+    const checkAll   = document.getElementById("check-all");
+    const selectedCt = document.getElementById("selected-count");
+    const bulkForm   = document.getElementById("bulk-form");
+    const approveBtn = document.getElementById("btn-bulk-approve");
+    const rejectBtn  = document.getElementById("btn-bulk-reject");
+    const motivoInp  = document.getElementById("bulk-motivo");
+    const approveURL = bulkBar?.dataset.approveUrl || "";
+    const rejectURL  = bulkBar?.dataset.rejectUrl  || "";
+
+    // ⚠️ busca pelos itens do menu por CLASSE (batendo com o HTML)
+    const toggleSel = kebabMenu.querySelector(".js-toggle-selection");
+    const selectAll = kebabMenu.querySelector(".js-select-all");
+    const clearSel  = kebabMenu.querySelector(".js-clear-selection");
+
+    // Abre/fecha menu
+    kebabBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      kebabMenu.hidden = !kebabMenu.hidden;
+    });
+    document.addEventListener("click", (e) => {
+      if (!kebabMenu.hidden && !kebabMenu.contains(e.target) && e.target !== kebabBtn) {
+        kebabMenu.hidden = true;
+      }
+    });
+
+    const rowChecks = () => table ? table.querySelectorAll(".row-check") : [];
+    function updateCount(){
+      if (!selectedCt) return;
+      selectedCt.textContent = Array.from(rowChecks()).filter(ch => ch.checked).length;
+    }
+    function enableSelectionMode(enable){
+      if (!table || !bulkBar) return;
+      table.classList.toggle("table--select", !!enable);
+      bulkBar.classList.toggle("hidden", !enable);
+      selectAll?.classList.toggle("hidden", !enable);
+      clearSel?.classList.toggle("hidden", !enable);
+      updateCount();
+    }
+
+    toggleSel?.addEventListener("click", () => {
+      enableSelectionMode(true);
+      kebabMenu.hidden = true;
+    });
+
+    selectAll?.addEventListener("click", () => {
+      rowChecks().forEach(ch => ch.checked = true);
+      if (checkAll) checkAll.checked = true;
+      updateCount();
+      kebabMenu.hidden = true;
+    });
+
+    clearSel?.addEventListener("click", () => {
+      rowChecks().forEach(ch => ch.checked = false);
+      if (checkAll) checkAll.checked = false;
+      updateCount();
+      kebabMenu.hidden = true;
+    });
+
+    checkAll?.addEventListener("change", function(){
+      rowChecks().forEach(ch => ch.checked = this.checked);
+      updateCount();
+    });
+
+    table?.addEventListener("change", (e) => {
+      if (e.target.classList.contains("row-check")) updateCount();
+    });
+
+    // Submit em massa
+    approveBtn?.addEventListener("click", () => {
+      if (Array.from(rowChecks()).every(ch => !ch.checked)) {
+        window.Swal && Swal.fire({ icon:'warning', title:'Atenção', text:'Selecione pelo menos um pré-cadastro.' });
+        return;
+      }
+      bulkForm.setAttribute("action", approveURL);
+      bulkForm.requestSubmit ? bulkForm.requestSubmit() : bulkForm.submit();
+    });
+
+    rejectBtn?.addEventListener("click", async () => {
+      if (Array.from(rowChecks()).every(ch => !ch.checked)) {
+        window.Swal && Swal.fire({ icon:'warning', title:'Atenção', text:'Selecione pelo menos um pré-cadastro.' });
+        return;
+      }
+      if (window.Swal) {
+        const { value: motivo } = await Swal.fire({
+          title:'Motivo da reprovação', input:'text',
+          inputPlaceholder:'Digite o motivo (opcional)',
+          showCancelButton:true, confirmButtonText:'Reprovar', cancelButtonText:'Cancelar'
+        });
+        if (motivo === undefined) return;
+        motivoInp.value = motivo || "Reprovado em massa";
+      }
+      // injeta token específico de reject
+      const csrfApprove = document.getElementById("bulk-csrf");
+      const csrfReject  = document.getElementById("bulk-csrf-reject");
+      if (csrfApprove && csrfReject) csrfApprove.value = csrfReject.value;
+
+      bulkForm.setAttribute("action", rejectURL);
+      bulkForm.requestSubmit ? bulkForm.requestSubmit() : bulkForm.submit();
+    });
+
+    // Fecha o menu antes do cache do Turbo (evita “menu travado” ao voltar)
+    document.addEventListener("turbo:before-cache", () => { if (kebabMenu) kebabMenu.hidden = true; });
+  }
+
+  document.addEventListener("turbo:load", initAprovacoesMenu);
+  document.addEventListener("DOMContentLoaded", initAprovacoesMenu);
+
+
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+  const bulkForm   = document.getElementById("bulk-form");
+  const bulkBar    = document.getElementById("bulk-toolbar");
+  const approveURL = bulkBar?.dataset.approveUrl;
+  const rejectURL  = bulkBar?.dataset.rejectUrl;
+  const motivoInp  = document.getElementById("bulk-motivo");
+
+  function submitOne(id, url, motivo, isReject = false) {
+  const bulkForm   = document.getElementById("bulk-form");
+  const motivoInp  = document.getElementById("bulk-motivo");
+  const csrfInput  = document.getElementById("bulk-csrf");
+
+  // ids[]
+  const tmp = document.createElement("input");
+  tmp.type = "hidden";
+  tmp.name = "ids[]";
+  tmp.value = id;
+  bulkForm.appendChild(tmp);
+
+  if (motivo !== undefined) motivoInp.value = motivo || "";
+
+  // ✅ se for reject, troca o token pelo específico da action de reject
+  if (isReject) {
+    const rejectToken = document.getElementById("bulk-csrf-reject").value;
+    csrfInput.value = rejectToken;
+  }
+
+  bulkForm.setAttribute("action", url);
+
+  // use requestSubmit para simular submit "real"
+  if (bulkForm.requestSubmit) {
+    bulkForm.requestSubmit();
+  } else {
+    bulkForm.submit();
+  }
+  }
+
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest(".js-approve-one, .js-reject-one");
+    if (!btn) return;
+
+    const id = btn.dataset.id;
+
+    if (btn.classList.contains("js-approve-one")) {
+      // confirmar (opcional)
+      if (window.Swal) {
+        const ok = await Swal.fire({title:"Aprovar?", text:"Aprovar este pré-cadastro e criar o participante?", icon:"question", showCancelButton:true})
+          .then(r=>r.isConfirmed);
+        if (!ok) return;
+      }
+      submitOne(id, approveURL);
+    } else {
+      // Reprovar com motivo (opcional)
+      let motivo = btn.dataset.defaultMotivo || "Reprovado";
+      if (window.Swal) {
+        const res = await Swal.fire({title:"Motivo da reprovação", input:"text", inputValue: motivo, showCancelButton:true});
+        if (!res.isConfirmed) return;
+        motivo = res.value || motivo;
+      }
+      submitOne(id, rejectURL, motivo, true);
+    }
+  });
+  });
+
+  // script do modal da foto
+
+  (function(){
+  function bindPhotoModal(){
+    const modal   = document.getElementById('photo-modal');
+    const imgEl   = document.getElementById('photo-modal-img');
+    const caption = document.getElementById('photo-modal-caption');
+
+    
+    if (!modal || !imgEl || !caption) return;
+
+    document.addEventListener('click', function(e){
+      const a = e.target.closest('.js-show-photo');
+  if (!a) return;
+  e.preventDefault();
+
+  const src = a.dataset.src;
+  const alt = a.dataset.alt && a.dataset.alt.trim() !== '' ? a.dataset.alt : 'Foto';
+  if (!src) return;
+
+  imgEl.src = src;
+  imgEl.alt = alt;
+  caption.textContent = alt;
+
+  // 👉 atualiza o botão de download com a URL/arquivo corretos
+  const dl = document.getElementById('photo-download');
+  if (dl) {
+    const dlHref = a.dataset.download || src;
+    const dlName = a.dataset.filename || 'foto.jpg';
+    dl.href = dlHref;
+    dl.setAttribute('download', dlName);
+  }
+
+  modal.hidden = false;
+  document.documentElement.style.overflow = 'hidden';
+});
+
+    modal.addEventListener('click', function(e){
+      if (e.target.classList.contains('photo-modal__backdrop') ||
+          e.target.classList.contains('photo-modal__close')) {
+        closeModal();
+      }
+    });
+
+    document.addEventListener('keydown', function(e){
+      if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+
+    function closeModal(){
+      modal.hidden = true;
+      imgEl.src = '';
+      document.documentElement.style.overflow = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', bindPhotoModal);
+  document.addEventListener('turbo:load', bindPhotoModal);
+})()
+
+
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('.js-show-photo');
+  if (a) { console.log('CLICOU NA MINIATURA', a.dataset.src); }
+});
+
 </script>
+<style>
+  .hidden { display: none !important; }
+
+  .kebab-wrapper { position: relative; z-index: 20; }
+  .kebab-menu[hidden]{ display:none !important; }
+  .kebab-menu{
+    position: absolute; right: 30px; top: -11px;
+    background: var(--color-btn); color: var(--color-btn);
+    border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
+    overflow: hidden; z-index: 9999;
+  }
+  .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
+  .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
+
+  /* Seleção em massa */
+  .selection-table .sel-cell{ display:none; }                     /* escondida por padrão */
+  .selection-table.table--select .sel-cell{ display:table-cell !important; } /* aparece no modo seleção */
+
+  .th-actions{
+
+  display: flex
+  ;
+      justify-content: space-between;
+      align-items: center;
+
+  }
+    .tabs {
+    display: flex
+    ;
+        gap: 1.2rem;
+        padding: 0 2rem;
+        margin-top: 12px;
+        margin-bottom: 8px;
+        font-size: 1.15rem;
+        justify-content: center;
+        position: relative;
+        border-radius: 16px 16px 0 0;
+    }
+
+
+    .tabs a {
+        padding: 10px 28px 8px 28px;
+        border-radius: 18px 18px 0 0;
+        background: var(--color-btn--text);
+        color: var(--color-btn);
+        font-weight: 600;
+        text-decoration: none;
+        transition: background .2s, color .2s, box-shadow .2s;
+        position: relative;
+        top: 8px;
+    }
+
+    .tabs a.active {
+        background: #ff8c42;
+        color: #222;
+        /* box-shadow: 0 -4px 18px #ff944d50; */
+        font-weight: 800;
+        z-index: 2;
+    }
+
+    .tabs a:not(.active):hover {
+      background: #3c2c47;
+      color: #ff944d;
+    }
+
+    @media (max-width: 700px) {
+      .tabs {
+        gap: 0.3rem;
+        font-size: 1rem;
+      }
+      .tabs a {
+        padding: 8px 10px 8px 10px;
+      }
+    }
+
+
+
+    /* modal da foto */
+
+    .photo-modal[hidden] { display: none !important; }
+
+.photo-modal {
+  position: fixed; inset: 0; z-index: 2000;
+  display: grid; place-items: center;
+}
+.photo-modal__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(2px);
+}
+.photo-modal__dialog {
+  position: relative;
+  max-width: 90vw; max-height: 90vh;
+  background: #111; border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  padding: 10px 10px 14px;
+  display: grid; gap: 8px; justify-items: center;
+}
+.photo-modal__close {
+  position: absolute; top: 4px; right: 8px;
+  border: none; background: transparent; color: #fff;
+  font-size: 26px; cursor: pointer; line-height: 1;
+  padding: 2px 6px;
+}
+#photo-modal-img {
+  max-width: 95vw;
+    max-height: 77vh;
+    object-fit: contain;
+    border-radius: 10px;
+    width: 29rem;
+}
+.photo-modal__caption {
+  color: #ddd; font-size: .95rem; text-align: center;
+  max-width: 80vw;
+  overflow-wrap: anywhere;
+}
+
+
+
+</style>

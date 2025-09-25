@@ -70,8 +70,11 @@ csv_content = csv_raw.force_encoding("UTF-8").encode("UTF-8", invalid: :replace,
 
 
 
+total_rows = CSV.parse(csv_content, headers: true, col_sep: ";", liberal_parsing: true).size
 
       CSV.parse(csv_content, headers: true, col_sep: ";", liberal_parsing: true).each_with_index do |row, i|
+        
+
         nome       = row["Nome_Usuario"]&.strip
         email      = row["E_mail"]&.strip
         cpf        = row["CPF"]&.strip
@@ -125,6 +128,13 @@ csv_content = csv_raw.force_encoding("UTF-8").encode("UTF-8", invalid: :replace,
           msg = "Participante salvo com sucesso: #{participant.name} (#{participant.cpf})"
           Rails.logger.info "[✅] #{msg}"
           log_import(nome, cpf, "adicionado", msg, sem_foto: base64.nil?)
+         percentual = (((i + 1).to_f / total_rows) * 100).round
+
+Rails.cache.write('backup_status', {
+  status: 'executando',
+  message: "Importando Atualização... #{percentual}% concluído (#{i + 1} de #{total_rows})"
+})
+
         else
           msg = "Erro ao salvar participante #{nome}: #{participant.errors.full_messages.join(', ')}"
           Rails.logger.error "[❌] #{msg}"
@@ -134,9 +144,13 @@ csv_content = csv_raw.force_encoding("UTF-8").encode("UTF-8", invalid: :replace,
     rescue => e
       Rails.logger.error "[❌] Erro geral no importador: #{e.message}"
       log_import("Sistema", "-", "erro", "Erro geral: #{e.message}")
+      Rails.cache.write('backup_status', { status: 'erro', message: "Importando Atualização: erro na importação!" })
+
     else
       Rails.logger.info "[🏁] Importação finalizada com sucesso."
       log_import("Sistema", "-", "finalizado", "Importação concluída com sucesso.")
+      Rails.cache.write('backup_status', { status: 'finalizado', message: "Importando Atualização: Importação concluída com sucesso!" })
+
     end
 
   end

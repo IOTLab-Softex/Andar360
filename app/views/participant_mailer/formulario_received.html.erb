@@ -1,0 +1,12 @@
+
+<h2>Pré-cadastro recebido</h2>
+<ul>
+  <li><strong>Nome:</strong> <%= @formulario.nome %></li>
+  <li><strong>CPF:</strong> <%= @formulario.cpf %></li>
+  <li><strong>Telefone:</strong> <%= @formulario.telefone %></li>
+  <li><strong>Email:</strong> <%= @formulario.email.presence || "-" %></li>
+  <li><strong>Cargo:</strong> <%= @formulario.cargo.presence || "-" %></li>
+  <li><strong>Dias de trabalho:</strong> <%= @formulario.dias_trabalho.to_s.presence || "-" %></li>
+  <li><strong>Horário de trabalho:</strong> <%= @formulario.horario_trabalho.to_s.presence || "-" %></li>
+</ul>
+<p>Veja em Participantes &rarr; Aguardando aprovação para aprovar ou reprovar.</p>

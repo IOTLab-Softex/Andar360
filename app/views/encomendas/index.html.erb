@@ -1,0 +1,287 @@
+
+
+<div class="rooms expanded">
+
+<div class="filtros-encomenda">
+  <%= form_with url: encomendas_path, method: :get, local: true, class: "filtro-form" do %>
+    <%= label_tag :status, "Status", class: "label-filtro" %>
+    <%= select_tag :status,
+          options_for_select([["Todos", ""], ["Entregue", "entregue"], ["Não entregue", "pendente"]], params[:status]),
+          class: "form-control", style: "min-width: 170px;" %>
+
+    <%= label_tag :empresa, "Empresa", class: "label-filtro" %>
+    <%= select_tag :empresa,
+          options_from_collection_for_select(GrupoEmpresa.order(:nome), :id, :nome, params[:empresa]),
+          include_blank: "Todas", class: "form-control", style: "min-width: 180px;" %>
+
+    <%= submit_tag "Filtrar", class: "btn btn-primary", style: "margin-left: 10px; font-weight: bold;" %>
+  <% end %>
+</div>
+
+
+
+
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Imagem</th>
+        <th>Unidade</th>
+        <th>Código</th>
+        <th>Transportadora</th>
+        <th>Tipo</th>
+        <th>Tamanho</th>
+        <th>Remetente</th>
+        <th>Destinatário</th>
+        <th>Notificar</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @encomendas.present? %>
+        <% @encomendas.each do |e| %>
+          <tr>
+<td style="width: 100px; display: flex; align-items: center; gap: 8px;">
+  <% if e.imagem.attached? %>
+    <%= image_tag url_for(e.imagem), style: "width: 65px; height: 65px; border-radius: 8%; object-fit: cover; border: 1px solid #ccc;" %>
+  <% else %>
+    <div style="width: 65px; height: 45px; background-color: #eee; border-radius: 8%; border: 1px solid #ccc;"></div>
+  <% end %>
+
+  <% if e.entregue? %>
+    <i class="fa-solid fa-check-circle" style="color: #1abc2c; font-size: 22px;" title="Entregue"></i>
+  <% else %>
+    <i class="fa-solid fa-circle-exclamation" style="color: #FFDF51; font-size: 22px;" title="Não entregue"></i>
+  <% end %>
+</td>
+
+            <td><%= e.unidade %></td>
+            <td><%= e.codigo %></td>
+            <td><%= e.transportadora %></td>
+            <td><%= e.tipo.presence || "-" %></td>
+            <td><%= e.tamanho.presence || "-" %></td>
+            <td><%= e.remetente.presence || "-" %></td>
+            <td><%= e.destinatario&.name || "-" %></td>
+            <td><%= e.notificar_destinatario == "1" ? "Sim" : "Não" %></td>
+            <td>
+             <% unless e.entregue? %>
+            <button
+  type="button"
+  class="btn btn-success btn-sm"
+  data-action="abrir-modal-entregue"
+  data-encomenda-id="<%= e.id %>">
+  <i class="fa-solid fa-check"></i> Entregue
+</button>
+ <% end %>
+
+              <%= link_to encomenda_path(e), class: "btn btn-success" do %>
+                <i class="fa-solid fa-eye"></i> Ver
+              <% end %>
+               <% unless e.entregue? %>
+              <%= link_to edit_encomenda_path(e), class: 'btn edit' do %>
+                <i class="fa-solid fa-pen-to-square"></i> Edite
+              <% end %>
+              <% end %>
+              <%= button_to encomenda_path(e),
+                  method: :delete,
+                  data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
+                  class: 'btn btn-warning' do %>
+                <i class="fa-solid fa-trash"></i> Excluir
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="10">Nenhuma encomenda encontrada.</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<div id="entregueOverlay" class="modal-overlay">
+  <div class="form-group modal-box" style="color: black;">
+    <%= form_with url: marcar_entregue_encomenda_path(0), method: :patch, id: 'formEntregue', scope: nil do |f| %>
+
+    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+      <h5>Quem está recebendo?</h5>
+
+      <!-- Dropdown de empresa -->
+      <div class="form-group mb-3">
+        <%= select_tag :grupo_empresa_id,
+            options_from_collection_for_select(GrupoEmpresa.all.order(:nome), :id, :nome),
+            prompt: "Selecione a empresa",
+            class: "form-select", id: "empresaSelect", required: true %>
+      
+
+      <!-- Dropdown de participante filtrado -->
+      
+        <%= select_tag :recebido_por_id,
+            "", prompt: "Selecione quem está recebendo",
+            class: "form-select", id: "participanteSelect", required: true %>
+      </div>
+
+      <div class="text-end" style="
+    display: flex;
+    justify-content: center;
+">
+        <%= f.submit 'Confirmar Entrega', class: 'btn' %>
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancelar</button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+
+
+
+
+<style>
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease-in-out;
+}
+
+.modal-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  width: 400px;
+  max-width: 90%;
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
+
+.filtros-encomenda {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.filtros-encomenda .filtro-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filtros-encomenda .label-filtro {
+  margin-right: 3px;
+  font-size: 1em;
+  color: #fff;
+  font-weight: 500;
+}
+
+.filtros-encomenda .select-filtro {
+  border-radius: 8px;
+  border: 1px solid #aaa;
+  padding: 4px 12px;
+  background: #222;
+  color: #fff;
+}
+
+.filtros-encomenda .btn-filtrar {
+  background: #FF8B37;
+  color: #fff;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 18px;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.filtros-encomenda .btn-filtrar:hover {
+  background: #d76b1d;
+}
+
+</style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('entregueOverlay');
+  const form = document.getElementById('formEntregue');
+
+  // Abrir modal ao clicar no botão
+  document.querySelectorAll('[data-action="abrir-modal-entregue"]').forEach(botao => {
+    botao.addEventListener('click', () => {
+      const encomendaId = botao.dataset.encomendaId;
+      form.action = `/encomendas/${encomendaId}/marcar_entregue`;
+      modal.classList.add('active');
+    });
+  });
+
+  // Fechar modal ao clicar em qualquer botão que tenha [data-close-modal]
+  document.querySelectorAll('[data-close-modal]').forEach(botao => {
+    botao.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+  });
+
+  // Fechar modal se clicar fora da caixa
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.classList.remove('active');
+    }
+  });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+ empresaSelect.addEventListener('change', async () => {
+  const empresaId = empresaSelect.value;
+  participanteSelect.innerHTML = '<option>Carregando...</option>';
+
+  try {
+    const response = await fetch(`/participants/por_empresa/${empresaId}`);
+
+    if (!response.ok) {
+      throw new Error("Erro na resposta do servidor");
+    }
+
+    const data = await response.json();
+
+    console.log("🔍 Participantes recebidos:", data);
+
+    if (!data.participantes || !Array.isArray(data.participantes)) {
+      throw new Error("Formato inesperado de dados");
+    }
+
+    participanteSelect.innerHTML = '<option value="">Selecione o participante</option>';
+
+    data.participantes.forEach(participante => {
+      const option = document.createElement('option');
+      option.value = participante.id;
+      option.textContent = participante.name + (participante.tem_usuario ? "" : "");
+      if (data.selecionado_id && participante.id === data.selecionado_id) {
+        option.selected = true;
+      }
+      participanteSelect.appendChild(option);
+    });
+
+  } catch (error) {
+    console.error("❌ Erro ao carregar participantes:", error);
+    participanteSelect.innerHTML = '<option value="">Erro ao carregar participantes</option>';
+  }
+});
+
+});
+</script>
+
+
+

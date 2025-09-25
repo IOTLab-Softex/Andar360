@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html>
   <head>
- 
-
-<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-
-
+    <script>
+      (function() {
+        try {
+          const theme = localStorage.getItem('theme');
+          if (theme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link rel="icon" href="/icon.png" type="image/png">
-
-
-
-
-
-
     <title><%= content_for(:title) || "Reservas Salas" %></title>
     <meta name="description" content="Reservas inteligentes para ambientes conectados.">
     <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -22,97 +21,158 @@
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
-<%= javascript_include_tag "flash_notification", "data-turbo-track": "reload" %>
-
+    <%= javascript_include_tag "flash_notification", "data-turbo-track": "reload" %>
     <%= yield :head %>
-
     <%# Ícones e PWA %>
     <link rel="icon" href="/icon.png" type="image/png">
-
     <link rel="apple-touch-icon" href="/icon.png">
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <%# CSS externos %>
-    <%= stylesheet_link_tag "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css", media: "all" %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-
+    <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" %>
     <%# CSS da aplicação %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "choices.min", media: "all" %>
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+<%= javascript_importmap_tags %>
 
     <%# JS (via importmap) %>
-    <%= javascript_importmap_tags "application" %>
 
     <%# Outros scripts externos %>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-   
-  </head>
 
+  </head>
   <body>
-<% unless tela_de_alteracao_de_senha? %>
-   <% unless controller_path == "users/registrations" && action_name == "edit" %>
-  <div class="user-info">
-    <% if user_signed_in? %>
-      <% participant = current_user.participant %>
-      <% if participant&.photo&.attached? %>
-        <%= image_tag url_for(participant.photo), class: "user-avatar" %>
-      <% else %>
-        <div class="user-avatar">
-          <i class="fa-solid fa-circle-user"></i>
-        </div>
-      <% end %>
-      <div class="hide-on-mobile user-name">
-        Bem-vindo, <%= participant&.name || current_user.email %>
-      </div>
+    <% unless tela_de_alteracao_de_senha? %>
+      <% unless controller_path == "users/registrations" && action_name == "edit" %>
+        <div class="user-info">
+          <% if user_signed_in? %>
+            <% participant = current_user.participant %>
+            <% if participant&.photo&.attached? %>
+              <%= image_tag url_for(participant.photo), class: "user-avatar", id: "user-avatar-trigger" %>
+            <% else %>
+              <div class="user-avatar" id="user-avatar-trigger"><i class="fa-solid fa-circle-user"></i></div>
+            <% end %>
+            <div class="hide-on-mobile user-name">
+              Bem-vindo, <%= participant&.name || current_user.email %>
+            </div>
+            <% notificacoes = current_user.notifications.nao_lidas.limit(10) %>
+            <div class="notification-icon-wrapper">
+              <% notificacoes = current_user.notifications.nao_lidas.limit(10) %>
+<% latest = notificacoes.first %>
+
+<button class="notification-btn"
+        onclick="toggleNotificacoesSidebar()"
+        data-notif-count="<%= notificacoes.count %>"
+        data-latest-notif-id="<%= latest&.id %>">
+  <i class="fa-solid fa-bell"></i>
+  <% if notificacoes.any? %>
+    <span class="badge"><%= notificacoes.count %></span>
+  <% end %>
+</button>
+
+              <% if notificacoes.any? %>
+  <div id="notifNudge" class="notif-nudge" role="status" aria-live="polite">
+    <i class="fa-solid fa-hand-point-right"></i>
+    <span>Você tem <strong><%= notificacoes.count %></strong> notificações</span>
+    <button type="button" class="notif-nudge-close" aria-label="Fechar dica">&times;</button>
+  </div>
+<% end %>
+
+              <div id="notificacoes-overlay" class="notificacoes-overlay" onclick="fecharSidebarNotificacoes(event)"></div>
+              <div id="notificacoes-sidebar" class="notificacoes-sidebar">
+                <div class="sidebar-header">
+                  <h3>Notificações</h3>
+                  <%= button_to "Limpar todas", marcar_todas_como_lidas_notifications_path, method: :post, class: "limpar-todas-btn", remote: true %>
+                </div>
+                <div class="sidebar-conteudo">
+                  <% if notificacoes.any? %>
+                    <ul class="notificacoes-lista">
+                      <% notificacoes.each do |n| %>
+                        <li id="notificacao-<%= n.id %>" class="notificacao-item">
+  <div class="notificacao-conteudo">
+    <button type="button" class="abrir-detalhe-notificacao"
+            data-titulo="<%= n.titulo %>"
+            data-mensagem="<%= n.corpo %>"
+            data-data="<%= l(n.created_at, format: :short) %>">
+      <i class="fa-solid fa-circle-exclamation"></i>
+      <span><%= n.titulo %></span>
+    </button>
+   
+    <%= button_to marcar_como_lida_notification_path(n),
+          method: :post,
+          class: "btn-fechar-notificacao" do %>
+      <i class="fa-solid fa-xmark notificacoes-lista-close"></i>
     <% end %>
   </div>
-<% end %>
+  <br>
+   <small class="notificacao-data">
+      <%= l(n.created_at, format: "%d/%m/%Y %H:%M") %>
+    </small>
+</li>
 
 
-
+                      <% end %>
+                    </ul>
+                  <% else %>
+                    <div class="sem-notificacoes">Nenhuma notificação nova</div>
+                  <% end %>
+                </div>
+              </div>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
     <main>
-    
-    <div class="banner">
-    
-      <% unless (controller_path == "users/registrations" && action_name == "edit") || 
-          (controller_path == "devise/sessions" && action_name == "new") %>
-
-  <div class="title-wrapper">
-    <button id="toggleSidebarBtn" class="menu-toggle-btn" title="Abrir Menu">
-      <i class="fa-solid fa-bars"></i>
-    </button>
-    <img src="/logo.png" alt="Logo" class="logo-title">
-    <h1 class="hide-on-mobile title"><%= page_title %></h1>
-  </div>
-
-  <% if page_menu.present? %>
-    <div class="fade-border menu">
-      <%= page_menu %>
-    </div>
+      <div class="banner">
+        <% unless (controller_path == "users/registrations" && action_name == "edit") || 
+          (controller_path == "devise/sessions" && action_name == "new") ||
+          (controller_path == "users/sessions" && action_name == "new") %>
+        <div class="title-wrapper">
+          <button id="toggleSidebarBtn" class="menu-toggle-btn" title="Abrir Menu">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <img src="/logo.png" alt="Logo" class="logo-title">
+          <h1 class="hide-on-mobile title"><%= page_title %></h1>
+        </div>
+        <% if page_menu.present? %>
+          <div class="fade-border menu">
+            <%= page_menu %>
+          </div>
+        <% end %>
+      </div>
+      <nav class="sidebar sidebar-hidden">
+        <ul class="sidebar-links">
+          <%= sidebar_menu %>
+        </ul>
+      </nav>
+      <br>
+      <br>
+      <br>
+      <br>
+      <br>
+    <% end %>
   <% end %>
+  <%= yield %>
+</main>
+<div id="backup-progress" style="
+  position: fixed;
+  bottom: 30px;
+  left: 20px;
+  background: #ffc107;
+  color: #000;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-weight: bold;
+  display: none;
+  z-index: 9999;">
+  ⏳ Backup em andamento...
 </div>
-  <nav class="sidebar sidebar-hidden">
-    <ul class="sidebar-links">
-      <%= sidebar_menu %>
-    </ul>
-  </nav>
-
-
-<br>
-<br>
-<br>
-<br>
-<br>
-
-
-<% end %>
-<% end %>
-      <%= yield %>
-    </main>
-
-    <%# Notificação dinâmica com JS externo %>
-    <% if flash[:notice] || flash[:alert] %>
-<div
+<%# Notificação dinâmica com JS externo %>
+<% if flash[:notice] || flash[:alert] %>
+  <div
   id="notification-flash"
   data-message="<%= flash[:notice] || flash[:alert] %>"
   data-type="<%= flash[:notice] ? 'success' : 'error' %>"
@@ -133,85 +193,816 @@
     align-items: center;
     gap: 10px;
   ">
-  <% if flash[:notice] %>
-  <i class="fa-solid fa-circle-check"></i>
-  <%= flash[:notice] %>
-<% elsif flash[:alert] %>
-  <i class="fa-solid fa-triangle-exclamation"></i>
-  <%= flash[:alert] %>
+    <% if flash[:notice] %>
+      <i class="fa-solid fa-circle-check"></i>
+      <%= flash[:notice] %>
+    <% elsif flash[:alert] %>
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <%= flash[:alert] %>
+    <% end %>
+  </div>
 <% end %>
 
-</div>
+<% if user_signed_in? %>
+  <% participant = current_user.participant %>
+
+  <div id="user-profile-modal" class="pmodal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="pmodal__backdrop" id="user-profile-backdrop"></div>
+
+    <div class="pmodal__dialog" role="document" aria-labelledby="user-profile-title">
+      <div class="pmodal__header">
+        <h5 id="user-profile-title">Perfil</h5>
+        <button type="button" class="pmodal__close" id="user-profile-close" aria-label="Fechar">✕</button>
+      </div>
+
+      <div class="pmodal__body">
+        <div class="profile-row">
+          <div class="profile-avatar">
+            <% if participant&.photo&.attached? %>
+              <%= image_tag url_for(participant.photo) %>
+            <% else %>
+              <i class="fa-solid fa-circle-user"></i>
+            <% end %>
+          </div>
+          <div class="profile-info">
+            <div><strong><%= participant&.name || current_user.email %></strong></div>
+            <div class="muted"><%= current_user.email %></div>
+            <div class="muted">Empresa: <%= participant&.grupo_empresa&.nome || "-" %></div>
+          </div>
+        </div>
+
+        <hr class="pmodal__divider">
+
+        <div class="zoom-block">
+          <div class="zoom-title"><i class="fa-solid fa-magnifying-glass"></i> Ajuste de zoom</div>
+          <div class="zoom-options" role="group" aria-label="Zoom">
+            <button type="button" class="btn-chip" data-zoom="0.7">Pequeno</button>
+            <button type="button" class="btn-chip" data-zoom="0.8">Padrão</button>
+            <button type="button" class="btn-chip" data-zoom="1.0">Médio</button>
+            <button type="button" class="btn-chip" data-zoom="1.25">Grande</button>
+          </div>
+          <small class="muted">Aplica no app (não muda o zoom do navegador).</small>
+        </div>
+      </div>
+
+      <div class="pmodal__footer">
+        <%= button_to destroy_user_session_path,
+              method: :delete,
+              class: "btn-danger" do %>
+  <i class="fa-solid fa-right-from-bracket"></i> Sair
 <% end %>
 
+        
+      </div>
+    </div>
+  </div>
+<% end %>
 
-    
-  </body>
+</body>
 </html>
+<div id="modal-detalhe-notificacao" class="modal-overlay" style="display: none;">
+  <div class="modal-conteudo">
+    <button class="fechar-modal" onclick="fecharModalNotificacao()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+    <h2 id="modal-titulo"></h2>
+    <p id="modal-mensagem"></p>
+  </div>
+</div>
+
+
+
+<%= render "shared/feedback_fab" %>
+<%= render "shared/feedback_modal" %>
+
+<%= javascript_include_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" %>
 
 <script>
- // Quando a página começar a carregar
-  window.addEventListener("DOMContentLoaded", () => {
-    document.querySelector(".menu").classList.add("fade-border");
-  });
+  function toggleNotificacoesSidebar() {
+    const overlay = document.getElementById("notificacoes-overlay");
+    const sidebar = document.getElementById("notificacoes-sidebar");
 
-  // Quando a página terminar de carregar tudo
-  window.addEventListener("load", () => {
-    setTimeout(() => {
-      document.querySelector(".menu").classList.remove("fade-border");
-document.querySelector(".menu").classList.add("fade-border-stop");
+    // Mostra o fundo escuro com fade
+    overlay.style.display = "block";
+    setTimeout(() => overlay.classList.add("visivel"), 10);
 
-     
-    }, 1000); // espera 1s para sumir suavemente
-  });
+    // Mostra o painel e aplica a classe que desliza ele
+    sidebar.style.display = "block";
+    setTimeout(() => sidebar.classList.add("aberta"), 10);
+  }
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const sidebar = document.querySelector(".sidebar");
-    const toggleBtn = document.getElementById("toggleSidebarBtn");
 
-    toggleBtn.addEventListener("click", function () {
-      sidebar.classList.toggle("sidebar-hidden");
+  function fecharSidebarNotificacoes(event) {
+    const overlay = document.getElementById("notificacoes-overlay");
+    const sidebar = document.getElementById("notificacoes-sidebar");
+
+    // Fecha o painel lateral com transição
+    sidebar.classList.remove("aberta");
+
+    // Esconde o overlay com fade
+    overlay.classList.remove("visivel");
+
+    // Aguarda a transição do painel (deslizar) e então aplica display: none
+    sidebar.addEventListener("transitionend", function handleSidebarTransition(e) {
+      if (e.propertyName === "right") {
+        sidebar.style.display = "none";
+        sidebar.removeEventListener("transitionend", handleSidebarTransition);
+      }
     });
-  });
+
+    // Após fade do overlay, oculta ele também
+    setTimeout(() => {
+      overlay.style.display = "none";
+    }, 300); // Tempo igual ao da transição no CSS
+  }
 
 
-  document.addEventListener("DOMContentLoaded", function () {
-    const toggles = document.querySelectorAll(".submenu-toggle");
 
-    toggles.forEach(toggle => {
-      toggle.addEventListener("click", function () {
-        const targetSelector = toggle.dataset.target;
-        const submenu = document.querySelector(targetSelector);
-        const chevron = toggle.querySelector(".chevron-icon");
 
-        if (submenu.style.display === "none" || submenu.style.display === "") {
-          submenu.style.display = "block";
-          chevron.style.transform = "rotate(180deg)";
-        } else {
-          submenu.style.display = "none";
-          chevron.style.transform = "rotate(0deg)";
-        }
+
+   // Quando a página começar a carregar
+    window.addEventListener("DOMContentLoaded", () => {
+      document.querySelector(".menu").classList.add("fade-border");
+    });
+
+    // Quando a página terminar de carregar tudo
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        document.querySelector(".menu").classList.remove("fade-border");
+  document.querySelector(".menu").classList.add("fade-border-stop");
+
+
+      }, 1000); // espera 1s para sumir suavemente
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const sidebar = document.querySelector(".sidebar");
+      const toggleBtn = document.getElementById("toggleSidebarBtn");
+
+      toggleBtn.addEventListener("click", function () {
+        sidebar.classList.toggle("sidebar-hidden");
       });
     });
-  });
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const toggles = document.querySelectorAll(".submenu-toggle");
+
+      toggles.forEach(toggle => {
+        toggle.addEventListener("click", function () {
+          const targetSelector = toggle.dataset.target;
+          const submenu = document.querySelector(targetSelector);
+          const chevron = toggle.querySelector(".chevron-icon");
+
+          if (submenu.style.display === "none" || submenu.style.display === "") {
+            submenu.style.display = "block";
+            chevron.style.transform = "rotate(180deg)";
+          } else {
+            submenu.style.display = "none";
+            chevron.style.transform = "rotate(0deg)";
+          }
+        });
+      });
+    });
 
 
   document.addEventListener("DOMContentLoaded", function () {
     const toggle = document.getElementById("toggle-theme");
+    const label = document.getElementById("theme-label");
     const root = document.documentElement;
 
+    function updateLabel() {
+      const isDark = root.getAttribute("data-theme") === "dark";
+      label.textContent = isDark ? "Modo Claro" : "Modo Escuro";
+    }
+
+    // Inicializa o label com base no tema salvo
     if (localStorage.getItem("theme") === "dark") {
       root.setAttribute("data-theme", "dark");
     }
+
+    updateLabel();
 
     toggle.addEventListener("click", () => {
       const isDark = root.getAttribute("data-theme") === "dark";
       root.setAttribute("data-theme", isDark ? "light" : "dark");
       localStorage.setItem("theme", isDark ? "light" : "dark");
+      updateLabel();
     });
   });
 
 
 
+  document.addEventListener("DOMContentLoaded", function() {
+    function checkImportStatus() {
+      fetch("/import_logs/status")
+        .then(response => response.json())
+        .then(data => {
+          const progressDiv = document.getElementById("backup-progress");
 
+          if (data.status === "executando") {
+            progressDiv.style.display = "block";
+            progressDiv.innerHTML = `⏳ ${data.message}`;
+          } else if (data.status === "finalizado") {
+            progressDiv.innerHTML = `✅ ${data.message}`;
+            setTimeout(() => progressDiv.style.display = "none", 5000);
+          } else if (data.status === "erro") {
+            progressDiv.innerHTML = `❌ ${data.message}`;
+            setTimeout(() => progressDiv.style.display = "none", 8000);
+          } else {
+            progressDiv.style.display = "none";
+          }
+        });
+    }
+
+    setInterval(checkImportStatus, 5000);
+    checkImportStatus();
+  });
+
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".abrir-detalhe-notificacao").forEach(btn => {
+  btn.addEventListener("click", function () {
+    const titulo   = this.dataset.titulo;
+    const mensagem = this.dataset.mensagem;
+    const data     = this.dataset.data; // <- vem do ERB acima
+
+    document.getElementById("modal-titulo").textContent = titulo;
+    document.getElementById("modal-mensagem").textContent = mensagem;
+
+    // Se quiser mostrar a data:
+    const modal = document.getElementById("modal-detalhe-notificacao");
+    let dataEl = modal.querySelector(".modal-data");
+    if (!dataEl) {
+      dataEl = document.createElement("p");
+      dataEl.className = "modal-data";
+      modal.querySelector(".modal-conteudo").appendChild(dataEl);
+    }
+    dataEl.textContent = `📅 ${data}`;
+    
+    modal.style.display = "flex";
+  });
+});
+
+  });
+
+  function fecharModalNotificacao() {
+    document.getElementById("modal-detalhe-notificacao").style.display = "none";
+  }
+
+   document.addEventListener("DOMContentLoaded", function () {
+    const token = document.querySelector('meta[name="csrf-token"]').content;
+
+    // Pega todos os formulários remotos
+    document.querySelectorAll('form[data-remote="true"]').forEach(function(form) {
+      if (!form.querySelector('input[name="authenticity_token"]')) {
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'authenticity_token';
+        hidden.value = token;
+        form.appendChild(hidden);
+      }
+    });
+  });
+
+  document.addEventListener("DOMContentLoaded", () => {
+  const logo = document.querySelector(".logo-title");
+
+  function updateLogo() {
+    if (document.documentElement.getAttribute("data-theme") === "dark") {
+      logo.src = "/logo.png";
+    } else {
+      logo.src = "/logo-dark.png";
+    }
+  }
+
+  // Atualiza ao carregar
+  updateLogo();
+
+  // Atualiza sempre que mudar o tema
+  const themeToggle = document.getElementById("toggle-theme");
+  if (themeToggle) {
+    themeToggle.addEventListener("click", updateLogo);
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function(){
+  const nudge   = document.getElementById('notifNudge');
+  const bellBtn = document.querySelector('.notification-btn');
+  if (!bellBtn || !nudge) return;
+
+  const SHOW_CLASS = 'show';
+  const ATT_CLASS  = 'attention';
+  let dismissedThisSession = false; // <- não reabre até recarregar
+
+  function getUnreadCount() {
+    const badge = bellBtn.querySelector('.badge');
+    if (!badge) return 0;
+    const v = parseInt((badge.textContent || '0').trim(), 10);
+    return Number.isNaN(v) ? 0 : v;
+  }
+
+  function applyVisual(show) {
+    if (show) {
+      bellBtn.classList.add(ATT_CLASS);
+      nudge.classList.add(SHOW_CLASS);
+    } else {
+      bellBtn.classList.remove(ATT_CLASS);
+      nudge.classList.remove(SHOW_CLASS);
+    }
+  }
+
+  function syncVisualInitial() {
+    const hasUnread = getUnreadCount() > 0;
+    applyVisual(hasUnread && !dismissedThisSession);
+  }
+
+  // Ao carregar: mostra se houver notificações e ainda não foi dispensado
+  syncVisualInitial();
+
+  function dismiss() {
+    dismissedThisSession = true;
+    applyVisual(false);
+  }
+
+  // Clicar no sino → fecha e NÃO reabre até reload
+  bellBtn.addEventListener('click', dismiss);
+
+  // Botão X do balão → mesma coisa
+  nudge.querySelector('.notif-nudge-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    dismiss();
+  });
+
+  // Se o badge mudar (ex.: limpar todas), atualiza visual.
+  // Importante: se já foi dispensado, NÃO reabrir mesmo que o número suba de novo.
+  const observer = new MutationObserver(() => {
+    const hasUnread = getUnreadCount() > 0;
+    if (!hasUnread) {
+      applyVisual(false);
+      // opcional: resetar o flag quando zerar tudo (se quiser que volte sem reload quando chegarem novas)
+      // dismissedThisSession = false;
+    } else if (!dismissedThisSession) {
+      applyVisual(true);
+    }
+  });
+  observer.observe(bellBtn, { childList: true, subtree: true, characterData: true });
+});
+
+/* feedback */
+
+
+document.addEventListener("DOMContentLoaded", function(){
+  const fab     = document.getElementById("feedback-fab");
+  const overlay = document.getElementById("feedback-modal");
+  const closeBtn= overlay?.querySelector(".feedback-modal-close");
+  const cancel  = overlay?.querySelector(".feedback-cancel");
+
+  function openModal(){
+    // Preenche metadados da página
+    document.getElementById("feedback_page_title").value = document.title || "";
+    document.getElementById("feedback_page_path").value  = window.location.pathname || "";
+    document.getElementById("feedback_page_url").value   = window.location.href || "";
+    document.getElementById("feedback_user_agent").value = navigator.userAgent || "";
+
+    try {
+      const params = Object.fromEntries(new URL(window.location.href).searchParams.entries());
+      document.getElementById("feedback_url_params").value = JSON.stringify(params || {});
+    } catch(e) {
+      document.getElementById("feedback_url_params").value = JSON.stringify({});
+    }
+
+    // Captura texto selecionado, se houver
+    const sel = window.getSelection ? window.getSelection().toString() : "";
+    document.getElementById("feedback_selected_text").value = sel || "";
+
+    overlay.style.display = "block";
+  }
+
+  function closeModal(){
+    overlay.style.display = "none";
+  }
+
+  fab?.addEventListener("click", openModal);
+  closeBtn?.addEventListener("click", closeModal);
+  cancel?.addEventListener("click", closeModal);
+
+  // Fechar ao clicar fora
+  overlay?.addEventListener("click", function(e){
+    if (e.target === overlay) closeModal();
+  });
+});
+
+
+/****/
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  // ---- refs
+  const trigger   = document.getElementById('user-avatar-trigger');
+  const modal     = document.getElementById('user-profile-modal');
+  if (!modal || !trigger) return; // não logado ou sem avatar
+
+  const backdrop  = document.getElementById('user-profile-backdrop');
+  const closeBtn  = document.getElementById('user-profile-close');
+  const cancelBtn = document.getElementById('user-profile-cancel');
+  const zoomBtns  = modal.querySelectorAll('.btn-chip');
+
+  // ---- abrir/fechar
+  function openModal() {
+    modal.classList.add('is-open');
+    document.body.classList.add('noscroll');
+    highlightCurrentZoom();
+  }
+  function closeModal() {
+    modal.classList.remove('is-open');
+    document.body.classList.remove('noscroll');
+  }
+
+  trigger.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('is-open')) closeModal(); });
+
+  // ---- ZOOM
+  const ZOOM_KEY = 'zoomScale';
+
+  function applyZoom(scale) {
+    document.documentElement.style.setProperty('--zoom', scale);
+    try { localStorage.setItem(ZOOM_KEY, String(scale)); } catch(e) {}
+  }
+
+function getSavedZoom() {
+  try {
+    const v = parseFloat(localStorage.getItem('zoomScale'));
+    return Number.isFinite(v) ? v : 0.8; // ← inicia em Padrão (0.8)
+  } catch(e) { return 0.8; }
+}
+
+
+  function highlightCurrentZoom() {
+    const current = getSavedZoom();
+    zoomBtns.forEach(btn => {
+      const s = parseFloat(btn.dataset.zoom);
+      btn.classList.toggle('active', Math.abs(s - current) < 0.001);
+    });
+  }
+
+  // aplica no load
+  applyZoom(getSavedZoom());
+
+  // clique nas opções
+  zoomBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const scale = parseFloat(btn.dataset.zoom);
+      applyZoom(scale);
+      highlightCurrentZoom();
+    });
+  });
+});
 </script>
+<style>
+#modal-mensagem{
+    color: #ccc !important;
+}
+.notificacao-data {
+  font-size: 0.8rem;
+  color: #888;
+  margin-left: 8px;
+}
+
+.modal-data {
+  font-size: 0.85rem;
+  color: #ccc !important;
+  margin-top: 8px;
+}
+
+
+  .notificacoes-lista li {
+    background-color: #ffffff;
+    border-left: 4px solid #3498db;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    color: #ecf0f1;
+    font-size: 15px;
+    display: flex
+;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    flex-direction: column;
+  }
+
+  .notificacoes-lista li:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 15px rgba(0,0,0,0.2);
+    background-color: #ebebebff;
+  }
+
+  .notificacoes-lista li form {
+      display: flex
+  ;
+      align-items: center;
+      justify-content: flex-end;
+  }
+
+  .notificacoes-lista li button {
+    all: unset;
+    cursor: pointer;
+    color: #0a0a0a;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px;
+  }
+  .notificacoes-lista-close{
+      padding: 6px;
+      border-radius: 5px;
+      text-decoration: none !important;
+  }
+  .notificacoes-lista-close:hover{
+      background: #ffafb0;
+      text-decoration: none !important;
+          }
+  .notificacoes-lista li button:hover {
+    text-decoration: none !important;
+    color: #1abc9c;
+  }
+
+  .notificacoes-lista li i {
+    color: #3498db;
+    margin-right: 10px;
+  }
+
+
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+
+  .modal-conteudo {
+    background: var(--bg-main, #1e2a38);
+    padding: 25px;
+    border-radius: 12px;
+    color: white;
+    max-width: 450px;
+    width: 90%;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    position: relative;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .modal-conteudo h2 {
+    margin-top: 0;
+    margin-bottom: 10px;
+  }
+
+  .modal-conteudo p {
+    font-size: 15px;
+    line-height: 1.4;
+    color: white;
+  }
+
+  .fechar-modal {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    color: white;
+    cursor: pointer;
+  }
+
+  @keyframes fadeIn {
+    from { transform: scale(0.95); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .notificacao-conteudo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #ffffff;
+    padding: 10px 12px;
+    border-radius: 6px;
+    color: white;
+  }
+
+  .btn-fechar-notificacao {
+    background: none;
+    border: none;
+    color: #ccc;
+    font-size: 1.1rem;
+    cursor: pointer;
+  }
+
+  .btn-fechar-notificacao:hover {
+    color: #ff4d4f;
+  }
+
+  .limpar-todas-btn {
+    background-color: #ff4d4f;
+    border: none;
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+    margin-bottom: 10px;
+  }
+
+  .limpar-todas-btn:hover {
+    background-color: #d9363e;
+  }
+
+
+  .notification-icon-wrapper {
+    position: relative;
+    margin-left: 15px;
+  }
+
+  .notification-btn {
+    background: none;
+    border: none;
+    position: relative;
+    cursor: pointer;
+    font-size: 20px;
+      color: var(--color-text);
+  }
+
+  .notification-btn .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: red;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 50%;
+    font-size: 12px;
+  }
+
+  .notificacoes-sidebar {
+    position: fixed;
+    top: 0;
+    right: -350px;
+    width: 350px;
+    height: -webkit-fill-available;
+    background-color: var(--bg-main, #2c3e50);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    transition: right 0.3s ease-in-out;
+    z-index: 9999;
+    padding: 20px;
+    overflow-y: auto;
+    display: none;
+  }
+
+  .notificacoes-sidebar.aberta {
+    right: 0;
+  }
+
+
+
+  .sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+      color: white;
+  }
+
+  .sidebar-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+  }
+
+  .fechar-sidebar {
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    cursor: pointer;
+  }
+
+  .notificacoes-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .notificacoes-lista li {
+    margin-bottom: 10px;
+  }
+
+  .sem-notificacoes {
+    font-style: italic;
+    color: #888;
+  }
+
+  .notificacoes-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.3);
+    z-index: 9998;
+     opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  .notificacoes-overlay.visivel {
+    display: block;
+    opacity: 1;
+  }
+
+  /* Ping no sino */
+.notification-btn.attention::before{
+  content:"";
+  position:absolute;
+  inset:-6px;
+  border-radius:50%;
+  border:2px solid #ffc107;
+  opacity:0;
+  animation:pulseBell 1.8s ease-out infinite;
+}
+@keyframes pulseBell{
+  0%{transform:scale(.85); opacity:.95;}
+  70%{transform:scale(1.45); opacity:0;}
+  100%{opacity:0;}
+}
+
+/* Balão apontando para o sino */
+.notif-nudge {
+    position: absolute;
+    top: 36px;
+    left: -9px;
+    background: #ffc107;
+    color: #222;
+    padding: 8px 12px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .2);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    gap: .5rem;
+    font-weight: 600;
+    animation: nudgeIn .18s ease-out, floaty 3s ease-in-out infinite;
+}
+
+.notif-nudge.show{ display:flex; }
+
+.notif-nudge::after{
+    content: "";
+  position: absolute;
+  top: -5px;           /* posiciona acima do balão */
+  left: 20px;          /* centraliza horizontalmente (ajuste conforme precisar) */
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #ffc107;  /* seta para baixo (apontando pra cima) */
+}
+
+.notif-nudge .notif-nudge-close{
+  background:transparent;
+  border:0;
+  margin-left:6px;
+  font-size:16px;
+  line-height:1;
+  cursor:pointer;
+}
+
+@keyframes nudgeIn{
+  from{ transform:translateY(-6px); opacity:0; }
+  to  { transform:translateY(0);    opacity:1; }
+}
+@keyframes floaty{
+  0%,100%{ transform:translateY(0); }
+  50%    { transform:translateY(-2px); }
+}
+
+/* Responsivo: em telas pequenas, joga o balão para baixo do sino */
+@media (max-width: 520px){
+  .notif-nudge{
+    top:36px;
+    right:-4px;
+  }
+  .notif-nudge::after{
+    top:-6px;
+    right:18px;
+    border-left:6px solid transparent;
+    border-right:6px solid transparent;
+    border-bottom:6px solid #ffc107;   /* setinha para cima */
+  }
+}
+
+</style>

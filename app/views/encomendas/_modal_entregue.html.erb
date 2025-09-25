@@ -1,0 +1,66 @@
+<div id="entregueOverlay" class="modal-overlay">
+  <div class="modal-box">
+    <%= form_with url: "#", method: :patch, id: 'formEntregue', scope: nil do |f| %>
+      <h5>Quem está recebendo?</h5>
+
+      <!-- Dropdown de empresa -->
+      <div class="form-group mb-3">
+        <%= select_tag :grupo_empresa_id,
+            options_from_collection_for_select(GrupoEmpresa.all.order(:nome), :id, :nome),
+            prompt: "Selecione a empresa",
+            class: "form-select", id: "empresaSelect", required: true %>
+      </div>
+
+      <!-- Dropdown de participante filtrado -->
+      <div class="form-group mb-3">
+        <%= select_tag :recebido_por_id,
+            "", prompt: "Selecione o participante",
+            class: "form-select", id: "participanteSelect", required: true %>
+      </div>
+
+      <div class="text-end">
+        <%= f.submit 'Confirmar Entrega', class: 'btn btn-success' %>
+        <button type="button" class="btn btn-secondary" data-close-modal>Cancelar</button>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const empresaSelect = document.getElementById('empresaSelect');
+  const participanteSelect = document.getElementById('participanteSelect');
+
+  empresaSelect.addEventListener('change', () => {
+    const empresaId = empresaSelect.value;
+    participanteSelect.innerHTML = '<option>Carregando...</option>';
+
+    fetch(`/participants/por_empresa/${empresaId}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Erro ao buscar participantes");
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("🔍 Participantes recebidos:", data); // 👈 debug no console
+        participanteSelect.innerHTML = '<option value="">Selecione o participante</option>';
+        data.participantes.forEach(participante => {
+          const option = document.createElement('option');
+          option.value = participante.id;
+          option.textContent = participante.name + (participante.tem_usuario ? "" : " ⚠️");
+          if (data.selecionado_id && participante.id === data.selecionado_id) {
+            option.selected = true;
+          }
+          participanteSelect.appendChild(option);
+        });
+      })
+      .catch(error => {
+        console.error("❌ Erro ao carregar participantes:", error);
+        participanteSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+      });
+  });
+});
+
+</script>

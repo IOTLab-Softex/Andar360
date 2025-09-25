@@ -89,21 +89,70 @@ end
     render layout: false
   end
 
-  def index
-  @participants = scoped_participants
+# app/controllers/participants_controller.rb
+def index
+  tab = params[:tab] || 'ativos'
+
+  case tab
+  when 'aprovacoes'
+  scope = FormularioCadastro.where(status: 'pendente')
 
   if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
-    @participants = @participants.where(grupo_empresa_id: params[:grupo_empresa_id])
+    scope = scope.where(grupo_empresa_id: params[:grupo_empresa_id])
+  elsif current_user.client? && current_user.participant&.grupo_empresa_id.present?
+    scope = scope.where(grupo_empresa_id: current_user.participant.grupo_empresa_id)
   end
 
-  if params[:search].present?
-    @participants = @participants.where("name ILIKE ? OR cpf ILIKE ?", "%#{params[:search]}%", "%#{params[:search]}%")
+  @formularios_pendentes = scope.order(created_at: :desc)
+
+  # 🔒 evita NoMethodError na view
+  @participants = Participant.none
+
+  else
+    @participants = scoped_participants
+    case tab
+    when 'ativos'
+      @participants = @participants.where("excluido = ? OR excluido IS NULL", false)
+    when 'excluidos'
+      @participants = @participants.where(excluido: true)
+    when 'pendentes'
+      ids = SolicitacaoParticipante.where(status: 'pendente').pluck(:participant_id)
+      @participants = @participants.where(id: ids)
+    end
+
+
+
+  if params[:tab] == 'aprovacoes'
+    @formularios_pendentes = FormularioCadastro.where(status: "pendente") # + filtros se houver
+  elsif params[:tab] == 'reprovados'
+    @formularios_reprovados = FormularioCadastro.where(status: "reprovado") # + filtros se houver
+  else
+    @participants = Participant.all # já existente
   end
 
-  if params[:sub_grupo_empresa_id].present?
-    @participants = @participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id])
+
+
+    # filtros existentes...
+    if params[:solicitacao_status].present?
+      ids = SolicitacaoParticipante.where(status: params[:solicitacao_status]).pluck(:participant_id)
+      @participants = @participants.where(id: ids)
+    end
+
+    if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
+      @participants = @participants.where(grupo_empresa_id: params[:grupo_empresa_id])
+    end
+
+    if params[:search].present?
+      @participants = @participants.where("name ILIKE ? OR cpf ILIKE ?", "%#{params[:search]}%", "%#{params[:search]}%")
+    end
+
+    if params[:sub_grupo_empresa_id].present?
+      @participants = @participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id])
+    end
   end
 end
+
+
 
 
 def delete_all
@@ -156,6 +205,77 @@ end
   @participant.destroy
   redirect_to participants_path, notice: "Participante excluído com sucesso."
 end
+
+def resgatar
+  @participant = Participant.find(params[:id])
+  @participant.update(excluido: false)
+  redirect_to participants_path(tab: 'ativos'), notice: "Participante resgatado com sucesso."
+end
+
+
+def solicitar_exclusao
+    @participant = Participant.find(params[:id])
+    SolicitacaoParticipante.create!(
+      participant: @participant,
+      motivo: params[:motivo], # pode ser nil ou coletado em modal/form
+      status: :pendente
+    )
+    redirect_to participants_path, notice: 'Solicitação de exclusão criada. Aguarde aprovação.'
+  end
+
+# app/controllers/participants_controller.rb
+def por_empresa
+  grupo = GrupoEmpresa.find(params[:id])
+  participantes = grupo.participants.includes(:user).order(:name)
+
+  participantes_com_usuario = participantes.select { |p| p.user.present? }
+  selecionado_id = if participantes_com_usuario.any? { |p| p.id == current_user.participant_id }
+                     current_user.participant_id
+                   else
+                     participantes_com_usuario.first&.id
+                   end
+
+  render json: {
+    participantes: participantes.map do |p|
+      {
+        id: p.id,
+        name: p.name,
+        tem_usuario: p.user.present?
+      }
+    end,
+    selecionado_id: selecionado_id
+  }
+end
+
+def aprovar_exclusao
+  @participant = Participant.find(params[:id])
+  solicitacao = @participant.solicitacao_exclusao_pendente
+  if solicitacao
+    solicitacao.update!(status: 'aprovado')
+    @participant.update!(excluido: true)
+    redirect_to participants_path(tab: 'pendentes'), notice: "Exclusão aprovada e participante removido!"
+  else
+    redirect_to participants_path(tab: 'pendentes'), alert: "Solicitação não encontrada."
+  end
+end
+
+def reprovar_exclusao
+  @participant = Participant.find(params[:id])
+  solicitacao = @participant.solicitacao_exclusao_pendente
+
+  if solicitacao
+    novo_status = current_user.client? ? 'cancelado' : 'reprovado' # precisa existir no enum/tabela
+    solicitacao.update!(status: novo_status)
+    @participant.update!(excluido: false)
+    msg = current_user.client? ? "Solicitação cancelada." : "Solicitação reprovada."
+    redirect_to participants_path(tab: 'pendentes'), notice: msg
+  else
+    redirect_to participants_path(tab: 'pendentes'), alert: "Solicitação não encontrada."
+  end
+end
+
+
+
 
 private
 

@@ -1,0 +1,797 @@
+<div id="modal-image-viewer" onclick="hideModal()">
+  <span class="close-modal">&times;</span>
+  <img src="" alt="Visualizar imagem">
+</div>
+
+<%= form_with(model: @chamado, local: true, html: { multipart: true }) do |form| %>
+
+<div class="form-group">
+<div class="mt-3 text-center" style="
+    display: flex;
+    justify-content: center;
+">
+  <%= form.button type: "submit", class: "btn btn-success" do %>
+    <i class="fa-solid fa-floppy-disk"></i>
+    <%= form.object.persisted? ? "Salvar" : "Criar" %>
+  <% end %>
+</div>
+</div>
+
+
+  <br>
+
+<div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+  <div style="flex: 1;">
+    <%= form.label :os %>
+    <%= form.text_field :os, class: "form-control", readonly: true %>
+  </div>
+
+<div style="flex: 1;">
+  <%= form.label :room_id, "Unidade" %>
+  <%= form.collection_select :room_id, @rooms_disponiveis, :id, :name, { prompt: "Selecione uma sala" }, class: "form-control" %>
+</div>
+
+
+  <div style="flex: 2;">
+    <%= form.label :titulo, "Título*" %>
+    <%= form.text_field :titulo, class: "form-control" %>
+  </div>
+
+  <div style="flex: 1;">
+    <%= form.label :prioridade %>
+    <%= form.select :prioridade, options_for_select(['Muito Baixo', 'Baixo', 'Médio', 'Alto', 'Crítico']), {}, class: "form-control" %>
+  </div>
+
+<% if current_user.admin? || current_user.role == "operador" %>
+  <div style="flex: 1;">
+    <%= form.label :status %>
+    <%= form.select :status, options_for_select(['Em andamento', 'Concluído', 'Pendente']), {}, class: "form-control" %>
+  </div>
+
+  <div style="flex: 1;">
+    <%= form.label :data_resolucao, "Data de Resolução" %>
+    <%= form.date_field :data_resolucao, class: "form-control" %>
+  </div>
+<% end %>
+
+
+
+<% if current_user.admin? || current_user.role == "operador" %>
+  <div style="flex: 1;">
+    <%= form.label :exibir_no_app, "Exibir no App" %>
+    <%= form.select :exibir_no_app, [["Sim", true], ["Não", false]], {}, class: "form-control" %>
+  </div>
+<% end %>
+
+
+  <div style="flex: 1;">
+    <%= form.label :local %>
+    <%= form.text_field :local, class: "form-control" %>
+  </div>
+
+<div style="flex: 1;">
+  <%= form.label :responsavel, "Responsável" %>
+  <%= form.collection_select :responsavel, @possiveis_responsaveis, :name, :name, { prompt: "Selecione o responsável" }, class: "form-control" %>
+</div>
+
+
+  <div style="flex: 1 1 100%;">
+    <%= form.label :observacao, "Observação" %>
+    <%= form.text_area :observacao, class: "form-control" %>
+  </div>
+</div>
+
+<div class="form-group" style="flex: 1;">
+  <%= form.label :fotos, "Fotos do Chamado" %>
+  <%= form.file_field :fotos, multiple: true, class: "form-control", id: "fotos-upload" %>
+
+</div>
+
+<div class="form-group" style="flex: 1;">
+  <%= form.label :fotos, "Fotos para adicionar" %>
+  <div id="fotos-preview" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;"></div>
+
+</div>
+
+
+<% if form.object.persisted? && form.object.fotos.attached? %>
+  <div class="form-group" style="flex: 1;">
+    <%= form.label :fotos, "Fotos existentes" %>
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
+      <% form.object.fotos.each do |foto| %>
+  <div class="image-thumb">
+    <%= image_tag url_for(foto), data: { full: url_for(foto) } %>
+
+    <%= link_to remove_foto_chamado_path(form.object, foto_id: foto.signed_id),
+                method: :delete,
+                data: { confirm: "Remover esta foto?" },
+                class: "remove-foto-btn" do %>
+      ✕
+    <% end %>
+
+    <div class="overlay-eye" onclick="showModal(this)">
+      <i class="fa-solid fa-eye"></i>
+    </div>
+  </div>
+<% end %>
+
+    </div>
+  </div>
+<% end %>
+<% end %>
+
+
+<% if @chamado.persisted? %>
+  <div class="form-group">
+    <div class="section-header">
+      <h5><i class="fa fa-paperclip"></i> Anexos</h5>
+      <button id="abrir-modal-anexar" type="button" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-paperclip"></i> Novo Anexo
+      </button>
+    </div>
+    <div class="section-body lista-anexos">
+
+      <% any = false %>
+
+      <%# 1) Arquivos anexados diretamente no Chamado %>
+      <% @chamado.arquivos_anexos_chamado.each do |anexo| %>
+        <% any = true %>
+        <div class="anexo-item">
+          <div class="anexo-info">
+            <%= link_to url_for(anexo.arquivo), target: "_blank", class: "anexo-link" do %>
+              <i class="fa fa-download"></i> <%= anexo.nome %>
+            <% end %>
+          </div>
+          <%= button_to chamado_arquivos_anexos_chamado_path(@chamado, anexo),
+              method: :delete,
+              data: { confirm: "Remover este anexo?" },
+              class: "anexo-remover" do %>
+  ✕
+<% end %>
+
+        </div>
+      <% end %>
+
+      <%# 2) Arquivos anexados nas Ocorrências do Chamado %>
+<% @chamado.ocorrencias.order(created_at: :desc).each do |oc| %>
+  <% if oc.arquivos.attached? %>
+    <div class="subsection-header">
+      <small><i class="fa fa-history"></i>
+        Ocorrência em <%= oc.data_ocorrencia.strftime("%d/%m/%Y") %>
+      </small>
+    </div>
+    <% oc.arquivos.each do |blob| %>
+      <% any = true %>
+      <div class="anexo-item">
+        <div class="anexo-info">
+          <%= link_to url_for(blob), target: "_blank", class: "anexo-link" do %>
+            <i class="fa fa-download"></i> <%= blob.filename.to_s %>
+          <% end %>
+        </div>
+<%= button_to "✕",
+    remover_arquivo_ocorrencia_path(oc, blob_signed_id: blob.signed_id),
+    method: :delete,
+    data: { confirm: "Remover este arquivo da ocorrência?" },
+    class: "anexo-remover" %>
+
+
+
+
+      </div>
+    <% end %>
+  <% end %>
+<% end %>
+
+
+
+      <% unless any %>
+        <p class="text-muted text-center">Nenhum anexo encontrado.</p>
+      <% end %>
+
+    </div>
+  </div>
+<% end %>
+
+
+
+<% if @chamado.persisted? %>
+  <div id="modalAnexarArquivos" class="modal-custom" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Anexar Arquivos</h5>
+          <button type="button" class="close-modal" style="border: none; background: transparent;">&times;</button>
+        </div>
+        <div class="modal-body">
+          <%= form_with(model: @chamado, url: anexar_arquivo_chamado_path(@chamado), multipart: true, method: :patch, local: true) do |form| %>
+            <div class="mb-3">
+              <label for="nome_arquivo">Nome</label>
+              <input type="text" name="nome" id="nome_arquivo" class="form-control" required>
+            </div>
+
+            <div class="mb-3">
+              <label for="arquivo">Selecionar arquivo</label>
+              <input type="file" name="arquivo" id="arquivo" class="form-control" required>
+            </div>
+
+            <div class="text-end">
+              <%= form.submit "Anexar", class: "btn btn-primary" %>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+
+
+<% if @chamado.persisted? %>
+<%= render 'ocorrencias/ocorrencia_section', parent: @chamado %>
+
+<!-- Modal Anexar Arquivos -->
+<div id="modalAnexarMaisArquivos" class="modal-custom" style="display:none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Anexar Arquivos à Ocorrência</h5>
+        <button type="button" class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formAnexarArquivos" method="post" enctype="multipart/form-data">
+          <%= csrf_meta_tags %>
+          <input type="file" name="arquivos[]" multiple required class="form-control">
+          <button class="btn btn-primary mt-2">Enviar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<% end %>
+
+
+<% if @chamado.persisted? %>
+  <div id="modalAnexarArquivos" class="modal-custom" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Anexar Arquivos</h5>
+          <button type="button" class="close-modal" style="border: none; background: transparent;">&times;</button>
+        </div>
+
+
+
+        <div class="modal-body">
+          <%= form_with(url: anexar_arquivo_chamado_path(@chamado), multipart: true, method: :patch, local: true) do |form| %>
+  <div class="mb-3">
+    <label for="nome_arquivo">Nome</label>
+    <input type="text" name="nome" id="nome_arquivo" class="form-control" required>
+  </div>
+
+  <div class="mb-3">
+    <label for="arquivo">Selecionar arquivo</label>
+    <input type="file" name="arquivo" id="arquivo" class="form-control" required>
+  </div>
+
+  <div class="text-end">
+    <%= form.submit "Anexar", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+
+<div id="modalChecklist" class="modal-custom" style="display: none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Novo Item do Checklist</h5>
+        <button type="button" class="close-modal" style="border: none; background: transparent;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <%= form_with model: ChecklistItem.new, scope: :checklist_item, url: checklist_items_path, local: true do |f| %>
+          <%= f.hidden_field :chamado_id, value: @chamado.id %>
+
+          <div class="mb-3">
+            <%= f.label :descricao, "Descrição" %>
+            <%= f.text_area :descricao, class: "form-control", required: true %>
+          </div>
+
+          <div class="text-end">
+            <%= f.submit "Salvar", class: "btn btn-success" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.image-thumb {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  overflow: hidden;
+}
+
+.image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.overlay-eye {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.overlay-eye i {
+  font-size: 1.8rem;
+}
+
+.overlay-eye:hover {
+  background-color: rgba(0, 0, 0, 0.6);
+}
+
+
+.image-thumb:hover .overlay-eye {
+  opacity: 1;
+}
+
+.remove-foto-btn {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  background: #f44336;
+  color: white;
+  border-radius: 50%;
+  padding: 0 6px;
+  text-decoration: none;
+  font-weight: bold;
+  z-index: 2;
+}
+
+#modal-image-viewer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#modal-image-viewer img {
+  max-width: none;
+  max-height: none;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+}
+
+
+#modal-image-viewer .close-modal {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+
+.section-box {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  background-color: #fcfcfc;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.section-header h5 i {
+  margin-right: 0.75rem;
+  color: #555;
+}
+
+.section-body {
+  padding: 1.5rem;
+}
+
+.lista-anexos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.anexo-item {
+  display: flex;
+  align-items: center;
+  background-color: #3b6ea5;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  color: #fff;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.anexo-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* espaço entre ícone e texto */
+}
+
+.anexo-link i {
+  font-size: 1rem;
+}
+
+.anexo-remover {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  padding-left: 1rem; /* GAP do botão em relação ao nome */
+  cursor: pointer;
+}
+
+.anexo-remover i {
+  color: #f88;
+}
+
+
+.modal-custom {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+.modal-dialog {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  width: 400px;
+  border-radius: 6px;
+  color: var(--color-btn--text);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // --- INICIALIZADOR DE TOOLTIPS (SE VOCÊ USAR) ---
+  if (typeof bootstrap !== 'undefined') {
+    const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+    const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+  }
+
+  // --- LÓGICA DO MODAL DE OCORRÊNCIAS ---
+  const modalOcorrencia = document.getElementById('modalOcorrencia');
+  if (modalOcorrencia) {
+    const formOcorrencia = document.getElementById('formOcorrencia');
+    const openBtnOcorrencia = document.getElementById('abrir-modal-ocorrencia');
+    const createActionUrl = formOcorrencia.action;
+
+    // Listener para o botão "Registrar Ocorrência"
+    openBtnOcorrencia?.addEventListener('click', () => {
+      formOcorrencia.reset();
+      formOcorrencia.querySelector('input[name="_method"]')?.remove();
+
+      document.getElementById('ocorrencia-modal-title').textContent = "Registrar Ocorrência";
+      formOcorrencia.action = createActionUrl;
+      document.getElementById('submitOcorrenciaBtn').value = "Registrar";
+      document.getElementById('ocorrencia_id').value = "";
+      
+      modalOcorrencia.style.display = 'block';
+    });
+  }
+
+  // --- LISTENER GLOBAL PARA CLIQUES (EDITAR/FECHAR MODAIS) ---
+  document.addEventListener('click', (e) => {
+    // Ação para EDITAR Ocorrência
+    const editButton = e.target.closest('.editar-ocorrencia');
+    if (editButton) {
+      const modalOcorrencia = document.getElementById('modalOcorrencia');
+      if (!modalOcorrencia) return;
+
+      const formOcorrencia = document.getElementById('formOcorrencia');
+      const ocorrencia = JSON.parse(editButton.dataset.ocorrencia);
+
+      formOcorrencia.querySelector('input[name="_method"]')?.remove();
+      
+      document.getElementById('ocorrencia-modal-title').textContent = "Editar Ocorrência";
+      formOcorrencia.action = `/ocorrencias/${ocorrencia.id}`;
+      document.getElementById('submitOcorrenciaBtn').value = "Atualizar";
+      document.getElementById('ocorrencia_id').value = ocorrencia.id;
+
+      const methodInput = document.createElement('input');
+      methodInput.type = 'hidden';
+      methodInput.name = '_method';
+      methodInput.value = 'patch';
+      formOcorrencia.appendChild(methodInput);
+
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+      let tokenInput = formOcorrencia.querySelector('input[name="authenticity_token"]');
+      if (tokenInput) { tokenInput.value = csrfToken; }
+
+      document.getElementById('ocorrencia_data_ocorrencia').value = ocorrencia.data_ocorrencia;
+      document.getElementById('ocorrencia_proxima_data').value = ocorrencia.proxima_data;
+      document.getElementById('ocorrencia_descricao').value = ocorrencia.descricao;
+
+      modalOcorrencia.style.display = 'block';
+    }
+
+    // Ação para FECHAR qualquer modal
+    const closeButton = e.target.closest('.close-modal');
+    if (closeButton) {
+      closeButton.closest('.modal-custom').style.display = 'none';
+    }
+  });
+  
+  // Ação para fechar o modal clicando fora dele
+  window.addEventListener('click', (e) => {
+    if (e.target.matches('.modal-custom')) {
+      e.target.style.display = 'none';
+    }
+  });
+
+
+  // --- LÓGICA DA PRÉ-VISUALIZAÇÃO DE FOTOS ---
+  const input = document.getElementById("fotos-upload");
+  if (input) {
+    const previewContainer = document.getElementById("fotos-preview");
+    let allFiles = [];
+
+    input.addEventListener("change", function () {
+      const selectedFiles = Array.from(input.files);
+      selectedFiles.forEach(file => {
+        allFiles.push(file);
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const wrapper = document.createElement("div");
+          wrapper.className = 'image-thumb';
+          
+          const img = document.createElement("img");
+          img.src = e.target.result;
+
+          const removeBtn = document.createElement("a");
+          removeBtn.innerText = "✕";
+          removeBtn.className = 'remove-foto-btn';
+          removeBtn.href = '#';
+          removeBtn.onclick = (event) => {
+            event.preventDefault();
+            previewContainer.removeChild(wrapper);
+            allFiles = allFiles.filter(f => f !== file);
+            const dataTransfer = new DataTransfer();
+            allFiles.forEach(f => dataTransfer.items.add(f));
+            input.files = dataTransfer.files;
+          };
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(removeBtn);
+          previewContainer.appendChild(wrapper);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+}); // FIM do DOMContentLoaded
+
+// --- FUNÇÕES GLOBAIS PARA O MODAL DE IMAGEM (fora do DOMContentLoaded) ---
+let currentZoom = 1;
+
+function showModal(el) {
+  const thumb = el.closest(".image-thumb");
+  const image = thumb.querySelector("img");
+  const fullUrl = image?.getAttribute("src");
+
+  if (fullUrl) {
+    const modal = document.getElementById("modal-image-viewer");
+    const modalImg = modal.querySelector("img");
+    modalImg.src = fullUrl;
+    modalImg.style.transform = "scale(0.5)";
+    currentZoom = 0.5;
+    modal.style.display = "flex";
+  }
+}
+
+function hideModal() {
+  const modal = document.getElementById("modal-image-viewer");
+  if(modal) modal.style.display = "none";
+}
+
+const modalImgViewer = document.getElementById("modal-image-viewer");
+if (modalImgViewer) {
+  modalImgViewer.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    const modalImg = this.querySelector('img');
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    currentZoom = Math.max(0.2, Math.min(currentZoom + delta, 5));
+    modalImg.style.transform = `scale(${currentZoom})`;
+  });
+}
+
+// --- Lógica para o Modal: Anexar Arquivos (Geral) ---
+  const modalAnexar = document.getElementById('modalAnexarArquivos');
+  if (modalAnexar) {
+    const openBtnAnexar = document.getElementById('abrir-modal-anexar');
+    const closeBtnAnexar = modalAnexar.querySelector('.close-modal');
+
+    openBtnAnexar?.addEventListener('click', () => {
+      modalAnexar.style.display = 'block';
+    });
+
+    closeBtnAnexar?.addEventListener('click', () => {
+      modalAnexar.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modalAnexar) {
+        modalAnexar.style.display = 'none';
+      }
+    });
+  }
+
+  // --- Lógica para o Modal: Checklist ---
+  const modalChecklist = document.getElementById('modalChecklist');
+  if (modalChecklist) {
+    const openChecklist = document.getElementById('abrir-modal-checklist');
+    const closeChecklist = modalChecklist.querySelector('.close-modal');
+
+    openChecklist?.addEventListener('click', () => {
+      modalChecklist.style.display = 'block'
+    });
+    
+    closeChecklist?.addEventListener('click', () => {
+      modalChecklist.style.display = 'none'
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modalChecklist) {
+        modalChecklist.style.display = 'none';
+      }
+    });
+  }
+
+  // --- Lógica para o Modal: Ocorrências (Criar e Editar) ---
+  const modalOcorrencia = document.getElementById('modalOcorrencia');
+  if (modalOcorrencia) {
+    const formOcorrencia = document.getElementById('formOcorrencia');
+    const modalTitle = document.getElementById('ocorrencia-modal-title');
+    const submitBtn = document.getElementById('submitOcorrenciaBtn');
+    const ocorrenciaIdInput = document.getElementById('ocorrencia_id');
+    const openBtnOcorrencia = document.getElementById('abrir-modal-ocorrencia');
+    
+    // Guarda a URL original do formulário (para a ação de "criar")
+    const createActionUrl = formOcorrencia.action;
+
+    const clearMethodField = () => {
+      const existingMethodField = formOcorrencia.querySelector('input[name="_method"]');
+      if (existingMethodField) {
+        existingMethodField.remove();
+      }
+    };
+
+    // Listener para o botão "Registrar Ocorrência"
+    openBtnOcorrencia?.addEventListener('click', () => {
+     
+      clearMethodField();
+
+      modalTitle.textContent = "Registrar Ocorrência";
+      formOcorrencia.action = createActionUrl; // Restaura a action original de "criar"
+      submitBtn.value = "Registrar";
+      ocorrenciaIdInput.value = "";
+      
+      document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+
+      modalOcorrencia.style.display = 'block';
+    });
+  }
+
+  // --- Listener Global para Cliques (Editar Ocorrência e Fechar Modais) ---
+  document.addEventListener('click', (e) => {
+    // Ação para EDITAR Ocorrência
+    const editButton = e.target.closest('.editar-ocorrencia');
+if (editButton) {
+  const modalOcorrencia = document.getElementById('modalOcorrencia');
+  if (!modalOcorrencia) return;
+
+  const formOcorrencia = document.getElementById('formOcorrencia');
+  const ocorrencia = JSON.parse(editButton.dataset.ocorrencia);
+  const checklistIds = JSON.parse(editButton.dataset.checklist);
+
+  // Limpa o campo de método antigo (_method)
+  formOcorrencia.querySelector('input[name="_method"]')?.remove();
+  
+  // Prepara o formulário para edição
+  document.getElementById('ocorrencia-modal-title').textContent = "Editar Ocorrência";
+  formOcorrencia.action = `/ocorrencias/${ocorrencia.id}`;
+  document.getElementById('submitOcorrenciaBtn').value = "Atualizar";
+  document.getElementById('ocorrencia_id').value = ocorrencia.id;
+
+  // Adiciona o campo _method para PATCH
+  const methodInput = document.createElement('input');
+  methodInput.type = 'hidden';
+  methodInput.name = '_method';
+  methodInput.value = 'patch';
+  formOcorrencia.appendChild(methodInput);
+
+  // *** GARANTE O TOKEN DE SEGURANÇA CORRETO ***
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  let tokenInput = formOcorrencia.querySelector('input[name="authenticity_token"]');
+  if (tokenInput) {
+    tokenInput.value = csrfToken;
+  }
+
+  // Preenche os dados
+  document.getElementById('ocorrencia_data_ocorrencia').value = ocorrencia.data_ocorrencia;
+  document.getElementById('ocorrencia_proxima_data').value = ocorrencia.proxima_data;
+  document.getElementById('ocorrencia_descricao').value = ocorrencia.descricao;
+  document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+    const itemId = parseInt(checkbox.id.replace('check_', ''));
+    checkbox.checked = checklistIds.includes(itemId);
+  });
+
+  modalOcorrencia.style.display = 'block';
+}
+
+    // Ação para FECHAR qualquer modal
+    if (e.target.matches('.close-modal')) {
+      e.target.closest('.modal-custom').style.display = 'none';
+    }
+  });
+
+  
+</script>

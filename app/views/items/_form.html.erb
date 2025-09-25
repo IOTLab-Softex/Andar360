@@ -1,0 +1,303 @@
+<%= form_with(model: item, local: true, html: { multipart: true }) do |form| %>
+  <div class="form-group mt-3" style="text-align: center;">
+    <%= form.submit "Salvar", class: "btn" %>
+  </div>
+  <% if item.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(item.errors.count, "erro") %> proibiu este item de ser salvo:</h2>
+      <ul>
+        <% item.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="form-group">
+    <%= form.label :nome %>
+    <%= form.text_field :nome, class: "form-control" %>
+  </div>
+  <div class="form-group">
+    <%= form.label :descricao %>
+    <%= form.text_area :descricao, class: "form-control" %>
+  </div>
+  <div class="form-group">
+    <%= form.label :status %>
+    <%= form.select :status, options_for_select([["Disponível", "disponivel"], ["Em uso", "em_uso"]], selected: item.status), {}, class: "form-control" %>
+  </div>
+<div class="form-group">
+  <%= form.label :foto, "Foto do Item" %>
+
+  <div class="image-thumb mt-2">
+    <% if item.foto.attached? %>
+      <%= image_tag url_for(item.foto), id: "item-foto-preview", class: "img-fluid", style: "max-width: 200px;" %>
+    <% else %>
+      <%= image_tag asset_path('camera.png'), id: "item-foto-preview", class: "img-fluid", style: "max-width: 200px;" %>
+    <% end %>
+
+    <%# Olhinho para ampliar (se quiser manter) %>
+    <% if item.foto.attached? %>
+      <div class="overlay-eye" onclick="showModal(this)">
+        <i class="fa-solid fa-eye"></i>
+      </div>
+    <% end %>
+  </div>
+
+  <button type="button" class="btn-brand mt-2" id="item-open-camera">📷 Tirar foto</button>
+
+  <%= form.file_field :foto,
+        class: "form-control mt-2",
+        id: "item-foto-file",
+        accept: "image/*",
+        onchange: "previewItemFoto(event)" %>
+</div>
+
+<% end %>
+<%# ... SEU form_with ... %>
+<% if item.persisted? %>
+  <div class="form-group mt-3">
+    <h3 class="mt-5">Histórico de Movimentações</h3>
+    <%= button_to "🧹 Limpar Histórico",
+                  limpar_historico_item_path(item),
+                  method: :delete,
+                  data: { turbo_confirm: "Tem certeza que deseja apagar todo o histórico deste item?" },
+                  class: "btn btn-sm btn-danger mb-3" %>
+    <div id="historico-section" class="rooms collapsed">
+      <% if item.item_movimentacoes.any? %>
+        <table class="table table-salas mt-3">
+          <thead class="table-secondary text-dark">
+            <tr>
+              <th>Data</th>
+              <th>Empresa</th>
+              <th>Responsável</th>
+              <th>Descrição</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% item.item_movimentacoes.order(created_at: :desc).each do |mov| %>
+              <tr>
+                <td><%= l mov.created_at, format: :short %></td>
+                <td><%= mov.empresa %></td>
+                <td><%= mov.responsavel %></td>
+                <td><%= mov.descricao %></td>
+                <td>
+                  <% if mov.tipo == "retirada" %>
+                    <span class="text-success">Retirada</span>
+                  <% elsif mov.tipo == "devolucao" %>
+                    <span class="text-secondary">Devolução</span>
+                  <% else %>
+                    <span class="text-muted">-</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% else %>
+        <p class="text-muted mt-3">Nenhuma movimentação registrada para este item.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<!-- MODAL CÂMERA (ITEM) -->
+<div id="item-camera-modal" class="pmodal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="pmodal__backdrop" id="item-camera-backdrop"></div>
+
+  <div class="pmodal__dialog" role="document" aria-labelledby="item-camera-title">
+    <div class="pmodal__header">
+      <h5 id="item-camera-title">Capturar foto do item</h5>
+      <button type="button" class="pmodal__close" id="item-camera-close" aria-label="Fechar">✕</button>
+    </div>
+
+    <div class="pmodal__body">
+      <video id="item-camera-video" autoplay playsinline></video>
+      <canvas id="item-camera-canvas"></canvas>
+      <small class="pmodal__hint">Dica: em celulares, permita o acesso à câmera (HTTPS ou http://localhost).</small>
+    </div>
+
+    <div class="pmodal__footer">
+      <button type="button" class="btn-secondary" id="item-camera-retake">🔄 Repetir</button>
+      <button type="button" class="btn-primary"  id="item-camera-capture">📸 Capturar</button>
+      <button type="button" class="btn-ghost"    id="item-camera-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+
+<!-- Modal para visualizar imagem -->
+<div id="modal-image-viewer" onclick="hideModal()">
+  <span class="close-modal">&times;</span>
+  <img src="" alt="Visualização">
+</div>
+<script>
+  let currentZoom = 1;
+
+  function showModal(el) {
+    const thumb = el.closest(".image-thumb");
+    const image = thumb.querySelector("img");
+    const fullUrl = image?.getAttribute("src");
+
+    if (fullUrl) {
+      const modal = document.getElementById("modal-image-viewer");
+      const modalImg = modal.querySelector("img");
+      modalImg.src = fullUrl;
+      modalImg.style.transform = "scale(1)";
+      currentZoom = 1;
+      modal.style.display = "flex";
+    }
+  }
+
+  function hideModal() {
+    const modal = document.getElementById("modal-image-viewer");
+    modal.style.display = "none";
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const modalImg = document.querySelector("#modal-image-viewer img");
+    if (modalImg) {
+      modalImg.addEventListener("wheel", function (e) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        currentZoom += delta;
+        if (currentZoom < 0.2) currentZoom = 0.2;
+        if (currentZoom > 5) currentZoom = 5;
+        modalImg.style.transform = `scale(${currentZoom})`;
+      });
+    }
+  });
+
+  // Preview quando anexa arquivo no input do ITEM
+  function previewItemFoto(event) {
+    const preview = document.getElementById('item-foto-preview');
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { preview.src = e.target.result; };
+    reader.readAsDataURL(file);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // ------- refs do ITEM ------
+    const openBtn    = document.getElementById('item-open-camera');
+    const modal      = document.getElementById('item-camera-modal');
+    const backdrop   = document.getElementById('item-camera-backdrop');
+    const closeBtn   = document.getElementById('item-camera-close');
+    const cancelBtn  = document.getElementById('item-camera-cancel');
+    const retakeBtn  = document.getElementById('item-camera-retake');
+    const captureBtn = document.getElementById('item-camera-capture');
+
+    const videoEl    = document.getElementById('item-camera-video');
+    const canvasEl   = document.getElementById('item-camera-canvas');
+    const fileInput  = document.getElementById('item-foto-file');
+    const previewEl  = document.getElementById('item-foto-preview');
+
+    let stream = null;
+
+    // ------- modal helpers ------
+    function openModal() {
+      modal.classList.add('is-open');
+      document.body.classList.add('noscroll');
+      startCamera();
+    }
+    function closeModal() {
+      stopCamera();
+      modal.classList.remove('is-open');
+      document.body.classList.remove('noscroll');
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+    });
+
+    // ------- câmera -------
+    async function startCamera() {
+      stopCamera();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        videoEl.srcObject = stream;
+      } catch (err) {
+        alert('Não foi possível acessar a câmera.\n- Permita o uso no navegador\n- Use HTTPS (ou http://localhost)');
+        closeModal();
+      }
+    }
+    function stopCamera() {
+      if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+      videoEl.srcObject = null;
+    }
+
+    // Capturar -> vira arquivo no input :foto e atualiza preview
+    function capture() {
+      const w = videoEl.videoWidth || 1280;
+      const h = videoEl.videoHeight || 720;
+      canvasEl.width = w; canvasEl.height = h;
+
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, w, h);
+
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        const file = new File([blob], `item_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+
+        const reader = new FileReader();
+        reader.onload = e => { previewEl.src = e.target.result; };
+        reader.readAsDataURL(file);
+
+        closeModal();
+      }, 'image/jpeg', 0.92);
+    }
+
+    // Repetir: efeito visual, mantém a câmera aberta para bater outra
+    function retake() {
+      videoEl.classList.add('flash');
+      setTimeout(() => videoEl.classList.remove('flash'), 120);
+    }
+
+    captureBtn?.addEventListener('click', capture);
+    retakeBtn?.addEventListener('click', retake);
+
+    // segurança
+    window.addEventListener('beforeunload', stopCamera);
+  });
+
+</script>
+<style>
+/* Botões (tema opcional) */
+.btn-brand   { background:#ff8a3d; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-primary { background:#2ea043; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-secondary { background:#444; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-ghost   { background:transparent; border:1px solid #aaa; color:#ddd; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+
+/* Modal puro */
+.pmodal { position:fixed; inset:0; display:none; }
+.pmodal.is-open { display:block; }
+.pmodal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.6); }
+.pmodal__dialog {
+  position:relative; z-index:1; margin:16vh auto; width:min(92vw, 900px);
+  background:#1f1f1f; color:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pmodal__header, .pmodal__footer { padding:12px 16px; display:flex; align-items:center; gap:8px; }
+.pmodal__header { justify-content:space-between; border-bottom:1px solid #333; }
+.pmodal__footer { justify-content:flex-end; border-top:1px solid #333; }
+.pmodal__close { background:transparent; border:0; color:#fff; font-size:18px; cursor:pointer; }
+.pmodal__body { padding:12px 16px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+#item-camera-video { width:100%; max-height:60vh; background:#000; border-radius:8px; }
+#item-camera-canvas { display:none; }
+.pmodal__hint { color:#bbb; font-size:.85rem; }
+body.noscroll { overflow:hidden; }
+.flash { box-shadow: inset 0 0 0 9999px rgba(255,255,255,.08); transition: box-shadow .12s; }
+
+</style>

@@ -1,0 +1,17 @@
+<div class="mb-3">
+  <strong>OS:</strong> <%= chamado.os %><br>
+  <strong>Sala:</strong>
+  <% if chamado.room.present? && !chamado.room.espaco_comun %>
+    <%= chamado.room.name %>
+  <% else %>
+    <em>Sem sala vinculada ou sala comum</em>
+  <% end %><br>
+  <strong>Título:</strong> <%= chamado.titulo %><br>
+  <strong>Prioridade:</strong> <%= chamado.prioridade %><br>
+  <strong>Status:</strong> <%= chamado.status %><br>
+  <strong>Data Resolução:</strong> <%= chamado.data_resolucao %><br>
+  <strong>Exibir no App:</strong> <%= chamado.exibir_no_app ? "Sim" : "Não" %><br>
+  <strong>Local:</strong> <%= chamado.local %><br>
+  <strong>Responsável:</strong> <%= chamado.responsavel %><br>
+  <strong>Observação:</strong> <%= chamado.observacao %>
+</div>

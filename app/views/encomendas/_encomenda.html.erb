@@ -1,0 +1,47 @@
+<div id="<%= dom_id encomenda %>">
+  <p>
+    <strong>Unidade:</strong>
+    <%= encomenda.unidade %>
+  </p>
+
+  <p>
+    <strong>Codigo:</strong>
+    <%= encomenda.codigo %>
+  </p>
+
+  <p>
+    <strong>Transportadora:</strong>
+    <%= encomenda.transportadora %>
+  </p>
+
+  <p>
+    <strong>Tipo:</strong>
+    <%= encomenda.tipo %>
+  </p>
+
+  <p>
+    <strong>Tamanho:</strong>
+    <%= encomenda.tamanho %>
+  </p>
+
+  <p>
+    <strong>Remetente:</strong>
+    <%= encomenda.remetente %>
+  </p>
+
+  <p>
+    <strong>Destinatario:</strong>
+    <%= encomenda.destinatario %>
+  </p>
+
+  <p>
+    <strong>Observacao:</strong>
+    <%= encomenda.observacao %>
+  </p>
+
+  <p>
+    <strong>Imagem:</strong>
+    <%= link_to encomenda.imagem.filename, encomenda.imagem if encomenda.imagem.attached? %>
+  </p>
+
+</div>

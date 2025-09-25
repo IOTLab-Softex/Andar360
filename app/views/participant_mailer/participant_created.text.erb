@@ -1,0 +1,12 @@
+Olá, <%= @participant.name %>!
+
+Seu cadastro foi concluído com sucesso.
+
+Nome: <%= @participant.name %>
+CPF: <%= @participant.cpf %>
+Telefone: <%= @participant.telefone %>
+Cargo: <%= @formulario&.cargo.to_s.presence || "-" %>
+Dias de trabalho: <%= @formulario&.dias_trabalho.to_s.presence || "-" %>
+Horário de trabalho: <%= @formulario&.horario_trabalho.to_s.presence || "-" %>
+
+Qualquer dúvida, responda este e-mail.

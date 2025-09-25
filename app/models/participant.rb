@@ -1,8 +1,10 @@
 class Participant < ApplicationRecord
   has_one :user
   has_one :user, dependent: :destroy
+  has_many :users, foreign_key: :participant_id
   has_and_belongs_to_many :reservations
   has_one_attached :photo
+    has_many :solicitacao_participantes
   belongs_to :sub_grupo_empresa, optional: true
 
   belongs_to :grupo_empresa, optional: true
@@ -11,12 +13,16 @@ class Participant < ApplicationRecord
 
   before_save :attach_photo_from_base64
   before_create :generate_hex_id
+scope :ativos, -> { where("excluido = ? OR excluido IS NULL", false) }
+scope :excluidos, -> { where(excluido: true) }
 
   scope :by_empresa, ->(user) {
     return all if user.admin?
     where(grupo_empresa_id: user.participant&.grupo_empresa_id)
   }
-  
+    def solicitacao_exclusao_pendente
+    solicitacao_participantes.where(status: 'pendente').order(created_at: :desc).first
+  end
   private
 
   def generate_hex_id

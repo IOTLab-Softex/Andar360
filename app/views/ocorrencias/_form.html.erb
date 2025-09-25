@@ -1,0 +1,33 @@
+<%= form_with model: ocorrencia, scope: :ocorrencia, url: ocorrencia.persisted? ? ocorrencia_path(ocorrencia) : ocorrencias_path, local: true, multipart: true, method: ocorrencia.persisted? ? :patch : :post do |f| %>
+  <%= f.hidden_field :manutencao_programada_id, value: manutencao_programada.id %>
+
+  <%= f.label :data_ocorrencia, "Data da Ocorrência", style: "color: var(--color-btn);" %>
+  <%= f.date_field :data_ocorrencia, class: "form-control", required: true, value: ocorrencia.data_ocorrencia %>
+
+  <%= f.label :proxima_data, "Próxima Data", style: "color: var(--color-btn);" %>
+  <%= f.date_field :proxima_data, class: "form-control", value: ocorrencia.proxima_data %>
+
+  <%= f.label :descricao, "Descrição", style: "color: var(--color-btn);" %>
+  <%= f.text_area :descricao, class: "form-control", maxlength: 1000 %>
+
+  <%= f.label :checklist_item_ids, "Checklist", style: "color: var(--color-btn);" %>
+  <div class="form-check" style="max-height: 150px; overflow-y: auto;">
+    <% manutencao_programada.checklist_items.each do |item| %>
+      <div>
+        <%= check_box_tag "ocorrencia[checklist_items_attributes][#{item.id}][marcado]", "1", ocorrencia.checklist_items.exists?(item.id), id: "check_#{item.id}" %>
+        <%= hidden_field_tag "ocorrencia[checklist_items_attributes][#{item.id}][checklist_item_id]", item.id %>
+        <%= label_tag "check_#{item.id}", item.descricao, style: "color: var(--color-btn);" %>
+      </div>
+    <% end %>
+  </div>
+
+  <hr>
+  <h6 style="color: var(--color-btn);">Vincular anexo</h6>
+  <%= f.label :nome, "Nome do arquivo", style: "color: var(--color-btn);" %>
+  <%= f.text_field :nome, class: "form-control" %>
+  <%= f.file_field :arquivos, class: "form-control", multiple: true %>
+
+  <div class="text-end mt-3">
+    <%= f.submit ocorrencia.persisted? ? "Atualizar" : "Registrar", class: "btn btn-success" %>
+  </div>
+<% end %>

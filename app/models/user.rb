@@ -1,5 +1,6 @@
 class User < ApplicationRecord
   belongs_to :participant, optional: true
+has_many :notifications, dependent: :destroy
 
   # ⚠️ Altere aqui para usar CPF como login
   devise :database_authenticatable, :registerable,

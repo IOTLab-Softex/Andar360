@@ -45,6 +45,11 @@ class ImportLogsController < ApplicationController
       redirect_to import_logs_path, notice: "🧹 Todos os #{deleted} logs foram apagados com sucesso."
     end
   end
+  
+  def status
+  data = Rails.cache.read('backup_status') || { status: 'parado', message: 'Nenhum processo em execução.' }
+  render json: data
+end
 
   private
 

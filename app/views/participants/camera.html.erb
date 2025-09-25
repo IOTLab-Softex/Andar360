@@ -67,6 +67,12 @@
       cursor: not-allowed;
       opacity: 0.6;
     }
+
+
+@keyframes pulseHint { 0%{transform:translateX(-50%) scale(1)}
+  50%{transform:translateX(-50%) scale(1.05)} 100%{transform:translateX(-50%) scale(1)} }
+#lookHint{ animation:pulseHint 1.2s ease-in-out infinite; }
+
   </style>
 </head>
 <body>
@@ -75,6 +81,19 @@
   <div id="videoContainer">
     <video id="video" autoplay muted playsinline></video>
     <canvas id="canvas"></canvas>
+    <div id="countdown"
+     style="position:absolute; right:22px; top:10px; width:52px; height:52px; border-radius:50%;
+            background:rgba(0,0,0,.55); display:none; color:#fff; font-weight:700;
+            line-height:52px; text-align:center; font-size:20px; z-index:3;">
+  8
+</div>
+<div id="lookHint"
+     style="position:absolute; left:50%; top:10px; transform:translateX(-50%);
+            background:rgba(0,0,0,.6); color:#fff; padding:8px 12px; border-radius:10px;
+            font-weight:900; display:none; z-index:3; letter-spacing:.2px;">
+  Olhe para a câmera 👀
+</div>
+
   </div>
 
   <br>
@@ -87,6 +106,11 @@
     const canvas = document.getElementById("canvas");
     const captureBtn = document.getElementById("captureBtn");
     const faceStatus = document.getElementById("faceStatus");
+    let lastDetection = null;
+let countdownStart = null;   // quando a contagem começou
+let autoShotTimeout = null;  // timeout da captura automática
+const COUNTDOWN_SECONDS = 8; // ⏱️ ajuste aqui
+const lookHint = document.getElementById('lookHint');
 
     async function startVideo() {
       try {
@@ -96,6 +120,19 @@
         alert("Erro ao acessar a câmera: " + err.message);
       }
     }
+
+      function resetCountdown() {
+    if (autoShotTimeout) {
+      clearTimeout(autoShotTimeout);
+      autoShotTimeout = null;
+    }
+    countdownStart = null;
+    const cd = document.getElementById('countdown');
+    if (cd) cd.style.display = 'none';
+    // volta o texto do botão, mas mantém habilitado/desabilitado pelo loop
+    captureBtn.textContent = "📸 Capturar";
+     if (lookHint) lookHint.style.display = 'none';   // 👈 esconde o aviso
+  }
 
     async function loadModels() {
       await faceapi.nets.tinyFaceDetector.loadFromUri('/models/tiny_face_detector');
@@ -108,69 +145,114 @@
         faceapi.matchDimensions(canvas, displaySize);
 
         setInterval(async () => {
-          const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions());
+          // onde você chama detectSingleFace:
+const detection = await faceapi.detectSingleFace(
+  video,
+  new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
+);
+
           const ctx = canvas.getContext("2d");
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
+ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          if (detection && detection.box) {
-            const { width, height } = detection.box;
-            const faceWidthRatio = width / displaySize.width;
-            const faceHeightRatio = height / displaySize.height;
+const cd = document.getElementById('countdown');
 
-            // ... dentro do setInterval (mantendo o resto do código igual)
 if (detection && detection.box) {
+  lastDetection = detection.box;
+
+  const displaySize = { width: video.videoWidth, height: video.videoHeight };
   const { width, height } = detection.box;
-  const faceWidthRatio = width / displaySize.width;
+  const faceWidthRatio  = width  / displaySize.width;
   const faceHeightRatio = height / displaySize.height;
 
-  const isCloseEnough = faceWidthRatio >= 0.1 && faceHeightRatio >= 0.1;
-  const isTooClose = faceWidthRatio >= 0.5 || faceHeightRatio >= 0.5;
+  // limites de enquadramento (ajuste se quiser)
+  const MIN_RATIO = 0.40; // muito distante abaixo disso
+  const MAX_RATIO = 0.70; // muito perto acima disso
+  const ratio = Math.max(faceWidthRatio, faceHeightRatio);
 
-  if (isTooClose) {
+  // (opcional) exigir "confiança" mínima do detector para chamar de nítido
+  const goodScore = (detection.score ?? 1) >= 0.6;
+
+  if (ratio > MAX_RATIO) {
+    // muito perto → zera contagem
+    resetCountdown();
     captureBtn.disabled = true;
     captureBtn.textContent = "Muito perto!";
-    faceStatus.textContent = "Rosto muito próximo, afaste-se um pouco.";
-  } else if (isCloseEnough) {
+    faceStatus.textContent = "Rosto muito próximo, afaste-se levemente.";
+     if (lookHint) lookHint.style.display = 'none';   // 👈
+  } else if (ratio >= MIN_RATIO && goodScore) {
+    // enquadramento ok → habilita e inicia/atualiza contagem
     captureBtn.disabled = false;
-    captureBtn.textContent = "📸 Capturar";
-    faceStatus.textContent = "Rosto detectado com boa nitidez!";
+
+    if (!countdownStart) {
+      countdownStart = performance.now();
+      // agenda captura automática
+      autoShotTimeout = setTimeout(() => {
+        capturePhoto();
+        resetCountdown();
+      }, COUNTDOWN_SECONDS * 1000);
+      if (cd) cd.style.display = 'block';
+
+       if (lookHint) {
+      lookHint.style.display = 'block';
+      lookHint.textContent = "Olhe para a câmera 👀";
+    }
+
+    }
+
+    // atualiza UI da contagem
+    const elapsed = (performance.now() - countdownStart) / 1000;
+    const left = Math.max(0, Math.ceil(COUNTDOWN_SECONDS - elapsed));
+    captureBtn.textContent = `📸 Capturar (auto em ${left}s)`;
+    faceStatus.textContent = "Rosto detectado com boa nitidez.";
+    if (cd) cd.textContent = left.toString();
+     if (lookHint) {
+    lookHint.style.display = 'block';
+    lookHint.textContent = "Olhe para a câmera 👀";
+  }
   } else {
+    // distante ou score baixo → zera contagem
+    resetCountdown();
     captureBtn.disabled = true;
     captureBtn.textContent = "Aproxime o rosto...";
-    faceStatus.textContent = "Muito distante, aproxime-se da câmera.";
+    faceStatus.textContent = goodScore
+      ? "Muito distante, aproxime-se da câmera."
+      : "Iluminação/posição ruim. Ajuste e aproxime-se.";
+       if (lookHint) lookHint.style.display = 'none';
   }
 
+  // desenha a detecção
   const resized = faceapi.resizeResults(detection, displaySize);
   faceapi.draw.drawDetections(canvas, resized);
+
+} else {
+  // sem rosto → zera contagem
+  lastDetection = null;
+  resetCountdown();
+  captureBtn.disabled = true;
+  captureBtn.textContent = "Sem rosto...";
+  faceStatus.textContent = "Nenhum rosto detectado.";
+   if (lookHint) lookHint.style.display = 'none';   // 👈
 }
 
-
-            const resized = faceapi.resizeResults(detection, displaySize);
-            faceapi.draw.drawDetections(canvas, resized);
-          } else {
-            captureBtn.disabled = true;
-            captureBtn.textContent = "Sem rosto...";
-            faceStatus.textContent = "Nenhum rosto detectado.";
-          }
         }, 700);
       });
     }
 
     function capturePhoto() {
-      const ctx = canvas.getContext("2d");
-    
-      // Define as dimensões fixas do canvas para proporção 150x300
-      const canvasWidth = 150;
-      const canvasHeight = 300;
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
-    
-      // Escala automaticamente o vídeo para caber no canvas, sem corte
-      ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-    
-      const base64 = canvas.toDataURL("image/png");
-      parent.postMessage({ photoBase64: base64 }, "*");
-    }
+  if (autoShotTimeout) { clearTimeout(autoShotTimeout); autoShotTimeout = null; }
+  countdownStart = null;
+  const cd = document.getElementById('countdown');
+  if (cd) cd.style.display = 'none';
+  if (lookHint) lookHint.style.display = 'none';   // 👈
+
+  const ctx = canvas.getContext("2d");
+  const canvasWidth = 150, canvasHeight = 300;
+  canvas.width = canvasWidth; canvas.height = canvasHeight;
+  ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+  const base64 = canvas.toDataURL("image/png");
+  parent.postMessage({ photoBase64: base64 }, "*");
+}
+
     
 
     startVideo().then(loadModels);

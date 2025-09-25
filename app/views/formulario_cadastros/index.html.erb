@@ -1,0 +1,16 @@
+<p style="color: green"><%= notice %></p>
+
+<% content_for :title, "Formulario cadastros" %>
+
+<h1>Formulario cadastros</h1>
+
+<div id="formulario_cadastros">
+  <% @formulario_cadastros.each do |formulario_cadastro| %>
+    <%= render formulario_cadastro %>
+    <p>
+      <%= link_to "Show this formulario cadastro", formulario_cadastro %>
+    </p>
+  <% end %>
+</div>
+
+<%= link_to "New formulario cadastro", new_formulario_cadastro_path %>

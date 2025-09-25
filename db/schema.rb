@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
+ActiveRecord::Schema[8.0].define(version: 2025_09_15_143703) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,6 +24,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.datetime "updated_at", null: false
     t.index ["participant_id"], name: "index_access_logs_on_participant_id"
     t.index ["reservation_id"], name: "index_access_logs_on_reservation_id"
+  end
+
+  create_table "action_text_rich_texts", force: :cascade do |t|
+    t.string "name", null: false
+    t.text "body"
+    t.string "record_type", null: false
+    t.bigint "record_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["record_type", "record_id", "name"], name: "index_action_text_rich_texts_uniqueness", unique: true
   end
 
   create_table "active_storage_attachments", force: :cascade do |t|
@@ -54,6 +64,59 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "arquivo_anexos", force: :cascade do |t|
+    t.string "nome"
+    t.bigint "manutencao_programada_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "chamado_id"
+    t.index ["chamado_id"], name: "index_arquivo_anexos_on_chamado_id"
+    t.index ["manutencao_programada_id"], name: "index_arquivo_anexos_on_manutencao_programada_id"
+  end
+
+  create_table "chamados", force: :cascade do |t|
+    t.string "os"
+    t.string "unidade"
+    t.string "titulo"
+    t.string "prioridade"
+    t.string "status"
+    t.date "data_resolucao"
+    t.boolean "exibir_no_app"
+    t.string "local"
+    t.string "responsavel"
+    t.text "observacao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "room_id"
+    t.string "solicitante_nome"
+    t.bigint "solicitante_id"
+    t.index ["room_id"], name: "index_chamados_on_room_id"
+    t.index ["solicitante_id"], name: "index_chamados_on_solicitante_id"
+  end
+
+  create_table "checklist_items", force: :cascade do |t|
+    t.string "descricao"
+    t.bigint "manutencao_programada_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["manutencao_programada_id"], name: "index_checklist_items_on_manutencao_programada_id"
+  end
+
+  create_table "checklist_items_ocorrencias", id: false, force: :cascade do |t|
+    t.bigint "checklist_item_id", null: false
+    t.bigint "ocorrencia_id", null: false
+  end
+
+  create_table "checklist_ocorrencia", force: :cascade do |t|
+    t.bigint "checklist_item_id", null: false
+    t.bigint "ocorrencia_id", null: false
+    t.boolean "marcado"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["checklist_item_id"], name: "index_checklist_ocorrencia_on_checklist_item_id"
+    t.index ["ocorrencia_id"], name: "index_checklist_ocorrencia_on_ocorrencia_id"
+  end
+
   create_table "delayed_jobs", force: :cascade do |t|
     t.integer "priority", default: 0, null: false
     t.integer "attempts", default: 0, null: false
@@ -81,12 +144,81 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.index ["room_id"], name: "index_devices_on_room_id"
   end
 
+  create_table "encomendas", force: :cascade do |t|
+    t.string "unidade"
+    t.string "codigo"
+    t.string "transportadora"
+    t.string "tipo"
+    t.string "tamanho"
+    t.string "remetente"
+    t.text "observacao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "destinatario_id"
+    t.boolean "entregue", default: false
+    t.integer "recebido_por_id"
+    t.datetime "entregue_em"
+    t.index ["destinatario_id"], name: "index_encomendas_on_destinatario_id"
+    t.index ["recebido_por_id"], name: "index_encomendas_on_recebido_por_id"
+  end
+
+  create_table "feedbacks", force: :cascade do |t|
+    t.bigint "user_id"
+    t.integer "category", default: 0, null: false
+    t.integer "status", default: 0, null: false
+    t.integer "severity", default: 1, null: false
+    t.string "page_path"
+    t.text "page_url"
+    t.string "page_title"
+    t.text "user_agent"
+    t.text "selected_text"
+    t.text "message"
+    t.jsonb "url_params", default: {}
+    t.integer "resolved_by_id"
+    t.datetime "resolved_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["category"], name: "index_feedbacks_on_category"
+    t.index ["page_path"], name: "index_feedbacks_on_page_path"
+    t.index ["resolved_by_id"], name: "index_feedbacks_on_resolved_by_id"
+    t.index ["severity"], name: "index_feedbacks_on_severity"
+    t.index ["status"], name: "index_feedbacks_on_status"
+    t.index ["url_params"], name: "index_feedbacks_on_url_params", using: :gin
+    t.index ["user_id"], name: "index_feedbacks_on_user_id"
+  end
+
+  create_table "formulario_cadastros", force: :cascade do |t|
+    t.string "nome"
+    t.string "cpf"
+    t.string "telefone"
+    t.string "email"
+    t.string "cargo"
+    t.string "horario_trabalho"
+    t.string "dias_trabalho"
+    t.boolean "concorda_termos"
+    t.text "observacao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "grupo_empresa_id"
+    t.string "status", default: "pendente", null: false
+    t.integer "aprovado_por_id"
+    t.datetime "aprovado_em"
+    t.integer "reprovado_por_id"
+    t.datetime "reprovado_em"
+    t.text "motivo_reprovacao"
+    t.index ["aprovado_por_id"], name: "index_formulario_cadastros_on_aprovado_por_id"
+    t.index ["cpf", "status"], name: "index_formulario_cadastros_on_cpf_and_status"
+    t.index ["reprovado_por_id"], name: "index_formulario_cadastros_on_reprovado_por_id"
+    t.index ["status"], name: "index_formulario_cadastros_on_status"
+  end
+
   create_table "grupo_empresas", force: :cascade do |t|
     t.string "nome"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "sala"
     t.string "andar"
+    t.string "cnpj"
   end
 
   create_table "import_logs", force: :cascade do |t|
@@ -100,9 +232,68 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "item_movimentacoes", force: :cascade do |t|
+    t.bigint "item_id", null: false
+    t.string "empresa"
+    t.string "responsavel"
+    t.text "descricao"
+    t.string "tipo"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["item_id"], name: "index_item_movimentacoes_on_item_id"
+  end
+
+  create_table "items", force: :cascade do |t|
+    t.string "nome"
+    t.text "descricao"
+    t.string "status"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "manutencao_programadas", force: :cascade do |t|
+    t.string "titulo"
+    t.string "categoria"
+    t.string "local"
+    t.string "responsavel"
+    t.string "periodicidade"
+    t.date "data_prevista"
+    t.date "data_de_aviso"
+    t.integer "dias_para_aviso"
+    t.text "observacao"
+    t.boolean "exibir_no_app"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
   create_table "meetings_participants", id: false, force: :cascade do |t|
     t.integer "meeting_id", null: false
     t.integer "participant_id", null: false
+  end
+
+  create_table "notifications", force: :cascade do |t|
+    t.string "titulo"
+    t.text "corpo"
+    t.boolean "lida", default: false
+    t.bigint "user_id", null: false
+    t.string "notificavel_type"
+    t.bigint "notificavel_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["notificavel_type", "notificavel_id"], name: "index_notifications_on_notificavel"
+    t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "ocorrencia", force: :cascade do |t|
+    t.date "data_ocorrencia"
+    t.date "proxima_data"
+    t.text "descricao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "checklist_id"
+    t.string "ocorrenciavel_type"
+    t.bigint "ocorrenciavel_id"
+    t.index ["ocorrenciavel_type", "ocorrenciavel_id"], name: "index_ocorrencia_on_ocorrenciavel"
   end
 
   create_table "participants", force: :cascade do |t|
@@ -116,6 +307,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.string "hex_id"
     t.integer "grupo_empresa_id"
     t.integer "sub_grupo_empresa_id"
+    t.boolean "excluido"
     t.index ["grupo_empresa_id"], name: "index_participants_on_grupo_empresa_id"
     t.index ["sub_grupo_empresa_id"], name: "index_participants_on_sub_grupo_empresa_id"
   end
@@ -123,6 +315,32 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
   create_table "participants_reservations", id: false, force: :cascade do |t|
     t.integer "participant_id", null: false
     t.integer "reservation_id", null: false
+  end
+
+  create_table "prestador_servicos", force: :cascade do |t|
+    t.string "nome"
+    t.string "publicado_no_app"
+    t.string "bloqueado"
+    t.string "cpf"
+    t.string "rg"
+    t.string "outro_documento"
+    t.string "fone1"
+    t.string "fone2"
+    t.string "whatsapp"
+    t.string "email"
+    t.string "site"
+    t.string "idoso_ou_pne"
+    t.string "tipo_veiculo"
+    t.string "placa"
+    t.string "fabricante"
+    t.string "modelo"
+    t.string "cor"
+    t.string "nome_fantasia"
+    t.string "cnpj"
+    t.text "servicos"
+    t.text "observacao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "reservations", force: :cascade do |t|
@@ -140,8 +358,18 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.datetime "participantes_enviados_em"
     t.datetime "cancelada_em"
     t.integer "grupo_empresa_id"
+    t.datetime "no_show_notificado_em"
+    t.datetime "inicio_notificado_em"
+    t.datetime "pre_inicio_notificado_em"
     t.index ["grupo_empresa_id"], name: "index_reservations_on_grupo_empresa_id"
     t.index ["room_id"], name: "index_reservations_on_room_id"
+  end
+
+  create_table "room_groups", force: :cascade do |t|
+    t.string "name"
+    t.text "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "room_items", force: :cascade do |t|
@@ -159,6 +387,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.datetime "updated_at", null: false
     t.string "floor"
     t.integer "device_id"
+    t.string "grupo"
+    t.boolean "virtual", default: false
+    t.boolean "alugado", default: false
+    t.boolean "unidade_vazia", default: false
+    t.boolean "ativo", default: true
+    t.boolean "espaco_comun", default: false
+    t.string "categoria"
+    t.string "capacidade"
+    t.string "taxa"
+    t.decimal "area"
+    t.string "matricula"
+    t.string "fracao_ideal"
+    t.string "fracao_extra"
+    t.string "interfone"
+    t.string "vagas_garagem"
+    t.string "empresa_proprietaria"
+    t.string "proprietario_formal"
+    t.string "dados_do_inquilino"
+    t.bigint "room_group_id"
+    t.index ["room_group_id"], name: "index_rooms_on_room_group_id"
   end
 
   create_table "settings", force: :cascade do |t|
@@ -175,6 +423,26 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
     t.time "limite_horas_turno_reservas_manha"
     t.time "limite_horas_turno_reservas_tarde"
     t.time "limite_horas_turno_reservas_noite"
+    t.string "smtp_from_email"
+    t.string "smtp_reply_to"
+    t.string "smtp_address"
+    t.integer "smtp_port"
+    t.string "smtp_domain"
+    t.string "smtp_username"
+    t.text "smtp_password"
+    t.string "smtp_authentication"
+    t.boolean "smtp_enable_starttls_auto"
+  end
+
+  create_table "solicitacao_participantes", force: :cascade do |t|
+    t.bigint "participant_id", null: false
+    t.string "status", default: "pendente", null: false
+    t.text "motivo"
+    t.integer "aprovado_por"
+    t.datetime "aprovado_em"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["participant_id"], name: "index_solicitacao_participantes_on_participant_id"
   end
 
   create_table "sub_grupo_empresas", force: :cascade do |t|
@@ -208,7 +476,20 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
   add_foreign_key "access_logs", "reservations"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "arquivo_anexos", "chamados"
+  add_foreign_key "arquivo_anexos", "manutencao_programadas"
+  add_foreign_key "chamados", "participants", column: "solicitante_id"
+  add_foreign_key "chamados", "rooms"
+  add_foreign_key "checklist_items", "manutencao_programadas"
+  add_foreign_key "checklist_ocorrencia", "checklist_items"
+  add_foreign_key "checklist_ocorrencia", "ocorrencia", column: "ocorrencia_id"
   add_foreign_key "devices", "rooms"
+  add_foreign_key "encomendas", "participants", column: "destinatario_id"
+  add_foreign_key "feedbacks", "users"
+  add_foreign_key "formulario_cadastros", "users", column: "aprovado_por_id"
+  add_foreign_key "formulario_cadastros", "users", column: "reprovado_por_id"
+  add_foreign_key "item_movimentacoes", "items"
+  add_foreign_key "notifications", "users"
   add_foreign_key "participants", "grupo_empresas"
   add_foreign_key "participants", "sub_grupo_empresas"
   add_foreign_key "reservations", "grupo_empresas"
@@ -216,6 +497,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_06_09_152419) do
   add_foreign_key "reservations", "participants", column: "solicitante_id"
   add_foreign_key "reservations", "rooms"
   add_foreign_key "room_items", "rooms"
+  add_foreign_key "rooms", "room_groups"
+  add_foreign_key "solicitacao_participantes", "participants"
   add_foreign_key "sub_grupo_empresas", "grupo_empresas"
   add_foreign_key "users", "participants"
 end

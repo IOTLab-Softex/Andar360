@@ -1,0 +1,536 @@
+<%# app/views/manutencao_programadas/_form.html.erb %>
+
+<%= form_with(model: manutencao_programada) do |form| %>
+<div class="form-group" style="
+    display: flex;
+    justify-content: center;
+">
+  <div class="mt-3 text-center" style="
+    text-align: center;">
+    <%= button_tag(type: "submit", class: "btn btn-success") do %>
+      <i class="fa-solid fa-floppy-disk"></i> Salvar
+    <% end %>
+  </div>
+</div>
+  <br>
+  <% if manutencao_programada.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(manutencao_programada.errors.count, "erro") %> impediram o salvamento:</h4>
+      <ul>
+        <% manutencao_programada.errors.each do |error| %>
+          <li><%= error.full_message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+    <div style="flex: 2;">
+      <%= form.label :titulo, "Título*" %>
+      <%= form.text_field :titulo, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :exibir_no_app, "Exibir no App" %>
+      <%= form.select :exibir_no_app, [["Sim", true], ["Não", false]], {}, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :categoria %>
+      <%= form.text_field :categoria, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :local %>
+      <%= form.text_field :local, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :responsavel, "Responsável" %>
+      <%= form.text_field :responsavel, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :periodicidade %>
+      <%= form.select :periodicidade, [
+        ['Anual', 'Anual'],
+        ['Bienal', 'Bienal'],
+        ['Trienal', 'Trienal'],
+        ['Quadrimestral', 'Quadrimestral'],
+        ['Trimestral', 'Trimestral'],
+        ['Bimestral', 'Bimestral'],
+        ['Mensal', 'Mensal'],
+        ['Quinzenal', 'Quinzenal'],
+        ['Semanal', 'Semanal'],
+        ['Diário', 'Diário'],
+        ['Outro', 'Outro']
+      ], {}, class: "form-control select2" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :data_prevista, "Data Prevista*" %>
+      <%= form.date_field :data_prevista, class: "form-control", placeholder: "dd/mm/aaaa" %>
+    </div>
+
+    <div style="flex: 1;">
+      <%= form.label :dias_para_aviso, "Dias p/ Aviso" %>
+      <%= form.number_field :dias_para_aviso, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1 1 100%;">
+      <%= form.label :observacao, "Observação" %>
+      <%= form.text_area :observacao, class: "form-control" %>
+    </div>
+  </div>
+
+
+
+
+
+<% end %>
+
+
+<div class="form-group">
+  <div class="section-header">
+    <h5><i class="fa fa-list-ul"></i> Checklist</h5>
+    <button type="button" class="btn btn-primary btn-sm" id="abrir-modal-checklist">
+      <i class="fa fa-check-square"></i> Novo Item
+    </button>
+  </div>
+  <div class="section-body" id="checklist-itens">
+    <% if @manutencao_programada.checklist_items.any? %>
+      <% @manutencao_programada.checklist_items.each do |item| %>
+        <div class="anexo-item">
+          <div class="anexo-info"><%= item.descricao %></div>
+          <%= button_to checklist_item_path(item), method: :delete, data: { turbo_confirm: "Remover?" }, class: "anexo-remover", form: { style: "display:inline" } do %>
+            <i class="fa fa-trash"></i>
+          <% end %>
+        </div>
+      <% end %>
+    <% else %>
+      <p class="text-muted text-center">Nenhum item no checklist.</p>
+    <% end %>
+  </div>
+</div>
+
+
+
+
+
+<% if @manutencao_programada.persisted? %>
+  <div class="form-group">
+    <div class="section-header">
+      <h5><i class="fa fa-paperclip"></i> Anexos</h5>
+      <button id="abrir-modal-anexar" type="button" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-paperclip"></i> Novo Anexo
+      </button>
+    </div>
+    <div class="section-body lista-anexos">
+      <% any = false %>
+
+      <!-- 1) Arquivos anexados diretamente na Manutenção -->
+      <% @manutencao_programada.arquivos.each do |arquivo| %>
+        <% any = true %>
+        <div class="anexo-item">
+          <div class="anexo-info">
+            <%= link_to url_for(arquivo), target: "_blank", class: "anexo-link" do %>
+              <i class="fa fa-download"></i> <%= arquivo.filename.to_s %>
+            <% end %>
+          </div>
+          <%= button_to remove_arquivo_manutencao_programada_path(@manutencao_programada, blob_signed_id: arquivo.signed_id),
+                method: :delete,
+                data: { turbo_confirm: "Remover este arquivo?" },
+                class: "anexo-remover" do %><i class="fa fa-trash"></i><% end %>
+        </div>
+      <% end %>
+
+      <!-- 2) Arquivos já processados via ArquivoAnexo -->
+      <% @manutencao_programada.arquivo_anexos.each do |anexo| %>
+        <% any = true %>
+        <div class="anexo-item">
+          <div class="anexo-info">
+            <%= link_to url_for(anexo.arquivo), target: "_blank", class: "anexo-link" do %>
+              <i class="fa fa-download"></i> <%= anexo.nome %>
+            <% end %>
+          </div>
+          <%= button_to manutencao_programada_arquivo_anexo_path(@manutencao_programada, anexo),
+                method: :delete,
+                data: { turbo_confirm: "Deseja remover este anexo?" },
+                class: "anexo-remover" do %><i class="fa fa-trash"></i><% end %>
+        </div>
+      <% end %>
+
+      <!-- 3) Blobs de Ocorrência ainda não transformados em ArquivoAnexo -->
+      <% processed_blob_ids = @manutencao_programada.arquivo_anexos.map { |a| a.arquivo.blob.id } %>
+
+<% @manutencao_programada.ocorrencias.order(created_at: :desc).each do |oc| %>
+  <% next unless oc.arquivos.attached? %>
+  <% arquivos_nao_processados = oc.arquivos.reject { |b| processed_blob_ids.include?(b.id) } %>
+  <% next if arquivos_nao_processados.empty? %>
+
+  <% any = true %> <!-- 🟢 Aqui atualiza a flag se encontrou anexos de ocorrência -->
+
+  <div class="subsection-header">
+    <small><i class="fa fa-history"></i>
+      Ocorrência em <%= oc.data_ocorrencia.strftime("%d/%m/%Y") %>
+    </small>
+  </div>
+
+  <% arquivos_nao_processados.each do |blob| %>
+    <div class="anexo-item">
+      <div class="anexo-info">
+        <%= link_to url_for(blob), target: "_blank", class: "anexo-link" do %>
+          <i class="fa fa-download"></i> <%= blob.filename.to_s %>
+        <% end %>
+      </div>
+      <%= button_to remover_arquivo_ocorrencia_path(oc, blob_signed_id: blob.signed_id),
+            method: :delete,
+            data: { turbo_confirm: "Remover este arquivo da ocorrência?" },
+            class: "anexo-remover" do %>
+        <i class="fa fa-trash"></i>
+      <% end %>
+    </div>
+  <% end %>
+<% end %>
+
+
+
+
+      <% unless any %>
+        <p class="text-muted text-center">Nenhum anexo encontrado.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+
+
+
+
+<%= render 'ocorrencias/ocorrencia_section', parent: @manutencao_programada %>
+
+
+
+
+<!-- Modal Anexar Arquivos -->
+<div id="modalAnexarMaisArquivos" class="modal-custom" style="display:none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5>Anexar Arquivos à Ocorrência</h5>
+        <button type="button" class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="formAnexarArquivos" method="post" enctype="multipart/form-data">
+          <%= csrf_meta_tags %>
+          <input type="file" name="arquivos[]" multiple required class="form-control">
+          <button class="btn btn-primary mt-2">Enviar</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if @manutencao_programada.persisted? %>
+  <div id="modalAnexarArquivos" class="modal-custom" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" style="color: var(--color-btn);">Anexar Arquivos</h5>
+          <button type="button" class="close-modal" style="border: none; background: transparent;">&times;</button>
+        </div>
+
+
+
+        <div class="modal-body">
+          <%= form_with(url: anexar_arquivo_manutencao_programada_path(@manutencao_programada), multipart: true, method: :patch, local: true) do |form| %>
+  <div class="mb-3" style="color: var(--color-btn);">
+    <label for="nome_arquivo">Nome</label>
+    <input type="text" name="nome" id="nome_arquivo" class="form-control" required>
+  </div>
+
+  <div class="mb-3" style="color: var(--color-btn);">
+    <label for="arquivo">Selecionar arquivo</label>
+    <input type="file" name="arquivo" id="arquivo" class="form-control" required>
+  </div>
+
+  <div class="text-end">
+    <%= form.submit "Anexar", class: "btn btn-primary" %>
+  </div>
+<% end %>
+
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+
+<div id="modalChecklist" class="modal-custom" style="display: none;">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" style="color: var(--color-btn);">Novo Item do Checklist</h5>
+        <button type="button" class="close-modal" style="border: none; background: transparent;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <%= form_with model: ChecklistItem.new, scope: :checklist_item, url: checklist_items_path, local: true do |f| %>
+          <%= f.hidden_field :manutencao_programada_id, value: @manutencao_programada.id %>
+
+          <div class="mb-3" style="color: var(--color-btn);">
+            <%= f.label :descricao, "Descrição" %>
+            <%= f.text_area :descricao, class: "form-control", required: true %>
+          </div>
+
+          <div class="text-end">
+            <%= f.submit "Salvar", class: "btn btn-success" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<style>
+/* Adicione este CSS à sua página ou arquivo .css */
+
+.section-box {
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  background-color: #fcfcfc;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.section-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.section-header h5 i {
+  margin-right: 0.75rem;
+  color: #555;
+}
+
+.section-body {
+  padding: 1.5rem;
+}
+
+.lista-anexos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.anexo-item {
+  display: flex;
+  align-items: center;
+  background-color: #3b6ea5;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  color: #fff;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.anexo-link {
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* espaço entre ícone e texto */
+}
+
+.anexo-link i {
+  font-size: 1rem;
+}
+
+.anexo-remover {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.1rem;
+  padding-left: 1rem; /* GAP do botão em relação ao nome */
+  cursor: pointer;
+}
+
+.anexo-remover i {
+  color: #f88;
+}
+
+
+.modal-custom {
+  position: fixed;
+  z-index: 9999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.4);
+}
+.modal-dialog {
+  background: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  width: 400px;
+  border-radius: 6px;
+  color: var(--color-btn--text);
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+</style>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  // --- Lógica para o Modal: Anexar Arquivos (Geral) ---
+  const modalAnexar = document.getElementById('modalAnexarArquivos');
+  if (modalAnexar) {
+    const openBtnAnexar = document.getElementById('abrir-modal-anexar');
+    const closeBtnAnexar = modalAnexar.querySelector('.close-modal');
+
+    openBtnAnexar?.addEventListener('click', () => {
+      modalAnexar.style.display = 'block';
+    });
+
+    closeBtnAnexar?.addEventListener('click', () => {
+      modalAnexar.style.display = 'none';
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modalAnexar) {
+        modalAnexar.style.display = 'none';
+      }
+    });
+  }
+
+  // --- Lógica para o Modal: Checklist ---
+  const modalChecklist = document.getElementById('modalChecklist');
+  if (modalChecklist) {
+    const openChecklist = document.getElementById('abrir-modal-checklist');
+    const closeChecklist = modalChecklist.querySelector('.close-modal');
+
+    openChecklist?.addEventListener('click', () => {
+      modalChecklist.style.display = 'block'
+    });
+    
+    closeChecklist?.addEventListener('click', () => {
+      modalChecklist.style.display = 'none'
+    });
+
+    window.addEventListener('click', (e) => {
+      if (e.target === modalChecklist) {
+        modalChecklist.style.display = 'none';
+      }
+    });
+  }
+
+  // --- Lógica para o Modal: Ocorrências (Criar e Editar) ---
+  const modalOcorrencia = document.getElementById('modalOcorrencia');
+  if (modalOcorrencia) {
+    const formOcorrencia = document.getElementById('formOcorrencia');
+    const modalTitle = document.getElementById('ocorrencia-modal-title');
+    const submitBtn = document.getElementById('submitOcorrenciaBtn');
+    const ocorrenciaIdInput = document.getElementById('ocorrencia_id');
+    const openBtnOcorrencia = document.getElementById('abrir-modal-ocorrencia');
+    
+    // Guarda a URL original do formulário (para a ação de "criar")
+    const createActionUrl = formOcorrencia.action;
+
+    const clearMethodField = () => {
+      const existingMethodField = formOcorrencia.querySelector('input[name="_method"]');
+      if (existingMethodField) {
+        existingMethodField.remove();
+      }
+    };
+
+    // Listener para o botão "Registrar Ocorrência"
+    openBtnOcorrencia?.addEventListener('click', () => {
+     
+      clearMethodField();
+
+      modalTitle.textContent = "Registrar Ocorrência";
+      formOcorrencia.action = createActionUrl; // Restaura a action original de "criar"
+      submitBtn.value = "Registrar";
+      ocorrenciaIdInput.value = "";
+      
+      document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+      });
+
+      modalOcorrencia.style.display = 'block';
+    });
+  }
+
+  // --- Listener Global para Cliques (Editar Ocorrência e Fechar Modais) ---
+  document.addEventListener('click', (e) => {
+    // Ação para EDITAR Ocorrência
+    const editButton = e.target.closest('.editar-ocorrencia');
+if (editButton) {
+  const modalOcorrencia = document.getElementById('modalOcorrencia');
+  if (!modalOcorrencia) return;
+
+  const formOcorrencia = document.getElementById('formOcorrencia');
+  const ocorrencia = JSON.parse(editButton.dataset.ocorrencia);
+  const checklistIds = JSON.parse(editButton.dataset.checklist);
+
+  // Limpa o campo de método antigo (_method)
+  formOcorrencia.querySelector('input[name="_method"]')?.remove();
+  
+  // Prepara o formulário para edição
+  document.getElementById('ocorrencia-modal-title').textContent = "Editar Ocorrência";
+  formOcorrencia.action = `/ocorrencias/${ocorrencia.id}`;
+  document.getElementById('submitOcorrenciaBtn').value = "Atualizar";
+  document.getElementById('ocorrencia_id').value = ocorrencia.id;
+
+  // Adiciona o campo _method para PATCH
+  const methodInput = document.createElement('input');
+  methodInput.type = 'hidden';
+  methodInput.name = '_method';
+  methodInput.value = 'patch';
+  formOcorrencia.appendChild(methodInput);
+
+  // *** GARANTE O TOKEN DE SEGURANÇA CORRETO ***
+  const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+  let tokenInput = formOcorrencia.querySelector('input[name="authenticity_token"]');
+  if (tokenInput) {
+    tokenInput.value = csrfToken;
+  }
+
+  // Preenche os dados
+  document.getElementById('ocorrencia_data_ocorrencia').value = ocorrencia.data_ocorrencia;
+  document.getElementById('ocorrencia_proxima_data').value = ocorrencia.proxima_data;
+  document.getElementById('ocorrencia_descricao').value = ocorrencia.descricao;
+  document.querySelectorAll('.checklist-checkbox').forEach(checkbox => {
+    const itemId = parseInt(checkbox.id.replace('check_', ''));
+    checkbox.checked = checklistIds.includes(itemId);
+  });
+
+  modalOcorrencia.style.display = 'block';
+}
+
+    // Ação para FECHAR qualquer modal
+    if (e.target.matches('.close-modal')) {
+      e.target.closest('.modal-custom').style.display = 'none';
+    }
+  });
+
+});
+</script>

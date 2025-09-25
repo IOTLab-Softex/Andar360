@@ -1,0 +1,356 @@
+<!-- app/views/feedbacks/index.html.erb -->
+<%# -*- coding: UTF-8 -*- %>
+<% total_por_status = Feedback.group(:status).count %>
+<% total_geral      = Feedback.count %>
+
+<section class="fx-page">
+  <header class="fx-head">
+    <div class="fx-head-left">
+      <h1 class="fx-title"><i class="fa-regular fa-comments"></i> Feedbacks</h1>
+      <p class="fx-sub">Acompanhe os relatos dos usuários e priorize correções e melhorias.</p>
+    </div>
+    <div class="fx-stats">
+      <div class="fx-stat">
+        <span class="fx-stat-label">Total</span>
+        <span class="fx-stat-value"><%= total_geral %></span>
+      </div>
+      <div class="fx-stat"><span class="fx-stat-label">Abertos</span><span class="fx-stat-chip tag tag--secondary"><%= total_por_status["aberto"] || 0 %></span></div>
+      <div class="fx-stat"><span class="fx-stat-label">Em andamento</span><span class="fx-stat-chip tag tag--primary"><%= total_por_status["em_andamento"] || 0 %></span></div>
+      <div class="fx-stat"><span class="fx-stat-label">Resolvidos</span><span class="fx-stat-chip tag tag--success"><%= total_por_status["resolvido"] || 0 %></span></div>
+      <div class="fx-stat"><span class="fx-stat-label">Ignorados</span><span class="fx-stat-chip tag tag--muted"><%= total_por_status["ignorado"] || 0 %></span></div>
+    </div>
+  </header>
+
+  <div class="fx-toolbar">
+    <%= form_with url: feedbacks_path, method: :get, local: true, class: "fx-filters" do %>
+      <div class="fx-filter">
+        <label>Status</label>
+        <%= select_tag :status,
+              options_for_select(Feedback.statuses.keys.map { [_1.humanize, _1] }, params[:status]),
+              include_blank: "Todos",
+              class: "form-select fx-control",
+              data: { enhance: "choices" } %>
+      </div>
+      <div class="fx-filter">
+        <label>Categoria</label>
+        <%= select_tag :category,
+              options_for_select(Feedback.categories.keys.map { [_1.humanize, _1] }, params[:category]),
+              include_blank: "Todas",
+              class: "form-select fx-control",
+              data: { enhance: "choices" } %>
+      </div>
+      <div class="fx-actions-bar">
+        <%= submit_tag "Filtrar", class: "btn btn-primary btn-soft" %>
+        <%= link_to "Limpar", feedbacks_path, class: "btn btn-secondary btn-soft" %>
+      </div>
+    <% end %>
+  </div>
+
+  <% if @feedbacks.blank? %>
+    <div class="fx-empty">
+      <i class="fa-regular fa-face-smile"></i>
+      <h3>Nada por aqui</h3>
+      <p>Nenhum feedback encontrado com os filtros atuais.</p>
+      <%= link_to "Limpar filtros", feedbacks_path, class: "btn btn-outline-light btn-soft" %>
+    </div>
+  <% else %>
+    <div class="fx-table-wrap">
+      <table class="fx-table">
+        <thead>
+  <tr>
+    <th>Quando</th>
+    <th>Categoria</th>
+    <th>Severidade</th>
+    <th>Mensagem</th>
+    <th>Página</th>
+    <th>Usuário</th>
+    <th>Status</th>
+    <th class="fx-th-actions">Ações</th>
+  </tr>
+</thead>
+
+        <tbody>
+          <% @feedbacks.each do |fb| %>
+            <% row_class =
+      { "aberto"=>"row--open", "em_andamento"=>"row--progress",
+        "resolvido"=>"row--done", "ignorado"=>"row--muted" }[fb.status] %>
+
+  <tr class="fx-row <%= row_class %>">
+            <% sev_class = { "baixa"=>"sev--low", "media"=>"sev--med", "alta"=>"sev--high", "critica"=>"sev--crit" }[fb.severity] || "sev--med" %>
+            <% st_class  = { "aberto"=>"tag--secondary", "em_andamento"=>"tag--primary", "resolvido"=>"tag--success", "ignorado"=>"tag--muted" }[fb.status] || "tag--secondary" %>
+
+            <tr>
+              <td title="<%= l(fb.created_at, format: "%d/%m/%Y %H:%M") %>">
+                <div class="fx-when"><i class="fa-regular fa-clock"></i> <%= time_ago_in_words(fb.created_at) %> atrás</div>
+                <small class="fx-when-abs"><%= l(fb.created_at, format: "%d/%m/%Y %H:%M") %></small>
+              </td>
+
+              <td><span class="tag"><%= fb.category.humanize %></span></td>
+
+              <td>
+                <span class="chip <%= sev_class %>">
+                  <i class="fa-solid fa-signal"></i> <%= fb.severity.humanize %>
+                </span>
+              </td>
+
+              <td class="fx-msg" title="<%= fb.message %>"><%= truncate(fb.message, length: 100) %></td>
+
+              <td class="fx-page">
+                <div class="fx-page-title"><%= fb.page_title.presence || "-" %></div>
+                <small class="fx-page-path"><code><%= fb.page_path %></code></small>
+               <% if fb.page_url.present? %>
+  <%= link_to fb.page_url, class: "fx-open-link", target: "_blank", rel: "noopener" do %>
+    <i class="fa-solid fa-arrow-up-right-from-square"></i> abrir
+  <% end %>
+ 
+<% end %>
+
+              </td>
+
+              <td><%= fb.user&.email || "anônimo" %></td>
+
+              <td><span class="tag <%= st_class %>"><%= fb.status.humanize %></span></td>
+
+              <td class="fx-actions">
+                <%= link_to feedback_path(fb), class: "btn-icon", title: "Ver" do %>
+                  <i class="fa-regular fa-eye"></i>
+                <% end %>
+
+                <%= button_to assign_to_me_feedback_path(fb), method: :patch, class: "btn-icon", form: { class: "inline" }, title: "Atribuir a mim" do %>
+                  <i class="fa-regular fa-user"></i>
+                <% end %>
+
+                <%= button_to resolve_feedback_path(fb), method: :patch, class: "btn-icon success", form: { class: "inline" }, title: "Resolver" do %>
+                  <i class="fa-regular fa-circle-check"></i>
+                <% end %>
+
+                <%= button_to change_status_feedback_path(fb, status: :ignorado), method: :patch, class: "btn-icon warn", form: { class: "inline" }, title: "Ignorar" do %>
+                  <i class="fa-regular fa-circle-xmark"></i>
+                <% end %>
+
+                <%= button_to feedback_path(fb), method: :delete, data: { confirm: "Remover este feedback?" }, class: "btn-icon danger", form: { class: "inline" }, title: "Excluir" do %>
+                  <i class="fa-regular fa-trash-can"></i>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+      </tr>
+  <% end %>
+</section>
+
+<style>
+
+/* ===== Tokens de linha (por tema) ===== */
+:root{
+  --fx-row-bg:        #ffffff;
+  --fx-row-alt-bg:    #f7f9fc;
+  --fx-row-hover:     #eef4ff;
+  --fx-row-border:    rgba(0,0,0,.06);
+
+  --fx-row-open-bg:      rgba(13,110,253,.08);  /* aberto = azul clarinho */
+  --fx-row-progress-bg:  rgba(13,110,253,.12);  /* em andamento = um pouco mais forte */
+  --fx-row-done-bg:      rgba(25,135,84,.10);   /* resolvido = verde */
+  --fx-row-muted-bg:     rgba(108,117,125,.08); /* ignorado = cinza */
+  --fx-row-accent-open:     #0d6efd;
+  --fx-row-accent-progress: #3d8bfd;
+  --fx-row-accent-done:     #198754;
+  --fx-row-accent-muted:    #6c757d;
+}
+
+:root[data-theme="dark"]{
+  --fx-row-bg:        #1a2431;
+  --fx-row-alt-bg:    #16202c;
+  --fx-row-hover:     #1f2b3a;
+  --fx-row-border:    rgba(255,255,255,.08);
+
+  /* menos opaco no dark pra não “gritar” */
+  --fx-row-open-bg:      rgba(13,110,253,.14);
+  --fx-row-progress-bg:  rgba(13,110,253,.18);
+  --fx-row-done-bg:      rgba(25,135,84,.16);
+  --fx-row-muted-bg:     rgba(108,117,125,.12);
+  --fx-row-accent-open:     #6ea8fe;
+  --fx-row-accent-progress: #9ec5fe;
+  --fx-row-accent-done:     #75b798;
+  --fx-row-accent-muted:    #adb5bd;
+}
+
+/* ===== Linhas da tabela ===== */
+.fx-table tbody tr{
+  background: var(--fx-row-bg);
+  transition: background .15s ease, box-shadow .15s ease;
+  border-bottom: 1px solid var(--fx-row-border);
+}
+.fx-table tbody tr:nth-child(even){
+  background: var(--fx-row-alt-bg);
+}
+.fx-table tbody tr:hover{
+  background: var(--fx-row-hover);
+}
+
+/* Acento lateral por status (linha colorida na esquerda) */
+.fx-table tbody tr.fx-row{ position: relative; }
+.fx-table tbody tr.fx-row::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px;
+  border-radius: 0 3px 3px 0;
+  opacity:.9;
+}
+
+/* Cores por status */
+.fx-table tbody tr.row--open{
+  background: var(--fx-row-open-bg);
+}
+.fx-table tbody tr.row--open::before{
+  background: var(--fx-row-accent-open);
+}
+
+.fx-table tbody tr.row--progress{
+  background: var(--fx-row-progress-bg);
+}
+.fx-table tbody tr.row--progress::before{
+  background: var(--fx-row-accent-progress);
+}
+
+.fx-table tbody tr.row--done{
+  background: var(--fx-row-done-bg);
+}
+.fx-table tbody tr.row--done::before{
+  background: var(--fx-row-accent-done);
+}
+
+.fx-table tbody tr.row--muted{
+  background: var(--fx-row-muted-bg);
+}
+.fx-table tbody tr.row--muted::before{
+  background: var(--fx-row-accent-muted);
+}
+
+/* ===== Layout & header ===== */
+.fx-page{ display:grid; gap:14px; }
+
+.fx-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:14px;
+  background: var(--fx-surface);
+  border:1px solid var(--fx-border);
+  border-radius:14px; padding:14px 16px;
+}
+
+.fx-title{ margin:0; font-size:1.2rem; display:flex; gap:8px; align-items:center; color: var(--fx-text); }
+.fx-sub{ margin:.25rem 0 0; color: var(--fx-muted); font-size:.94rem; }
+
+.fx-stats{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.fx-stat{ display:flex; flex-direction:column; align-items:flex-start; gap:4px; }
+.fx-stat-label{ color: var(--fx-muted); font-size:.82rem; }
+.fx-stat-value{ font-weight:800; font-size:1.1rem; color: var(--fx-text); }
+.fx-stat-chip{ font-weight:700; }
+
+/* ===== Toolbar ===== */
+.fx-toolbar{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  background: var(--fx-surface-2);
+  border:1px solid var(--fx-border);
+  border-radius:12px; padding:12px;
+}
+
+.fx-filters{ display:flex; gap:12px; align-items:end; flex-wrap:wrap; }
+.fx-filter{ display:flex; flex-direction:column; gap:6px; min-width:180px; }
+.fx-filter label{ font-weight:600; font-size:.9rem; color: var(--fx-text); }
+.fx-control{
+  background: rgba(0,0,0,.02);
+  border:1px solid var(--fx-border);
+  color: var(--fx-text);
+  border-radius:10px; height:38px;
+  color-scheme: var(--fx-color-scheme);
+}
+.fx-actions-bar{ display:flex; gap:8px; }
+.btn-soft{ border-radius:10px; padding:.45rem .8rem; }
+
+/* ===== Table ===== */
+.fx-table-wrap{ overflow:auto; border-radius:12px; border:1px solid var(--fx-border); }
+.fx-table{ width:100%; border-collapse:separate; border-spacing:0; min-width:980px; color: var(--fx-text); }
+
+.fx-table thead th{
+  position: sticky; top: 0; z-index: 1;
+  background: var(--fx-thead-bg);
+  color: var(--fx-thead-text);
+  backdrop-filter: blur(var(--fx-glass-blur));
+  -webkit-backdrop-filter: blur(var(--fx-glass-blur));
+  text-align:left; font-weight:700; padding:10px; border-bottom:1px solid var(--fx-border);
+}
+
+.fx-table tbody td{
+  padding:10px; border-bottom:1px solid var(--fx-border); vertical-align:top; color: var(--fx-text);
+}
+
+.fx-th-actions{ width:220px; }
+.fx-msg{ max-width:420px; word-break:break-word; color: var(--fx-text); }
+.fx-page .fx-open-link{ display:inline-flex; gap:6px; align-items:center; font-size:.88rem; }
+.fx-when{ display:flex; gap:6px; align-items:center; }
+.fx-when-abs{ color: var(--fx-muted); }
+
+/* ===== Chips/Tags ===== */
+.tag{
+  display:inline-block; padding:.2rem .5rem; border-radius:999px;
+  border:1px solid var(--fx-chip-border); background: var(--fx-chip-bg);
+  font-weight:600; font-size:.85rem; color: var(--fx-text);
+}
+.tag--primary{ border-color:rgba(13,110,253,.35); background:color-mix(in srgb, #0d6efd 12%, transparent); color: color-mix(in srgb, #0d6efd 75%, var(--fx-text)); }
+.tag--success{ border-color:rgba(25,135,84,.35); background:color-mix(in srgb, #198754 14%, transparent); color: color-mix(in srgb, #198754 80%, var(--fx-text)); }
+.tag--secondary{ /* neutra segue var(--fx-text) */ }
+.tag--muted{ color: var(--fx-muted); }
+
+/* Severidade (usando tokens por tema) */
+.chip{
+  display:inline-flex; gap:6px; align-items:center;
+  padding:.22rem .55rem; border-radius:10px; font-weight:700; font-size:.85rem;
+  border:1px solid; background: transparent;
+}
+.sev--low{  border-color: var(--sev-low-br);  color: var(--sev-low-color);  }
+.sev--med{  border-color: var(--sev-med-br);  color: var(--sev-med-color);  }
+.sev--high{ border-color: var(--sev-high-br); color: var(--sev-high-color); }
+.sev--crit{ border-color: var(--sev-crit-br); color: var(--sev-crit-color); }
+
+/* ===== Ações (ícones) ===== */
+.fx-actions{ display:flex; gap:6px; align-items:center; }
+.fx-actions form.inline{ display:inline-block; margin:0; }
+.btn-icon{
+  display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+  border:1px solid var(--fx-chip-border); background: var(--fx-chip-bg); color: var(--fx-text);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.btn-icon:hover{ transform: translateY(-1px); background: color-mix(in srgb, var(--fx-chip-bg), var(--fx-text) 8%); }
+.btn-icon.success{ border-color:rgba(25,135,84,.45); }
+.btn-icon.warn{    border-color:rgba(255,193,7,.45); }
+.btn-icon.danger{  border-color:rgba(220,53,69,.55); }
+
+/* ===== Estado vazio ===== */
+.fx-empty{
+  text-align:center; padding:40px 20px; border:1px dashed var(--fx-border);
+  border-radius:12px; background: var(--fx-surface-2); color: var(--fx-text);
+}
+.fx-empty i{ font-size:32px; margin-bottom:8px; color: var(--fx-muted); display:block; }
+
+/* ===== Select nativo com popup acompanhando o tema ===== */
+.fx-control option,
+.fx-control optgroup{
+  background: var(--fx-surface);
+  color: var(--fx-text);
+}
+
+</style>
+
+<script>
+// Inicializa Choices.js nos selects marcados (se disponível)
+document.addEventListener("turbo:load", () => {
+  document.querySelectorAll('select[data-enhance="choices"]').forEach(el=>{
+    try{
+      if (window.Choices && !el.dataset.choices){
+        const inst = new Choices(el, { searchEnabled:false, itemSelectText:"" });
+        el.dataset.choices = "1";
+      }
+    }catch(e){}
+  });
+});
+</script>

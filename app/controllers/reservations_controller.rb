@@ -4,14 +4,15 @@ class ReservationsController < ApplicationController
   # GET /reservations
 def index
   if current_user.admin? || current_user.operador?
-    @reservations = Reservation.includes(:room).order(starts_at: :desc)
+    @reservations = Reservation.includes(:room, :grupo_empresa).order(starts_at: :desc)
   else
     empresa_id = current_user.participant&.grupo_empresa_id
-    @reservations = Reservation.includes(:room)
+    @reservations = Reservation.includes(:room, :grupo_empresa)
                                .where(grupo_empresa_id: empresa_id)
                                .order(starts_at: :desc)
   end
 end
+
 
 
 
@@ -23,18 +24,21 @@ end
   end
 
   # GET /reservations/new
-  def new
-    @reservation = Reservation.new
-  
-    if current_user.admin? || current_user.operador?
-      @participants = Participant.all
-      @grupo_empresas = GrupoEmpresa.all
-    else
-      empresa_id = current_user.participant&.grupo_empresa_id
-      @participants = Participant.where(grupo_empresa_id: empresa_id)
-      @grupo_empresas = GrupoEmpresa.where(id: empresa_id)
-    end
+def new
+  @reservation = Reservation.new
+
+  if current_user.admin? || current_user.operador?
+    @participants = Participant.all
+    @grupo_empresas = GrupoEmpresa.all
+    @rooms = Room.where(espaco_comun: true)
+  else
+    empresa_id = current_user.participant&.grupo_empresa_id
+    @participants = Participant.where(grupo_empresa_id: empresa_id)
+    @grupo_empresas = GrupoEmpresa.where(id: empresa_id)
+    @rooms = Room.where(espaco_comun: true)
   end
+end
+
   
 
   # GET /reservations/1/edit
@@ -45,6 +49,21 @@ end
   # POST /reservations
   def create
   @reservation = Reservation.new(reservation_params)
+    room = Room.find_by(id: @reservation.room_id)
+unless room&.espaco_comun?
+  respond_to do |format|
+    msg = "⚠️ Esta sala não está disponível para reserva."
+    format.json { render json: { error: msg }, status: :unprocessable_entity }
+    format.html do
+      flash[:alert] = msg
+      redirect_back fallback_location: new_reservation_path
+    end
+  end
+  return
+end
+
+
+
   @reservation.grupo_empresa_id ||= current_user.participant&.grupo_empresa_id
 
 
@@ -148,6 +167,18 @@ end
   room = Room.find(params[:room_id])
   now = Time.current
 
+  icon_map = {
+    "Cadeiras" => "chair-office",
+    "TV" => "tv",
+    "Mesa" => "table",
+    "Projetor" => "video",
+    "Telefone" => "phone",
+    "Lousa" => "chalkboard",
+    "Ar Condicionado" => "air-conditioner",
+    "HDMI" => "hdmi",
+    "Tomadas" => "outlet"
+  }
+
   reservations = room.reservations
                     .where(cancelada_em: nil)
                     .where("ends_at > ?", now)
@@ -163,10 +194,18 @@ end
       }
     },
     itens: room.room_items.map { |i|
-      { name: i.name, quantity: i.quantity }
+      icon_name = icon_map[i.name]
+      {
+        name: i.name,
+        quantity: i.quantity,
+        icon_svg: icon_name ? view_context.svg_icon("icones/icons_custom/solid/#{icon_name}.svg", class: "srs-solid") : ""
+
+      }
     }
   }
 end
+
+
 
   
   def turno_da_reserva(hora)
@@ -316,10 +355,24 @@ end
   end
 
   # GET /rooms/:room_id/reservations
-  def by_room
-    @room = Room.find(params[:room_id])
-    @reservations = @room.reservations.order(starts_at: :asc)
+def by_room
+  @room = Room.find(params[:room_id])
+
+  if current_user.admin? || current_user.operador?
+    @reservations = @room.reservations.includes(:grupo_empresa).order(starts_at: :asc)
+    @outras_reservas = []
+  else
+    empresa_id = current_user.participant&.grupo_empresa_id
+    todas = @room.reservations.includes(:grupo_empresa).order(starts_at: :asc)
+
+    @reservations = todas.where(grupo_empresa_id: empresa_id)
+    @outras_reservas = todas.where.not(grupo_empresa_id: empresa_id)
   end
+end
+
+
+
+
 
   private
 
@@ -340,6 +393,18 @@ def set_reservation
   @reservation = Reservation.find(params[:id])
   authorize_empresa!(@reservation)
 end
+
+def authorize_empresa!(reservation)
+  # Admin e operador podem tudo
+  return if current_user.admin? || current_user.operador?
+
+  empresa_id_user = current_user.participant&.grupo_empresa_id
+
+  if reservation.grupo_empresa_id != empresa_id_user
+    redirect_to reservations_path, alert: "Você não tem permissão para acessar esta reserva."
+  end
+end
+
 
 
   def reservation_params

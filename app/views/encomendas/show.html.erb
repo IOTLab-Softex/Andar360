@@ -1,0 +1,138 @@
+<% content_for :title, "Detalhes da Encomenda" %>
+
+
+<div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+  <!-- Imagem -->
+  <div style="flex: 1 1 200px; text-align: center;">
+    <label>Imagem:</label><br>
+    <div class="image-thumb mt-2">
+      <% if @encomenda.imagem.attached? %>
+        <%= image_tag url_for(@encomenda.imagem), class: "img-fluid", style: "max-width: 350px;" %>
+      <% else %>
+        <%= image_tag asset_path('camera.png'), class: "img-fluid", style: "max-width: 350px;" %>
+      <% end %>
+    </div>
+  </div>
+
+  <!-- Campos -->
+  <div style="flex: 2 1 500px;">
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+      <div style="flex: 1;">
+        <label>Unidade (sala):</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.unidade %></div>
+      </div>
+      <div style="flex: 1;">
+        <label>Código:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.codigo %></div>
+      </div>
+      <div style="flex: 1;">
+        <label>Transportadora:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.transportadora %></div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+      <div style="flex: 1;">
+        <label>Tipo:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.tipo.presence || "-" %></div>
+      </div>
+      <div style="flex: 1;">
+        <label>Tamanho:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.tamanho.presence || "-" %></div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+      <div style="flex: 1;">
+        <label>Remetente:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.remetente.presence || "-" %></div>
+      </div>
+      <div style="flex: 1;">
+        <label>Empresa:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.destinatario&.grupo_empresa&.nome || "-" %></div>
+      </div>
+      <div style="flex: 1;">
+        <label>Destinatário:</label>
+        <div class="form-control" style="
+    color: var(--color-text); background: #f9f9f91c;
+"><%= @encomenda.destinatario&.name || "-" %></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 1rem;">
+      <label>Observação:</label>
+      <div class="form-control" style="min-height: 100px; color: var(--color-text); background: #f9f9f91c;"><%= @encomenda.observacao.presence || "" %></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS DA ENTREGA -->
+<div style="margin: 1rem 0; padding: .75rem 1rem; border:1px solid #ccc; border-radius:8px;">
+  <div style="display:flex; gap:1rem; flex-wrap:wrap; align-items:center;">
+    <div>
+      <strong>Status:</strong>
+      <% if @encomenda.entregue? %>
+        <span style="padding:.2rem .5rem; border-radius:.4rem; background:#e6ffed; color:#037a2b; border:1px solid #b7ebc6;">
+          Entregue
+        </span>
+      <% else %>
+        <span style="padding:.2rem .5rem; border-radius:.4rem; background:#fff5f5; color:#a40000; border:1px solid #f1c0c0;">
+          Pendente
+        </span>
+      <% end %>
+    </div>
+
+    <div>
+      <strong>Entregue em:</strong>
+      <%= @encomenda.entregue_em.present? ? l(@encomenda.entregue_em, format: :short) : "-" %>
+    </div>
+
+<div>
+  <strong>Recebido por:</strong>
+  <%= @encomenda.recebido_por&.name.presence || "-" %>
+</div>
+
+<div>
+  <strong>Entregue por (usuário):</strong>
+  <%= (@encomenda.respond_to?(:entregue_por) && @encomenda.entregue_por.present?) ? @encomenda.entregue_por.name : "-" %>
+</div>
+
+  </div>
+
+  <% unless @encomenda.entregue? %>
+    <div style="margin-top:.75rem;">
+      <%= button_to "Marcar como entregue",
+            entregar_encomenda_path(@encomenda),
+            method: :patch,
+            form: { data: { turbo_confirm: "Confirmar entrega desta encomenda?" } },
+            class: "btn btn-primary" %>
+    </div>
+  <% end %>
+</div>
+
+
+<style>
+.image-thumb {
+    display: inline-block;
+    width: 348px;
+    height: 376px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+}
+
+</style>

@@ -109,7 +109,18 @@
 <% end %>
 
 <!-- Sobreposição da câmera -->
-<div id="camera-overlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:98vh; background:#000000cc; z-index:9999; justify-content:center; align-items:center;align-items: stretch; padding-top: 42px;">
+<div id="camera-overlay" style="display: none
+;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 9999;
+    justify-content: center;
+    align-items: stretch;
+    padding-top: 42px;">
 <div style="position:relative;">
   <iframe id="camera-frame" src="/camera" width="510px" height="90%" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
   <button type="button" onclick="closeCamera()" style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">X</button>

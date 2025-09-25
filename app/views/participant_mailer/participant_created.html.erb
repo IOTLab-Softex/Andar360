@@ -1,0 +1,13 @@
+<h2>Olá, <%= @participant.name %>!</h2>
+<p>Seu cadastro foi concluído com sucesso.</p>
+
+<ul>
+  <li><strong>Nome:</strong> <%= @participant.name %></li>
+  <li><strong>CPF:</strong> <%= @participant.cpf %></li>
+  <li><strong>Telefone:</strong> <%= @participant.telefone %></li>
+  <li><strong>Cargo:</strong> <%= @formulario&.cargo.to_s.presence || "-" %></li>
+  <li><strong>Dias de trabalho:</strong> <%= @formulario&.dias_trabalho.to_s.presence || "-" %></li>
+  <li><strong>Horário de trabalho:</strong> <%= @formulario&.horario_trabalho.to_s.presence || "-" %></li>
+</ul>
+
+<p>Qualquer dúvida, responda este e-mail.</p>

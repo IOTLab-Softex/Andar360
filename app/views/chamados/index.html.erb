@@ -1,0 +1,111 @@
+
+<div class="table-responsive">
+
+<span class="filtro-label">
+    <i class="fa-solid fa-filter"></i>
+    Filtrar
+  </span>
+<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form" do %>
+  <div style="display: flex; flex-nowrap: wrap; gap: 10px; margin-bottom: 20px;">
+    
+    <%= select_tag :local, options_for_select(["Todos os locais"] + Chamado.distinct.pluck(:local), params[:local]), class: "form-control" %>
+
+
+    <%= select_tag :unidade, options_for_select(["Todas as unidades"] + Chamado.distinct.pluck(:unidade), params[:unidade]), class: "form-control" %>
+
+    <%= select_tag :status, options_for_select(["Todos os status", "Solicitada", "Em andamento", "Finalizada"], params[:status]), class: "form-control" %>
+
+    <%= select_tag :prioridade, options_for_select(["Todas as prioridades"] + Chamado.distinct.pluck(:prioridade), params[:prioridade]), class: "form-control" %>
+
+    <%= select_tag :responsavel, options_for_select(["Todos os responsáveis"] + Chamado.distinct.pluck(:responsavel), params[:responsavel]), class: "form-control" %>
+
+    <!-- Data (opcional) -->
+    <%= text_field_tag :data_inicio, params[:data_inicio], class: "form-control", placeholder: "Data início" %>
+    <%= text_field_tag :data_fim, params[:data_fim], class: "form-control", placeholder: "Data fim" %>
+
+    <%= button_tag type: "submit", class: "btn btn-success" do %>
+    <i class="fa fa-search"></i>
+  <% end %>
+
+  </div>
+<% end %>
+
+  <table class="table-salas">
+    <thead>
+      <tr>
+        <th>OS</th>
+        <th>Título</th>
+        <th>Unidade</th>
+        <th>Prioridade</th>
+        <th>Status</th>
+        <th>Responsável</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @chamados.each do |chamado| %>
+        <tr>
+          <td><%= chamado.os %></td>
+          <td><%= chamado.titulo %></td>
+          <td><%= chamado.unidade %></td>
+          <td><%= chamado.prioridade %></td>
+          <td><%= chamado.status %></td>
+          <td><%= chamado.responsavel %></td>
+         <td style="
+    display: flex;
+    flex-direction: column;
+">
+          <%= link_to chamado_path(chamado), class: "btn btn-success" do %>
+            <i class="fa-solid fa-eye"></i> Ver
+          <% end %>
+          <%= link_to edit_chamado_path(chamado), class: "edit btn btn-sm btn-outline-secondary" do %>
+             <i class="fa-solid fa-pen-to-square"></i> Editar
+          <% end %>
+          <%= button_to chamado_path(chamado),
+      method: :delete,
+      class: "btn btn-warning",                                # estilo visual
+      form: {
+        class: "form-excluir-chamado",                         # <- vamos interceptar este form
+        data:  { record_name: (chamado.titulo.presence || chamado.os), turbo: false }, # turbo: false evita submit imediato
+        style: "display:inline"
+      } do %>
+  <i class="fa-solid fa-trash-can"></i> Excluir
+<% end %>
+
+
+        </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<script>
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
+  if (!form.classList.contains("form-excluir-chamado")) return;
+
+  e.preventDefault(); // trava o submit padrão
+
+  // nome do registro (pode vir do form ou do botão clicado)
+  const btn = e.submitter; // quem disparou o submit
+  const nome = (btn && btn.dataset.recordName) || form.dataset.recordName || "este chamado";
+
+  if (window.Swal) {
+    const res = await Swal.fire({
+      title: "Excluir chamado?",
+      html: `Tem certeza que deseja excluir <b>${nome}</b>?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sim, excluir",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (res.isConfirmed) form.submit(); // agora deixa enviar
+  } else {
+    if (confirm(`Tem certeza que deseja excluir ${nome}?`)) {
+      form.submit();
+    }
+  }
+});
+</script>

@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  titulo: MyString
+  categoria: MyString
+  local: MyString
+  responsavel: MyString
+  periodicidade: MyString
+  data_prevista: 2025-07-01
+  dias_para_aviso: 1
+  observacao: MyText
+  exibir_no_app: false
+
+two:
+  titulo: MyString
+  categoria: MyString
+  local: MyString
+  responsavel: MyString
+  periodicidade: MyString
+  data_prevista: 2025-07-01
+  dias_para_aviso: 1
+  observacao: MyText
+  exibir_no_app: false

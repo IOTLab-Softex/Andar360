@@ -1,0 +1,118 @@
+<div class="table-responsive">
+<span class="filtro-label">
+    <i class="fa-solid fa-filter"></i>
+    Filtrar
+  </span>
+<%= form_with url: manutencao_programadas_path, method: :get, local: true, class: "d-flex gap-2 mb-3", style: "align-items: center;" do %>
+  <%= select_tag :categoria,
+    options_for_select(["Todas as categorias"] + @manutencao_programadas.map(&:categoria).uniq.compact, params[:categoria]),
+    class: "form-control" %>
+
+  <%= select_tag :responsavel,
+    options_for_select(["Todos os responsáveis"] + @manutencao_programadas.map(&:responsavel).uniq.compact, params[:responsavel]),
+    class: "form-control" %>
+
+  <%= select_tag :periodicidade,
+    options_for_select(["Todas as periodicidades"] + @manutencao_programadas.map(&:periodicidade).uniq.compact, params[:periodicidade]),
+    class: "form-control" %>
+
+  <%= date_field_tag :inicio, params[:inicio], class: "form-control", placeholder: "Data início" %>
+  <span>a</span>
+  <%= date_field_tag :fim, params[:fim], class: "form-control", placeholder: "Data fim" %>
+
+  <%= button_tag type: "submit", class: "btn btn-success" do %>
+    <i class="fa fa-search"></i>
+  <% end %>
+<% end %>
+
+  <table class="table-salas">
+    <thead>
+      <tr>
+        <th>Título</th>
+        <th>Exibir no App</th>
+        <th>Categoria</th>
+        <th>Local</th>
+        <th>Responsável</th>
+        <th>Periodicidade</th>
+        <th>Data Prevista</th>
+        <th>Dias p/ Aviso</th>
+        <th>Observação</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @manutencao_programadas.each do |manutencao| %>
+        <tr>
+          <td><%= manutencao.titulo %></td>
+          <td><%= manutencao.exibir_no_app ? "Sim" : "Não" %></td>
+          <td><%= manutencao.categoria %></td>
+          <td><%= manutencao.local %></td>
+          <td><%= manutencao.responsavel %></td>
+          <td><%= manutencao.periodicidade %></td>
+          <td><%= l(manutencao.data_prevista) if manutencao.data_prevista %></td>
+          <td><%= manutencao.dias_para_aviso %></td>
+          <td><%= truncate(manutencao.observacao.to_s, length: 50) %></td>
+          <td>
+            <%= link_to manutencao_programada_path(manutencao), class: "btn btn-success" do %>
+              <i class="fa-solid fa-eye"></i> Ver
+              <% end %>
+              <%if operador_ou_admin? %>
+            <%= link_to edit_manutencao_programada_path(manutencao), class: "edit btn btn-sm btn-outline-secondary" do %>
+              <i class="fa-solid fa-pen-to-square"></i> Editar
+              <% end %>
+
+                            <%= button_to adiar_manutencao_programada_path(manutencao),
+  method: :post,
+  class: "btn btn-success",
+  data: { confirm: "Deseja adiar essa manutenção para a próxima data?" },
+  form: { style: "display:inline" } do %>
+  <i class="fa-solid fa-clock-rotate-left"></i> Adiar
+<% end %>
+
+              <%= button_to manutencao_programada_path(manutencao),
+      method: :delete,
+      class: "btn btn-warning",
+      form: {
+        class: "form-excluir-manutencao",
+        data:  { record_name: (manutencao.titulo.presence || "esta manutenção"), turbo: false },
+        style: "display:inline"
+      } do %>
+  <i class="fa-solid fa-trash"></i> Excluir
+<% end %>
+
+<% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<script>
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
+  if (!form.classList.contains("form-excluir-manutencao")) return;
+
+  e.preventDefault(); // impede o submit automático
+
+  const nome = form.dataset.recordName || "esta manutenção";
+
+  if (window.Swal) {
+    const res = await Swal.fire({
+      title: "Excluir manutenção?",
+      html: `Tem certeza que deseja excluir <b>${nome}</b>?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Sim, excluir",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (res.isConfirmed) form.submit();
+  } else {
+    if (confirm(`Tem certeza que deseja excluir ${nome}?`)) {
+      form.submit();
+    }
+  }
+});
+</script>

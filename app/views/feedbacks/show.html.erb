@@ -1,0 +1,317 @@
+<!-- app/views/feedbacks/show.html.erb -->
+<%# -*- coding: UTF-8 -*- %>
+<% sev_class = { "baixa"=>"sev--low", "media"=>"sev--med", "alta"=>"sev--high", "critica"=>"sev--crit" }[@feedback.severity] || "sev--med" %>
+<% st_class  = { "aberto"=>"tag--secondary", "em_andamento"=>"tag--primary", "resolvido"=>"tag--success", "ignorado"=>"tag--muted" }[@feedback.status] || "tag--secondary" %>
+
+<% head_status_class = { "aberto"=>"head--open", "em_andamento"=>"head--progress", "resolvido"=>"head--done", "ignorado"=>"head--muted" }[@feedback.status] %>
+
+<section class="fx-show">
+  <header class="fx-head <%= head_status_class %>">
+    <div class="fx-head-left">
+      <%= link_to feedbacks_path, class: "btn-icon fx-back", title: "Voltar" do %>
+        <i class="fa-solid fa-arrow-left"></i>
+      <% end %>
+      <div>
+        <h1 class="fx-title">Feedback #<%= @feedback.id %></h1>
+        <p class="fx-sub"><i class="fa-regular fa-clock"></i> <%= time_ago_in_words(@feedback.created_at) %> atrás • <%= l(@feedback.created_at, format: "%d/%m/%Y %H:%M") %></p>
+      </div>
+    </div>
+
+    <div class="fx-head-right">
+      <span class="tag <%= st_class %>"><%= @feedback.status.humanize %></span>
+      <span class="tag"><i class="fa-regular fa-bookmark"></i> <%= @feedback.category.humanize %></span>
+      <span class="chip <%= sev_class %>"><i class="fa-solid fa-signal"></i> <%= @feedback.severity.humanize %></span>
+      <span class="tag tag--muted"><i class="fa-regular fa-user"></i> <%= @feedback.user&.email || "anônimo" %></span>
+    </div>
+  </header>
+
+  <div class="fx-grid">
+    <!-- Coluna principal -->
+    <div class="fx-main">
+      <article class="fx-card">
+        <h3 class="fx-card-title"><i class="fa-regular fa-message"></i> Mensagem</h3>
+        <div class="fx-pre"><%= simple_format(@feedback.message) %></div>
+      </article>
+
+      <% if @feedback.selected_text.present? %>
+        <article class="fx-card">
+          <h3 class="fx-card-title"><i class="fa-regular fa-highlighter"></i> Trecho selecionado</h3>
+          <blockquote class="fx-quote"><%= simple_format(@feedback.selected_text) %></blockquote>
+        </article>
+      <% end %>
+
+      <% if @feedback.attachments.attached? %>
+        <article class="fx-card">
+          <h3 class="fx-card-title"><i class="fa-regular fa-paperclip"></i> Anexos</h3>
+          <ul class="fx-files">
+            <% @feedback.attachments.each do |att| %>
+              <li class="fx-file">
+                <% if att.content_type&.start_with?("image/") %>
+                  <%= link_to url_for(att), target: "_blank", rel: "noopener", class: "fx-thumb" do %>
+                    <%= image_tag(att.variable? ? att.variant(resize_to_limit: [800,800]) : att, alt: att.filename.to_s) %>
+                  <% end %>
+                <% else %>
+                  <div class="fx-thumb fx-thumb--file"><i class="fa-regular fa-file-lines"></i></div>
+                <% end %>
+
+                <div class="fx-file-meta">
+                  <div class="fx-file-name"><%= att.filename.to_s %></div>
+                  <small class="fx-file-info"><%= att.content_type %> • <%= number_to_human_size(att.byte_size) %></small>
+                  <div class="fx-file-actions">
+                    <%= link_to "abrir", url_for(att), class: "btn-link", target: "_blank", rel: "noopener" %>
+                    <%= link_to "baixar",
+                                rails_blob_path(att, disposition: :attachment),
+                                class: "btn-link" %>
+                  </div>
+                </div>
+              </li>
+            <% end %>
+          </ul>
+        </article>
+      <% end %>
+    </div>
+
+    <!-- Coluna lateral -->
+    <aside class="fx-side">
+      <div class="fx-card">
+        <h3 class="fx-card-title"><i class="fa-solid fa-link"></i> Página</h3>
+        <div class="fx-page-info">
+          <div class="fx-page-title"><%= @feedback.page_title.presence || "-" %></div>
+          <div class="fx-page-path"><code><%= @feedback.page_path %></code></div>
+
+          <% if @feedback.page_url.present? %>
+            <div class="fx-url-row">
+              <a href="<%= @feedback.page_url %>" class="btn-link" target="_blank" rel="noopener">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> abrir página
+              </a>
+              <button type="button" class="btn-icon" title="Copiar URL" data-copy="<%= @feedback.page_url %>">
+                <i class="fa-regular fa-copy"></i>
+              </button>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+      <div class="fx-card">
+        <h3 class="fx-card-title"><i class="fa-solid fa-desktop"></i> Ambiente</h3>
+        <div class="fx-ua">
+          <div class="fx-ua-row">
+            <span class="fx-ua-label">User-Agent</span>
+            <button type="button" class="btn-icon" title="Copiar User-Agent" data-copy="<%= @feedback.user_agent %>">
+              <i class="fa-regular fa-copy"></i>
+            </button>
+          </div>
+          <pre class="fx-pre-ua"><%= @feedback.user_agent %></pre>
+        </div>
+      </div>
+
+      <div class="fx-card">
+        <h3 class="fx-card-title"><i class="fa-regular fa-square-check"></i> Ações</h3>
+        <div class="fx-actions">
+          <%= button_to change_status_feedback_path(@feedback, status: :em_andamento), method: :patch, class: "btn btn-soft" do %>
+            <i class="fa-regular fa-user"></i> Em andamento
+          <% end %>
+
+          <%= button_to resolve_feedback_path(@feedback), method: :patch, class: "btn btn-soft success" do %>
+            <i class="fa-regular fa-circle-check"></i> Resolver
+          <% end %>
+
+          <%= button_to change_status_feedback_path(@feedback, status: :ignorado), method: :patch, class: "btn btn-soft warn" do %>
+            <i class="fa-regular fa-circle-xmark"></i> Ignorar
+          <% end %>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<style>
+
+/* ===== Theme tokens (reusáveis no index e show) ===== */
+:root{
+  --fx-text:        #10212b;
+  --fx-muted:       #5f7384;
+  --fx-surface:     #ffffff;
+  --fx-surface-2:   #f5f7fb;
+  --fx-border:      rgba(16,33,43,.1);
+
+  --fx-chip-bg:     rgba(16,33,43,.04);
+  --fx-chip-border: rgba(16,33,43,.12);
+
+  --fx-glass-blur:  3px;
+
+  /* severidade */
+  --sev-low-br:   #6fb9ff66;  --sev-low-color:  #2a6db6;
+  --sev-med-br:   #ffd16666;  --sev-med-color:  #8a6a15;
+  --sev-high-br:  #f4978e66;  --sev-high-color: #9a443a;
+  --sev-crit-br:  #ff6b6b66;  --sev-crit-color: #ad2e2e;
+
+  /* acentos por status (usaremos no header) */
+  --fx-accent-open:     #0d6efd;
+  --fx-accent-progress: #3d8bfd;
+  --fx-accent-done:     #198754;
+  --fx-accent-muted:    #6c757d;
+
+  /* detalhes */
+  --fx-quote-bg:   color-mix(in srgb, #0d6efd 12%, transparent);
+  --fx-quote-br:   #0d6efd;
+  --fx-link:       #0d6efd;
+  --fx-link-hover: #0b5ed7;
+}
+
+:root[data-theme="dark"]{
+  --fx-text:        #e7eef7;
+  --fx-muted:       #9cb0c2;
+  --fx-surface:     #1a2431;
+  --fx-surface-2:   #16202c;
+  --fx-border:      rgba(255,255,255,.1);
+
+  --fx-chip-bg:     rgba(255,255,255,.05);
+  --fx-chip-border: rgba(255,255,255,.16);
+
+  --fx-glass-blur:  4px;
+
+  --sev-low-br:   #6ea8fe80;  --sev-low-color:  #bfe2ff;
+  --sev-med-br:   #ffd16680;  --sev-med-color:  #ffe1a6;
+  --sev-high-br:  #f4978e80;  --sev-high-color: #ffc8bf;
+  --sev-crit-br:  #ff6b6b80;  --sev-crit-color: #ffb8b8;
+
+  --fx-accent-open:     #6ea8fe;
+  --fx-accent-progress: #9ec5fe;
+  --fx-accent-done:     #75b798;
+  --fx-accent-muted:    #adb5bd;
+
+  --fx-quote-bg:   color-mix(in srgb, #0d6efd 18%, transparent);
+  --fx-quote-br:   #6ea8fe;
+  --fx-link:       #bcd6ff;
+  --fx-link-hover: #d7e6ff;
+}
+
+
+
+.fx-show{ display:grid; gap:14px; }
+
+/* Cabeçalho com “accent bar” à esquerda que muda por status */
+.fx-head{
+  position: relative;
+  display:flex; justify-content:space-between; align-items:flex-start; gap:12px;
+  background: var(--fx-surface);
+  border:1px solid var(--fx-border); border-radius:14px; padding:12px 14px;
+}
+.fx-head::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:4px; border-radius:14px 0 0 14px;
+  background: transparent;
+}
+.fx-head.head--open::before{     background: var(--fx-accent-open); }
+.fx-head.head--progress::before{ background: var(--fx-accent-progress); }
+.fx-head.head--done::before{     background: var(--fx-accent-done); }
+.fx-head.head--muted::before{    background: var(--fx-accent-muted); }
+
+.fx-head-left{ display:flex; gap:10px; align-items:flex-start; }
+.fx-title{ margin:0; font-size:1.2rem; color: var(--fx-text); }
+.fx-sub{ margin:.2rem 0 0; color: var(--fx-muted); font-size:.9rem; }
+.fx-head-right{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+/* Grid principal */
+.fx-grid{ display:grid; grid-template-columns: 2fr 1fr; gap:14px; }
+@media (max-width: 1024px){ .fx-grid{ grid-template-columns: 1fr; } }
+
+/* Cards */
+.fx-card{
+  background: var(--fx-surface);
+  border: 1px solid var(--fx-border);
+  border-radius: 12px; padding: 12px 14px; color: var(--fx-text);
+}
+.fx-card-title{
+  margin:0 0 8px; display:flex; gap:8px; align-items:center; font-size:1rem; color: var(--fx-text);
+}
+
+/* Conteúdos */
+.fx-pre{ white-space: pre-wrap; word-break: break-word; color: var(--fx-text); }
+.fx-quote{
+  margin:0; padding:10px 12px; border-left:4px solid var(--fx-quote-br);
+  background: var(--fx-quote-bg); border-radius: 8px; color: var(--fx-text);
+}
+
+.fx-page-info{ display:grid; gap:6px; color: var(--fx-text); }
+.fx-page-title{ font-weight:700; }
+.fx-page-path code{ font-size:.9rem; color: var(--fx-muted); }
+.fx-url-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+
+/* User-Agent */
+.fx-ua{ display:grid; gap:8px; }
+.fx-ua-row{ display:flex; justify-content:space-between; align-items:center; color: var(--fx-text); }
+.fx-ua-label{ font-weight:600; }
+.fx-pre-ua{ margin:0; white-space: pre-wrap; word-break: break-word; font-size:.85rem; color: var(--fx-muted); }
+
+/* Anexos */
+.fx-files{ list-style:none; padding:0; margin:0; display:grid; gap:10px; grid-template-columns: repeat(auto-fill, minmax(220px,1fr)); }
+.fx-file{
+  display:flex; gap:10px; align-items:flex-start; background: var(--fx-surface-2);
+  border:1px solid var(--fx-border); border-radius:10px; padding:8px; color: var(--fx-text);
+}
+.fx-thumb{ width:72px; height:72px; border-radius:8px; overflow:hidden; display:grid; place-items:center; background: rgba(0,0,0,.12); flex:none; }
+.fx-thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+.fx-thumb--file{ font-size:28px; color: var(--fx-muted); }
+.fx-file-meta{ display:grid; gap:4px; min-width:0; }
+.fx-file-name{ font-weight:600; word-break:break-all; color: var(--fx-text); }
+.fx-file-info{ color: var(--fx-muted); }
+.fx-file-actions{ display:flex; gap:10px; }
+
+/* Botões e links */
+.btn.btn-soft{
+  display:inline-flex; align-items:center; gap:8px;
+  border-radius:10px; border:1px solid var(--fx-chip-border);
+  background: var(--fx-chip-bg); color: var(--fx-text);
+  padding:.5rem .8rem; transition: background .15s ease, transform .15s ease;
+}
+.btn.btn-soft:hover{ background: color-mix(in srgb, var(--fx-chip-bg), var(--fx-text) 8%); transform: translateY(-1px); }
+.btn.btn-soft.success{ border-color:rgba(25,135,84,.45); }
+.btn.btn-soft.warn{    border-color:rgba(255,193,7,.45); }
+
+.btn-icon{
+  display:inline-grid; place-items:center; width:34px; height:34px; border-radius:10px;
+  border:1px solid var(--fx-chip-border); background: var(--fx-chip-bg); color: var(--fx-text);
+  transition: transform .15s ease, background .15s ease, border-color .15s ease;
+}
+.btn-icon:hover{ transform: translateY(-1px); background: color-mix(in srgb, var(--fx-chip-bg), var(--fx-text) 8%); }
+
+.btn-link{ color: var(--fx-link); text-decoration:none; }
+.btn-link:hover{ text-decoration:underline; color: var(--fx-link-hover); }
+.fx-back{ margin-right:4px; }
+
+/* Tags e Severidade */
+.tag{
+  display:inline-block; padding:.2rem .5rem; border-radius:999px;
+  border:1px solid var(--fx-chip-border); background: var(--fx-chip-bg);
+  font-weight:600; font-size:.85rem; color: var(--fx-text);
+}
+.tag--primary{ border-color:rgba(13,110,253,.35); background:color-mix(in srgb, #0d6efd 12%, transparent); }
+.tag--success{ border-color:rgba(25,135,84,.35); background:color-mix(in srgb, #198754 14%, transparent); }
+.tag--secondary{ /* neutra */ }
+.tag--muted{ color: var(--fx-muted); }
+
+.chip{
+  display:inline-flex; gap:6px; align-items:center;
+  padding:.22rem .55rem; border-radius:10px; font-weight:700; font-size:.85rem;
+  border:1px solid; background: transparent;
+}
+.sev--low{  border-color: var(--sev-low-br);  color: var(--sev-low-color);  }
+.sev--med{  border-color: var(--sev-med-br);  color: var(--sev-med-color);  }
+.sev--high{ border-color: var(--sev-high-br); color: var(--sev-high-color); }
+.sev--crit{ border-color: var(--sev-crit-br); color: var(--sev-crit-color); }
+
+</style>
+
+<script>
+// Copiar para a área de transferência (URL / User-Agent)
+document.addEventListener("click", (e)=>{
+  const btn = e.target.closest("[data-copy]");
+  if (!btn) return;
+  const text = btn.getAttribute("data-copy") || "";
+  navigator.clipboard?.writeText(text).then(()=>{
+    btn.classList.add("copied");
+    setTimeout(()=>btn.classList.remove("copied"), 900);
+  });
+});
+</script>

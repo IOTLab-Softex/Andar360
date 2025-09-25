@@ -1,0 +1,10 @@
+<h2>Seu pré-cadastro foi reprovado ❌</h2>
+<p>Olá <strong><%= @formulario.nome %></strong>,</p>
+<p>Seu pré-cadastro foi <strong>reprovado</strong>.</p>
+
+<p><strong>Motivo informado:</strong></p>
+<p style="padding:.6rem 1rem; background:#f6f6f6; border-left:4px solid #cc0000;">
+  <%= @motivo.presence || "Sem motivo informado." %>
+</p>
+
+<p>Se precisar, responda este e-mail para mais esclarecimentos.</p>

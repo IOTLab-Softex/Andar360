@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-classic": "^44.3.0",
+    "@rails/actiontext": "^8.0.201",
+    "trix": "^2.1.15"
+  }
+}

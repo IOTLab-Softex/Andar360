@@ -24,7 +24,8 @@
 
         <button type="button" class="scroll-button left" onclick="scrollRooms('left')">&lt;</button>
          <div class="room-scroll-wrapper" id="room-scroll-wrapper">
-          <% Room.all.each do |room| %>
+          <% Room.where(espaco_comun: true).each do |room| %>
+
          <label class="room-card-scroll" style="background-image: url('<%= room.photo.attached? ? rails_blob_url(room.photo, only_path: true) : '' %>'); background-size: cover; background-position: center;">
          <input  type="radio"  name="reservation[room_id]"  value="<%= room.id %>"  <%= "checked" if room.id == reservation.room_id %>  onchange="loadRoomReservations(<%= room.id %>);">
 
@@ -111,7 +112,14 @@
 </div>
 
 <!-- Overlay + Modal -->
-<div id="participantModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.5); z-index: 998;">
+<div id="participantModalOverlay" style="display: none;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 998;">
 </div>
 
 <div id="participantModal" class="modal">
@@ -263,12 +271,31 @@ function loadRoomReservations(roomId) {
       }
 
       if (itens.length > 0) {
+        // Mapeamento de nomes de itens para classes de ícones Font Awesome
+        const itemIcons = {
+          "TV": "fa-tv",
+          "Ar Condicionado": "air-conditioner",
+          "Cadeiras": "fa-chair",
+          "Mesa": "fa-table",
+          "Projetor": "fa-video",
+          "Telefone": "fa-phone",
+          "Lousa": "fa-chalkboard",
+          "HDMI": "hdmi",
+          "Tomadas": "outlet",
+          // Adicione mais mapeamentos conforme necessário
+        };
+
         const itensHtml = itens.map(i => {
-          const descricao = i.quantity > 1 ? `<strong>${i.name}</strong>: ${i.quantity}` : `<strong>${i.name}</strong>`;
-          return `<li style="list-style: none; display: flex; align-items: center; gap: 0.5rem;">
-                    <i class="fa-solid fa-circle-check" style="color: #2ecc71;"></i> ${descricao}
-                  </li>`;
-        }).join("");
+  const descricao = i.quantity > 1 ? `<strong>${i.name}</strong>: ${i.quantity}` : `<strong>${i.name}</strong>`;
+  const svg = i.icon_svg || "";
+
+  return `<li style="list-style: none; display: flex; align-items: center; gap: 0.5rem;">
+            <i class="fa-solid fa-circle-check" style="color: #2ecc71;"></i>
+            ${svg}
+            ${descricao}
+          </li>`;
+}).join("");
+
 
         html += `
           <h4 style="margin-top: 1rem;">🧰 Itens disponíveis na sala:</h4>

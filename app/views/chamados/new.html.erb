@@ -1,0 +1,3 @@
+<%= form_with(model: @chamado, local: true, html: { multipart: true }) do |form| %>
+  <%= render partial: 'form', locals: { form: form } %>
+<% end %>

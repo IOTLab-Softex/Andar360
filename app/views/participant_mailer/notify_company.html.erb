@@ -1,0 +1,11 @@
+<!-- app/views/participant_mailer/notify_company.html.erb -->
+<h3>Novo participante cadastrado</h3>
+<p><strong>Nome:</strong> <%= @participant.name %></p>
+<p><strong>CPF:</strong> <%= @participant.cpf %></p>
+<p><strong>E-mail:</strong> <%= @participant.email.presence || "(não informado)" %></p>
+<p><strong>Telefone:</strong> <%= @participant.telefone.presence || "(não informado)" %></p>
+<% if @participant.grupo_empresa_id %>
+  <p><strong>Empresa/Grupo:</strong> <%= @participant.grupo_empresa&.try(:nome) %></p>
+<% end %>
+<p><strong>Status:</strong> Aguardando aprovação.</p>
+<p>Cadastro originado pelo formulário em <%= l(@form.created_at, format: :short) rescue Time.current %>.</p>

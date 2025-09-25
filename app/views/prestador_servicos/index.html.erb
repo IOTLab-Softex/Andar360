@@ -1,0 +1,63 @@
+
+<div class="rooms expanded">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Foto</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th>RG</th>
+        <th>Telefone</th>
+        <th>WhatsApp</th>
+        <th>Email</th>
+        <th>Placa</th>
+        <th>Publicado no App</th>
+        <th>Bloqueado</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @prestador_servicos.present? %>
+        <% @prestador_servicos.each do |p| %>
+          <tr>
+            <td style="width: 80px;">
+              <% if p.foto.attached? %>
+                <%= image_tag url_for(p.foto), style: "width: 65px; height: 65px; border-radius: 8%; object-fit: cover; border: 1px solid #ccc;" %>
+              <% else %>
+                <div style="width: 65px; height: 45px; background-color: #eee; border-radius: 8%; border: 1px solid #ccc;"></div>
+              <% end %>
+            </td>
+            <td><%= p.nome %></td>
+            <td><%= p.cpf.presence || "-" %></td>
+            <td><%= p.rg.presence || "-" %></td>
+            <td><%= p.fone1.presence || "-" %></td>
+            <td><%= p.whatsapp.presence || "-" %></td>
+            <td><%= p.email.presence || "-" %></td>
+            <td><%= p.placa.presence || "-" %></td>
+            <td><%= p.publicado_no_app? ? "Sim" : "Não" %></td>
+            <td><%= p.bloqueado? ? "Sim" : "Não" %></td>
+            <td>
+              <%= link_to prestador_servico_path(p), class: "btn btn-success" do %>
+                <i class="fa-solid fa-eye"></i> Ver
+              <% end %>
+              <%= link_to edit_prestador_servico_path(p), class: 'btn edit' do %>
+                <i class="fa-solid fa-pen-to-square"></i> Edite
+              <% end %>
+              <%= button_to prestador_servico_path(p),
+                  method: :delete,
+                  data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
+                  class: 'btn btn-warning' do %>
+                <i class="fa-solid fa-trash"></i> Excluir
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="10">Nenhum prestador de serviço encontrado.</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+

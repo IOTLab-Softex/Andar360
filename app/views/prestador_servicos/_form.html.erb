@@ -1,0 +1,118 @@
+<%= form_with(model: prestador_servico, local: true, multipart: true) do |f| %>
+  <div class="form-group" style="
+    text-align: center;
+">
+    <div class="mt-4 text-center">
+      <%= f.submit "Salvar", class: "btn btn-primary" %>
+      <%= link_to "Cancelar", prestador_servicos_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+  <% if prestador_servico.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(prestador_servico.errors.count, "erro") %>:</h4>
+      <ul>
+        <% prestador_servico.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+    <div style="flex: 1 1 200px;">
+      <%= f.label :foto %>
+      <div class="image-thumb mt-2">
+        <% if prestador_servico.foto.attached? %>
+          <%= image_tag url_for(prestador_servico.foto), id: "foto-preview", class: "img-fluid" %>
+        <% else %>
+          <%= image_tag "silhueta.png", id: "foto-preview", class: "img-fluid" %>
+        <% end %>
+      </div>
+      <%= f.file_field :foto, direct_upload: true, class: "form-control", onchange: "previewFoto(event)" %>
+    </div>
+    <div style="flex: 2 1 500px;">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= f.label :nome %>
+          <%= f.text_field :nome, class: "form-control" %>
+        </div>
+        <div style="flex: 1;">
+          <%= f.label :publicado_no_app %>
+          <%= select_tag 'prestador_servico[publicado_no_app]', 
+      options_for_select(["Pendente", "Publicado"], prestador_servico.publicado_no_app), 
+      class: "form-control" %>
+        </div>
+        <div style="flex: 1;">
+          <%= f.label :bloqueado %>
+          <%= select_tag 'prestador_servico[bloqueado]', 
+      options_for_select(["Sim", "Não"], prestador_servico.bloqueado), 
+      class: "form-control" %>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;"><%= f.label :cpf %><%= f.text_field :cpf, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :rg %><%= f.text_field :rg, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :outro_documento %><%= f.text_field :outro_documento, class: "form-control" %></div>
+        <div style="flex: 1;">
+          <%= f.label :idoso_ou_pne %>
+          <%= select_tag 'prestador_servico[idoso_ou_pne]', 
+      options_for_select(["Sim", "Não"], prestador_servico.idoso_ou_pne), 
+      class: "form-control" %>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;"><%= f.label :fone1 %><%= f.telephone_field :fone1, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :fone2 %><%= f.telephone_field :fone2, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :whatsapp %><%= f.telephone_field :whatsapp, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :email %><%= f.email_field :email, class: "form-control" %></div>
+      </div>
+      <div style="margin-top: 1rem;">
+        <%= f.label :site %>
+        <%= f.url_field :site, class: "form-control" %>
+      </div>
+      <hr>
+      <h5>Dados do Veículo</h5>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= f.label :tipo_veiculo %>
+          <%= select_tag 'prestador_servico[tipo_veiculo]',
+        options_for_select(["Carro", "Moto", "Caminhão"], prestador_servico.tipo_veiculo),
+        class: "form-control" %>
+        </div>
+        <div style="flex: 1;"><%= f.label :placa %><%= f.text_field :placa, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :fabricante %><%= f.text_field :fabricante, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :modelo %><%= f.text_field :modelo, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :cor %><%= f.text_field :cor, class: "form-control" %></div>
+      </div>
+      <hr>
+      <h5>Dados da Empresa</h5>
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;"><%= f.label :nome_fantasia %><%= f.text_field :nome_fantasia, class: "form-control" %></div>
+        <div style="flex: 1;"><%= f.label :cnpj %><%= f.text_field :cnpj, class: "form-control" %></div>
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= f.label :servicos %>
+          <%= f.text_area :servicos, class: "form-control", rows: 3 %>
+        </div>
+        <div style="flex: 1;">
+          <%= f.label :observacao %>
+          <%= f.text_area :observacao, class: "form-control", rows: 3 %>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+<script>
+  function previewFoto(event) {
+    const preview = document.getElementById('foto-preview');
+    const file = event.target.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+</script>

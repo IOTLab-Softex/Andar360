@@ -17,6 +17,8 @@
   </div>
 
   <div class="device-actions">
-    <%= link_to "Editar", edit_device_path(device), class: "btn edit" %>
+    <%= link_to edit_device_path(device), class: "btn edit" do %>
+    <i class="fa-solid fa-pen-to-square"></i> Editar
+    <% end %>
   </div>
 </div>

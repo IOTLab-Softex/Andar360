@@ -1,0 +1,404 @@
+<%= form_with(model: encomenda, local: true, html: { multipart: true }) do |form| %>
+  <% if encomenda.errors.any? %>
+    <div class="alert alert-danger">
+      <h4><%= pluralize(encomenda.errors.count, "erro") %>:</h4>
+      <ul>
+        <% encomenda.errors.full_messages.each do |message| %>
+          <li><%= message %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+  <div class="form-group" style="text-align: center;">
+    <div class="mt-4 text-center"style="
+    display: flex;
+    justify-content: center;
+">
+      <%= form.submit "Salvar", class: "btn" %>
+      <%= link_to "Cancelar", encomendas_path, class: "btn btn-secondary" %>
+    </div>
+    <hr>
+    <div style="
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+">
+      <label>Notificação:</label>
+      <div class="form-check text-center mb-4" style="
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: row;
+    gap: 14px;
+">
+        <%= form.check_box :notificar_destinatario, { class: "form-check-input" }, "1", "0" %>
+        <%= form.label :notificar_destinatario, "Notificar o destinatário no APP", class: "form-check-label" %>
+      </div>
+    </div>
+  </div>
+  <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+    <!-- Imagem -->
+<!-- dentro do bloco da imagem -->
+<div style="flex: 1 1 200px; text-align: center;">
+  <%= form.label :imagem %><br>
+  <div class="image-thumb mt-2">
+    <% if encomenda.imagem.attached? %>
+      <%= image_tag url_for(encomenda.imagem), id: "imagem-preview", class: "img-fluid", style: "max-width: 200px;" %>
+    <% else %>
+      <%= image_tag asset_path('camera.png'), id: "imagem-preview", class: "img-fluid", style: "max-width: 200px;" %>
+    <% end %>
+  </div>
+ <button type="button" class="btn-brand mt-2" id="open-camera">
+    📷 Tirar foto
+  </button>
+  <!-- Anexar arquivo normalmente -->
+  <%= form.file_field :imagem, class: "form-control mt-2", id: "imagem-file", onchange: "previewImagem(event)" %>
+
+  <!-- Tirar foto no modal (sem Bootstrap) -->
+ 
+</div>
+
+
+
+    
+    <!-- Campos -->
+    <div style="flex: 2 1 500px;">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= form.label :unidade, "Unidade (sala)" %>
+          <%= form.select :unidade,
+      Room.where(espaco_comun: false).order(:name).pluck(:name, :name),
+      { prompt: "Selecione a unidade" },
+      class: "form-control" %>
+        </div>
+        <div style="flex: 1;">
+          <%= form.label :codigo %>
+          <%= form.text_field :codigo, class: "form-control" %>
+        </div>
+        <div style="flex: 1;">
+          <%= form.label :transportadora %>
+          <%= form.text_field :transportadora, class: "form-control" %>
+        </div>
+      </div>
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= form.label :tipo %>
+          <%= form.select :tipo,
+          ["Pacote", "Caixa", "Pallet","Envelop", "Sacola", "Outro"],
+          { prompt: "Selecione o tipo" },
+           class: "form-control" %>
+        </div>
+
+        <div style="flex: 1;">
+          <%= form.label :tamanho %>
+          <%= form.select :tamanho, 
+      ['Extra Pequeno', 'Pequeno', 'Médio', 'Grande', 'Extra Grande'], 
+      { prompt: 'Selecione o tamanho' }, 
+      class: "form-control" %>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 1rem; margin-top: 1rem; flex-wrap: wrap;">
+        <div style="flex: 1;">
+          <%= form.label :remetente %>
+          <%= form.text_field :remetente, class: "form-control" %>
+        </div>
+        <div style="flex: 1;">
+          <%= form.label :empresa_filtro, "Empresa" %>
+          <%= select_tag :empresa_filtro,
+      options_from_collection_for_select(GrupoEmpresa.order(:nome), :id, :nome),
+      prompt: "Selecione uma empresa",
+      class: "form-control",
+      id: "empresa_select" %>
+        </div>
+        <div style="flex: 1;">
+          <%= form.label :destinatario_id, "Destinatário" %>
+          <%= select_tag "encomenda[destinatario_id]",
+      '<option value=""></option>'.html_safe,  # placeholder
+      class: "form-control select2",
+      id: "destinatario_select" %>
+        </div>
+      </div>
+      <div style="margin-top: 1rem;">
+        <%= form.label :observacao %>
+        <%= form.text_area :observacao, rows: 3, class: "form-control" %>
+      </div>
+    </div>
+  </div>
+  <!-- Botões -->
+<% end %>
+
+<!-- MODAL DA CÂMERA -->
+<!-- FORA do form_with: Modal puro (inicialmente oculto) -->
+<div id="camera-modal" class="pmodal" aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="pmodal__backdrop" id="camera-backdrop"></div>
+
+  <div class="pmodal__dialog" role="document" aria-labelledby="camera-title">
+    <div class="pmodal__header">
+      <h5 id="camera-title">Capturar foto da encomenda</h5>
+      <button type="button" class="pmodal__close" id="camera-close" aria-label="Fechar">✕</button>
+    </div>
+
+    <div class="pmodal__body">
+      <video id="camera-video" autoplay playsinline></video>
+      <canvas id="camera-canvas"></canvas>
+      <small class="pmodal__hint">Dica: em celulares, permita o acesso à câmera.</small>
+    </div>
+
+    <div class="pmodal__footer">
+      <button type="button" class="btn-secondary" id="camera-retake">🔄 Repetir</button>
+      <button type="button" class="btn-primary"  id="camera-capture">📸 Capturar</button>
+      <button type="button" class="btn-ghost"    id="camera-cancel">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+<script>
+  function previewImagem(event) {
+    const preview = document.getElementById('imagem-preview');
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+   function previewImagem(event) {
+    const preview = document.getElementById('imagem-preview');
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", function() {
+    // Inicializa Select2 (se jQuery/Select2 estiverem presentes)
+    if (window.jQuery && $.fn.select2) {
+      $('#destinatario_select').select2({
+        width: '100%',
+        placeholder: 'Selecione um participante',
+        allowClear: true
+      });
+    }
+
+    const empresaSelect = document.getElementById('empresa_select');
+    const destSelect    = document.getElementById('destinatario_select');
+
+    empresaSelect.addEventListener('change', async (e) => {
+  const empresaId = e.target.value;
+
+  // Destroi o Select2 antes de trocar as options (se estiver ativo)
+  if (window.jQuery && $.fn.select2 && $('#destinatario_select').data('select2')) {
+    $('#destinatario_select').select2('destroy');
+  }
+
+  // Limpa, desativa e adiciona opção de carregamento
+  destSelect.innerHTML = '<option value="">Carregando...</option>';
+  destSelect.disabled = true;
+
+  if (!empresaId) {
+    destSelect.innerHTML = '<option value="">Selecione um participante</option>';
+    destSelect.disabled = false;
+
+    if (window.jQuery && $.fn.select2) {
+      $('#destinatario_select').select2({
+        width: '100%',
+        placeholder: 'Selecione um participante',
+        allowClear: true
+      });
+    }
+    return;
+  }
+
+  try {
+    const resp = await fetch(`/participants/por_empresa/${empresaId}.json`, {
+      headers: { 'Accept': 'application/json' }
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const result = await resp.json();
+  const data = result.participantes;
+  const selecionadoId = result.selecionado_id;
+
+    // Limpa e popula com os dados
+    destSelect.innerHTML = '<option value="">Selecione um participante</option>';
+    data.forEach(p => {
+  const opt = document.createElement('option');
+  opt.value = p.id;
+
+  // Destacar se tiver acesso (usuário Devise)
+  const nomeExibido = p.tem_usuario ? `${p.name} ⭐` : p.name;
+  opt.textContent = nomeExibido;
+
+  if (Number(p.id) === Number(selecionadoId)) {
+    opt.selected = true;
+  }
+
+  destSelect.appendChild(opt);
+  });
+
+
+
+  } catch (err) {
+    console.error('Erro carregando participantes:', err);
+    destSelect.innerHTML = '<option value="">Erro ao carregar participantes</option>';
+  } finally {
+    // Reativa e re-aplica Select2
+    destSelect.disabled = false;
+
+    if (window.jQuery && $.fn.select2) {
+      $('#destinatario_select').select2({
+        width: '100%',
+        placeholder: 'Selecione um participante',
+        allowClear: true
+      });
+    }
+  }
+  });
+
+  });
+
+ // Preview quando o usuário anexa arquivo manualmente
+  function previewImagem(event) {
+    const preview = document.getElementById('imagem-preview');
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => { preview.src = e.target.result; };
+    reader.readAsDataURL(file);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // ------- refs ------
+    const openBtn   = document.getElementById('open-camera');
+    const modal     = document.getElementById('camera-modal');
+    const backdrop  = document.getElementById('camera-backdrop');
+    const closeBtn  = document.getElementById('camera-close');
+    const cancelBtn = document.getElementById('camera-cancel');
+    const retakeBtn = document.getElementById('camera-retake');
+    const captureBtn= document.getElementById('camera-capture');
+
+    const videoEl   = document.getElementById('camera-video');
+    const canvasEl  = document.getElementById('camera-canvas');
+    const fileInput = document.getElementById('imagem-file');
+    const previewEl = document.getElementById('imagem-preview');
+
+    let stream = null;
+
+    // ------- modal helpers ------
+    function openModal() {
+      modal.classList.add('is-open');
+      document.body.classList.add('noscroll');
+      startCamera();
+    }
+    function closeModal() {
+      stopCamera();
+      modal.classList.remove('is-open');
+      document.body.classList.remove('noscroll');
+    }
+
+    openBtn?.addEventListener('click', openModal);
+    closeBtn?.addEventListener('click', closeModal);
+    cancelBtn?.addEventListener('click', closeModal);
+    backdrop?.addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('is-open')) closeModal(); });
+
+    // ------- camera -------
+    async function startCamera() {
+      stopCamera();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } },
+          audio: false
+        });
+        videoEl.srcObject = stream;
+      } catch (err) {
+        alert('Não foi possível acessar a câmera.\n- Permita o uso da câmera no navegador\n- Use HTTPS (ou http://localhost)');
+        closeModal();
+      }
+    }
+    function stopCamera() {
+      if (stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
+      videoEl.srcObject = null;
+    }
+
+    // Capturar -> envia para o input file e atualiza o preview da página
+    function capture() {
+      const w = videoEl.videoWidth || 1280;
+      const h = videoEl.videoHeight || 720;
+      canvasEl.width = w; canvasEl.height = h;
+      const ctx = canvasEl.getContext('2d');
+      ctx.drawImage(videoEl, 0, 0, w, h);
+
+      canvasEl.toBlob((blob) => {
+        if (!blob) return;
+        const file = new File([blob], `encomenda_${Date.now()}.jpg`, { type: 'image/jpeg' });
+
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        fileInput.files = dt.files;
+
+        const reader = new FileReader();
+        reader.onload = e => { previewEl.src = e.target.result; };
+        reader.readAsDataURL(file);
+
+        closeModal();
+      }, 'image/jpeg', 0.92);
+    }
+
+    // Repetir: apenas dá um “flash” e mantém a câmera (o usuário pode capturar de novo)
+    function retake() {
+      videoEl.classList.add('flash');
+      setTimeout(()=>videoEl.classList.remove('flash'), 120);
+    }
+
+    captureBtn?.addEventListener('click', capture);
+    retakeBtn?.addEventListener('click', retake);
+
+    // segurança ao sair
+    window.addEventListener('beforeunload', stopCamera);
+  });
+</script>
+
+<style>
+/* ---- Botões (tema opcional) ---- */
+.btn-brand   { background:#ff8a3d; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-primary { background:#2ea043; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-secondary { background:#444; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+.btn-ghost   { background:transparent; border:1px solid #aaa; color:#ddd; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+
+/* ---- Modal puro ---- */
+.pmodal { position:fixed; inset:0; display:none; }
+.pmodal.is-open { display:block; }
+.pmodal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.6); }
+.pmodal__dialog {
+  position:relative; z-index:1; margin:16vh auto; width:min(92vw, 900px);
+  background:#1f1f1f; color:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; overflow:hidden;
+}
+.pmodal__header, .pmodal__footer { padding:12px 16px; display:flex; align-items:center; gap:8px; }
+.pmodal__header { justify-content:space-between; border-bottom:1px solid #333; }
+.pmodal__footer { justify-content:flex-end; border-top:1px solid #333; }
+.pmodal__close { background:transparent; border:0; color:#fff; font-size:18px; cursor:pointer; }
+
+.pmodal__body { padding:12px 16px; display:flex; flex-direction:column; align-items:center; gap:10px; }
+#camera-video { width:100%; max-height:60vh; background:#000; border-radius:8px; }
+#camera-canvas { display:none; } /* apenas usado para gerar a imagem */
+.pmodal__hint { color:#bbb; font-size:.85rem; }
+
+body.noscroll { overflow:hidden; }
+
+/* opcional: “flash” visual ao clicar repetir */
+.flash { box-shadow: inset 0 0 0 9999px rgba(255,255,255,.08); transition: box-shadow .12s; }
+
+
+</style>

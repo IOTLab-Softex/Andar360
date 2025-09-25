@@ -1,0 +1,52 @@
+<div id="<%= dom_id formulario_cadastro %>">
+  <p>
+    <strong>Nome:</strong>
+    <%= formulario_cadastro.nome %>
+  </p>
+
+  <p>
+    <strong>Cpf:</strong>
+    <%= formulario_cadastro.cpf %>
+  </p>
+
+  <p>
+    <strong>Telefone:</strong>
+    <%= formulario_cadastro.telefone %>
+  </p>
+
+  <p>
+    <strong>Email:</strong>
+    <%= formulario_cadastro.email %>
+  </p>
+
+  <p>
+    <strong>Cargo:</strong>
+    <%= formulario_cadastro.cargo %>
+  </p>
+
+  <p>
+    <strong>Horario trabalho:</strong>
+    <%= formulario_cadastro.horario_trabalho %>
+  </p>
+
+  <p>
+    <strong>Dias trabalho:</strong>
+    <%= formulario_cadastro.dias_trabalho %>
+  </p>
+
+  <p>
+    <strong>Foto:</strong>
+    <%= link_to formulario_cadastro.foto.filename, formulario_cadastro.foto if formulario_cadastro.foto.attached? %>
+  </p>
+
+  <p>
+    <strong>Concorda termos:</strong>
+    <%= formulario_cadastro.concorda_termos %>
+  </p>
+
+  <p>
+    <strong>Observacao:</strong>
+    <%= formulario_cadastro.observacao %>
+  </p>
+
+</div>

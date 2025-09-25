@@ -7,7 +7,7 @@ module BackupScheduler
   def self.init!
     # Cancela o job anterior, se já estiver agendado
    $scheduler.jobs(tag: 'backup_job').each(&:unschedule)
-
+    
     puts "[🗂] Inicializando BackupScheduler..."
 
     setting = ::Setting.first
@@ -22,6 +22,8 @@ module BackupScheduler
 
     $scheduler.cron cron, tag: 'backup_job' do
       Rails.logger.info "[⏰] Executando DownloadZipBackupIcontrolJob via Rufus"
+      Rails.cache.write('backup_status', { status: 'executando', message: "Importando banco de dados ... realizando download do icontrol" })
+
       DownloadZipBackupIcontrolJob.perform_now
 
 

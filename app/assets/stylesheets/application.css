@@ -11,7 +11,13 @@
 /*
  *= require_self
  *= require dashboard
+  *= require trix
+ *= require actiontext
  */
+
+:root { --zoom: 1; }
+html  { zoom: var(--zoom); }    
+
  .title-wrapper {
     position: relative;
     display: flex;

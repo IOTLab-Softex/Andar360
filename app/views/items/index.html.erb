@@ -1,0 +1,290 @@
+<div id="items-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Nome</th>
+        <th>Status</th>
+        <th>Foto</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% @items.each do |item| %>
+        <tr>
+          <td><%= item.nome %></td>
+          <td><%= item.status %></td>
+          <td style="
+    width: 23%;
+">
+            <% if item.foto.attached? %>
+              <div class="image-thumb">
+  <%= image_tag url_for(item.foto), data: { full: url_for(item.foto) } %>
+  <div class="overlay-eye" onclick="showModal(this)">
+    <i class="fa-solid fa-eye"></i>
+  </div>
+</div>
+            <% else %>
+              <span>-</span>
+            <% end %>
+          </td>
+          <td style="
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+">
+            <% if item.status == "disponivel" %>
+              <button type="button" class="btn btn-sm btn-success" onclick="abrirModal('modal-retirar-<%= item.id %>')">
+                <i class="fa-solid fa-box-open"></i> Retirar
+              </button>
+           <% elsif item.status == "em uso" %>
+  <button type="button" class="edit btn btn-sm btn-secondary" onclick="abrirModal('modal-devolver-<%= item.id %>')">
+    <i class="fa-solid fa-undo"></i> Devolver
+  </button>
+
+            <% else %>
+              <span class="text-muted">Sem ação</span>
+            <% end %>
+         
+          <%= link_to edit_item_path(item), class: "btn btn-sm edit" do %>
+            <i class="fa-solid fa-pen-to-square"></i> Editar
+            <% end %>
+          
+            <%= button_to item_path(item), method: :delete, data: { confirm: 'Tem certeza que deseja excluir este item?' }, class: "btn btn-sm btn-warning", style:" width: -webkit-fill-available" do %>
+              <i class="fa-solid fa-trash"></i> Excluir
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<%# MODAIS FORA DA TABELA %>
+<% @items.select { |item| item.status == "disponivel" }.each do |item| %>
+  <div class="modal-custom" id="modal-retirar-<%= item.id %>">
+    <div class="modal-content">
+      <%= form_with url: registrar_retirada_item_path(item), method: :post, local: true do |f| %>
+        <button type="button" class="close-modal" onclick="fecharModal('modal-retirar-<%= item.id %>')">&times;</button>
+        <h5 class="mb-3">Retirar Item: <%= item.nome %></h5>
+
+       <div class="mb-3">
+  <%= f.label :grupo_empresa_id, "Empresa" %>
+  <%= f.select(
+    :grupo_empresa_id,
+    options_from_collection_for_select(@empresas, :id, :nome),
+    { include_blank: "Selecione..." },
+    {
+      class: "form-control",
+      onchange: "filtrarParticipantes(this, #{item.id})",
+      required: true
+    }
+  ) %>
+</div>
+
+
+<div class="mb-3">
+  <%= f.label :responsavel_id, "Responsável" %>
+  <%= f.select :responsavel_id, [], { include_blank: "Selecione uma empresa primeiro" }, { class: "form-control", id: "responsavel-select-#{item.id}", required: true } %>
+
+</div>
+
+        <div class="mb-3">
+          <%= f.label :descricao %>
+          <%= f.text_area :descricao, class: "form-control" %>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-retirar-<%= item.id %>')">Cancelar</button>
+          <%= f.submit "Confirmar Retirada", class: "btn btn-success" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+
+<% @items.select { |item| item.status == "em uso" }.each do |item| %>
+  <div class="modal-custom" id="modal-devolver-<%= item.id %>">
+    <div class="modal-content">
+      <%= form_with url: registrar_devolucao_item_path(item), method: :post, local: true do |f| %>
+        <button type="button" class="close-modal" onclick="fecharModal('modal-devolver-<%= item.id %>')">&times;</button>
+        <h5 class="mb-3">Devolver Item: <%= item.nome %></h5>
+
+        <div class="mb-3">
+          <%= f.label :grupo_empresa_id, "Empresa" %>
+          <%= f.select :grupo_empresa_id, options_from_collection_for_select(@empresas, :id, :nome), { include_blank: "Selecione..." },
+            { class: "form-control", onchange: "filtrarParticipantes(this, #{item.id}, 'devolver')" } %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :responsavel_id, "Responsável" %>
+          <%= f.select :responsavel_id, [], { include_blank: "Selecione uma empresa primeiro" },
+            { class: "form-control", id: "responsavel-devolver-select-#{item.id}", required: true } %>
+        </div>
+
+        <div class="mb-3">
+          <%= f.label :descricao %>
+          <%= f.text_area :descricao, class: "form-control" %>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-secondary" onclick="fecharModal('modal-devolver-<%= item.id %>')">Cancelar</button>
+          <%= f.submit "Confirmar Devolução", class: "btn btn-primary" %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+<div id="modal-image-viewer" onclick="hideModal()">
+  <span class="close-modal">&times;</span>
+  <img src="" alt="Visualização">
+</div>
+
+
+<style>
+.modal-custom {
+  display: none;
+  position: fixed;
+  z-index: 1055;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6);
+}
+
+.modal-custom .modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 1.5rem;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 500px;
+    position: relative;
+    color: var(--color-btn--text);
+}
+
+.modal-custom .close-modal {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+</style>
+
+<script>
+function abrirModal(id) {
+  const modal = document.getElementById(id);
+  if (!modal) return;
+
+  modal.style.display = 'block';
+
+  // Detecta se é devolução ou retirada
+  const isDevolver = id.startsWith("modal-devolver-");
+  const itemId = parseInt(id.replace(/\D/g, ""));
+  const dados = ULTIMA_MOVIMENTACAO[itemId];
+  if (!dados) return;
+
+  const empresaSelect = modal.querySelector('select[name="grupo_empresa_id"]');
+
+  if (empresaSelect && dados.empresa_id) {
+    empresaSelect.value = dados.empresa_id;
+
+    // passa o responsável diretamente para a função
+    filtrarParticipantes(empresaSelect, itemId, isDevolver ? 'devolver' : null, dados.responsavel_id);
+  }
+}
+
+
+
+
+function fecharModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) modal.style.display = 'none';
+}
+
+window.addEventListener('click', function(e) {
+  const modais = document.querySelectorAll('.modal-custom');
+  modais.forEach(modal => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
+});
+
+const PARTICIPANTES = <%= raw @participants.map { |p|
+  { id: p.id, name: p.name, grupo_empresa_id: p.grupo_empresa_id }
+}.to_json %>;
+
+const ULTIMA_MOVIMENTACAO = <%= raw @ultima_movimentacao_por_item.to_json %>;
+
+
+function filtrarParticipantes(selectEmpresa, itemId, tipo, responsavelId = null) {
+  const empresaId = parseInt(selectEmpresa.value);
+  const selectId = tipo === "devolver"
+    ? `responsavel-devolver-select-${itemId}`
+    : `responsavel-select-${itemId}`;
+  const selectResponsavel = document.getElementById(selectId);
+
+  selectResponsavel.innerHTML = "";
+  const participantesFiltrados = PARTICIPANTES.filter(p => p.grupo_empresa_id === empresaId);
+
+  const optionPadrao = document.createElement("option");
+  optionPadrao.value = "";
+  optionPadrao.text = "Selecione...";
+  selectResponsavel.appendChild(optionPadrao);
+
+  participantesFiltrados.forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p.id;
+    opt.text = p.name;
+    selectResponsavel.appendChild(opt);
+  });
+
+  if (responsavelId) {
+    selectResponsavel.value = responsavelId;
+  }
+}
+
+let currentZoom = 1;
+
+function showModal(el) {
+  const thumb = el.closest(".image-thumb");
+  const image = thumb.querySelector("img");
+  const fullUrl = image?.getAttribute("src");
+
+  if (fullUrl) {
+    const modal = document.getElementById("modal-image-viewer");
+    const modalImg = modal.querySelector("img");
+    modalImg.src = fullUrl;
+    modalImg.style.transform = "scale(1)";
+    currentZoom = 1;
+    modal.style.display = "flex";
+  }
+}
+
+function hideModal() {
+  const modal = document.getElementById("modal-image-viewer");
+  modal.style.display = "none";
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const modalImg = document.querySelector("#modal-image-viewer img");
+  if (modalImg) {
+    modalImg.addEventListener("wheel", function (e) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      currentZoom += delta;
+      if (currentZoom < 0.2) currentZoom = 0.2;
+      if (currentZoom > 5) currentZoom = 5;
+      modalImg.style.transform = `scale(${currentZoom})`;
+    });
+  }
+});
+
+</script>

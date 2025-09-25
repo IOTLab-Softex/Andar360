@@ -4,6 +4,63 @@
   </button>
 </div>
 
+<!-- FILTROS -->
+<div id="reservationsFilters" class="filter-form" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; margin: 1rem 0;">
+  <!-- Empresa -->
+  <div>
+    <label for="filterEmpresa" class="form-label">Empresa</label>
+    <select id="filterEmpresa" class="form-control" style="min-width:180px">
+      <option value="">Todas</option>
+      <% @reservations.map(&:grupo_empresa).compact.uniq.each do |emp| %>
+        <option value="<%= emp.nome %>"><%= emp.nome %></option>
+      <% end %>
+    </select>
+  </div>
+
+  <!-- Sala -->
+  <div>
+    <label for="filterSala" class="form-label">Sala</label>
+    <select id="filterSala" class="form-control" style="min-width:160px">
+      <option value="">Todas</option>
+      <% @reservations.map(&:room).compact.uniq.each do |room| %>
+        <option value="<%= room.name %>"><%= room.name %></option>
+      <% end %>
+    </select>
+  </div>
+
+  <!-- Status -->
+  <div>
+    <label for="filterStatus" class="form-label">Status</label>
+    <select id="filterStatus" class="form-control" style="min-width:160px">
+      <option value="">Todos</option>
+      <option value="ativa">Ativa</option>
+      <option value="encerrada">Encerrada</option>
+      <option value="cancelada">Cancelada</option>
+    </select>
+  </div>
+
+  <!-- Data início/fim -->
+  <div>
+    <label for="filterInicio" class="form-label">Início (de)</label>
+    <input id="filterInicio" type="datetime-local" class="form-control">
+  </div>
+  <div>
+    <label for="filterFim" class="form-label">Início (até)</label>
+    <input id="filterFim" type="datetime-local" class="form-control">
+  </div>
+
+  <!-- Busca por texto -->
+  <div style="flex:1; min-width:220px;">
+    <label for="filterBusca" class="form-label">Buscar (título/empresa/sala)</label>
+    <input id="filterBusca" type="text" class="form-control" placeholder="Digite para filtrar...">
+  </div>
+
+  <!-- Ações -->
+  <div style="display:flex; gap:.5rem;">
+    <button id="filterLimpar" class="btn btn-secondary" type="button">Limpar</button>
+  </div>
+</div>
+
 <div class="rooms" id="reservationsCards">
   <% if @reservations.any? %>
     <% minhas_reservas = @reservations.select { |r| r.grupo_empresa_id == current_user.participant&.grupo_empresa_id } %>
@@ -55,13 +112,13 @@
                           <i class="fa-solid fa-pen"></i> Editar
                         <% end %>
                       <% end %>
-                      <%= link_to reservation_path(reservation), class: "btn reservation" do %>
+                      <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
                         <i class="fa-solid fa-eye"></i> Ver
                       <% end %>
                       <%= button_to reservation_path(reservation),
                           method: :delete,
                           data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                          class: "btn cancel",
+                          class: "btn btn-warning",
                           form: { style: "display: contents;" } do %>
                           <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
                       <% end %>
@@ -114,13 +171,13 @@
                         <i class="fa-solid fa-pen"></i> Editar
                       <% end %>
                     <% end %>
-                    <%= link_to reservation_path(reservation), class: "btn reservation" do %>
+                    <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
                       <i class="fa-solid fa-eye"></i> Ver
                     <% end %>
                     <%= button_to reservation_path(reservation),
                         method: :delete,
                         data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                        class: "btn cancel",
+                        class: "btn btn-warning",
                         form: { style: "display: contents;" } do %>
                         <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
                     <% end %>
@@ -139,6 +196,7 @@
 
 
 
+
 <table id="reservationsTable" style="width: 100%; display: none;">
   <thead>
     <tr>
@@ -152,45 +210,66 @@
     </tr>
   </thead>
   <tbody>
-    <% @reservations.each do |reservation| %>
-      <tr>
-        <td><%= reservation.grupo_empresa&.nome || "Não informado" %></td>
-        <td><%= reservation.title %></td>
-        <td><%= reservation.room.name %></td>
-        <td><%= l(reservation.starts_at, format: :short) %></td>
-        <td><%= l(reservation.ends_at, format: :short) %></td>
-        <td>
-          <% if reservation.cancelada_em.present? %>
-            ⛔ Cancelada
-          <% elsif reservation.finalizada_em.present? %>
-            ✔️ Encerrada
-          <% else %>
-            🟢 Ativa
+  <% @reservations.each do |reservation| %>
+    <% status =
+         if reservation.cancelada_em.present?
+           'cancelada'
+         elsif reservation.finalizada_em.present?
+           'encerrada'
+         else
+           'ativa'
+         end %>
+
+    <tr
+      data-empresa="<%= reservation.grupo_empresa&.nome.to_s %>"
+      data-sala="<%= reservation.room&.name.to_s %>"
+      data-status="<%= status %>"
+      data-inicio="<%= reservation.starts_at&.iso8601 %>"
+      data-fim="<%= reservation.ends_at&.iso8601 %>"
+      data-busca="<%= [
+        reservation.title,
+        reservation.grupo_empresa&.nome,
+        reservation.room&.name
+      ].compact.join(' ').downcase %>"
+    >
+      <td><%= reservation.grupo_empresa&.nome || "Não informado" %></td>
+      <td><%= reservation.title %></td>
+      <td><%= reservation.room&.name %></td>
+      <td><%= l(reservation.starts_at, format: :short) %></td>
+      <td><%= l(reservation.ends_at, format: :short) %></td>
+      <td>
+        <% if status == 'cancelada' %>
+          ⛔ Cancelada
+        <% elsif status == 'encerrada' %>
+          ✔️ Encerrada
+        <% else %>
+          🟢 Ativa
+        <% end %>
+      </td>
+      <td class="reservationsTableAction">
+        <% if status == 'ativa' %>
+          <%= link_to edit_reservation_path(reservation), class: "btn edit", style: "display:inline-block;" do %>
+            <i class="fa-solid fa-pen"></i>
           <% end %>
-        </td>
-        <td class="reservationsTableAction">
-          <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
-            <%= link_to edit_reservation_path(reservation), class: "btn edit", style: "display: inline-block;" do %>
-              <i class="fa-solid fa-pen"></i> 
-              <% end %>
-          <% end %>
-        <%= link_to reservation_path(reservation), class: "btn reservation", style: "display: inline-block;"  do %>
+        <% end %>
+        <%= link_to reservation_path(reservation), class: "btn btn-success", style: "display:inline-block;" do %>
           <i class="fa-solid fa-eye"></i>
         <% end %>
-
+        <% if status == 'ativa' %>
           <%= button_to reservation_path(reservation),
-              method: :delete,
-              data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-              class: "btn cancel",
-              style: "display: flow-root",
-              form: { style: "display: contents;" } do %>
-              <i class="fa-solid fa-rectangle-xmark"></i> 
+                method: :delete,
+                data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                class: "btn btn-warning",
+                style: "display: flow-root",
+                form: { style: "display: contents;" } do %>
+            <i class="fa-solid fa-rectangle-xmark"></i>
           <% end %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+</tbody>
 
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
 </table>
 
 
@@ -255,4 +334,108 @@
   });
 });
 
+
+document.addEventListener("DOMContentLoaded", function () {
+  const table = document.getElementById("reservationsTable");
+  const tbody = table?.querySelector("tbody");
+  if (!tbody) return;
+
+  const $emp   = document.getElementById("filterEmpresa");
+  const $sala  = document.getElementById("filterSala");
+  const $stat  = document.getElementById("filterStatus");
+  const $ini   = document.getElementById("filterInicio");
+  const $fim   = document.getElementById("filterFim");
+  const $busca = document.getElementById("filterBusca");
+  const $limpar= document.getElementById("filterLimpar");
+
+  // Carrega filtros salvos
+  const saved = JSON.parse(localStorage.getItem("reservationsFilters") || "{}");
+  if (saved.empresa) $emp.value = saved.empresa;
+  if (saved.sala)    $sala.value = saved.sala;
+  if (saved.status)  $stat.value = saved.status;
+  if (saved.inicio)  $ini.value = saved.inicio;
+  if (saved.fim)     $fim.value = saved.fim;
+  if (saved.busca)   $busca.value= saved.busca;
+
+  function salvaEstado() {
+    localStorage.setItem("reservationsFilters", JSON.stringify({
+      empresa: $emp.value,
+      sala:    $sala.value,
+      status:  $stat.value,
+      inicio:  $ini.value,
+      fim:     $fim.value,
+      busca:   $busca.value.trim()
+    }));
+  }
+
+  function normalizaTexto(s) {
+    return (s || "").toLowerCase();
+  }
+
+  function passaFiltros(tr) {
+    const emp    = tr.dataset.empresa || "";
+    const sala   = tr.dataset.sala || "";
+    const status = tr.dataset.status || "";
+    const inicio = tr.dataset.inicio ? new Date(tr.dataset.inicio) : null;
+    const fim    = tr.dataset.fim ? new Date(tr.dataset.fim) : null;
+    const busca  = tr.dataset.busca || "";
+
+    // Empresa
+    if ($emp.value && emp !== $emp.value) return false;
+
+    // Sala
+    if ($sala.value && sala !== $sala.value) return false;
+
+    // Status
+    if ($stat.value && status !== $stat.value) return false;
+
+    // Intervalo por início
+    if ($ini.value) {
+      const dtIni = new Date($ini.value);
+      if (!inicio || inicio < dtIni) return false;
+    }
+    if ($fim.value) {
+      const dtFim = new Date($fim.value);
+      if (!inicio || inicio > dtFim) return false;
+    }
+
+    // Busca texto (em título/empresa/sala)
+    const txt = normalizaTexto($busca.value.trim());
+    if (txt && !busca.includes(txt)) return false;
+
+    return true;
+  }
+
+  function aplicaFiltros() {
+    salvaEstado();
+    const rows = Array.from(tbody.querySelectorAll("tr"));
+    let visiveis = 0;
+    rows.forEach(tr => {
+      const show = passaFiltros(tr);
+      tr.style.display = show ? "" : "none";
+      if (show) visiveis++;
+    });
+
+    // Se a tabela estiver oculta no modo cards, não força nada aqui
+    // (o botão de Alternar Visualização já cuida)
+  }
+
+  [$emp, $sala, $stat, $ini, $fim, $busca].forEach(el => {
+    el.addEventListener("input", aplicaFiltros);
+    el.addEventListener("change", aplicaFiltros);
+  });
+
+  $limpar.addEventListener("click", () => {
+    $emp.value = "";
+    $sala.value = "";
+    $stat.value = "";
+    $ini.value = "";
+    $fim.value = "";
+    $busca.value = "";
+    aplicaFiltros();
+  });
+
+  // Aplica ao carregar
+  aplicaFiltros();
+});
 </script>

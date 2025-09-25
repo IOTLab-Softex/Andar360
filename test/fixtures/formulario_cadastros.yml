@@ -1,0 +1,23 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  nome: MyString
+  cpf: MyString
+  telefone: MyString
+  email: MyString
+  cargo: MyString
+  horario_trabalho: MyString
+  dias_trabalho: MyString
+  concorda_termos: false
+  observacao: MyText
+
+two:
+  nome: MyString
+  cpf: MyString
+  telefone: MyString
+  email: MyString
+  cargo: MyString
+  horario_trabalho: MyString
+  dias_trabalho: MyString
+  concorda_termos: false
+  observacao: MyText

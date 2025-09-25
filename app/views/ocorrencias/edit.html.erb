@@ -1,0 +1,12 @@
+<%= form_with(model: @ocorrencia, url: ocorrencia_path(@ocorrencia), method: :patch, local: true) do |f| %>
+  <%= f.label :data_ocorrencia, "Data da Ocorrência" %>
+  <%= f.date_field :data_ocorrencia, class: "form-control" %>
+
+  <%= f.label :proxima_data, "Próxima Data" %>
+  <%= f.date_field :proxima_data, class: "form-control" %>
+
+  <%= f.label :descricao %>
+  <%= f.text_area :descricao, class: "form-control" %>
+
+  <%= f.submit "Salvar alterações", class: "btn btn-success mt-2" %>
+<% end %>

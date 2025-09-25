@@ -1,9 +1,15 @@
 class ApplicationController < ActionController::Base
+
    before_action :configure_permitted_parameters, if: :devise_controller?
   include EmpresaScoping
   before_action :authenticate_user!
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
+
+  def after_sign_in_path_for(resource)
+  dashboard_path
+  end
+
   def scoped_participants
     if current_user.admin?
       Participant.all
@@ -51,6 +57,19 @@ def check_password_change_required
 end
 
 
+  def nome_do_usuario
+    current_user&.participant&.name || current_user&.name || "Desconhecido"
+  end
+  helper_method :nome_do_usuario
+  
+   def authorize_admin!
+    unless current_user&.admin? || current_user&.operador?
+      respond_to do |format|
+        format.html { redirect_to root_path, alert: "⚠️ Acesso permitido" }
+        format.json { head :forbidden }
+      end
+    end
+  end
 
 protected
 

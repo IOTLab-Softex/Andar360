@@ -1,14 +1,15 @@
+
+
 <div class="settings-container">
   <%= form_with model: @setting, local: true do |f| %>
+  <%= f.hidden_field :grupo_empresa_id %>
     <div class="settings-form">
-
       <!-- Diretório de Backup -->
       <div class="form-group">
         <label><i class="fa-solid fa-folder-open me-2"></i> Diretório de Backup do Icontrol</label>
         <%= f.text_field :backup_dir, class: "form-control", placeholder: "Ex: C:\\temp\\" %>
         <small class="form-text text-muted">Informe o caminho onde os dados do Icontrol serão extraídos.</small>
       </div>
-
       <!-- Checagem de Reservas -->
       <div class="form-group">
         <label><i class="fa-solid fa-calendar-check me-2"></i> Frequência de checagem de reservas</label>
@@ -18,7 +19,6 @@
         </div>
         <small class="form-text text-muted">Intervalo para buscar novas reservas (entre 2 e 10).</small>
       </div>
-
       <!-- Checagem de Acesso -->
       <div class="form-group">
         <label><i class="fa-solid fa-user-check me-2"></i> Frequência de checagem de acesso</label>
@@ -28,7 +28,6 @@
         </div>
         <small class="form-text text-muted">Intervalo para verificar se o solicitante/responsável acessou a sala (entre 10 e 20).</small>
       </div>
-
       <!-- Verificação de Dispositivos -->
       <div class="form-group">
         <label><i class="fa-solid fa-plug me-2"></i> Frequência de verificação dos dispositivos</label>
@@ -38,44 +37,125 @@
         </div>
         <small class="form-text text-muted">Verifica se os dispositivos de reconhecimento facial estão online (entre 1 e 10).</small>
       </div>
-
       <!-- Rotina de Importação -->
       <div class="form-group">
         <label><i class="fa-solid fa-clock me-2"></i> Horário da rotina de importação</label>
         <%= f.time_field :horario_rotina_importacao, class: "form-control" %>
         <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
       </div>
-
       <h2 class="subtitle mt-4 mb-3">⏰ Limite de Horas por Turno</h2>
-
       <!-- Turno Manhã -->
       <div class="form-group">
         <label><i class="fa-solid fa-sun me-2"></i> Limite para turno da manhã</label>
         <%= f.time_field :limite_horas_turno_reservas_manha, class: "form-control" %>
         <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela manhã.</small>
       </div>
-
       <!-- Turno Tarde -->
       <div class="form-group">
         <label><i class="fa-solid fa-cloud-sun me-2"></i> Limite para turno da tarde</label>
         <%= f.time_field :limite_horas_turno_reservas_tarde, class: "form-control" %>
         <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela tarde.</small>
       </div>
-
       <!-- Turno Noite -->
       <div class="form-group">
         <label><i class="fa-solid fa-moon me-2"></i> Limite para turno da noite</label>
         <%= f.time_field :limite_horas_turno_reservas_noite, class: "form-control" %>
         <small class="form-text text-muted">Defina o tempo máximo permitido para reservas à noite.</small>
       </div>
-
+      <h2 class="subtitle mt-4 mb-3">📨 E-mail (SMTP)</h2>
+      <div class="form-group">
+        <label>Remetente (From)</label>
+        <%= f.email_field :smtp_from_email, class: "form-control", placeholder: "ex.: infraestrutura@softexpe.org.br" %>
+        <small class="form-text text-muted">De onde os e-mails serão enviados (precisa ser compatível com o servidor SMTP).</small>
+      </div>
+      <div class="form-group">
+        <label>Reply-To (opcional)</label>
+        <%= f.email_field :smtp_reply_to, class: "form-control", placeholder: "ex.: suporte@seu-dominio.com" %>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Servidor SMTP</label>
+            <%= f.text_field :smtp_address, class: "form-control", placeholder: "smtp.gmail.com / smtp.office365.com / mail.seu-dominio.com" %>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Porta</label>
+            <%= f.number_field :smtp_port, class: "form-control", min: 1, max: 65535, value: (@setting.smtp_port || 587) %>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label>Domínio (opcional)</label>
+            <%= f.text_field :smtp_domain, class: "form-control", placeholder: "gmail.com / seu-dominio.com" %>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Usuário</label>
+            <%= f.text_field :smtp_username, class: "form-control", placeholder: "e-mail de login do SMTP" %>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-group">
+            <label>Senha</label>
+            <%= f.password_field :smtp_password, class: "form-control", placeholder: "Deixe em branco para manter a atual" %>
+            <small class="form-text text-muted">Se usar Gmail/Workspace, use <strong>Senha de App</strong> (16 dígitos), não a senha normal.</small>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        
+        <div class="form-group">
+          <label>Autenticação</label>
+          <%= f.select :smtp_authentication, [["plain","plain"],["login","login"],["cram_md5","cram_md5"]],
+               {}, class: "form-control" %>
+          <small class="form-text text-muted d-block mt-2">
+            <strong>plain</strong>: envia usuário e senha já dentro do túnel TLS (com STARTTLS ativo). Compatível com Gmail, Office 365 e a maioria dos provedores.<br>
+            <strong>login</strong>: variação baseada em Base64 (AUTH LOGIN). Compatível com Office 365/cPanel; costuma funcionar no Gmail também.<br>
+            <strong>cram_md5</strong>: desafio-resposta sem enviar a senha “em claro”. Poucos provedores suportam. <em>Não funciona no Gmail/Workspace.</em>
+          </small>
+        </div>
+        <div class="form-check mt-2">
+          <%= f.check_box :smtp_enable_starttls_auto, class: "form-check-input", checked: (@setting.smtp_enable_starttls_auto != false) %>
+          <label class="form-check-label">Ativar STARTTLS</label>
+          <small class="form-text text-muted d-block">
+            <strong>STARTTLS</strong> promove a conexão para TLS na porta 587. Mantenha ligado para Gmail, Office 365 e cPanel.
+          </small>
+        </div>
+        <details class="mt-2">
+          <summary class="text-muted">Dicas rápidas por provedor</summary>
+          <ul class="small mb-0 mt-2">
+            <li><strong>Gmail/Workspace</strong>: servidor <code>smtp.gmail.com</code>, porta <code>587</code>, autenticação <code>plain</code>, STARTTLS ✓, usuário = e-mail completo, senha = <em>Senha de app</em> (16 dígitos; exige 2FA).</li>
+            <li><strong>Office 365</strong>: <code>smtp.office365.com</code>, porta <code>587</code>, <code>login</code> ou <code>plain</code>, STARTTLS ✓. É preciso ter “SMTP AUTH” habilitado no tenant.</li>
+            <li><strong>cPanel/Outros</strong>: <code>mail.seu-dominio.com</code> (ou <code>smtp.seu-dominio.com</code>), porta <code>587</code>, <code>login</code>, STARTTLS ✓.</li>
+          </ul>
+        </details>
+      </div>
       <!-- Botão de salvar -->
       <div class="text-end mt-4">
         <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
           <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
         <% end %>
       </div>
-
     </div>
   <% end %>
+
+<%= form_with url: test_mail_setting_path(@setting),
+              method: :post,
+              local: true,
+              html: { class: "text-end mt-2 d-flex gap-2 justify-content-end" } do %>
+
+  <%= email_field_tag :test_to,
+        (current_user&.email.presence || @setting.smtp_username),
+        placeholder: "destinatário do teste",
+        class: "form-control w-auto" %>
+
+  <%= submit_tag "✉️ Enviar e-mail de teste",
+        class: "btn btn-outline-secondary" %>
+<% end %>
+
 </div>
