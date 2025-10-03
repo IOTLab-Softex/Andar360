@@ -1,0 +1,88 @@
+<h2 class="subtitle collapsed" onclick="toggleSection('manutencoes-section', this)">
+  MANUTENÇÕES PROGRAMADAS
+  <i class="fa-solid fa-angle-down"></i>
+  <% if manutencoes.any? { |m| m.atualizada_recentemente? && !visualizado_pelo_usuario?("manutencao", m) } %>
+    <span class="dot-ativo" title="Há atualizações não visualizadas"></span>
+    <button class="btn btn-sm btn-secondary mb-2 marcar-todos-btn" data-tipo="manutencao">
+      <i class="fa-solid fa-eye" style="transform: rotate(360deg);"></i> Marcar todas como vistas
+    </button>
+  <% end %>
+</h2>
+
+<div id="manutencoes-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Título</th>
+        <th class="hide-sm">Local</th>
+        <th>Período</th>
+        <th>Data Prevista</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if manutencoes.present? %>
+        <% manutencoes.each do |manut| %>
+          <tr class="<%= classe_linha_atualizada(manut, 'manutencao') %>" id="manutencao-<%= manut.id %>">
+            <td>
+              <% if manut.atualizada_recentemente? && !visualizado_pelo_usuario?("manutencao", manut) %>
+                <span class="dot-ativo" title="Atualização não visualizada"></span>
+              <% end %>
+              <%= manut.titulo %>
+            </td>
+            <td class="hide-sm"><%= manut.local.presence || "-" %></td>
+            <td><%= manut.periodicidade.presence || "Anual" %></td>
+            <td><%= manut.data_prevista.present? ? manut.data_prevista.strftime("%d/%m/%Y") : "-" %></td>
+            
+            <td style="display: inline-grid;">
+              <%= link_to manutencao_programada_path(manut), class: "btn btn-success" do %>
+                <i class="fa-solid fa-eye" style="transform: rotate(360deg);"></i>
+              <% end %>
+              <% if operador_ou_admin? %>
+                <%= link_to edit_manutencao_programada_path(manut), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr><td colspan="5">Nenhuma manutenção programada encontrada.</td></tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+
+<%# --- MODAL DE AVISOS (usa locals: avisos, avisos_tokens, ack_ns) --- %>
+<% if avisos.present? %>
+  <div id="modalAvisos" class="modal-custom" style="display:none;"
+       data-items="<%= (avisos_tokens || []).to_json %>"
+       data-ns="<%= ack_ns %>">
+    <div class="modal-dialog" style="max-width: 600px;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 style="color: var(--color-btn);">
+            <i class="fa-solid fa-triangle-exclamation"></i> Atenção: Manutenções Próximas
+          </h5>
+          <button type="button" class="close-modal"
+                  onclick="document.getElementById('modalAvisos').style.display = 'none'">&times;</button>
+        </div>
+        <div class="modal-body">
+          <% avisos.each do |m| %>
+            <div class="mb-4 p-3" style="border-left: 4px solid #007bff; background: #f8f9fa; border-radius: 4px;">
+              <p class="p"><strong class="strong">Data Prevista:</strong> <%= m.data_prevista.strftime('%d/%m/%Y') %></p>
+              <p class="p"><strong class="strong">Título:</strong> <%= m.titulo %></p>
+              <p class="p"><strong class="strong">Periodicidade:</strong> <%= m.periodicidade.presence || 'Não definida' %></p>
+              <p class="p"><strong class="strong">Local:</strong> <%= m.local.presence || '-' %></p>
+              <p class="p"><strong class="strong">Observação:</strong><br><%= m.observacao.presence || 'Nenhuma observação' %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+      <div class="text-end mt-3">
+        <button class="btn btn-secondary"
+                onclick="document.getElementById('modalAvisos').style.display = 'none'">OK, Entendi</button>
+      </div>
+    </div>
+  </div>
+<% end %>

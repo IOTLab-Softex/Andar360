@@ -162,7 +162,7 @@ end
     @room.destroy!
 
     respond_to do |format|
-      format.html { redirect_to dashboard_path, status: :see_other, alert: "Room was successfully destroyed." }
+      format.html { redirect_to rooms_path, status: :see_other, notice: "Sala excluida com sucesso!" }
       format.json { head :no_content }
     end
   end

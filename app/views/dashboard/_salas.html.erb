@@ -1,0 +1,38 @@
+<h2 class="subtitle collapsed" onclick="toggleSection('salas-section', this)">
+  SALAS <i class="fa-solid fa-angle-down"></i>
+</h2>
+
+<div id="salas-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Nome</th>
+        <th>Empresa Proprietária</th>
+        <th class="hide-sm">Inquilino</th>
+        <th class="hide-sm">CNPJ do Inquilino</th>
+        <th class="hide-sm">Grupo</th>
+        <th class="hide-sm">Alugado</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% rooms.reject(&:espaco_comun).each do |room| %>
+        <tr>
+          <td><strong><%= room.name %></strong></td>
+          <td><%= room.empresa_proprietaria.presence || "-" %></td>
+          <td class="hide-sm"><%= room.dados_do_inquilino.presence || "-" %></td>
+          <td class="hide-sm"><%= room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] || "-" %></td>
+          <td class="hide-sm"><%= room.grupo.presence || "-" %></td>
+          <td class="hide-sm"><%= room.alugado? ? "Sim" : "Não" %></td>
+          <td>
+            <% if operador_ou_admin? %>
+              <%= link_to edit_room_path(room), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
+                <i class="fa-solid fa-pen-to-square"></i>
+              <% end %>
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>

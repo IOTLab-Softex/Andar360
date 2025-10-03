@@ -28,7 +28,17 @@ class DashboardController < ApplicationController
       "mp:#{m.id}:#{versao}"
     end
     @ack_ns = "u#{current_user.id}"  # opcional, para namespacing por usuário
-  end
+     data = DashboardQuery.new(current_user).call
 
+    @rooms                  = data.rooms
+    @chamados               = data.chamados
+    @chamados_counts        = data.chamados_counts
+    @manutencao_programadas = data.manutencoes
+    @avisos_manutencao      = data.avisos_manutencao
+    @avisos_tokens          = data.avisos_tokens
+    @ack_ns                 = data.ack_ns
+    @kpis                   = data.kpis
+  end
+  
   
 end

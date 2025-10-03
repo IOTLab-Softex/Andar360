@@ -1676,7 +1676,7 @@ text-align: center;
     width: 100%;
     border-collapse: collapse;
     background-color: var(--color-card);
-    border-radius: 12px;
+    border-radius: 0px 0px 12px 12px;
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     margin-top: 0rem;
@@ -1930,7 +1930,7 @@ width: 19px;
 
 .table-salas {
     width: 100%;
-    min-width: 1000px;
+    max-width: -webkit-fill-available;
     border-collapse: separate;
     border-spacing: 0;
     background-color: var(--color-bg-table-salas);
@@ -2186,6 +2186,7 @@ position: absolute;
               box-shadow .18s cubic-bezier(.2,.8,.2,1);
   will-change: transform;
   backface-visibility: hidden;
+  z-index: 10;
 }
 
 .feedback-fab:hover {
@@ -2313,5 +2314,61 @@ body.noscroll { overflow:hidden; }
 
 /* Cursor no avatar */
 .user-avatar { cursor:pointer; }
+
+/******/
+
+/* colapso dashboard */
+
+.kpi-grid { display:grid; gap:1rem; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); margin-bottom:1rem; }
+.kpi-card { background: var(--card-bg, var(--color-btn--text)); border:1px solid #2a2a2a; padding:1rem; border-radius:16px; box-shadow: 0 6px 16px rgba(0,0,0,.2); display:flex; align-items:center; gap:.75rem; }
+.kpi-icon i { font-size: 1.6rem; }
+.kpi-label { opacity:.65; font-size:.9rem; }
+.kpi-value { font-weight:700; font-size:1.6rem; line-height:1.2; }
+.kpi-subtitle { font-size:.8rem; opacity:.6; margin-top:.25rem; }
+
+.kpi-card {
+  position: relative;
+  overflow: hidden;
+}
+
+/* svg fica por trás do conteúdo */
+.kpi-card .kpi-sparkline {
+  position: absolute;
+  inset: 0;           /* top/right/bottom/left: 0 */
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* conteúdo acima do svg */
+.kpi-card .kpi-icon,
+.kpi-card .kpi-meta {
+  position: relative;
+  z-index: 2;
+}
+
+/* aparência do gráfico: usa a cor atual do card */
+.kpi-sparkline-area {
+  fill: currentColor;
+  opacity: 0.08;
+}
+
+.kpi-sparkline-line {
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  opacity: 0.28;
+}
+
+/* onde já estão seus estilos */
+.kpi-card--link {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  display: flex; /* garante área clicável inteira */
+}
+.kpi-card--link:hover {
+  /*transform: translateY(-1px);*/
+  box-shadow: 0 6px 18px rgba(0,0,0,.12);
+}
 
 /******/

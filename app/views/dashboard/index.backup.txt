@@ -1,0 +1,273 @@
+<h2 class="subtitle collapsed" onclick="toggleSection('manutencoes-section', this)">
+  MANUTENÇÕES PROGRAMADAS
+  <i class="fa-solid fa-angle-down"></i>
+  <% if @manutencao_programadas.any? { |m| m.atualizada_recentemente? && !visualizado_pelo_usuario?("manutencao", m) } %>
+    <span class="dot-ativo" title="Há atualizações não visualizadas"></span>
+    <button class="btn btn-sm btn-secondary mb-2 marcar-todos-btn" data-tipo="manutencao">
+      <i class="fa-solid fa-eye" style="
+    transform: rotate(360deg);
+"></i> Marcar todas como vistas
+    </button>
+  <% end %>
+</h2>
+<div id="manutencoes-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Título</th>
+        <th>Categoria</th>
+        <th>Local</th>
+        <th>Responsável</th>
+        <th>Período</th>
+        <th>Data Prevista</th>
+        <% if operador_ou_admin? %>
+          <th>Aviso</th>
+          <th>Exibir no App?</th>
+        <% end %>
+       
+          <th>Ações</th>
+        
+      </tr>
+    </thead>
+    <tbody>
+      <% if @manutencao_programadas.present? %>
+        <% @manutencao_programadas.each do |manut| %>
+          <tr class="<%= classe_linha_atualizada(manut, 'manutencao') %>" id="manutencao-<%= manut.id %>">
+            <td>
+              <% if manut.atualizada_recentemente? && !visualizado_pelo_usuario?("manutencao", manut) %>
+                <span class="dot-ativo" title="Atualização não visualizada"></span>
+              <% end %>
+              <%= manut.titulo %></td>
+            <td><%= manut.categoria.presence || "-" %></td>
+            <td><%= manut.local.presence || "-" %></td>
+            <td><%= manut.responsavel.presence || "-" %></td>
+            <td><%= manut.periodicidade.presence || "Anual" %></td>
+            <td>
+              <% if manut.data_prevista.present? %>
+                <%= manut.data_prevista.strftime("%d/%m/%Y") %>
+              <% else %>
+                -
+              <% end %>
+            </td>
+            <% if operador_ou_admin? %>
+              <td>
+                <% if manut.data_de_aviso.present? %>
+                  <%= manut.data_de_aviso.strftime("%d/%m/%Y") %>
+                <% else %>
+                  -
+                <% end %>
+              </td>
+              <td><%= manut.exibir_no_app ? "Sim" : "Não" %></td>
+            <% end %>
+            <td style="display: inline-grid;">
+              <%= link_to manutencao_programada_path(manut),
+      class: "btn btn-success" do %>
+                <i class="fa-solid fa-eye" style="
+    transform: rotate(360deg);
+"></i>
+              <% end %>
+             <% if operador_ou_admin? %>
+                <%= link_to edit_manutencao_programada_path(manut), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                <% end %>
+                
+              </td>
+            <% end %>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="9">Nenhuma manutenção programada encontrada.</td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<h2 class="subtitle collapsed" onclick="toggleSection('chamados-section', this)">
+  <%= (current_user.admin? || current_user.role == "operador") ? "CHAMADOS" : "MEUS CHAMADOS" %> <i class="fa-solid fa-angle-down"></i>
+  <% if @chamados.any? { |m| m.atualizada_recentemente? && !visualizado_pelo_usuario?("chamado", m) } %>
+    <span class="dot-ativo" title="Há atualizações não visualizadas"></span>
+    <button class="btn btn-sm btn-secondary mb-2 marcar-todos-btn" data-tipo="chamado">
+      <i class="fa-solid fa-eye" style="
+    transform: rotate(360deg);
+"></i> Marcar todas como vistas
+    </button>
+  <% end %>
+</h2>
+<div id="chamados-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>OS</th>
+        <th>Solicitante</th>
+        <th>Empresa Solicitante</th>
+        <th>Unidade</th>
+        <th>Título</th>
+        <th>Prioridade</th>
+        <th>Status</th>
+        <th>Data de Resolução</th>
+        <th>Exibir no App?</th>
+        <th>Local</th>
+        <th>Responsável</th>
+       
+          <th>Ações</th>
+       
+      </tr>
+    </thead>
+    <tbody>
+      <% @chamados.reject { |c| c.status.to_s.downcase == "concluído" }.each do |chamado| %>
+        <tr class="<%= classe_linha_atualizada(chamado, 'chamado') %>" id="chamado-<%= chamado.id %>">
+          <td>
+            <% if chamado.atualizada_recentemente? && !visualizado_pelo_usuario?("chamado", chamado) %>
+              <span class="dot-ativo" title="Chamado não visualizado"></span>
+            <% end %>
+            <%= chamado.os %>
+          </td>
+          <td style="display: flex; align-items: center; gap: 0.5rem;">
+            <% if chamado.solicitante&.photo&.attached? %>
+              <%= image_tag url_for(chamado.solicitante.photo), style: "max-width: 65px;
+    max-height: 45px;
+    border-radius: 12%;
+    object-fit: cover;
+    border: 1px solid #ccc;" %>
+            <% else %>
+              <div style="max-width: 65px;
+    max-height: 45px;
+    border-radius: 12%;
+    object-fit: cover;
+    border: 1px solid #ccc;"></div>
+            <% end %>
+            <%= chamado.solicitante&.name || chamado.solicitante_nome || "Desconhecido" %>
+          </td>
+          <td>
+            <%= chamado.solicitante&.grupo_empresa&.nome || "-" %>
+          </td>
+          <td><%= chamado.room&.name || "Sem unidade" %></td>
+          <td><%= chamado.titulo %></td>
+          <td>
+            <% prioridade = chamado.prioridade.to_s.downcase %>
+            <% icon_class, cor_class = case prioridade
+              when "muito baixo" then ["fa-circle", "prioridade-muito-baixo"]
+              when "baixo"       then ["fa-circle", "prioridade-baixo"]
+              when "médio"       then ["fa-circle", "prioridade-médio"]
+              when "alto"        then ["fa-circle", "prioridade-alto"]
+              when "crítico"     then ["fa-circle", "prioridade-crítico"]
+              else ["fa-circle", "text-muted"]
+            end %>
+            <i class="fa-solid <%= icon_class %> <%= cor_class %>" title="<%= chamado.prioridade %>"></i>
+            <%= chamado.prioridade %>
+          </td>
+          <td>
+            <% status = chamado.status.to_s.downcase %>
+            <% icon_class, color_class = case status
+              when "em andamento" then ["fa-solid fa-circle-dot", "status-andamento"]
+              when "concluído" then ["fa-solid fa-check", "status-concluido"]
+              when "pendente" then ["fa-solid fa-triangle-exclamation", "status-pendente"]
+              else ["fa-solid fa-xmark", "status-desconhecido"]
+            end %>
+            <i class="fa-solid <%= icon_class %> <%= color_class %>" title="<%= chamado.status %>"></i>
+            <%= chamado.status %>
+          </td>
+          <td><%= chamado.data_resolucao&.strftime("%d/%m/%Y") || "-" %></td>
+          <td><%= chamado.exibir_no_app ? "Sim" : "Não" %></td>
+          <td><%= chamado.local %></td>
+          <td><%= chamado.responsavel %></td>
+          <td>
+            <%= link_to chamado_path(chamado), class: 'btn btn-sm btn-success', onclick: 'event.stopPropagation();' do %>
+              <i class="fa-solid fa-eye"></i>
+            <% end %>
+            <% if operador_ou_admin? %>
+              <%= link_to edit_chamado_path(chamado), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
+                <i class="fa-solid fa-pen-to-square"></i>
+              <% end %>
+              
+            <% end %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+</div>
+<% if current_user.admin? || current_user.role == "operador" %>
+  <h2 class="subtitle collapsed" onclick="toggleSection('salas-section', this)">
+    SALAS <i class="fa-solid fa-angle-down"></i>
+  </h2>
+  <div id="salas-section" class="rooms collapsed">
+    <table class="table table-salas">
+      <thead class="table-secondary text-dark">
+        <tr>
+          <th>Nome</th>
+          <th>Empresa Proprietária</th>
+          <th>Inquilino</th>
+          <th>CNPJ do Inquilino</th>
+          <th>Grupo</th>
+          <th>Ativo</th>
+          <th>Virtual</th>
+          <th>Unidade Vazia</th>
+          <th>Alugado</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @rooms.reject(&:espaco_comun).each do |room| %>
+          <tr>
+            <td><strong><%= room.name %></strong></td>
+            <td><%= room.empresa_proprietaria.presence || "-" %></td>
+            <td><%= room.dados_do_inquilino.presence || "-" %></td>
+            <td><%= room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] || "-" %></td>
+            <td><%= room.grupo.presence || "-" %></td>
+            <td><%= room.ativo? ? "Sim" : "Não" %></td>
+            <td><%= room.virtual? ? "Sim" : "Não" %></td>
+            <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
+            <td><%= room.alugado? ? "Sim" : "Não" %></td>
+            <td>
+              <% if operador_ou_admin? %>
+                <%= link_to edit_room_path(room), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+<% end %>
+<h2 class="subtitle" onclick="toggleSection('comuns-section', this)">
+  ESPAÇOS COMUNS <i class="fa-solid fa-angle-down"></i>
+</h2>
+<div id="comuns-section" class="rooms expanded">
+  <% @rooms.select(&:espaco_comun).each do |room| %>
+    <% background = room.photo.attached? ? "--bg-url: url(#{url_for(room.photo)});" : "background-color: black;" %>
+    <%= link_to room_reservations_path(room), class: "room-card-link" do %>
+      <div class="room-card" style="<%= background %>">
+        <div class="room-header">
+          <strong><%= room.name %></strong><br>
+          <% if room.dados_do_inquilino.present? %>
+            <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
+          <% else %>
+            RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
+          <% end %>
+        </div>
+        <div class="room-actions">
+          <% if current_user&.admin? %>
+            <%= link_to edit_room_path(room), class: 'btn edit_room', onclick: 'event.stopPropagation();' do %>
+              <i class="fa-solid fa-pen-to-square"></i> EDITAR
+            <% end %>
+          <% end %>
+          <% if current_user&.admin? || current_user.operador? %>
+            <%= button_to open_door_room_path(room), method: :post, class: 'btn open-door', form: { data: { turbo: false } }, onclick: 'event.stopPropagation();' do %>
+              <i class="fa-solid fa-door-open me-2"></i> ABRIR PORTA
+            <% end %>
+          <% end %>
+          <% if current_user&.admin? %>
+            <%= button_to room_path(room), method: :delete, data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' }, class: 'btn btn-warning', style: 'btn-warning btn', style: 'font-size: 15px; height: 51px; border: solid 2px;', onclick: 'event.stopPropagation();' do %>
+              <i class="fa-solid fa-trash"></i> EXCLUIR
+            <% end %>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% end %>
+</div>

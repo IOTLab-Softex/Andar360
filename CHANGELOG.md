@@ -1,66 +1,80 @@
 # Histórico de Versões
 
-## \[1.0.7] - 2025-07-11 duração da incrementação 3 meses
+## [1.0.7] - 2025-07-11 | 5% Responsivo a Mobile
+
+*Ciclo de desenvolvimento: ~3 meses*
 
 ### Adicionado
 
+* **Chamados de manutenção**
 
--- Criação de funcionalidades de codomio
-* Area comun ( sala onde são alocadas para empresas, que não pode ser reservadas): ADCIONANDO
-* Mapa de manutenção (onde é possível visualizar as áreas que estão em manutenção, onde pode ser criada uma solicitação de manutenção ou chamado): ADCIONANDO
-* Chamado de manutenção (onde é possível criar uma solicitação de manutenção): ADICIONADO
-* Manutenção programada (onde é possível criar uma manutenção programada): ADICIONADO
+  * Abertura de chamados de manutenção pelos usuários.
+  * **Ações rápidas** no *index* para mudar o status do chamado.
+* **Manutenção programada**
 
--- Criação de Formulario de cadastro para acesso ao reconhecimento facial
-Observação: esta função foi criar para substituir o form do google, e ter mais controle e automatizar o processo.
+  * Cadastro e gestão de manutenções programadas.
+* **Formulário de cadastro para acesso por reconhecimento facial**
+  *(substitui o formulário do Google, com mais controle e automação)*
 
-* formulario com suporte a captura de foto: ADICIONADO
-* notificação por email: ADICIONADO
-* acompanhamento do cadastro: ADICIONADO
-* permisão para as empresas poder cadastar seus funcionanrios: ADICIONADO
+  * Captura de foto integrada.
+  * Notificação por e-mail.
+  * Acompanhamento do status do cadastro.
+  * Permissão para que empresas cadastrem seus funcionários.
 
-
-### Correção de bugs
--- Chamado
-- Esta substituindo ao inves de acresentar o arquivo quando anexar outro ao editar, o historico de ocorrencias: RESOLVIDO
-- Adicionar buttos de ação para mudar status do chamado direto do index
-
--- Manutenção programada
-- Esta anexando o arquvo tanto para manutenção programanda quanto para novo anexo: RESOLVIDO
-- notificação do modal de manutenção programada backdrop não cobre a tela inteira, titulo sem suporte ao modo branco
--- Participantes
-- client esta tendo acesso ao usuario total
 ### Corrigido
 
--- Chamado 
-- Esta substituindo ao inves de acresentar o arquivo quando anexar outro ao editar, o historico de ocorrencias
--- Manutenção programada
-- Esta anexando o arquvo tanto para manutenção programanda quanto para novo anexo
+* **Chamados**
 
+  * Ao editar e anexar novo arquivo, o sistema **não substitui mais** o anexo anterior; agora **acrescenta** ao histórico de ocorrências.
+* **Manutenção programada**
 
+  * Anexos não são mais duplicados entre “manutenção programada” e “novo anexo”.
+  * *Backdrop* do modal agora cobre a tela inteira.
+  * Título com suporte adequado ao modo claro.
+
+### Próximas atualizações (Roadmap)
+
+* **Comunicação**
+
+  * Mural de aviso — emitir avisos em massa para grupos.
+  * Comunicados individuais — enviar aviso individual.
+* **Portaria**
+
+  * Usuário “portaria”.
+  * Achados e perdidos.
+* **Condomínio (em desenvolvimento)**
+
+  * **Área comum** (salas compartilhadas, **não reserváveis**).
+  * **Mapa de manutenção** (visualizar áreas em manutenção e abrir solicitações).
+
+### Problemas conhecidos
+
+* **Participantes**
+
+  * Clientes ainda conseguem visualizar dados completos de usuários. *(Restringir permissões — pendente.)*
 
 ---
 
-## \[1.0.6] - 2025-06-05
+## [1.0.6] - 2025-06-05
 
 ### Corrigido
 
-* Validação de data e hora: impedido salvar reservas com data/hora final menor que a inicial
-* Exigência de preenchimento obrigatório nos campos de reserva
-* Ajustes de layout para dispositivos móveis nas telas:
+* Validação de data e hora: impedir salvar reservas com término menor que o início.
+* Exigir preenchimento obrigatório nos campos de reserva.
+* Ajustes de layout em dispositivos móveis nas telas:
 
   * `index#participantes`
   * `new#reservation`
 
 ### Adicionado
 
-* Integração facial automática
-* Validação de agendamento com subgrupo
+* Integração facial automática.
+* Validação de agendamento por subgrupo.
 
 ---
 
-## \[1.0.5] - 2025-05-30
+## [1.0.5] - 2025-05-30
 
 ### Corrigido
 
-* Erro no modal de participantes
+* Erro no modal de participantes.
