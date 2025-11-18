@@ -1,19 +1,106 @@
 
 <div class="table-responsive">
+<%# ==== Stats de Chamados (Pendente / Em andamento / Concluído) ==== %>
+<% ordem_status = ["Pendente", "Em andamento", "Concluído"] %>
+<% cores_por_status = {
+  "Pendente"      => "trk--requested",
+  "Em andamento"  => "trk--progress",
+  "Concluído"     => "trk--done"
+} %>
 
-<span class="filtro-label">
-    <i class="fa-solid fa-filter"></i>
-    Filtrar
-  </span>
-<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form" do %>
-  <div style="display: flex; flex-nowrap: wrap; gap: 10px; margin-bottom: 20px;">
+<%
+  raw = Chamado.group(:status).count
+
+  # Normalização retrocompatível:
+  # - "Solicitada" conta como "Pendente"
+  # - "Finalizada" e "Concluída/Concluido" contam como "Concluído"
+  tot_por_status = {
+    "Pendente"      => raw["Pendente"].to_i + raw["Solicitada"].to_i,
+    "Em andamento"  => raw["Em andamento"].to_i,
+    "Concluído"     => raw["Concluído"].to_i + raw["Concluída"].to_i + raw["Concluido"].to_i + raw["Finalizada"].to_i
+  }
+  tot_geral = tot_por_status.values.sum
+%>
+
+<section class="trk">
+  <header class="trk-head">
+    <div>
+      <h2 class="trk-title"><i class="fa-regular fa-life-ring"></i> Acompanhamento de Chamados</h2>
+      <p class="trk-sub">Distribuição por status e progresso geral.</p>
+    </div>
+    <div class="trk-kpis">
+      <div class="kpi">
+        <span class="kpi-label">Total</span>
+        <span class="kpi-value"><%= tot_geral %></span>
+      </div>
+      <% ordem_status.each do |st| %>
+        <% qt  = tot_por_status[st] || 0 %>
+        <% pct = tot_geral.zero? ? 0 : ((qt.to_f / tot_geral) * 100).round %>
+        <div class="kpi">
+          <span class="kpi-label"><%= st %></span>
+          <span class="kpi-chip <%= cores_por_status[st] %>"><%= qt %> <small>(<%= pct %>%)</small></span>
+        </div>
+      <% end %>
+    </div>
+  </header>
+
+  <div class="trk-bar" aria-label="Distribuição de chamados por status">
+    <% ordem_status.each do |st| %>
+      <% qt  = tot_por_status[st] || 0 %>
+      <% next if qt.zero? %>
+      <% pct = tot_geral.zero? ? 0 : ((qt.to_f / tot_geral) * 100.0) %>
+      <% classe = cores_por_status[st] %>
+      <% url = url_for(request.params.merge(status: st)) %>
+      <a href="<%= url %>"
+         class="trk-seg <%= classe %>"
+         style="--seg-w: <%= pct %>%"
+         title="<%= "#{st}: #{qt} (#{pct.round}%) — clicar filtra" %>">
+        <span class="trk-seg-label"><%= st %></span>
+      </a>
+    <% end %>
+    <% if tot_geral.zero? %>
+      <div class="trk-empty">Sem dados</div>
+    <% end %>
+  </div>
+
+  <div class="trk-legend">
+    <% ordem_status.each do |st| %>
+      <% qt  = tot_por_status[st] || 0 %>
+      <% pct = tot_geral.zero? ? 0 : ((qt.to_f / tot_geral) * 100).round %>
+      <% url = url_for(request.params.merge(status: st)) %>
+      <a class="trk-leg <%= cores_por_status[st] %>" href="<%= url %>">
+        <i class="trk-dot"></i> <strong><%= st %></strong>
+        <span><%= qt %> • <%= pct %>%</span>
+      </a>
+    <% end %>
+  </div>
+</section>
+
+
+
+
+<button type="button" id="filtro-toggle" class="filtro-label" aria-expanded="true" aria-controls="filtros-salas">
+  <i class="fa-solid fa-filter"></i>
+  Filtro
+  <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+</button>
+<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form", id: "filtros-salas" do %>
+  <div style="margin-bottom: 20px;">
     
     <%= select_tag :local, options_for_select(["Todos os locais"] + Chamado.distinct.pluck(:local), params[:local]), class: "form-control" %>
 
 
     <%= select_tag :unidade, options_for_select(["Todas as unidades"] + Chamado.distinct.pluck(:unidade), params[:unidade]), class: "form-control" %>
 
-    <%= select_tag :status, options_for_select(["Todos os status", "Solicitada", "Em andamento", "Finalizada"], params[:status]), class: "form-control" %>
+    <%= select_tag :status,
+  options_for_select(
+    ["Todos os status", "Pendente", "Em andamento", "Concluído"],
+    params[:status]
+  ),
+  class: "form-control"
+%>
+
+
 
     <%= select_tag :prioridade, options_for_select(["Todas as prioridades"] + Chamado.distinct.pluck(:prioridade), params[:prioridade]), class: "form-control" %>
 
@@ -33,33 +120,33 @@
   <table class="table-salas">
     <thead>
       <tr>
-        <th>OS</th>
+        <th class="hide-sm">OS</th>
         <th>Título</th>
-        <th>Unidade</th>
+        <th class="hide-sm">Unidade</th>
         <th>Prioridade</th>
         <th>Status</th>
-        <th>Responsável</th>
+        <th class="hide-sm">Responsável</th>
         <th>Ações</th>
       </tr>
     </thead>
     <tbody>
       <% @chamados.each do |chamado| %>
         <tr>
-          <td><%= chamado.os %></td>
+          <td class="hide-sm"><%= chamado.os %></td>
           <td><%= chamado.titulo %></td>
-          <td><%= chamado.unidade %></td>
+          <td class="hide-sm"><%= chamado.unidade %></td>
           <td><%= chamado.prioridade %></td>
           <td><%= chamado.status %></td>
-          <td><%= chamado.responsavel %></td>
+          <td class="hide-sm"><%= chamado.responsavel %></td>
          <td style="
     display: flex;
     flex-direction: column;
 ">
           <%= link_to chamado_path(chamado), class: "btn btn-success" do %>
-            <i class="fa-solid fa-eye"></i> Ver
+            <i class="fa-solid fa-eye"></i> <div class="hide-sm"> Ver </div>
           <% end %>
           <%= link_to edit_chamado_path(chamado), class: "edit btn btn-sm btn-outline-secondary" do %>
-             <i class="fa-solid fa-pen-to-square"></i> Editar
+             <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
           <% end %>
           <%= button_to chamado_path(chamado),
       method: :delete,
@@ -69,7 +156,7 @@
         data:  { record_name: (chamado.titulo.presence || chamado.os), turbo: false }, # turbo: false evita submit imediato
         style: "display:inline"
       } do %>
-  <i class="fa-solid fa-trash-can"></i> Excluir
+  <i class="fa-solid fa-trash-can"></i> <div class="hide-sm"> Excluir </div>
 <% end %>
 
 
@@ -108,4 +195,115 @@ document.addEventListener("submit", async function(e) {
     }
   }
 });
+
+function mountTrkBars(){
+  document.querySelectorAll(".trk-bar").forEach(bar=>{
+    // reset para permitir re-animar em navegações Turbo
+    bar.classList.remove("mounted");
+    // força reflow para garantir a transição
+    void bar.offsetWidth;
+    // adiciona a classe que aplica width: var(--seg-w)
+    bar.classList.add("mounted");
+  });
+}
+
+// Suporta páginas com Turbo e sem Turbo
+document.addEventListener("DOMContentLoaded", mountTrkBars);
+document.addEventListener("turbo:load", mountTrkBars);
+// Se usar Turbo Frames, ajuda também:
+document.addEventListener("turbo:frame-load", mountTrkBars);
+
+// ======= JS do colapso suave (auto-expande medindo altura) =======
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-salas');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:filtros-salas-collapsed';
+
+  // Inicializa aria e estado conforme localStorage (ou atributo atual)
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
+  // Função para animar usando max-height calculado (mais suave que só toggle de class)
+  function setCollapsed(collapsed, save = true) {
+    // se preferir reduzir movimento, aplica sem transição
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (collapsed) {
+      // animação de fechar: define max-height para altura atual -> 0
+      const curH = filtros.scrollHeight;
+      filtros.style.maxHeight = curH + 'px';       // garante ponto de partida
+      // force reflow
+      // eslint-disable-next-line no-unused-expressions
+      filtros.offsetHeight;
+      if (prefersReduced) {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '0px';
+      }
+      toggle.setAttribute('aria-expanded', 'false');
+      filtros.setAttribute('aria-hidden', 'true');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      // abre: definir max-height do 0 para scrollHeight
+      filtros.classList.remove('collapsed');
+      filtros.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      const targetH = filtros.scrollHeight;
+      if (prefersReduced) {
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.style.maxHeight = '0px';
+        // força reflow
+        // eslint-disable-next-line no-unused-expressions
+        filtros.offsetHeight;
+        filtros.style.maxHeight = targetH + 'px';
+      }
+      // depois da animação remove max-height inline para ficar fluido quando o conteúdo muda
+      const cleanup = () => {
+        filtros.style.maxHeight = '';
+        filtros.removeEventListener('transitionend', cleanup);
+      };
+      filtros.addEventListener('transitionend', cleanup);
+      if (save) localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  // aplica estado inicial sem animação chata
+  if (startCollapsed) {
+    filtros.classList.add('collapsed');
+    filtros.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    filtros.style.maxHeight = '0px';
+  } else {
+    filtros.classList.remove('collapsed');
+    filtros.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    filtros.style.maxHeight = '';
+  }
+
+  // clique no toggle
+  toggle.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const isCollapsed = filtros.classList.contains('collapsed');
+    setCollapsed(!isCollapsed, true);
+  });
+
+  // abrir painel se foco em qualquer input/select dentro
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
+    el.addEventListener('focus', () => setCollapsed(false, false));
+  });
+
+  // opcional: fecha ao clicar fora (descomente se quiser)
+  // document.addEventListener('click', (ev) => {
+  //   if (filtros.classList.contains('collapsed')) return;
+  //   if (!ev.target.closest('#filtros-salas') && !ev.target.closest('#filtro-toggle')) {
+  //     setCollapsed(true, true);
+  //   }
+  // });
+});
+
 </script>

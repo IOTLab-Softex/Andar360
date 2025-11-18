@@ -1,0 +1,46 @@
+<% preco = (k.valor || 0).to_f %>
+<tr id="<%= dom_id(k) %>" data-valor="<%= preco %>" class="<%= 'row-missing-icon' unless k.icon.attached? %>">
+  <td class="sel-cell" style="display:none; text-align:center;">
+    <input type="checkbox" class="items-row-check" name="ids[]" value="<%= k.id %>">
+  </td>
+
+  <td>
+    <% if k.icon.attached? %>
+      <% ct = k.icon.blob.content_type.to_s %>
+      <% is_svg = ct.include?("svg") || k.icon.filename.extension == "svg" %>
+      <% if is_svg %>
+        <% raw_svg = k.icon.blob.download.force_encoding("UTF-8")
+                     .gsub(/\s*(width|height|fill|style)="[^"]*"/, "")
+                     .sub("<svg", '<svg fill="currentColor" focusable="false" aria-hidden="true"') %>
+        <span class="icon-20"><%= raw raw_svg %></span>
+      <% else %>
+        <%= image_tag url_for(k.icon), alt: k.name, class: "icon-20-img" %>
+      <% end %>
+    <% else %>
+      <span class="badge badge-danger" title="Ícone obrigatório">
+        <i class="fa-regular fa-image"></i> obrigatório
+      </span>
+    <% end %>
+  </td>
+
+  <td class="td-nome">
+    <strong><%= k.name %></strong>
+    <% unless k.icon.attached? %>
+      <small class="text-danger" title="Ícone é obrigatório para itens do catálogo"> • ícone obrigatório</small>
+    <% end %>
+  </td>
+
+  <td class="td-modelo"><%= k.modelo.presence || "-" %></td>
+  <td class="td-valor"><%= number_to_currency(preco, unit: "R$ ", separator: ",", delimiter: ".") %></td>
+  <td>
+    <%= link_to "Editar",
+        edit_room_item_path(k),
+        class: "btn edit",
+        data: { turbo_frame: "item-modal-frame", open_modal: true } %>
+
+    <%= link_to "Excluir",
+        room_item_path(k),
+        class: "btn btn-warning btn-excluir-item",
+        data: { turbo_method: :delete, turbo_confirm: "Excluir #{k.name}?" } %>
+  </td>
+</tr>

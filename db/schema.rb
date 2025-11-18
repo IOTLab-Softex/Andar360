@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_09_15_143703) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_05_133817) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -373,11 +373,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_15_143703) do
   end
 
   create_table "room_items", force: :cascade do |t|
-    t.bigint "room_id", null: false
+    t.bigint "room_id"
     t.string "name", null: false
     t.integer "quantity", default: 1, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "modelo"
+    t.decimal "valor", precision: 12, scale: 2
+    t.index ["name"], name: "index_room_items_on_name"
     t.index ["room_id"], name: "index_room_items_on_room_id"
   end
 
@@ -432,6 +435,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_09_15_143703) do
     t.text "smtp_password"
     t.string "smtp_authentication"
     t.boolean "smtp_enable_starttls_auto"
+    t.boolean "require_rules_before_reservation", default: false, null: false
+    t.string "reservation_rules_title"
+    t.boolean "require_room_rules_ack"
   end
 
   create_table "solicitacao_participantes", force: :cascade do |t|

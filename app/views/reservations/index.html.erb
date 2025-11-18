@@ -1,12 +1,34 @@
-<div style="text-align: center; margin-bottom: 1rem;">
-  <button id="toggleViewBtn" class="btn">
-    <i class="fa-solid fa-table"></i> Alternar Visualização
-  </button>
+<div style="text-align: right; margin-bottom: 1rem;">
+  <div style="display: inline-flex; align-items: center; gap: .5rem;">
+<label for="viewSwitchBtn" style="margin:0;font-weight: 500;color: var(--color-btn);">
+      Visualização:
+    </label>
+
+    <div class="view-dropdown" id="viewSwitch">
+      <button type="button" id="viewSwitchBtn" class="btn btn-light view-trigger">
+        <i class="fa-solid fa-display"></i>
+        <span id="currentViewLabel">Cards</span>
+        <i class="fa-solid fa-caret-down" style="margin-left:.25rem;"></i>
+      </button>
+
+      <div class="view-menu" id="viewMenu">
+        <button type="button" class="view-option" data-view="cards">
+          <i class="fa-solid fa-id-card"></i> Cards
+        </button>
+        <button type="button" class="view-option" data-view="table">
+          <i class="fa-solid fa-table"></i> Tabela
+        </button>
+        <button type="button" class="view-option" data-view="calendar">
+          <i class="fa-solid fa-calendar"></i> Calendário
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 
+
 <!-- FILTROS -->
-<div id="reservationsFilters" class="filter-form" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; margin: 1rem 0;">
-  <!-- Empresa -->
+<div id="reservationsFilters" class="filter-form">
   <div>
     <label for="filterEmpresa" class="form-label">Empresa</label>
     <select id="filterEmpresa" class="form-control" style="min-width:180px">
@@ -17,7 +39,6 @@
     </select>
   </div>
 
-  <!-- Sala -->
   <div>
     <label for="filterSala" class="form-label">Sala</label>
     <select id="filterSala" class="form-control" style="min-width:160px">
@@ -28,7 +49,6 @@
     </select>
   </div>
 
-  <!-- Status -->
   <div>
     <label for="filterStatus" class="form-label">Status</label>
     <select id="filterStatus" class="form-control" style="min-width:160px">
@@ -39,34 +59,32 @@
     </select>
   </div>
 
-  <!-- Data início/fim -->
   <div>
     <label for="filterInicio" class="form-label">Início (de)</label>
     <input id="filterInicio" type="datetime-local" class="form-control">
   </div>
+
   <div>
     <label for="filterFim" class="form-label">Início (até)</label>
     <input id="filterFim" type="datetime-local" class="form-control">
   </div>
 
-  <!-- Busca por texto -->
   <div style="flex:1; min-width:220px;">
     <label for="filterBusca" class="form-label">Buscar (título/empresa/sala)</label>
     <input id="filterBusca" type="text" class="form-control" placeholder="Digite para filtrar...">
   </div>
 
-  <!-- Ações -->
   <div style="display:flex; gap:.5rem;">
     <button id="filterLimpar" class="btn btn-secondary" type="button">Limpar</button>
   </div>
 </div>
 
+<!-- VIEW: CARDS -->
 <div class="rooms" id="reservationsCards">
   <% if @reservations.any? %>
     <% minhas_reservas = @reservations.select { |r| r.grupo_empresa_id == current_user.participant&.grupo_empresa_id } %>
     <% outras_reservas = @reservations.reject { |r| r.grupo_empresa_id == current_user.participant&.grupo_empresa_id } %>
 
-    <!-- BLOCO: MINHAS RESERVAS -->
     <% grouped_reservas = {
       'Ativas' => minhas_reservas.select { |r| r.cancelada_em.blank? && r.finalizada_em.blank? },
       'Encerradas' => minhas_reservas.select { |r| r.finalizada_em.present? },
@@ -89,7 +107,6 @@
                       <% if reservation.grupo_empresa&.logo&.attached? %>
                         <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 40px; margin: 5px 0;" %>
                       <% end %><br>
-                      
                       Nome da Reserva: <strong><%= reservation.title %></strong><br>
                       Sala: <%= reservation.room.name %><br>
                       Início: <%= l(reservation.starts_at, format: :short) %><br>
@@ -115,12 +132,14 @@
                       <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
                         <i class="fa-solid fa-eye"></i> Ver
                       <% end %>
-                      <%= button_to reservation_path(reservation),
-                          method: :delete,
-                          data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                          class: "btn btn-warning",
-                          form: { style: "display: contents;" } do %>
+                      <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+                        <%= button_to reservation_path(reservation),
+                            method: :delete,
+                            data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                            class: "btn btn-warning",
+                            form: { style: "display: contents;" } do %>
                           <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
+                        <% end %>
                       <% end %>
                     </div>
                   </div>
@@ -132,7 +151,6 @@
       </div>
     <% end %>
 
-    <!-- BLOCO: OUTRAS RESERVAS POR EMPRESA -->
     <% if outras_reservas.any? %>
       <div class="reservation-section">
         <h2 class="section-title">Outras Reservas</h2>
@@ -174,12 +192,14 @@
                     <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
                       <i class="fa-solid fa-eye"></i> Ver
                     <% end %>
-                    <%= button_to reservation_path(reservation),
-                        method: :delete,
-                        data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                        class: "btn btn-warning",
-                        form: { style: "display: contents;" } do %>
+                    <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
+                      <%= button_to reservation_path(reservation),
+                          method: :delete,
+                          data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                          class: "btn btn-warning",
+                          form: { style: "display: contents;" } do %>
                         <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
+                      <% end %>
                     <% end %>
                   </div>
                 </div>
@@ -194,14 +214,12 @@
   <% end %>
 </div>
 
-
-
-
+<!-- VIEW: TABELA -->
 <table id="reservationsTable" style="width: 100%; display: none;">
   <thead>
     <tr>
-      <th>Empresa</th>
-      <th>Nome Reserva</th>
+      <th class="hide-sm">Empresa</th>
+      <th class="hide-sm">Nome Reserva</th>
       <th>Sala</th>
       <th>Início</th>
       <th>Fim</th>
@@ -210,232 +228,670 @@
     </tr>
   </thead>
   <tbody>
-  <% @reservations.each do |reservation| %>
-    <% status =
-         if reservation.cancelada_em.present?
-           'cancelada'
-         elsif reservation.finalizada_em.present?
-           'encerrada'
-         else
-           'ativa'
-         end %>
+    <% @reservations.each do |reservation| %>
+      <% status =
+           if reservation.cancelada_em.present?
+             'cancelada'
+           elsif reservation.finalizada_em.present?
+             'encerrada'
+           else
+             'ativa'
+           end %>
 
-    <tr
-      data-empresa="<%= reservation.grupo_empresa&.nome.to_s %>"
-      data-sala="<%= reservation.room&.name.to_s %>"
-      data-status="<%= status %>"
-      data-inicio="<%= reservation.starts_at&.iso8601 %>"
-      data-fim="<%= reservation.ends_at&.iso8601 %>"
-      data-busca="<%= [
-        reservation.title,
-        reservation.grupo_empresa&.nome,
-        reservation.room&.name
-      ].compact.join(' ').downcase %>"
-    >
-      <td><%= reservation.grupo_empresa&.nome || "Não informado" %></td>
-      <td><%= reservation.title %></td>
-      <td><%= reservation.room&.name %></td>
-      <td><%= l(reservation.starts_at, format: :short) %></td>
-      <td><%= l(reservation.ends_at, format: :short) %></td>
-      <td>
-        <% if status == 'cancelada' %>
-          ⛔ Cancelada
-        <% elsif status == 'encerrada' %>
-          ✔️ Encerrada
-        <% else %>
-          🟢 Ativa
-        <% end %>
-      </td>
-      <td class="reservationsTableAction">
-        <% if status == 'ativa' %>
-          <%= link_to edit_reservation_path(reservation), class: "btn edit", style: "display:inline-block;" do %>
-            <i class="fa-solid fa-pen"></i>
+      <tr
+        data-empresa="<%= reservation.grupo_empresa&.nome.to_s %>"
+        data-sala="<%= reservation.room&.name.to_s %>"
+        data-status="<%= status %>"
+        data-inicio="<%= reservation.starts_at&.iso8601 %>"
+        data-fim="<%= reservation.ends_at&.iso8601 %>"
+        data-busca="<%= [reservation.title, reservation.grupo_empresa&.nome, reservation.room&.name].compact.join(' ').downcase %>"
+      >
+        <td class="hide-sm"><%= reservation.grupo_empresa&.nome || "Não informado" %></td>
+        <td class="hide-sm"><%= reservation.title %></td>
+        <td><%= reservation.room&.name %></td>
+        <td><%= l(reservation.starts_at, format: :short) %></td>
+        <td><%= l(reservation.ends_at, format: :short) %></td>
+        <td>
+          <% if status == 'cancelada' %>
+            ⛔ Cancelada
+          <% elsif status == 'encerrada' %>
+            ✔️ Encerrada
+          <% else %>
+            🟢 Ativa
           <% end %>
-        <% end %>
-        <%= link_to reservation_path(reservation), class: "btn btn-success", style: "display:inline-block;" do %>
-          <i class="fa-solid fa-eye"></i>
-        <% end %>
-        <% if status == 'ativa' %>
-          <%= button_to reservation_path(reservation),
-                method: :delete,
-                data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                class: "btn btn-warning",
-                style: "display: flow-root",
-                form: { style: "display: contents;" } do %>
-            <i class="fa-solid fa-rectangle-xmark"></i>
+        </td>
+        <td class="reservationsTableAction">
+          <% if status == 'ativa' %>
+            <%= link_to edit_reservation_path(reservation), class: "btn edit", style: "display:inline-block;" do %>
+              <i class="fa-solid fa-pen"></i>
+            <% end %>
           <% end %>
-        <% end %>
-      </td>
-    </tr>
-  <% end %>
-</tbody>
-
+          <%= link_to reservation_path(reservation), class: "btn btn-success", style: "display:inline-block;" do %>
+            <i class="fa-solid fa-eye"></i>
+          <% end %>
+          <% if status == 'ativa' %>
+            <%= button_to reservation_path(reservation),
+                  method: :delete,
+                  data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                  class: "btn btn-warning",
+                  style: "display: flow-root",
+                  form: { style: "display: contents;" } do %>
+              <i class="fa-solid fa-rectangle-xmark"></i>
+            <% end %>
+          <% end %>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
 </table>
 
+<!-- VIEW: CALENDÁRIO -->
+<div id="reservationsCalendar" class="calendar-wrapper" style="display:none;">
+  <div class="calendar-header">
+    <div class="calendar-room">
+      <select id="calendarRoomSelect" class="form-control">
+        <option value="">Todas as salas</option>
+        <% @reservations.map(&:room).compact.uniq.each do |room| %>
+          <option value="<%= room.name %>"><%= room.name %></option>
+        <% end %>
+      </select>
+    </div>
 
+    <div class="calendar-nav">
+      <button id="calendarPrev" class="btn btn-light" type="button">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <span id="calendarCurrentMonth"></span>
+      <button id="calendarNext" class="btn btn-light" type="button">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+    </div>
+  </div>
+
+  <div id="calendarGrid" class="calendar-grid"></div>
+
+  <div class="calendar-legend">
+    <span><span class="cal-dot cal-ativa"></span> Ativa</span>
+    <span><span class="cal-dot cal-encerrada"></span> Encerrada</span>
+    <span><span class="cal-dot cal-cancelada"></span> Cancelada</span>
+  </div>
+</div>
 
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const reservationIds = <%= raw @reservations.map(&:id).to_json %>;
+document.addEventListener("DOMContentLoaded", function () {
+  // ===== STATUS AUTO UPDATE =====
+  const reservationIds = <%= raw @reservations.map(&:id).to_json %>;
 
-    function updateStatuses() {
-      reservationIds.forEach(id => {
-        fetch(`/reservations/${id}/status`)
-          .then(response => response.json())
-          .then(data => {
-            const el = document.getElementById(`status-${id}`);
-            if (el) {
-              if (data.sent_to_facial) {
-                el.textContent = "Participantes já enviados";
-                el.classList.remove("warning");
-                el.classList.add("success");
-              } else {
-                el.textContent = "Aguardando envio";
-                el.classList.remove("success");
-                el.classList.add("warning");
-              }
-            }
-          });
+  function updateStatuses() {
+    reservationIds.forEach(id => {
+      fetch(`/reservations/${id}/status`)
+        .then(r => r.json())
+        .then(data => {
+          const el = document.getElementById(`status-${id}`);
+          if (!el) return;
+          if (data.sent_to_facial) {
+            el.textContent = "Participantes já enviados";
+            el.classList.remove("warning");
+            el.classList.add("success");
+          } else {
+            el.textContent = "Aguardando envio";
+            el.classList.remove("success");
+            el.classList.add("warning");
+          }
+        })
+        .catch(() => {});
+    });
+  }
+  setInterval(updateStatuses, 15000);
+
+  // ===== FILTROS TABELA =====
+  const table   = document.getElementById("reservationsTable");
+  const tbody   = table ? table.querySelector("tbody") : null;
+  const $emp    = document.getElementById("filterEmpresa");
+  const $sala   = document.getElementById("filterSala");
+  const $stat   = document.getElementById("filterStatus");
+  const $ini    = document.getElementById("filterInicio");
+  const $fim    = document.getElementById("filterFim");
+  const $busca  = document.getElementById("filterBusca");
+  const $limpar = document.getElementById("filterLimpar");
+
+  if (tbody) {
+    const saved = JSON.parse(localStorage.getItem("reservationsFilters") || "{}");
+    if (saved.empresa) $emp.value = saved.empresa;
+    if (saved.sala)    $sala.value = saved.sala;
+    if (saved.status)  $stat.value = saved.status;
+    if (saved.inicio)  $ini.value = saved.inicio;
+    if (saved.fim)     $fim.value = saved.fim;
+    if (saved.busca)   $busca.value= saved.busca;
+
+    function salvaEstado() {
+      localStorage.setItem("reservationsFilters", JSON.stringify({
+        empresa: $emp.value,
+        sala:    $sala.value,
+        status:  $stat.value,
+        inicio:  $ini.value,
+        fim:     $fim.value,
+        busca:   $busca.value.trim()
+      }));
+    }
+
+    function passaFiltros(tr) {
+      const emp    = tr.dataset.empresa || "";
+      const sala   = tr.dataset.sala || "";
+      const status = tr.dataset.status || "";
+      const inicio = tr.dataset.inicio ? new Date(tr.dataset.inicio) : null;
+      const busca  = tr.dataset.busca || "";
+
+      if ($emp.value && emp !== $emp.value) return false;
+      if ($sala.value && sala !== $sala.value) return false;
+      if ($stat.value && status !== $stat.value) return false;
+
+      if ($ini.value) {
+        const dtIni = new Date($ini.value);
+        if (!inicio || inicio < dtIni) return false;
+      }
+      if ($fim.value) {
+        const dtFim = new Date($fim.value);
+        if (!inicio || inicio > dtFim) return false;
+      }
+
+      const txt = ($busca.value || "").trim().toLowerCase();
+      if (txt && !busca.includes(txt)) return false;
+
+      return true;
+    }
+
+    function aplicaFiltros() {
+      salvaEstado();
+      Array.from(tbody.querySelectorAll("tr")).forEach(tr => {
+        tr.style.display = passaFiltros(tr) ? "" : "none";
       });
     }
 
-    
-    // Atualiza a cada 15 segundos
-    setInterval(updateStatuses, 15000);
-  });
-
-
-  document.addEventListener("DOMContentLoaded", function () {
-  const toggleBtn = document.getElementById("toggleViewBtn");
-  const cardsContainer = document.getElementById("reservationsCards");
-  const tableContainer = document.getElementById("reservationsTable");
-
-  function applyViewMode(mode) {
-    if (mode === "table") {
-      tableContainer.style.display = "table";
-      cardsContainer.style.display = "none";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-id-card"></i> Alternar Visualização';
-    } else {
-      tableContainer.style.display = "none";
-      cardsContainer.style.display = "flex";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-table"></i> Alternar Visualização';
-    }
-  }
-
-  // Carrega do localStorage (padrão: cards)
-  const savedMode = localStorage.getItem("reservationsViewMode") || "cards";
-  applyViewMode(savedMode);
-
-  toggleBtn.addEventListener("click", function () {
-    const currentMode = tableContainer.style.display === "table" ? "table" : "cards";
-    const newMode = currentMode === "table" ? "cards" : "table";
-    localStorage.setItem("reservationsViewMode", newMode);
-    applyViewMode(newMode);
-  });
-});
-
-
-document.addEventListener("DOMContentLoaded", function () {
-  const table = document.getElementById("reservationsTable");
-  const tbody = table?.querySelector("tbody");
-  if (!tbody) return;
-
-  const $emp   = document.getElementById("filterEmpresa");
-  const $sala  = document.getElementById("filterSala");
-  const $stat  = document.getElementById("filterStatus");
-  const $ini   = document.getElementById("filterInicio");
-  const $fim   = document.getElementById("filterFim");
-  const $busca = document.getElementById("filterBusca");
-  const $limpar= document.getElementById("filterLimpar");
-
-  // Carrega filtros salvos
-  const saved = JSON.parse(localStorage.getItem("reservationsFilters") || "{}");
-  if (saved.empresa) $emp.value = saved.empresa;
-  if (saved.sala)    $sala.value = saved.sala;
-  if (saved.status)  $stat.value = saved.status;
-  if (saved.inicio)  $ini.value = saved.inicio;
-  if (saved.fim)     $fim.value = saved.fim;
-  if (saved.busca)   $busca.value= saved.busca;
-
-  function salvaEstado() {
-    localStorage.setItem("reservationsFilters", JSON.stringify({
-      empresa: $emp.value,
-      sala:    $sala.value,
-      status:  $stat.value,
-      inicio:  $ini.value,
-      fim:     $fim.value,
-      busca:   $busca.value.trim()
-    }));
-  }
-
-  function normalizaTexto(s) {
-    return (s || "").toLowerCase();
-  }
-
-  function passaFiltros(tr) {
-    const emp    = tr.dataset.empresa || "";
-    const sala   = tr.dataset.sala || "";
-    const status = tr.dataset.status || "";
-    const inicio = tr.dataset.inicio ? new Date(tr.dataset.inicio) : null;
-    const fim    = tr.dataset.fim ? new Date(tr.dataset.fim) : null;
-    const busca  = tr.dataset.busca || "";
-
-    // Empresa
-    if ($emp.value && emp !== $emp.value) return false;
-
-    // Sala
-    if ($sala.value && sala !== $sala.value) return false;
-
-    // Status
-    if ($stat.value && status !== $stat.value) return false;
-
-    // Intervalo por início
-    if ($ini.value) {
-      const dtIni = new Date($ini.value);
-      if (!inicio || inicio < dtIni) return false;
-    }
-    if ($fim.value) {
-      const dtFim = new Date($fim.value);
-      if (!inicio || inicio > dtFim) return false;
-    }
-
-    // Busca texto (em título/empresa/sala)
-    const txt = normalizaTexto($busca.value.trim());
-    if (txt && !busca.includes(txt)) return false;
-
-    return true;
-  }
-
-  function aplicaFiltros() {
-    salvaEstado();
-    const rows = Array.from(tbody.querySelectorAll("tr"));
-    let visiveis = 0;
-    rows.forEach(tr => {
-      const show = passaFiltros(tr);
-      tr.style.display = show ? "" : "none";
-      if (show) visiveis++;
+    [$emp, $sala, $stat, $ini, $fim, $busca].forEach(el => {
+      if (!el) return;
+      el.addEventListener("input", aplicaFiltros);
+      el.addEventListener("change", aplicaFiltros);
     });
 
-    // Se a tabela estiver oculta no modo cards, não força nada aqui
-    // (o botão de Alternar Visualização já cuida)
+    if ($limpar) {
+      $limpar.addEventListener("click", () => {
+        $emp.value = "";
+        $sala.value = "";
+        $stat.value = "";
+        $ini.value = "";
+        $fim.value = "";
+        $busca.value = "";
+        aplicaFiltros();
+      });
+    }
+
+    aplicaFiltros();
   }
 
-  [$emp, $sala, $stat, $ini, $fim, $busca].forEach(el => {
-    el.addEventListener("input", aplicaFiltros);
-    el.addEventListener("change", aplicaFiltros);
+  // ===== VIEW SWITCH (Dropdown) =====
+  const viewSwitch       = document.getElementById("viewSwitch");
+  const viewBtn          = document.getElementById("viewSwitchBtn");
+  const viewMenu         = document.getElementById("viewMenu");
+  const viewLabel        = document.getElementById("currentViewLabel");
+  const filtersContainer = document.getElementById("reservationsFilters");
+  const cardsContainer   = document.getElementById("reservationsCards");
+  const tableContainer   = document.getElementById("reservationsTable");
+  const calendarContainer= document.getElementById("reservationsCalendar");
+  const VIEW_KEY         = "reservationsViewMode";
+
+  // ===== DADOS CALENDÁRIO =====
+const calendarData = <%= raw @reservations.map { |r|
+  {
+    id: r.id,
+    room: r.room&.name,
+    room_id: r.room_id,
+    status: (r.cancelada_em.present? ? 'cancelada' : (r.finalizada_em.present? ? 'encerrada' : 'ativa')),
+    starts_at: r.starts_at.iso8601,
+    ends_at:   r.ends_at.iso8601
+  }
+}.to_json %>;
+
+
+  const calendarGrid       = document.getElementById("calendarGrid");
+  const calendarMonthLabel = document.getElementById("calendarCurrentMonth");
+  const roomSelect         = document.getElementById("calendarRoomSelect");
+  const prevBtn            = document.getElementById("calendarPrev");
+  const nextBtn            = document.getElementById("calendarNext");
+  const filterSalaSelect   = document.getElementById("filterSala");
+
+  let current = new Date();
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+function overlapsDay(ev, dayStart, dayEnd) {
+  const evStart = new Date(ev.starts_at);
+  const evEnd   = new Date(ev.ends_at);
+  return evStart <= dayEnd && evEnd >= dayStart;
+}
+
+  function overlapsDay(ev, dayStart, dayEnd) {
+    const evStart = new Date(ev.starts_at);
+    const evEnd   = new Date(ev.ends_at);
+    return evStart <= dayEnd && evEnd >= dayStart;
+  }
+
+  function renderCalendar() {
+    if (!calendarGrid || !calendarMonthLabel) return;
+
+    const year        = current.getFullYear();
+    const month       = current.getMonth();
+    const firstDay    = new Date(year, month, 1);
+    const lastDay     = new Date(year, month + 1, 0);
+    const startWeekday= firstDay.getDay(); // 0=Dom
+
+    calendarMonthLabel.textContent = firstDay.toLocaleDateString("pt-BR", {
+      month: "long",
+      year: "numeric"
+    });
+
+    calendarGrid.innerHTML = "";
+
+    const weekdays = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    weekdays.forEach(label => {
+      const div = document.createElement("div");
+      div.className = "cal-weekday";
+      div.textContent = label;
+      calendarGrid.appendChild(div);
+    });
+
+    const roomFilter = roomSelect ? roomSelect.value : "";
+
+    for (let i = 0; i < startWeekday; i++) {
+      const empty = document.createElement("div");
+      empty.className = "cal-day cal-empty";
+      calendarGrid.appendChild(empty);
+    }
+
+    for (let day = 1; day <= lastDay.getDate(); day++) {
+  const cell = document.createElement("div");
+  cell.className = "cal-day";
+
+  const dayNumber = document.createElement("div");
+  dayNumber.className = "cal-day-number";
+  dayNumber.textContent = day;
+  cell.appendChild(dayNumber);
+
+  // 👉 Se o dia atual do loop for o "hoje" REAL, marca a célula
+  const isToday =
+    today.getFullYear() === year &&
+    today.getMonth()    === month &&
+    today.getDate()     === day;
+
+  if (isToday) {
+    cell.classList.add("cal-today");
+  }
+
+
+  const badgeWrap = document.createElement("div");
+  badgeWrap.className = "cal-badges";
+
+  const dayStart = new Date(year, month, day, 0, 0, 0);
+  const dayEnd   = new Date(year, month, day, 23, 59, 59);
+
+  // Filtra eventos que pegam esse dia
+  const events = calendarData.filter(ev => {
+    if (roomFilter && ev.room !== roomFilter) return false;
+    return overlapsDay(ev, dayStart, dayEnd);
   });
 
-  $limpar.addEventListener("click", () => {
-    $emp.value = "";
-    $sala.value = "";
-    $stat.value = "";
-    $ini.value = "";
-    $fim.value = "";
-    $busca.value = "";
-    aplicaFiltros();
+  const counts = { ativa:0, encerrada:0, cancelada:0 };
+  events.forEach(ev => {
+    if (counts[ev.status] !== undefined) counts[ev.status]++;
   });
 
-  // Aplica ao carregar
-  aplicaFiltros();
+  if (counts.ativa) {
+    const b = document.createElement("span");
+    b.className = "cal-badge cal-badge-ativa";
+    b.textContent = counts.ativa;
+    badgeWrap.appendChild(b);
+  }
+  if (counts.encerrada) {
+    const b = document.createElement("span");
+    b.className = "cal-badge cal-badge-encerrada";
+    b.textContent = counts.encerrada;
+    badgeWrap.appendChild(b);
+  }
+  if (counts.cancelada) {
+    const b = document.createElement("span");
+    b.className = "cal-badge cal-badge-cancelada";
+    b.textContent = counts.cancelada;
+    badgeWrap.appendChild(b);
+  }
+
+  cell.appendChild(badgeWrap);
+
+  // 👉 Só deixa clicável se:
+  // - tiver pelo menos 1 reserva
+  // - e uma sala tiver sido escolhida no calendário (roomFilter)
+  if (events.length > 0 && roomFilter) {
+    cell.classList.add("cal-day--has-events");
+
+    cell.addEventListener("click", () => {
+      // pega o room_id a partir do primeiro evento (todos são da mesma sala no filtro)
+      const first = events[0];
+      const roomId = first.room_id;
+      if (!roomId) return;
+
+      const dateParam = dayStart.toISOString().slice(0, 10); // YYYY-MM-DD
+      // redireciona para /rooms/:id/reservations?date=YYYY-MM-DD
+      window.location.href = `/rooms/${roomId}/reservations?date=${dateParam}`;
+    });
+  }
+
+  calendarGrid.appendChild(cell);
+}
+
+  }
+
+  function setButtonLabel(mode) {
+    if (!viewLabel) return;
+    if (mode === "table") {
+      viewLabel.textContent = "Tabela";
+    } else if (mode === "calendar") {
+      viewLabel.textContent = "Calendário";
+    } else {
+      viewLabel.textContent = "Cards";
+    }
+  }
+
+  function updateActiveOption(mode) {
+    if (!viewMenu) return;
+    viewMenu.querySelectorAll(".view-option").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.view === mode);
+    });
+  }
+
+  function applyView(mode) {
+    if (!cardsContainer || !tableContainer || !calendarContainer) return;
+
+    cardsContainer.style.display    = (mode === "cards")    ? "flex"  : "none";
+    tableContainer.style.display    = (mode === "table")    ? "table" : "none";
+    calendarContainer.style.display = (mode === "calendar") ? "block" : "none";
+
+    // filtros: some no calendário
+    if (filtersContainer) {
+      filtersContainer.style.display = (mode === "calendar") ? "none" : "flex";
+    }
+
+    setButtonLabel(mode);
+    updateActiveOption(mode);
+
+    if (mode === "calendar") {
+      renderCalendar();
+    }
+  }
+
+  function closeViewMenu() {
+    if (viewMenu) viewMenu.classList.remove("open");
+  }
+
+  // view inicial
+  const initialView = localStorage.getItem(VIEW_KEY) || "cards";
+  applyView(initialView);
+
+  // abrir/fechar menu
+  if (viewBtn && viewMenu) {
+    viewBtn.addEventListener("click", function (e) {
+      e.stopPropagation();
+      viewMenu.classList.toggle("open");
+    });
+  }
+
+  // seleção de opção
+  if (viewMenu) {
+    viewMenu.addEventListener("click", function (e) {
+      const btn = e.target.closest(".view-option[data-view]");
+      if (!btn) return;
+      const mode = btn.dataset.view;
+      localStorage.setItem(VIEW_KEY, mode);
+      applyView(mode);
+      closeViewMenu();
+    });
+  }
+
+  // clique fora fecha menu
+  document.addEventListener("click", function (e) {
+    if (!viewSwitch) return;
+    if (!viewSwitch.contains(e.target)) {
+      closeViewMenu();
+    }
+  });
+
+  // navegação mês calendário
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener("click", () => {
+      current = new Date(current.getFullYear(), current.getMonth() - 1, 1);
+      renderCalendar();
+    });
+    nextBtn.addEventListener("click", () => {
+      current = new Date(current.getFullYear(), current.getMonth() + 1, 1);
+      renderCalendar();
+    });
+  }
+
+  if (roomSelect) {
+    roomSelect.addEventListener("change", renderCalendar);
+  }
+  // Quando escolher sala no filtro principal, já alterna para o calendário daquela sala
+if (filterSalaSelect && roomSelect) {
+  filterSalaSelect.addEventListener("change", function () {
+    const salaNome = this.value;
+
+    if (salaNome) {
+      // define a view como calendário
+      localStorage.setItem(VIEW_KEY, "calendar");
+      applyView("calendar");
+
+      // seleciona a mesma sala no dropdown do calendário
+      roomSelect.value = salaNome;
+      renderCalendar();
+    }
+  });
+}
+
 });
 </script>
+
+<style>
+.cal-day--has-events {
+  cursor: pointer;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.06);
+}
+
+.cal-day--has-events:hover {
+  background: var(--color-form-group);
+  transform: translateY(-1px);
+}
+
+.view-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.view-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: .35rem;
+    border-radius: 999px;
+
+    background: var(--color-accent);
+    color: var(--color-btn);
+}
+
+.view-trigger:hover {
+background: var(--color-accent-hover);
+  color: #fff;
+}
+
+.view-menu {
+  position: absolute;
+  right: 0;
+  margin-top: .25rem;
+  padding: .25rem 0;
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: .4rem;
+  box-shadow: 0 4px 16px rgba(0,0,0,.08);
+  min-width: 170px;
+  display: none;
+  z-index: 40;
+}
+
+.view-menu.open {
+  display: block;
+}
+
+.view-option {
+  width: 100%;
+  padding: .35rem .75rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: .9rem;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  cursor: pointer;
+}
+
+.view-option.active,
+.view-option:hover {
+background: var(--color-accent);
+  color: var(--color-btn);
+}
+
+/* Calendário */
+.calendar-wrapper {
+  border: 1px solid var(--color-card);
+  padding: 1rem;
+  border-radius: 6px;
+  background: var(--color-bg-table-salas);
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: .8rem;
+}
+
+.calendar-nav {
+    display: flex;
+    /* gap: .5rem; */
+    font-weight: 600;
+    position: absolute;
+    right: 0;
+}
+
+#calendarCurrentMonth {
+  min-width: 150px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-top: .4rem;
+}
+
+.cal-weekday {
+  text-align: center;
+  font-weight: 600;
+  padding: .4rem 0;
+  color: var(--color-btn);
+  background: var(--color-modal-bg);
+}
+
+.cal-day {
+  min-height: 70px;
+  background: var(--color-modal-bg);
+  border-radius: 3px;
+  padding: .25rem .35rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  font-size: .8rem;
+}
+
+.cal-day:hover {
+  background: var(--color-form-group);
+}
+
+.cal-empty {
+  background: transparent;
+}
+
+.cal-day-number {
+      color: var(--color-btn);
+  font-weight: 600;
+}
+
+.cal-badges {
+  display: flex;
+  gap: .15rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.cal-badge {
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  font-size: .7rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+.cal-badge-ativa {
+  background: #28a745;
+}
+.cal-badge-encerrada {
+  background: #6c757d;
+}
+.cal-badge-cancelada {
+  background: #dc3545;
+}
+
+.calendar-legend {
+  margin-top: .6rem;
+  display: flex;
+  gap: 1.5rem;
+  font-size: .8rem;
+  align-items: center;
+}
+
+.cal-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  display: inline-block;
+  margin-right: .25rem;
+}
+
+.cal-today {
+    position: relative;
+    background: rgb(142 70 243) !important;
+    box-shadow: 0 0 0 2px rgb(54 7 120);
+}
+
+.cal-today .cal-day-number {
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.cal-ativa { background:#28a745; }
+.cal-encerrada { background:#6c757d; }
+.cal-cancelada { background:#dc3545; }
+</style>

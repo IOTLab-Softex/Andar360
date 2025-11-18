@@ -1,116 +1,170 @@
-
-
+<% require_ack = Setting.first&.require_room_rules_ack? %>
+<!-- Fallback de regras (globais) escondido; usado se a sala não tiver regra própria -->
+<div id="globalRulesHtml" style="display:none;">
+  <%= Setting.first&.room_rules&.body %>
+</div>
 <% @grupo_empresas ||= GrupoEmpresa.all if current_user.admin? %>
 <% @grupo_empresas ||= GrupoEmpresa.where(id: current_user.participant&.grupo_empresa_id) %>
-
-
- 
-  <!-- Conteúdo acima do fundo -->
-  <div class="reservation-container">
-  <%= form_with(model: reservation, local: true, data: { turbo: false }, id: "reservation-form") do |form| %>
-
-      <div class="form-group">
-        <%= form.label :title, "Nome da reserva" %>
-        <%= form.text_field :title, class: "form-control" %>
-        <small class="form-text text-muted">Dê um nome que identifique esta reserva.</small>
-      </div>
-
-      <div class="form-group">
-        <label>Escolha a Sala</label>
-
-        <div class="room-scroll-container" style="position: relative;">
+<!-- Conteúdo acima do fundo -->
+<div class="reservation-container">
+  <%= form_with model: reservation, id: "reservation-form" do |form| %>
+    <%= hidden_field_tag "reservation[rules_accepted]", "", id: "rules_accepted" %>
+    <div class="form-group">
+      <%= form.label :title, "Nome da reserva" %>
+      <%= form.text_field :title, class: "form-control" %>
+      <small class="form-text text-muted">Dê um nome que identifique esta reserva.</small>
+    </div>
+    <div class="form-group">
+      <label>Escolha a Sala</label>
+      <div class="room-scroll-container" style="position: relative;">
         <div class="fade-left-mobile fade-left"></div>
         <div class="fade-right-mobile fade-right"></div>
-
         <button type="button" class="scroll-button left" onclick="scrollRooms('left')">&lt;</button>
-         <div class="room-scroll-wrapper" id="room-scroll-wrapper">
+        <div class="room-scroll-wrapper" id="room-scroll-wrapper">
           <% Room.where(espaco_comun: true).each do |room| %>
-
-         <label class="room-card-scroll" style="background-image: url('<%= room.photo.attached? ? rails_blob_url(room.photo, only_path: true) : '' %>'); background-size: cover; background-position: center;">
-         <input  type="radio"  name="reservation[room_id]"  value="<%= room.id %>"  <%= "checked" if room.id == reservation.room_id %>  onchange="loadRoomReservations(<%= room.id %>);">
-
-
-         <div class="room-info">
-          <strong><%= room.name %></strong>
-           </div>
+            <label class="room-card-scroll"
+       style="background-image: url('<%= room.photo.attached? ? rails_blob_url(room.photo, only_path: true) : '' %>'); background-size: cover; background-position: center;">
+              <!-- Barra inferior com rádio | nome -->
+              <div class="room-meta">
+                <input type="radio"
+           name="reservation[room_id]"
+           value="<%= room.id %>"
+           <%= "checked" if room.id == reservation.room_id %>
+           onchange="loadRoomReservations(<%= room.id %>);">
+                <span class="room-name" title="<%= room.name %>"><%= room.name %></span>
+              </div>
             </label>
-           <% end %>
-           </div>
-           <button type="button" class="scroll-button right" onclick="scrollRooms('right')">&gt;</button>
-           
+          <% end %>
         </div>
-      
- <small class="form-text text-muted">Escolha a sala onde a reserva será realizada.</small>
-</div>
-  <div id="room-reservations" style="margin-top: 1rem;"></div>
-      <div class="form-group">
-  <%= form.label :starts_at, "Início" %>
-  <%= form.datetime_local_field :starts_at, class: "form-control", value: reservation.starts_at&.strftime("%Y-%m-%dT%H:%M") %>
-  <small class="form-text text-muted">Informe a data e horário de início da reserva.</small>
-</div>
-
-<div class="form-group">
-  <%= form.label :ends_at, "Término" %>
-  <%= form.datetime_local_field :ends_at, class: "form-control", value: reservation.ends_at&.strftime("%Y-%m-%dT%H:%M") %>
-  <small class="form-text text-muted">Informe a data e horário de término da reserva.</small>
-</div>
-
-
-
-
-
-
-
-
-      <div class="form-group">
-  <label>Solicitante</label><br>
-  <button type="button" class="btn submit" onclick="openParticipantModal('solicitante')">Adicionar Solicitante</button>
- <div id="solicitante-display" style="margin-top: 5px;">
-  <% if reservation.solicitante %>
-    <div class="participant-tag"><%= reservation.solicitante.name %></div>
-    <input type="hidden" name="reservation[solicitante_id]" value="<%= reservation.solicitante.id %>">
-  <% end %>
-</div>
-  <div id="solicitante-hidden"></div>
-    <small class="form-text text-muted">Escolha quem está solicitando esta reserva.</small>
-</div>
-
-<div class="form-group">
-  <label>Responsável</label><br>
-  <button type="button" class="btn submit" onclick="openParticipantModal('responsavel')">Adicionar Responsável</button>
-  <div id="responsavel-display" style="margin-top: 5px;">
-  <% if reservation.responsavel %>
-    <div class="participant-tag"><%= reservation.responsavel.name %></div>
-    <input type="hidden" name="reservation[responsavel_id]" value="<%= reservation.responsavel.id %>">
-  <% end %>
-</div>
-  <div id="responsavel-hidden"></div>
-   <small class="form-text text-muted">Escolha um responsável, caso o solicitante não esteja presente no momento.</small><br>
-    <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> A sala só será liberada se o solicitante ou o responsável fizerem acesso.</small>
-</div>
-
-<div class="form-group">
-  <label>Participantes</label><br>
-  <button type="button" class="btn submit" onclick="openParticipantModal('participantes')">Adicionar Participantes</button>
- <div id="participantes-display" style="margin-top: 5px;">
-  <% reservation.participants.each do |p| %>
-    <div class="participant-tag" id="participant-display-<%= p.id %>"><%= p.name %></div>
-    <input type="hidden" name="reservation[participant_ids][]" value="<%= p.id %>">
-  <% end %>
-</div>
-  <div id="participantes-hidden"></div>
-  <small class="form-text text-muted">Adicione os participantes que irão acompanhar na reserva.</small><br>
-  <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> Os participantes só terão acesso após o solicitante ou responsável.</small>
-</div>
-
-
-      <div class="form-actions" style="text-align: center;">
-        <%= form.submit reservation.new_record? ? "Criar Reserva" : "Atualizar Reserva", class: "btn submit" %>
+        <button type="button" class="scroll-button right" onclick="scrollRooms('right')">&gt;</button>
       </div>
-    <% end %>
+      <small class="form-text text-muted">Escolha a sala onde a reserva será realizada.</small>
+    </div>
+    <div id="room-reservations" style="margin-top: 1rem;"></div>
+    <div class="form-group">
+      <%= form.label :starts_at, "Início" %>
+      <%= form.datetime_local_field :starts_at, class: "form-control", value: reservation.starts_at&.strftime("%Y-%m-%dT%H:%M") %>
+      <small class="form-text text-muted">Informe a data e horário de início da reserva.</small>
+    </div>
+    <div class="form-group">
+      <%= form.label :ends_at, "Término" %>
+      <%= form.datetime_local_field :ends_at, class: "form-control", value: reservation.ends_at&.strftime("%Y-%m-%dT%H:%M") %>
+      <small class="form-text text-muted">Informe a data e horário de término da reserva.</small>
+    </div>
+    <div class="form-group">
+      <label>Solicitante</label><br>
+      <button type="button" class="btn submit" onclick="openParticipantModal('solicitante')">Adicionar Solicitante</button>
+      <div id="solicitante-display" style="margin-top: 5px;">
+        <% if reservation.solicitante %>
+          <div class="participant-tag"><%= reservation.solicitante.name %></div>
+          <input type="hidden" name="reservation[solicitante_id]" value="<%= reservation.solicitante.id %>">
+        <% end %>
+      </div>
+      <div id="solicitante-hidden"></div>
+      <small class="form-text text-muted">Escolha quem está solicitando esta reserva.</small>
+    </div>
+    <div class="form-group">
+      <label>Responsável</label><br>
+      <button type="button" class="btn submit" onclick="openParticipantModal('responsavel')">Adicionar Responsável</button>
+      <div id="responsavel-display" style="margin-top: 5px;">
+        <% if reservation.responsavel %>
+          <div class="participant-tag"><%= reservation.responsavel.name %></div>
+          <input type="hidden" name="reservation[responsavel_id]" value="<%= reservation.responsavel.id %>">
+        <% end %>
+      </div>
+      <div id="responsavel-hidden"></div>
+      <small class="form-text text-muted">Escolha um responsável, caso o solicitante não esteja presente no momento.</small><br>
+      <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> A sala só será liberada se o solicitante ou o responsável fizerem acesso.</small>
+    </div>
+    <div class="form-group">
+      <label>Participantes</label><br>
+      <button type="button" class="btn submit" onclick="openParticipantModal('participantes')">Adicionar Participantes</button>
+      <div id="participantes-display" style="margin-top: 5px;">
+        <% reservation.participants.each do |p| %>
+          <div class="participant-tag" id="participant-display-<%= p.id %>"><%= p.name %></div>
+          <input type="hidden" name="reservation[participant_ids][]" value="<%= p.id %>">
+        <% end %>
+      </div>
+      <div id="participantes-hidden"></div>
+      <small class="form-text text-muted">Adicione os participantes que irão acompanhar na reserva.</small><br>
+      <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i> Os participantes só terão acesso após o solicitante ou responsável.</small>
+    </div>
+
+    <div class="infobox infobox--info" role="status" aria-live="polite">
+<i class="fa-solid fa-circle-exclamation"></i>
+  <div class="infobox__content">
+    <strong class="infobox__title">Atenção!</strong>
+    <div class="infobox__text">
+      Para reservar clique em Ler regras e Reservar.
+    </div>
   </div>
 </div>
 
+
+    <div class="form-actions" style="text-align: center;">
+  <% is_new       = reservation.new_record? %>
+  <% submit_text  = is_new ? "Reservar" : "Atualizar Reserva" %>
+  <% submit_icon  = is_new ? "fa-calendar-check" : "fa-pen-to-square" %>
+
+  <% if require_ack %>
+    <!-- Botão para abrir regras -->
+    <button type="button" id="open-rules-btn" class="btn submit">
+      <i class="fa-solid fa-book-open-reader" style="margin-right:.45rem;"></i>
+      Ler regras e Reservar
+    </button>
+
+    <!-- Submit oculto (ativado após aceitar regras) -->
+    <%= button_tag type: "submit",
+                   id: "real-submit-btn",
+                   class: "btn submit",
+                   style: "display:none",
+                   data: { disable_with: "<i class='fa-solid fa-circle-notch fa-spin' style='margin-right:.45rem;'></i> Enviando..." } do %>
+      <i class="fa-solid <%= submit_icon %>" style="margin-right:.45rem;"></i>
+      <%= submit_text %>
+    <% end %>
+  <% else %>
+    <!-- Submit visível direto -->
+    <%= button_tag type: "submit",
+                   class: "btn submit",
+                   data: { disable_with: "<i class='fa-solid fa-circle-notch fa-spin' style='margin-right:.45rem;'></i> Enviando..." } do %>
+      <i class="fa-solid <%= submit_icon %>" style="margin-right:.45rem;"></i>
+      <%= submit_text %>
+    <% end %>
+  <% end %>
+</div>
+  <% end %>  <!-- ✅ FECHAMENTO DO form_with AQUI -->
+</div>
+      <!-- agora fecha o container externo -->
+</div>
+</div>
+<!-- ===== MODAL DAS REGRAS DA SALA ===== -->
+<div id="rulesOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:1100;"></div>
+<div id="rulesModal" style="display:none; position: fixed;
+    top: 8%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(900px, 92vw);
+    max-height: 84vh;
+    background: var(--color-accent-hover);
+    border-radius: 10px;
+    box-shadow: rgba(0, 0, 0, 0.25) 0px 10px 30px;
+    z-index: 1101;
+    overflow: hidden;">
+  <div style="padding:12px 16px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between;">
+    <strong><i class="fa-solid fa-scale-balanced"></i> Regras de uso da sala</strong>
+    <button type="button" id="rulesCloseBtn" class="btn btn-light" style="padding:.25rem .6rem;"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div id="rulesScrollArea" style="padding:16px; overflow:auto; max-height: calc(84vh - 120px);">
+    <div id="rulesContent">
+      <div style="color:#888; text-align:center; padding:20px;">Carregando regras...</div>
+    </div>
+  </div>
+  <div style="padding:12px 16px; border-top:1px solid #eee; display:flex; gap:.5rem; justify-content:flex-end;">
+    <button type="button" id="rulesAcceptBtn" class="btn btn-primary" disabled>
+      <i class="fa-solid fa-check"></i> Aceito as regras
+    </button>
+  </div>
+</div>
 <!-- Overlay + Modal -->
 <div id="participantModalOverlay" style="display: none;
     position: fixed;
@@ -121,84 +175,64 @@
     background-color: rgba(0, 0, 0, 0.5);
     z-index: 998;">
 </div>
-
 <div id="participantModal" class="modal">
-
-
   <h2>Selecionar Participantes</h2>
-<input type="hidden" id="current-role" value="">
-
-<div id="role-display-info" style="text-align: center; font-weight: bold; margin-bottom: 1rem;"></div>
-<small class="small-alert form-text text-muted" style="    text-align: center;
+  <input type="hidden" id="current-role" value="">
+  <div id="role-display-info" style="text-align: center; font-weight: bold; margin-bottom: 1rem;"></div>
+  <small class="small-alert form-text text-muted" style="    text-align: center;
     font-size: 19px;"><i class="fa-solid fa-circle-exclamation"></i>Clique para desmarcar</small>
-<div class="modal-controll">
-
-<%= link_to new_participant_path, class: "modal-btn-cadastrar-participante btn btn-close" do %>
-<i class="fa-solid fa-user-plus"></i> Cadastrar Novo Participante
-  <% end %>
-
-<button onclick="closeParticipantModal()" class="modal-btn-close btn-close btn"><i class="fa-solid fa-xmark"></i> Fechar</button>
-</div>
-<div class="modal-body-scroll" style="flex: 1;
+  <div class="modal-controll">
+    <%= link_to new_participant_path, class: "modal-btn-cadastrar-participante btn btn-close" do %>
+      <i class="fa-solid fa-user-plus"></i> Cadastrar Novo Participante
+    <% end %>
+    <button onclick="closeParticipantModal()" class="modal-btn-close btn-close btn"><i class="fa-solid fa-xmark"></i> Fechar</button>
+  </div>
+  <div class="modal-body-scroll" style="flex: 1;
     overflow-y: auto;
     padding: 0 20px 20px 20px;
     margin-bottom: 13%;">
-<!-- Seções separadas -->
-<div style="margin-bottom: 1rem;">
-  <strong>Solicitante:</strong>
-  <div id="selecionado-solicitante" style="margin-left: 10px;"></div>
-</div>
-
-<div style="margin-bottom: 1rem;">
-  <strong>Responsável:</strong>
-  <div id="selecionado-responsavel" style="margin-left: 10px; color: green;"></div>
-</div>
-
-<div style="margin-bottom: 1rem;">
-  <strong>Participantes:</strong>
-  <div id="selecionado-participantes" style="margin-left: 10px;"></div>
-</div>
-
-
-<hr>
-
-<!-- Lista completa de usuários -->
-<div>
-<div style="margin-bottom: 10px;">
-  <label for="participant-group-filter"><strong>Filtrar por Grupo Empresa:</strong></label>
-  <select id="participant-group-filter" class="form-control">
-    <option value="">Todos os grupos</option>
-    <% @grupo_empresas.each do |grupo| %>
-  <option value="<%= grupo.id %>"><%= grupo.nome %></option>
-<% end %>
-
-  </select>
-</div>
-
-<div style="margin-bottom: 10px;">
-  <label for="participant-subgroup-filter"><strong>Filtrar por Setor (Subgrupo):</strong></label>
-  <select id="participant-subgroup-filter" class="form-control">
-    <option value="">Todos os setores</option>
-  </select>
-</div>
-
-
-<div id="select-all-participants-container" style="margin-bottom: 10px; display: none;">
-  <label style="font-weight: bold;">
-    <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllCheckbox(this)">
-    Selecionar todos os participantes listados
-  </label>
-</div>
-
-
-  <strong>Usuários disponíveis:</strong>
-  
-
-<div style="margin-bottom: 15px;">
-  <input type="text" id="participant-search" placeholder="Digite para filtrar..." style="width: 100%; padding: 6px;">
-</div>
-
-<div id="participant-list" 
+    <!-- Seções separadas -->
+    <div style="margin-bottom: 1rem;">
+      <strong>Solicitante:</strong>
+      <div id="selecionado-solicitante" style="margin-left: 10px;"></div>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <strong>Responsável:</strong>
+      <div id="selecionado-responsavel" style="margin-left: 10px; color: green;"></div>
+    </div>
+    <div style="margin-bottom: 1rem;">
+      <strong>Participantes:</strong>
+      <div id="selecionado-participantes" style="margin-left: 10px;"></div>
+    </div>
+    <hr>
+    <!-- Lista completa de usuários -->
+    <div>
+      <div style="margin-bottom: 10px;">
+        <label for="participant-group-filter"><strong>Filtrar por Grupo Empresa:</strong></label>
+        <select id="participant-group-filter" class="form-control">
+          <option value="">Todos os grupos</option>
+          <% @grupo_empresas.each do |grupo| %>
+            <option value="<%= grupo.id %>"><%= grupo.nome %></option>
+          <% end %>
+        </select>
+      </div>
+      <div style="margin-bottom: 10px;">
+        <label for="participant-subgroup-filter"><strong>Filtrar por Setor (Subgrupo):</strong></label>
+        <select id="participant-subgroup-filter" class="form-control">
+          <option value="">Todos os setores</option>
+        </select>
+      </div>
+      <div id="select-all-participants-container" style="margin-bottom: 10px; display: none;">
+        <label style="font-weight: bold;">
+          <input type="checkbox" id="select-all-checkbox" onchange="toggleSelectAllCheckbox(this)">
+          Selecionar todos os participantes listados
+        </label>
+      </div>
+      <strong>Usuários disponíveis:</strong>
+      <div style="margin-bottom: 15px;">
+        <input type="text" id="participant-search" placeholder="Digite para filtrar..." style="width: 100%; padding: 6px;">
+      </div>
+      <div id="participant-list" 
      style="max-height: 300px; overflow-y: auto; border: 1px solid #ccc; padding: 4px; border-radius: 6px;"
      data-participants='<%= @participants.map { |p| {
   id: p.id,
@@ -208,643 +242,766 @@
   sub_grupo_empresa_id: p.sub_grupo_empresa_id
 } }.to_json.html_safe %>'
 >
-
-
-
-  </div>
-</div>
-
-
-
-  </div>
-
-
-
-  
-  </div>
- 
-</div>
-
-
-<!-- Overlay do modal de novo participante -->
-  <div id="newParticipantModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.6); z-index: 1000;"></div>
-  
-  <!-- Modal com iframe -->
-  <div id="newParticipantModal" style="padding-bottom: 25px; display: none; position: fixed; top: 5%; left: 50%; transform: translateX(-50%); width: 80vw; height: 91vh; background: white; border-radius: 8px; z-index: 1001; box-shadow: 0 4px 20px rgba(0,0,0,0.3); overflow: hidden;">
-    <div style="padding: 10px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
-      <strong>Novo Participante</strong>
-      <button style="float: right;" onclick="closeNewParticipantModal()" class="fechar-btn">Fechar</button>
+      </div>
     </div>
-    <iframe src="/participants/new?iframe=modal" width="100%" height="100%" frameborder="0"></iframe>
-
   </div>
-  
-
+</div>
+</div>
+<!-- Overlay do modal de novo participante -->
+<div id="newParticipantModalOverlay" style="display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.6); z-index: 1000;"></div>
+<!-- Modal com iframe -->
+<div id="newParticipantModal" style="padding-bottom: 25px; display: none; position: fixed; top: 5%; left: 50%; transform: translateX(-50%); width: 80vw; height: 91vh; background: white; border-radius: 8px; z-index: 1001; box-shadow: 0 4px 20px rgba(0,0,0,0.3); overflow: hidden;">
+  <div style="padding: 10px; background: #f5f5f5; border-bottom: 1px solid #ddd;">
+    <strong>Novo Participante</strong>
+    <button style="float: right;" onclick="closeNewParticipantModal()" class="fechar-btn">Fechar</button>
+  </div>
+  <iframe src="/participants/new?iframe=modal" width="100%" height="100%" frameborder="0"></iframe>
+</div>
 <script>
-
-
-
-
-
-function loadRoomReservations(roomId) {
-  const container = document.getElementById("room-reservations");
-  container.innerHTML = "<p>Carregando informações da sala...</p>";
-
-  fetch(`/rooms/${roomId}/reservations/json`)
-    .then(response => response.json())
-    .then(data => {
-      const reservas = data.reservas || [];
-      const itens = data.itens || [];
-
-      let html = "";
-
-      if (reservas.length === 0) {
-        html += "<p>✅ Nenhuma reserva nesta sala.</p>";
-      } else {
-        const reservasHtml = reservas.map(r => `
-          <div class="reserva-card" style="background: #cecece; border-left: 3px solid #555; padding: 6px; margin-bottom: 5px; border-radius: 4px;">
-            <span><strong>${r.starts_at} - ${r.ends_at}</strong></span>
-          </div>
-        `).join("");
-
-        html += `<h4 style="margin-top: 1rem;">📅 Reservas desta sala:</h4>${reservasHtml}`;
-      }
-
-      if (itens.length > 0) {
-        // Mapeamento de nomes de itens para classes de ícones Font Awesome
-        const itemIcons = {
-          "TV": "fa-tv",
-          "Ar Condicionado": "air-conditioner",
-          "Cadeiras": "fa-chair",
-          "Mesa": "fa-table",
-          "Projetor": "fa-video",
-          "Telefone": "fa-phone",
-          "Lousa": "fa-chalkboard",
-          "HDMI": "hdmi",
-          "Tomadas": "outlet",
-          // Adicione mais mapeamentos conforme necessário
-        };
-
-        const itensHtml = itens.map(i => {
-  const descricao = i.quantity > 1 ? `<strong>${i.name}</strong>: ${i.quantity}` : `<strong>${i.name}</strong>`;
-  const svg = i.icon_svg || "";
-
-  return `<li style="list-style: none; display: flex; align-items: center; gap: 0.5rem;">
-            <i class="fa-solid fa-circle-check" style="color: #2ecc71;"></i>
-            ${svg}
-            ${descricao}
-          </li>`;
-}).join("");
-
-
-        html += `
-          <h4 style="margin-top: 1rem;">🧰 Itens disponíveis na sala:</h4>
-          <ul style="margin-left: 1rem; padding-left: 0;">${itensHtml}</ul>
-        `;
-      } else {
-        html += `<p style="margin-top: 1rem;">🧰 Nenhum item cadastrado nesta sala.</p>`;
-      }
-
-      container.innerHTML = html;
-    })
-    .catch(err => {
-      console.error("Erro ao carregar dados da sala:", err);
-      container.innerHTML = "<p style='color: red;'>Erro ao carregar informações da sala.</p>";
-    });
-}
-
-
-
-
-document.addEventListener("DOMContentLoaded", function() {
-
-
-
-
-
-  const form = document.getElementById('reservation-form');
-
-  if (form) {
-    form.addEventListener('ajax:success', function(event) {
-  const detail = event.detail;
-  const data = detail[0];
-
-  if (data && data.success) {
-   
-    showNotification("✅ Reserva criada com sucesso!", { bg: "#52c41a" });
-
-    // Redireciona para a URL informada no JSON, se existir
-    if (data.redirect_url) {
-      window.location.href = data.redirect_url;
-    } else {
-      window.location.reload();
-    }
-  }
-});
-
-
-    form.addEventListener('ajax:error', function(event) {
-      const detail = event.detail;
-      const xhr = detail[0];
-
-      let errorMessage = "Erro ao criar a reserva.";
-
-      if (xhr && xhr.error) {
-        errorMessage = xhr.error;
-      }
-      showNotification("Erro ao salvar reserva." + errorMessage);
-
-      
-    });
-  }
-});
-
-
-document.addEventListener("turbo:load", function() {
-
-
-let unavailableRanges = [];
-  let currentRoomId = null;
-
-  // Inicializar o calendário corretamente
-  const now = new Date();
-
-const startPicker = flatpickr("#starts_at_picker", {
-  enableTime: true,
-  dateFormat: "Y-m-d H:i",
-  time_24hr: true,
-  locale: "pt",
-  minDate: "today",
-  defaultHour: now.getHours(),      // 👈 define hora atual
-  defaultMinute: now.getMinutes(),  // 👈 define minuto atual
-  disable: [],
-  onChange: function(selectedDates) {
-    document.getElementById('starts_at_hidden').value = selectedDates[0].toISOString();
-  }
-});
-
-const endPicker = flatpickr("#ends_at_picker", {
-  enableTime: true,
-  dateFormat: "Y-m-d H:i",
-  time_24hr: true,
-  locale: "pt",
-  minDate: "today",
-  defaultHour: now.getHours(),
-  defaultMinute: now.getMinutes(),
-  disable: [],
-  onChange: function(selectedDates) {
-    document.getElementById('ends_at_hidden').value = selectedDates[0].toISOString();
-  }
-});
-
-
-
-
-  // Carregar reservas e verificar conflitos
-  function loadBlockedDates(roomId) {
-  if (!roomId) return;
-
-  fetch(`/rooms/${roomId}/reservations.json`)
-    .then(response => response.json())
-    .then(data => {
-      unavailableRanges = data.map(res => ({
-        from: res.starts_at,
-        to: res.ends_at
-      }));
-
-      startPicker.set('disable', unavailableRanges);
-      endPicker.set('disable', unavailableRanges);
-
-      // 🔥 Agora SIM chama o checkConflict depois de carregar
-      setTimeout(checkConflict, 100);
-    })
-    .catch(err => console.error("Erro ao buscar reservas:", err));
-}
-
-
-function checkConflict() {
-  const startsAt = startPicker.selectedDates[0];
-  const endsAt = endPicker.selectedDates[0];
-
-  if (!startsAt || !endsAt || unavailableRanges.length === 0) return;
-
-  const startTime = startsAt.getTime();
-  const endTime = endsAt.getTime();
-
-  for (const range of unavailableRanges) {
-    const rangeStart = new Date(range.from).getTime();
-    const rangeEnd = new Date(range.to).getTime();
-
-    if ((startTime >= rangeStart && startTime < rangeEnd) ||
-        (endTime > rangeStart && endTime <= rangeEnd) ||
-        (startTime <= rangeStart && endTime >= rangeEnd)) {
-     
-      showNotification("⚠️ Já existe uma reserva nesse horário!", { bg: "#ffc107" });
-
-      return;
-    }
-  }
-}
-
-
-  // Quando selecionar uma sala
-  document.querySelectorAll('input[name="reservation[room_id]"]').forEach(radio => {
-  radio.addEventListener('change', function() {
-    currentRoomId = this.value;
-    loadBlockedDates(currentRoomId);
-
-    // Depois de carregar bloqueios, aguarda e revalida conflito
-    setTimeout(checkConflict, 500); // espera meio segundo para garantir que as datas foram carregadas
-  });
-});
-
-
-});
-
-
-
-
-
-function scrollRooms(direction) {
-  const scrollWrapper = document.getElementById('room-scroll-wrapper');
-  const scrollAmount = 250; // Quanto vai rolar cada vez
-
-  if (direction === 'left') {
-    scrollWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-  } else if (direction === 'right') {
-    scrollWrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-  }
-}
-
-function openParticipantModal(role) {
-  
-  document.getElementById("current-role").value = role;
-  document.getElementById('participantModal').style.display = 'block';
-  document.getElementById('participantModalOverlay').style.display = 'block';
-
-  const participantList = document.getElementById("participant-list");
-  const displayInfo = document.getElementById("role-display-info");
-
-  participantList.style.display = "block";
-if (role === "participantes") {
-  displayInfo.textContent = "Selecione os participantes da reunião:";
-} else {
-  displayInfo.textContent = `Selecione o ${role} da reunião (somente um):`;
-}
-renderParticipantList();
-
-}
-
-
-
-
-
-
-
-
-function closeParticipantModal() {
-  const modal = document.getElementById('participantModal');
-  const overlay = document.getElementById('participantModalOverlay');
-  if (modal && overlay) {
-    modal.style.display = 'none';
-    overlay.style.display = 'none';
-  }
-}
-
-
-function toggleParticipant(checkbox) {
-  const id = checkbox.value;
-  const name = checkbox.getAttribute("data-name");
-  const role = document.getElementById("current-role").value;
-
-  const hiddenContainer = document.getElementById(`${role}-hidden`);
-  const resumoContainer = document.getElementById(`selecionado-${role}`);
-  const displayContainer = document.getElementById(`${role}-display`); // ✅ este é no formulário principal
-
-  
-  if (role === "solicitante" || role === "responsavel") {
-    const existingInput = document.querySelector(`input[name="reservation[${role}_id]"]`);
-    const currentId = existingInput?.value;
-
-    if (checkbox.checked && id !== currentId) {
-      // Marca novo
-      document.querySelectorAll(`#participantModal input[type=checkbox]`).forEach(cb => {
-        if (cb !== checkbox) cb.checked = false;
-      });
-
-     // Atualiza hidden field
-// Atualiza hidden field
-const inputName = (role === "solicitante" || role === "responsavel") ? `reservation[${role}_id]` : `reservation[participant_ids][]`;
-hiddenContainer.innerHTML = `<input type="hidden" name="${inputName}" value="${id}" data-name="${name}">`;
-
-displayContainer.innerHTML = `<div class="participant-tag">${name}</div>`;
-
-resumoContainer.innerHTML = `
-  <label>
-    <input type="checkbox" checked data-name="${name}" value="${id}" onchange="toggleParticipant(this)">
-    ${name}
-  </label>
-`;
-
-// 🔥 FORÇA RE-RENDER IMEDIATA após DOM ter os dados
-setTimeout(() => {
-  renderParticipantList();
-}, 50);
-
-
-
-
-
-    } else {
-      // Desmarca
-      checkbox.checked = false;
-      hiddenContainer.innerHTML = ``;
-      resumoContainer.innerHTML = ``;
-      displayContainer.innerHTML = ``;
-    }
-  } else {
-    const inputId = `participant-hidden-${id}`;
-
-    if (checkbox.checked) {
-      if (!document.getElementById(inputId)) {
-        const hidden = document.createElement("input");
-        hidden.type = "hidden";
-        hidden.name = "reservation[participant_ids][]";
-        hidden.value = id;
-        hidden.id = inputId;
-        hidden.setAttribute("data-name", name);
-        hiddenContainer.appendChild(hidden);
-
-        const div = document.createElement("div");
-        div.id = `resumo-participante-${id}`;
-        div.innerHTML = `
-          <label>
-            <input type="checkbox" checked data-name="${name}" value="${id}" onchange="toggleParticipant(this)">
-            ${name}
-          </label>
-        `;
-        resumoContainer.appendChild(div);
-
-        // ✅ Também adiciona no form principal (participantes-display)
-        const participantDiv = document.createElement("div");
-        participantDiv.id = `participant-display-${id}`;
-        participantDiv.className = "participant-tag";
-        participantDiv.innerText = name;
-        displayContainer.appendChild(participantDiv);
-      }
-    } else {
-      document.getElementById(inputId)?.remove();
-      document.getElementById(`resumo-participante-${id}`)?.remove();
-      document.getElementById(`participant-display-${id}`)?.remove();
-    }
-  }
-
- 
-if (!bulkSelectionMode) {
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      renderParticipantList();
-    });
-  });
-}
-
-updateFormDisplays();
-
-
-}
-
-
-
-
-function renderParticipantList() {
-  const selectedSubgrupoId = document.getElementById("participant-subgroup-filter")?.value;
-  const selectedGroupId = document.getElementById("participant-group-filter")?.value;
-  const role = document.getElementById("current-role").value;
-  const listContainer = document.getElementById("participant-list");
-  const participantsData = JSON.parse(listContainer.dataset.participants || "[]");
-
-  const filterInput = document.getElementById("participant-search")?.value?.toLowerCase() || "";
-  let filterType = "name";
-  if (/^\d+$/.test(filterInput)) filterType = "cpf";
-
-  // ✅ pega os IDs selecionados corretamente
-  const { solicitante, responsavel, participantes } = getSelectedParticipantIds();
-
-  listContainer.innerHTML = "";
-
-  participantsData.forEach(({ id, name, cpf, grupo_empresa_id, sub_grupo_empresa_id }) => {
-    const idStr = String(id);
-
-    // Filtros
-    if (selectedGroupId && String(grupo_empresa_id) !== selectedGroupId) return;
-    if (selectedSubgrupoId && String(sub_grupo_empresa_id) !== selectedSubgrupoId) return;
-
-    const field = filterType === "cpf" ? cpf : name;
-    if (filterInput && !field?.toLowerCase().includes(filterInput)) return;
-
-    const isSolicitante = idStr === solicitante;
-    const isResponsavel = idStr === responsavel;
-    const isParticipante = participantes.includes(idStr);
-
-    // 🔥 Oculta se já está selecionado em outro papel
-   if (!bulkSelectionMode) {
-  if (
-    (role === "solicitante" && (isSolicitante || isResponsavel || isParticipante)) ||
-    (role === "responsavel" && (isSolicitante || isResponsavel || isParticipante)) ||
-    (role === "participantes" && (isSolicitante || isResponsavel || isParticipante))
-  ) return;
-}
-
-
-
-    // Cria item da lista
-    const label = document.createElement("label");
-    label.className = "participant-label";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.value = idStr;
-    checkbox.setAttribute("data-name", name);
-    checkbox.checked = false;
-    checkbox.onchange = () => toggleParticipant(checkbox);
-
-    label.appendChild(checkbox);
-    label.append(` ${name}`);
-    listContainer.appendChild(label);
-  });
-
-  // Controle do botão "Selecionar todos"
-  const selectAllBtnContainer = document.getElementById("select-all-participants-container");
-  if (selectAllBtnContainer) {
-    selectAllBtnContainer.style.display = (role === "participantes") ? "block" : "none";
-  }
-
-  const selectAllCheckbox = document.getElementById("select-all-checkbox");
-  if (selectAllCheckbox) selectAllCheckbox.checked = false;
-
-  // Bloquear seleção cruzada
-  ["solicitante", "responsavel", "participantes"].forEach(section => {
-    const container = document.getElementById(`selecionado-${section}`);
-    const checkboxes = container.querySelectorAll("input[type='checkbox']");
-    checkboxes.forEach(cb => {
-      cb.disabled = section !== role;
-    });
-  });
-
-  console.log("IDs atuais:", getSelectedParticipantIds());
-
-}
-
-
-
-
-
-
-
-
-
-
-function openParticipantModal(role) {
-  document.getElementById("current-role").value = role;
-  document.getElementById('participantModal').style.display = 'flex';
-  document.getElementById('participantModalOverlay').style.display = 'block';
-
-  const participantList = document.getElementById("participant-list");
-  const displayInfo = document.getElementById("role-display-info");
-  const searchInput = document.getElementById("participant-search");
-  const filterType = document.getElementById("participant-filter-type");
-
-  participantList.style.display = "block";
-  const groupFilter = document.getElementById("participant-group-filter");
-  if (groupFilter) {
-   groupFilter.onchange = function () {
-  const grupoId = this.value;
-  const subgrupoSelect = document.getElementById("participant-subgroup-filter");
-  subgrupoSelect.innerHTML = '<option value="">Carregando setores...</option>';
-
-  if (grupoId) {
-    fetch(`/sub_grupo_empresas/por_empresa/${grupoId}`)
-      .then(res => res.json())
+  function loadRoomReservations(roomId) {
+    const container = document.getElementById("room-reservations");
+    container.innerHTML = "<p>Carregando informações da sala...</p>";
+
+    fetch(`/rooms/${roomId}/reservations/json`)
+      .then(response => response.json())
       .then(data => {
-        subgrupoSelect.innerHTML = '<option value="">Todos os setores</option>';
-        data.forEach(sub => {
-          const opt = document.createElement("option");
-          opt.value = sub.id;
-          opt.textContent = sub.nome;
-          subgrupoSelect.appendChild(opt);
-        });
+        const reservas = data.reservas || [];
+        const itens = data.itens || [];
 
-        // 👉 quando mudar grupo, já filtra também
-        renderParticipantList();
-      });
+        let html = "";
+
+        if (reservas.length === 0) {
+          html += "<p>✅ Nenhuma reserva nesta sala.</p>";
+        } else {
+          const reservasHtml = reservas.map(r => `
+            <div class="reserva-card" style="background: #cecece; border-left: 3px solid #555; padding: 6px; margin-bottom: 5px; border-radius: 4px;">
+              <span><strong>${r.starts_at} - ${r.ends_at}</strong></span>
+            </div>
+          `).join("");
+
+          html += `<h4 style="margin-top: 1rem;">📅 Reservas desta sala:</h4>${reservasHtml}`;
+        }
+
+        if (itens.length > 0) {
+    const itensHtml = itens.map(i => {
+      const descricao = i.quantity > 1
+        ? `<strong>${i.name}</strong>: ${i.quantity}`
+        : `<strong>${i.name}</strong>`;
+      const icon = i.icon_svg || "";
+      return `<li style="list-style:none; display:flex; align-items:center; gap:.5rem;">
+                <i class="fa-solid fa-circle-check" style="color:#2ecc71;"></i>
+                ${icon}
+                ${descricao}
+              </li>`;
+    }).join("");
+
+    html += `
+      <h4 style="margin-top: 1rem;">🧰 Itens disponíveis na sala:</h4>
+      <ul style="margin-left:1rem; padding-left:0;">${itensHtml}</ul>
+    `;
   } else {
-    subgrupoSelect.innerHTML = '<option value="">Todos os setores</option>';
-    renderParticipantList();
+    html += `<p style="margin-top: 1rem;">🧰 Nenhum item cadastrado nesta sala.</p>`;
   }
-};
 
-// 👇 AQUI: Adiciona evento para o filtro de subgrupo reagir à mudança
-document.getElementById("participant-subgroup-filter").onchange = function () {
-  renderParticipantList();
-};
 
+
+        container.innerHTML = html;
+      })
+      .catch(err => {
+        console.error("Erro ao carregar dados da sala:", err);
+        container.innerHTML = "<p style='color: red;'>Erro ao carregar informações da sala.</p>";
+      });
   }
-  
+
+
+
+
+  document.addEventListener("DOMContentLoaded", function() {
+
+
+
+
+
+    const form = document.getElementById('reservation-form');
+
+    if (form) {
+      form.addEventListener('ajax:success', function(event) {
+    const detail = event.detail;
+    const data = detail[0];
+
+    if (data && data.success) {
+
+      showNotification("✅ Reserva criada com sucesso!", { bg: "#52c41a" });
+
+      // Redireciona para a URL informada no JSON, se existir
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        window.location.reload();
+      }
+    }
+  });
+
+
+      form.addEventListener('ajax:error', function(event) {
+        const detail = event.detail;
+        const xhr = detail[0];
+
+        let errorMessage = "Erro ao criar a reserva.";
+
+        if (xhr && xhr.error) {
+          errorMessage = xhr.error;
+        }
+        showNotification("Erro ao salvar reserva." + errorMessage);
+
+
+      });
+    }
+  });
+
+
+  document.addEventListener("turbo:load", function() {
+
+
+  let unavailableRanges = [];
+    let currentRoomId = null;
+
+    // Inicializar o calendário corretamente
+    const now = new Date();
+
+  const startPicker = flatpickr("#starts_at_picker", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i",
+    time_24hr: true,
+    locale: "pt",
+    minDate: "today",
+    defaultHour: now.getHours(),      // 👈 define hora atual
+    defaultMinute: now.getMinutes(),  // 👈 define minuto atual
+    disable: [],
+    onChange: function(selectedDates) {
+      document.getElementById('starts_at_hidden').value = selectedDates[0].toISOString();
+    }
+  });
+
+  const endPicker = flatpickr("#ends_at_picker", {
+    enableTime: true,
+    dateFormat: "Y-m-d H:i",
+    time_24hr: true,
+    locale: "pt",
+    minDate: "today",
+    defaultHour: now.getHours(),
+    defaultMinute: now.getMinutes(),
+    disable: [],
+    onChange: function(selectedDates) {
+      document.getElementById('ends_at_hidden').value = selectedDates[0].toISOString();
+    }
+  });
+
+
+
+
+    // Carregar reservas e verificar conflitos
+    function loadBlockedDates(roomId) {
+    if (!roomId) return;
+
+    fetch(`/rooms/${roomId}/reservations.json`)
+      .then(response => response.json())
+      .then(data => {
+        unavailableRanges = data.map(res => ({
+          from: res.starts_at,
+          to: res.ends_at
+        }));
+
+        startPicker.set('disable', unavailableRanges);
+        endPicker.set('disable', unavailableRanges);
+
+        // 🔥 Agora SIM chama o checkConflict depois de carregar
+        setTimeout(checkConflict, 100);
+      })
+      .catch(err => console.error("Erro ao buscar reservas:", err));
+  }
+
+
+  function checkConflict() {
+    const startsAt = startPicker.selectedDates[0];
+    const endsAt = endPicker.selectedDates[0];
+
+    if (!startsAt || !endsAt || unavailableRanges.length === 0) return;
+
+    const startTime = startsAt.getTime();
+    const endTime = endsAt.getTime();
+
+    for (const range of unavailableRanges) {
+      const rangeStart = new Date(range.from).getTime();
+      const rangeEnd = new Date(range.to).getTime();
+
+      if ((startTime >= rangeStart && startTime < rangeEnd) ||
+          (endTime > rangeStart && endTime <= rangeEnd) ||
+          (startTime <= rangeStart && endTime >= rangeEnd)) {
+
+        showNotification("⚠️ Já existe uma reserva nesse horário!", { bg: "#ffc107" });
+
+        return;
+      }
+    }
+  }
+
+
+    // Quando selecionar uma sala
+    document.querySelectorAll('input[name="reservation[room_id]"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+      currentRoomId = this.value;
+      loadBlockedDates(currentRoomId);
+
+      // Depois de carregar bloqueios, aguarda e revalida conflito
+      setTimeout(checkConflict, 500); // espera meio segundo para garantir que as datas foram carregadas
+    });
+  });
+
+
+  });
+
+
+
+
+
+  function scrollRooms(direction) {
+    const scrollWrapper = document.getElementById('room-scroll-wrapper');
+    const scrollAmount = 250; // Quanto vai rolar cada vez
+
+    if (direction === 'left') {
+      scrollWrapper.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    } else if (direction === 'right') {
+      scrollWrapper.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+    }
+  }
+
+  function openParticipantModal(role) {
+
+    document.getElementById("current-role").value = role;
+    document.getElementById('participantModal').style.display = 'block';
+    document.getElementById('participantModalOverlay').style.display = 'block';
+
+    const participantList = document.getElementById("participant-list");
+    const displayInfo = document.getElementById("role-display-info");
+
+    participantList.style.display = "block";
   if (role === "participantes") {
     displayInfo.textContent = "Selecione os participantes da reunião:";
   } else {
     displayInfo.textContent = `Selecione o ${role} da reunião (somente um):`;
   }
+  renderParticipantList();
 
-  if (searchInput) {
-    searchInput.oninput = function () {
+  }
+
+
+
+
+
+
+
+
+  function closeParticipantModal() {
+    const modal = document.getElementById('participantModal');
+    const overlay = document.getElementById('participantModalOverlay');
+    if (modal && overlay) {
+      modal.style.display = 'none';
+      overlay.style.display = 'none';
+    }
+  }
+
+
+  function toggleParticipant(checkbox) {
+    const id = checkbox.value;
+    const name = checkbox.getAttribute("data-name");
+    const role = document.getElementById("current-role").value;
+
+    const hiddenContainer = document.getElementById(`${role}-hidden`);
+    const resumoContainer = document.getElementById(`selecionado-${role}`);
+    const displayContainer = document.getElementById(`${role}-display`); // ✅ este é no formulário principal
+
+
+    if (role === "solicitante" || role === "responsavel") {
+      const existingInput = document.querySelector(`input[name="reservation[${role}_id]"]`);
+      const currentId = existingInput?.value;
+
+      if (checkbox.checked && id !== currentId) {
+        // Marca novo
+        document.querySelectorAll(`#participantModal input[type=checkbox]`).forEach(cb => {
+          if (cb !== checkbox) cb.checked = false;
+        });
+
+       // Atualiza hidden field
+  // Atualiza hidden field
+  const inputName = (role === "solicitante" || role === "responsavel") ? `reservation[${role}_id]` : `reservation[participant_ids][]`;
+  hiddenContainer.innerHTML = `<input type="hidden" name="${inputName}" value="${id}" data-name="${name}">`;
+
+  displayContainer.innerHTML = `<div class="participant-tag">${name}</div>`;
+
+  resumoContainer.innerHTML = `
+    <label>
+      <input type="checkbox" checked data-name="${name}" value="${id}" onchange="toggleParticipant(this)">
+      ${name}
+    </label>
+  `;
+
+  // 🔥 FORÇA RE-RENDER IMEDIATA após DOM ter os dados
+  setTimeout(() => {
+    renderParticipantList();
+  }, 50);
+
+
+
+
+
+      } else {
+        // Desmarca
+        checkbox.checked = false;
+        hiddenContainer.innerHTML = ``;
+        resumoContainer.innerHTML = ``;
+        displayContainer.innerHTML = ``;
+      }
+    } else {
+      const inputId = `participant-hidden-${id}`;
+
+      if (checkbox.checked) {
+        if (!document.getElementById(inputId)) {
+          const hidden = document.createElement("input");
+          hidden.type = "hidden";
+          hidden.name = "reservation[participant_ids][]";
+          hidden.value = id;
+          hidden.id = inputId;
+          hidden.setAttribute("data-name", name);
+          hiddenContainer.appendChild(hidden);
+
+          const div = document.createElement("div");
+          div.id = `resumo-participante-${id}`;
+          div.innerHTML = `
+            <label>
+              <input type="checkbox" checked data-name="${name}" value="${id}" onchange="toggleParticipant(this)">
+              ${name}
+            </label>
+          `;
+          resumoContainer.appendChild(div);
+
+          // ✅ Também adiciona no form principal (participantes-display)
+          const participantDiv = document.createElement("div");
+          participantDiv.id = `participant-display-${id}`;
+          participantDiv.className = "participant-tag";
+          participantDiv.innerText = name;
+          displayContainer.appendChild(participantDiv);
+        }
+      } else {
+        document.getElementById(inputId)?.remove();
+        document.getElementById(`resumo-participante-${id}`)?.remove();
+        document.getElementById(`participant-display-${id}`)?.remove();
+      }
+    }
+
+
+  if (!bulkSelectionMode) {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        renderParticipantList();
+      });
+    });
+  }
+
+  updateFormDisplays();
+
+
+  }
+
+
+
+
+  function renderParticipantList() {
+    const selectedSubgrupoId = document.getElementById("participant-subgroup-filter")?.value;
+    const selectedGroupId = document.getElementById("participant-group-filter")?.value;
+    const role = document.getElementById("current-role").value;
+    const listContainer = document.getElementById("participant-list");
+    const participantsData = JSON.parse(listContainer.dataset.participants || "[]");
+
+    const filterInput = document.getElementById("participant-search")?.value?.toLowerCase() || "";
+    let filterType = "name";
+    if (/^\d+$/.test(filterInput)) filterType = "cpf";
+
+    // ✅ pega os IDs selecionados corretamente
+    const { solicitante, responsavel, participantes } = getSelectedParticipantIds();
+
+    listContainer.innerHTML = "";
+
+    participantsData.forEach(({ id, name, cpf, grupo_empresa_id, sub_grupo_empresa_id }) => {
+      const idStr = String(id);
+
+      // Filtros
+      if (selectedGroupId && String(grupo_empresa_id) !== selectedGroupId) return;
+      if (selectedSubgrupoId && String(sub_grupo_empresa_id) !== selectedSubgrupoId) return;
+
+      const field = filterType === "cpf" ? cpf : name;
+      if (filterInput && !field?.toLowerCase().includes(filterInput)) return;
+
+      const isSolicitante = idStr === solicitante;
+      const isResponsavel = idStr === responsavel;
+      const isParticipante = participantes.includes(idStr);
+
+      // 🔥 Oculta se já está selecionado em outro papel
+     if (!bulkSelectionMode) {
+    if (
+      (role === "solicitante" && (isSolicitante || isResponsavel || isParticipante)) ||
+      (role === "responsavel" && (isSolicitante || isResponsavel || isParticipante)) ||
+      (role === "participantes" && (isSolicitante || isResponsavel || isParticipante))
+    ) return;
+  }
+
+
+
+      // Cria item da lista
+      const label = document.createElement("label");
+      label.className = "participant-label";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = idStr;
+      checkbox.setAttribute("data-name", name);
+      checkbox.checked = false;
+      checkbox.onchange = () => toggleParticipant(checkbox);
+
+      label.appendChild(checkbox);
+      label.append(` ${name}`);
+      listContainer.appendChild(label);
+    });
+
+    // Controle do botão "Selecionar todos"
+    const selectAllBtnContainer = document.getElementById("select-all-participants-container");
+    if (selectAllBtnContainer) {
+      selectAllBtnContainer.style.display = (role === "participantes") ? "block" : "none";
+    }
+
+    const selectAllCheckbox = document.getElementById("select-all-checkbox");
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
+
+    // Bloquear seleção cruzada
+    ["solicitante", "responsavel", "participantes"].forEach(section => {
+      const container = document.getElementById(`selecionado-${section}`);
+      const checkboxes = container.querySelectorAll("input[type='checkbox']");
+      checkboxes.forEach(cb => {
+        cb.disabled = section !== role;
+      });
+    });
+
+    console.log("IDs atuais:", getSelectedParticipantIds());
+
+  }
+
+
+
+
+
+
+
+
+
+
+  function openParticipantModal(role) {
+    document.getElementById("current-role").value = role;
+    document.getElementById('participantModal').style.display = 'flex';
+    document.getElementById('participantModalOverlay').style.display = 'block';
+
+    const participantList = document.getElementById("participant-list");
+    const displayInfo = document.getElementById("role-display-info");
+    const searchInput = document.getElementById("participant-search");
+    const filterType = document.getElementById("participant-filter-type");
+
+    participantList.style.display = "block";
+    const groupFilter = document.getElementById("participant-group-filter");
+    if (groupFilter) {
+     groupFilter.onchange = function () {
+    const grupoId = this.value;
+    const subgrupoSelect = document.getElementById("participant-subgroup-filter");
+    subgrupoSelect.innerHTML = '<option value="">Carregando setores...</option>';
+
+    if (grupoId) {
+      fetch(`/sub_grupo_empresas/por_empresa/${grupoId}`)
+        .then(res => res.json())
+        .then(data => {
+          subgrupoSelect.innerHTML = '<option value="">Todos os setores</option>';
+          data.forEach(sub => {
+            const opt = document.createElement("option");
+            opt.value = sub.id;
+            opt.textContent = sub.nome;
+            subgrupoSelect.appendChild(opt);
+          });
+
+          // 👉 quando mudar grupo, já filtra também
+          renderParticipantList();
+        });
+    } else {
+      subgrupoSelect.innerHTML = '<option value="">Todos os setores</option>';
       renderParticipantList();
+    }
+  };
+
+  // 👇 AQUI: Adiciona evento para o filtro de subgrupo reagir à mudança
+  document.getElementById("participant-subgroup-filter").onchange = function () {
+    renderParticipantList();
+  };
+
+    }
+
+    if (role === "participantes") {
+      displayInfo.textContent = "Selecione os participantes da reunião:";
+    } else {
+      displayInfo.textContent = `Selecione o ${role} da reunião (somente um):`;
+    }
+
+    if (searchInput) {
+      searchInput.oninput = function () {
+        renderParticipantList();
+      };
+    }
+
+
+    // 🔥 Depois que configurar eventos, chama renderizar
+    renderParticipantList();
+    updateFormDisplays();
+  }
+
+
+
+
+  function selectAllAvailableParticipants() {
+    const checkboxes = Array.from(document.querySelectorAll("#participant-list input[type='checkbox']"))
+      .filter(cb => !cb.checked && !cb.disabled);
+
+    checkboxes.forEach(cb => {
+      cb.checked = true;
+      toggleParticipant(cb);
+    });
+  }
+
+
+
+
+  let bulkSelectionMode = false; // adicione fora da função, no topo do <script> se ainda não existir
+
+  function toggleSelectAllCheckbox(masterCheckbox) {
+    const checkboxes = Array.from(document.querySelectorAll("#participant-list input[type='checkbox']"))
+      .filter(cb => !cb.disabled); // apenas os disponíveis
+
+    const total = checkboxes.length;
+    let i = 0;
+
+    bulkSelectionMode = true; // evita renderizações múltiplas
+
+    function clicarUmPorUm() {
+  if (i >= total) {
+    bulkSelectionMode = false;
+    renderParticipantList(); // <- restaura a lista com ocultação normal
+    return;
+  }
+
+
+      const cb = checkboxes[i];
+      const deveMarcar = masterCheckbox.checked;
+
+      if (cb.checked !== deveMarcar) {
+        cb.checked = deveMarcar;
+        cb.dispatchEvent(new Event("change")); // dispara onchange (chama toggleParticipant)
+      }
+
+      i++;
+      setTimeout(clicarUmPorUm, 20); // próximo clique após 20ms
+    }
+
+    clicarUmPorUm();
+  }
+
+  function getSelectedParticipantIds() {
+    return {
+      solicitante: document.querySelector('input[name="reservation[solicitante_id]"]')?.value || null,
+      responsavel: document.querySelector('input[name="reservation[responsavel_id]"]')?.value || null,
+      participantes: Array.from(
+        document.querySelectorAll('input[name="reservation[participant_ids][]"]')
+      ).map(p => p.value)
     };
   }
-  
-
-  // 🔥 Depois que configurar eventos, chama renderizar
-  renderParticipantList();
-  updateFormDisplays();
-}
 
 
+  document.addEventListener("DOMContentLoaded", function () {
+      const flash = document.getElementById("notification-flash");
 
+      if (flash) {
+        const message = flash.dataset.message;
+        const type = flash.dataset.type;
 
-function selectAllAvailableParticipants() {
-  const checkboxes = Array.from(document.querySelectorAll("#participant-list input[type='checkbox']"))
-    .filter(cb => !cb.checked && !cb.disabled);
+        Swal.fire({
+          icon: type,
+          title: type === "success" ? "Sucesso!" : "Atenção",
+          text: message,
+          timer: 4000,
+          showConfirmButton: false
+        });
+      }
+    });
 
-  checkboxes.forEach(cb => {
-    cb.checked = true;
-    toggleParticipant(cb);
-  });
-}
+   /* ===== MODAL DAS REGRAS DA SALA ===== */
+  (function () {
+  const requireAck = <%= require_ack ? 'true' : 'false' %>;
+  if (!requireAck) return;
 
+  const openBtn   = document.getElementById('open-rules-btn');
+  const realBtn   = document.getElementById('real-submit-btn');
+  const overlay   = document.getElementById('rulesOverlay');
+  const modal     = document.getElementById('rulesModal');
+  const closeBtn  = document.getElementById('rulesCloseBtn');
+  const acceptBtn = document.getElementById('rulesAcceptBtn');
+  const scrollEl  = document.getElementById('rulesScrollArea');
+  const content   = document.getElementById('rulesContent');
+  const rulesAcceptedInput = document.getElementById('rules_accepted');
 
+  // Estado do modal para sabermos se está em modo "aguardando seleção"
+  let awaitingSelection = false;
 
-
-let bulkSelectionMode = false; // adicione fora da função, no topo do <script> se ainda não existir
-
-function toggleSelectAllCheckbox(masterCheckbox) {
-  const checkboxes = Array.from(document.querySelectorAll("#participant-list input[type='checkbox']"))
-    .filter(cb => !cb.disabled); // apenas os disponíveis
-
-  const total = checkboxes.length;
-  let i = 0;
-
-  bulkSelectionMode = true; // evita renderizações múltiplas
-
-  function clicarUmPorUm() {
-if (i >= total) {
-  bulkSelectionMode = false;
-  renderParticipantList(); // <- restaura a lista com ocultação normal
-  return;
-}
-
-
-    const cb = checkboxes[i];
-    const deveMarcar = masterCheckbox.checked;
-
-    if (cb.checked !== deveMarcar) {
-      cb.checked = deveMarcar;
-      cb.dispatchEvent(new Event("change")); // dispara onchange (chama toggleParticipant)
-    }
-
-    i++;
-    setTimeout(clicarUmPorUm, 20); // próximo clique após 20ms
+  function getSelectedRoomId() {
+    const checked = document.querySelector('input[name="reservation[room_id]"]:checked');
+    return checked ? checked.value : null;
   }
 
-  clicarUmPorUm();
-}
+  // Carrega as regras da sala (ou global). Retorna true se carregou regras de fato.
+  async function loadRulesHtml() {
+    const roomId = getSelectedRoomId();
 
-function getSelectedParticipantIds() {
-  return {
-    solicitante: document.querySelector('input[name="reservation[solicitante_id]"]')?.value || null,
-    responsavel: document.querySelector('input[name="reservation[responsavel_id]"]')?.value || null,
-    participantes: Array.from(
-      document.querySelectorAll('input[name="reservation[participant_ids][]"]')
-    ).map(p => p.value)
-  };
-}
-
-
-document.addEventListener("DOMContentLoaded", function () {
-    const flash = document.getElementById("notification-flash");
-
-    if (flash) {
-      const message = flash.dataset.message;
-      const type = flash.dataset.type;
-
-      Swal.fire({
-        icon: type,
-        title: type === "success" ? "Sucesso!" : "Atenção",
-        text: message,
-        timer: 4000,
-        showConfirmButton: false
-      });
+    // Se tiver sala, tenta buscar regras da sala
+    if (roomId) {
+      try {
+        const resp = await fetch(`/rooms/${roomId}/rules`, { headers: { 'Accept': 'text/html' } });
+        if (resp.ok) {
+          const html = (await resp.text() || "").trim();
+          if (html.length > 0) {
+            content.innerHTML = html;
+            return true;
+          }
+        }
+      } catch (e) {
+        console.warn("Falha ao buscar regras da sala, tentando fallback global.", e);
+      }
     }
+
+    // Fallback global (se existir)
+    const fallback = document.getElementById('globalRulesHtml');
+    const glob = (fallback ? (fallback.innerHTML || "").trim() : "");
+    if (glob.length > 0) {
+      content.innerHTML = glob;
+      return true;
+    }
+
+    // Nada encontrado
+    content.innerHTML = '<p style="text-align:center;color:#666;padding:10px;">Sem regras cadastradas.</p>';
+    return false;
+  }
+
+  // Mostra o modal com mensagem de “selecione a sala”
+  function showSelectRoomMessage() {
+    awaitingSelection = true;
+    // Mensagem didática e um leve destaque na área de salas
+    content.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <i class="fa-solid fa-circle-info" style="font-size:22px;"></i>
+        <div style="margin-top:10px;font-weight:600;">Selecione a sala primeiro</div>
+        <div style="color:#ffffff;margin-top:6px;">Depois de escolher, as regras aparecerão aqui automaticamente.</div>
+      </div>
+    `;
+    // Desabilita/oculta o botão Aceitar enquanto não houver regras reais
+    acceptBtn.disabled = true;
+    acceptBtn.style.display = 'none';
+
+    // Opcional: dar um “pulsar” na área de cards de salas
+    const wrapper = document.getElementById('room-scroll-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('pulse-border');
+      setTimeout(() => wrapper.classList.remove('pulse-border'), 1500);
+    }
+  }
+
+  // Abre o modal: se não houver sala, mostra mensagem; se houver, carrega regras.
+  async function openRules() {
+    overlay.style.display = 'block';
+    modal.style.display   = 'block';
+    scrollEl.scrollTop    = 0;
+
+    const hasRoom = !!getSelectedRoomId();
+    if (!hasRoom) {
+      showSelectRoomMessage();
+      return;
+    }
+
+    awaitingSelection = false;
+    const loaded = await loadRulesHtml();
+    // Mostra botão Aceitar somente se tiver regras de verdade (sala ou global)
+    acceptBtn.style.display = loaded ? '' : 'none';
+    acceptBtn.disabled = !loaded;
+  }
+
+  function closeRules() {
+    overlay.style.display = 'none';
+    modal.style.display   = 'none';
+  }
+
+  function onScrollCheck() {
+    // Só exige rolar até o fim quando houver conteúdo de regras real (quando o botão está visível)
+    if (acceptBtn.style.display === 'none') return;
+    const nearBottom = (scrollEl.scrollTop + scrollEl.clientHeight) >= (scrollEl.scrollHeight - 10);
+    acceptBtn.disabled = !nearBottom;
+  }
+
+  function acceptRules() {
+    rulesAcceptedInput.value = "1";
+    openBtn.style.display = 'none';
+    if (realBtn) realBtn.style.display = '';
+    closeRules();
+  }
+
+  // Se o usuário selecionar a sala enquanto o modal está aberto e aguardando seleção,
+  // carregamos automaticamente as regras e habilitamos o botão.
+  function handleRoomChangeWhileOpen() {
+    if (modal.style.display !== 'block') return;
+    if (!awaitingSelection) return;
+
+    // Trocar de “mensagem” para “regras”
+    awaitingSelection = false;
+    loadRulesHtml().then((loaded) => {
+      acceptBtn.style.display = loaded ? '' : 'none';
+      acceptBtn.disabled = !loaded;
+      scrollEl.scrollTop = 0;
+    });
+  }
+
+  // Listeners
+  openBtn  && openBtn.addEventListener('click', openRules);
+  closeBtn && closeBtn.addEventListener('click', closeRules);
+  overlay  && overlay.addEventListener('click', closeRules);
+  scrollEl && scrollEl.addEventListener('scroll', onScrollCheck);
+  acceptBtn&& acceptBtn.addEventListener('click', acceptRules);
+
+  // Ouve mudança dos rádios de sala
+  document.querySelectorAll('input[name="reservation[room_id]"]').forEach(radio => {
+    radio.addEventListener('change', handleRoomChangeWhileOpen);
   });
 
-
+  })();
 </script>
+<style>
+  /* destaque suave ao redor dos cards de sala */
+  .pulse-border {
+    outline: 2px dashed #888;
+    outline-offset: 6px;
+    animation: pulseOutline .8s ease-in-out 2;
+  }
+  @keyframes pulseOutline {
+    0%   { outline-color: rgba(136,136,136, 0.0); }
+    50%  { outline-color: rgba(136,136,136, 0.8); }
+    100% { outline-color: rgba(136,136,136, 0.0); }
+  }
+</style>

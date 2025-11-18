@@ -1,0 +1,2 @@
+<%= turbo_stream.replace dom_id(@item), partial: "room_items/row", locals: { k: @item } %>
+<%= turbo_stream.replace "item-modal-frame", "" %>

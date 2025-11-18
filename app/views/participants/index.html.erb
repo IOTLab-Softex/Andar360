@@ -47,13 +47,7 @@
     </div>
   </div>
 <% end %>
-<div class="usuarios-index-btns" >
-  <% if current_user&.admin? %>
-    <button id="delete-all-btn" class="btn btn-danger">
-      🗑️ Excluir todos os usuários
-    </button>
-  <% end %>
-</div>
+
 <div class="tabs">
   <%= link_to "Usuários", participants_path(tab: 'ativos'), class: params[:tab] == 'ativos' ? 'active' : '' %>
   <%= link_to "Pendentes", participants_path(tab: 'pendentes'), class: params[:tab] == 'pendentes' ? 'active' : '' %>
@@ -886,7 +880,7 @@
   .tabs {
     position: sticky;                 /* opcional: fica sempre visível no topo */
     top: 0;                           /* ajuste conforme seu header */
-    z-index: 2;
+    z-index: 0;
     display: flex;
     gap: .8rem;
     padding: .5rem 1rem;

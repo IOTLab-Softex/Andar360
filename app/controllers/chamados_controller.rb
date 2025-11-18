@@ -1,8 +1,9 @@
 class ChamadosController < ApplicationController
-   include VisualizacaoHelper
+  include VisualizacaoHelper
+  before_action :authenticate_user!
   before_action :set_chamado, only: %i[ show edit update destroy ]
-before_action :authenticate_user!
-
+  # carregue coleções sempre que vai renderizar formulário
+  before_action :prepare_collections, only: %i[new edit create update]
   # GET /chamados or /chamados.json
   def index
     if current_user&.admin? || current_user&.operador?
@@ -12,9 +13,17 @@ else
   @chamados = Chamado.joins(:solicitante).where(participants: { grupo_empresa_id: grupo_empresa_id })
 end
 
-    if params[:local].present? && params[:local] != "Todos os locais"
-    @chamados = @chamados.where(local: params[:local])
+    if params[:status].present? && params[:status] != "Todos os status"
+  case params[:status]
+  when "Pendente"
+    @chamados = @chamados.where(status: ["Pendente", "Solicitada"])
+  when "Concluído"
+    @chamados = @chamados.where(status: ["Concluído", "Concluída", "Concluido", "Finalizada"])
+  else
+    @chamados = @chamados.where(status: params[:status])
   end
+end
+
 
   if params[:unidade].present? && params[:unidade] != "Todas as unidades"
     @chamados = @chamados.where(unidade: params[:unidade])
@@ -89,59 +98,44 @@ end
 
   # POST /chamados or /chamados.json
 def create
-  puts "Usuário logado: #{current_user&.name.inspect}"
+    last_os_number = Chamado.order(:created_at).last&.id.to_i + 1
+    os_formatada   = "%04d" % last_os_number
+    participant    = current_user.participant
 
-  last_os_number = Chamado.order(:created_at).last&.id.to_i + 1
-  os_formatada = "%04d" % last_os_number
+    params_sanitizados = chamado_params.dup
+    params_sanitizados[:status] = "Pendente" unless current_user.admin? || current_user.role == "operador"
 
-  participant = current_user.participant
+    @chamado = Chamado.new(params_sanitizados.merge(
+      os: os_formatada,
+      solicitante: participant,
+      solicitante_nome: participant&.name
+    ))
 
-params_sanitizados = chamado_params.dup
-
-# Força status = "Pendente" se não for admin nem operador
-unless current_user.admin? || current_user.role == "operador"
-  params_sanitizados[:status] = "Pendente"
-end
-
-@chamado = Chamado.new(params_sanitizados.merge(
-  os: os_formatada,
-  solicitante: participant,
-  solicitante_nome: participant&.name
-))
-
-  respond_to do |format|
     if @chamado.save
-      format.html { redirect_to root_path, notice: "Chamado criado com sucesso." }
-      format.json { render :show, status: :created, location: @chamado }
-    else
-      format.html { render :new, status: :unprocessable_entity }
-      format.json { render json: @chamado.errors, status: :unprocessable_entity }
-    end
+    redirect_to root_path, status: :see_other, notice: "Chamado criado com sucesso."
+  else
+    flash.now[:alert] = @chamado.errors.full_messages.to_sentence.presence || "Não foi possível salvar."
+    render :new, status: :unprocessable_entity
   end
-end
-
+  end
 
 
 def update
-  respond_to do |format|
-    if @chamado.update(chamado_params.except(:fotos))
-      if params[:chamado][:fotos]
-        @chamado.fotos.attach(params[:chamado][:fotos])
-      end
-      format.html { redirect_to root_path, notice: "Chamado atualizado com sucesso." }
-    else
-      format.html { render :edit, status: :unprocessable_entity }
-    end
+  if @chamado.update(chamado_params.except(:fotos))
+    @chamado.fotos.attach(params[:chamado][:fotos]) if params.dig(:chamado, :fotos)
+    redirect_to root_path, status: :see_other, notice: "Chamado atualizado com sucesso."
+  else
+    flash.now[:alert] = @chamado.errors.full_messages.to_sentence.presence || "Não foi possível atualizar."
+    render :edit, status: :unprocessable_entity
   end
 end
-
 
   # DELETE /chamados/1 or /chamados/1.json
   def destroy
     @chamado.destroy!
 
     respond_to do |format|
-      format.html { redirect_to root_path, status: :see_other, notice: "Chamado excluído com sucesso." }
+      format.html { redirect_to chamados_path, status: :see_other, notice: "Chamado excluído com sucesso." }
 
       format.json { head :no_content }
     end
@@ -166,6 +160,19 @@ end
   end
   
   private
+
+   def prepare_collections
+    if current_user.admin? || current_user.role == "operador"
+      @rooms_disponiveis      = Room.where(espaco_comun: false).order(:name)
+      @possiveis_responsaveis = Participant.order(:name)
+    else
+      grupo_empresa  = current_user.participant&.grupo_empresa&.nome
+      @rooms_disponiveis = Room.where(espaco_comun: false)
+                               .where("lower(dados_do_inquilino) LIKE ?", "%#{grupo_empresa&.downcase}%")
+      grupo_id = current_user.participant&.grupo_empresa_id
+      @possiveis_responsaveis = Participant.where(grupo_empresa_id: grupo_id).order(:name)
+    end
+  end
     # Use callbacks to share common setup or constraints between actions.
 def set_chamado
   @chamado = Chamado.find(params[:id])

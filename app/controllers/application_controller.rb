@@ -71,6 +71,17 @@ end
     end
   end
 
+    def flash_success(message, sound: "success")
+    flash[:notice] = message
+    flash[:flash_sound] = sound # ex: "success"
+  end
+
+  # helper para erro
+  def flash_error(message, sound: "error")
+    flash[:alert] = message
+    flash[:flash_sound] = sound # ex: "error"
+  end
+  
 protected
 
 def configure_permitted_parameters

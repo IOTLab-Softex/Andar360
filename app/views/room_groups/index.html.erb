@@ -31,7 +31,7 @@
         url: room_group_path(group)
       } do %>
     <i class="fa-solid fa-pen-to-square me-1" aria-hidden="true"></i>
-    Editar
+    <div class="hide-sm"> Editar </div>
   <% end %>
 
   <%= form_with url: room_group_path(group), method: :delete, data: { turbo: false }, class: "d-inline" do %>
@@ -39,7 +39,7 @@
           class: "btn btn-warning",
           data: { confirm: "Tem certeza?" } do %>
       <i class="fa-solid fa-trash me-1" aria-hidden="true"></i>
-      Excluir
+      <div class="hide-sm"> Excluir </div>
     <% end %>
   <% end %>
 </td>

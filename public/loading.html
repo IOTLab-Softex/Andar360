@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Loader da Logo</title>
+<style>
+  :root {
+    --size: 96px;          /* tamanho do ícone */
+    --bg: #5b22ff;         /* roxo do fundo */
+    --spin-duration: 2.4s; /* velocidade da rotação */
+    --breath-duration: 1.8s; /* velocidade da “respiração” */
+  }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+    background: var(--bg);
+    display: grid;
+    place-items: center;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+  }
+
+  /* O ícone é um bloco com máscara da imagem.
+     Isso pinta a forma da logo com a cor de fundo do elemento (branco). */
+  .logo-loader {
+    width: var(--size);
+    height: var(--size);
+    background-color: #fff;           /* cor da logo */
+    /* Suporte padrão */
+    mask-image: url("loading.png");
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    mask-position: center;
+    /* Suporte WebKit/Safari */
+    -webkit-mask-image: url("loading.png");
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: contain;
+    -webkit-mask-position: center;
+
+    /* animações combinadas: girar + respirar */
+    animation:
+      spin var(--spin-duration) linear infinite,
+      breath var(--breath-duration) ease-in-out infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes breath {
+    0%, 100% { transform: scale(1) rotate(0deg); } /* rotate(0) aqui não conflita: a rotação final vem do spin */
+    50%      { transform: scale(1.07) rotate(0deg); }
+  }
+
+  /* Acessibilidade: respeita usuários que preferem menos animação */
+  @media (prefers-reduced-motion: reduce) {
+    .logo-loader { animation: none; }
+  }
+
+  /* Texto opcional abaixo do loader */
+  .hint {
+    color: #e6dbff;
+    opacity: .8;
+    margin-top: 14px;
+    font-size: 14px;
+    letter-spacing: .2px;
+  }
+</style>
+</head>
+<body>
+  <div class="logo-loader" role="img" aria-label="Carregando"></div>
+  <div class="hint">Carregando…</div>
+</body>
+</html>

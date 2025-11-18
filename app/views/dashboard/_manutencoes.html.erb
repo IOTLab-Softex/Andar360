@@ -15,7 +15,7 @@
       <tr>
         <th>Título</th>
         <th class="hide-sm">Local</th>
-        <th>Período</th>
+        <th class="hide-sm">Período</th>
         <th>Data Prevista</th>
         <th>Ações</th>
       </tr>
@@ -31,24 +31,23 @@
               <%= manut.titulo %>
             </td>
             <td class="hide-sm"><%= manut.local.presence || "-" %></td>
-            <td><%= manut.periodicidade.presence || "Anual" %></td>
+            <td class="hide-sm"><%= manut.periodicidade.presence || "Anual" %></td>
             <td><%= manut.data_prevista.present? ? manut.data_prevista.strftime("%d/%m/%Y") : "-" %></td>
             
-            <td style="display: inline-grid;">
-              <%= link_to manutencao_programada_path(manut), class: "btn btn-success" do %>
-                <i class="fa-solid fa-eye" style="transform: rotate(360deg);"></i>
-              <% end %>
-              <% if operador_ou_admin? %>
-                <%= link_to edit_manutencao_programada_path(manut), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
-                  <i class="fa-solid fa-pen-to-square"></i>
-                <% end %>
-              <% end %>
-            </td>
+            <td class="td-acoes">
+  <%= link_to manutencao_programada_path(manut), class: "btn-dash btn btn-success" do %>
+    <i class="fa-solid fa-eye" style="transform: rotate(360deg);"></i>
+  <% end %>
+</td>
+
           </tr>
         <% end %>
       <% else %>
-        <tr><td colspan="5">Nenhuma manutenção programada encontrada.</td></tr>
+ <td colspan="5" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma manutenção programada encontrada.
+          </td>
       <% end %>
+               
     </tbody>
   </table>
 </div>

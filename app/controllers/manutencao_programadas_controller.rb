@@ -29,7 +29,7 @@ def index
   if params[:inicio].present? && params[:fim].present?
     @manutencao_programadas = @manutencao_programadas.where(data_prevista: params[:inicio]..params[:fim])
   end
-
+  
   # ⚠️ Remova este loop de criação de notificações daqui se já usa o callback no model.
   # (Ele já cria/atualiza as notificações em after_commit.)
   # ManutencaoProgramada.all.each do |...| end
@@ -77,32 +77,33 @@ end
 
   end
 
-  def create
-    @manutencao_programada = ManutencaoProgramada.new(manutencao_programada_params)
+def create
+  @manutencao_programada = ManutencaoProgramada.new(manutencao_programada_params)
 
-    respond_to do |format|
-      if @manutencao_programada.save
-        format.html { redirect_to dashboard_path, notice: "Manutenção programada criada com sucesso." }
-
-        format.json { render :show, status: :created, location: @manutencao_programada }
-      else
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @manutencao_programada.errors, status: :unprocessable_entity }
-      end
+  respond_to do |format|
+    if @manutencao_programada.save
+      format.html { redirect_to manutencao_programadas_path, notice: "Manutenção programada criada com sucesso." }
+      format.json { render :show, status: :created, location: @manutencao_programada }
+    else
+      # 👇 empurra as mensagens para o flash da mesma requisição
+      flash.now[:alert] = @manutencao_programada.errors.full_messages.to_sentence
+      format.html { render :new, status: :unprocessable_entity }
+      format.json { render json: @manutencao_programada.errors, status: :unprocessable_entity }
     end
   end
-
-  def update
-    respond_to do |format|
-      if @manutencao_programada.update(manutencao_programada_params)
-        format.html { redirect_to dashboard_path, notice: "Manutenção programada atualizada com sucesso." }
-        format.json { render :show, status: :ok, location: @manutencao_programada }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @manutencao_programada.errors, status: :unprocessable_entity }
-      end
+end
+def update
+  respond_to do |format|
+    if @manutencao_programada.update(manutencao_programada_params)
+      format.html { redirect_to dashboard_path, notice: "Manutenção programada atualizada com sucesso." }
+      format.json { render :show, status: :ok, location: @manutencao_programada }
+    else
+      flash.now[:alert] = @manutencao_programada.errors.full_messages.to_sentence
+      format.html { render :edit, status: :unprocessable_entity }
+      format.json { render json: @manutencao_programada.errors, status: :unprocessable_entity }
     end
   end
+end
 
   def destroy
     @manutencao_programada.destroy!

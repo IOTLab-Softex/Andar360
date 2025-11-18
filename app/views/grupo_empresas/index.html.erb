@@ -20,8 +20,8 @@
       <tr>
         <th>Logo</th>
         <th>Nome</th>
-        <th>Sala</th>
-        <th>Andar</th>
+        <th class="hide-sm">Sala</th>
+        <th class="hide-sm">Andar</th>
         <th>Data de Cadastro</th>
         <th>Ações</th>
       </tr>
@@ -39,21 +39,21 @@
             <% end %>
           </td>
           <td><strong><%= empresa.nome %></strong></td>
-          <td><%= empresa.sala.presence || "Não definida" %></td>
-          <td><%= empresa.andar.presence || "Não definido" %></td>
+          <td class="hide-sm"><%= empresa.sala.presence || "Não definida" %></td>
+          <td class="hide-sm"><%= empresa.andar.presence || "Não definido" %></td>
           <td><%= empresa.created_at.strftime("%d/%m/%Y %H:%M") %></td>
           <td>
         
             <%= link_to edit_grupo_empresa_path(empresa), class: "btn edit" do %>
-              <i class="fa-solid fa-pen-to-square"></i> Editar
+              <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
             <% end %>
 
             <%= link_to new_formulario_cadastro_path(grupo_empresa_id: empresa.id), class: "btn btn-success", style: "margin-left: 5px;" do %>
-    <i class="fa-solid fa-id-badge"></i> Cadastrar Acesso
+    <i class="fa-solid fa-id-badge"></i> <div class="hide-sm"> Cadastrar Acesso </div>
   <% end %>
 
    <%= link_to participants_path(), class: "btn btn-success", style: "margin-left: 5px;" do %>
-    <i class="fa-solid fa-user"></i> Gerenciar Funcionários
+    <i class="fa-solid fa-user"></i> <div class="hide-sm"> Gerenciar Funcionários </div>
   <% end %>
 
           </td>

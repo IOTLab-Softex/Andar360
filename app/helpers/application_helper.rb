@@ -3,26 +3,45 @@ module ApplicationHelper
     request.fullpath == "/users"
   end
 
-   def svg_icon(path, options = {})
-  file_path = Rails.root.join("app/assets/images", path)
-  return "(ícone não encontrado)" unless File.exist?(file_path)
+def svg_icon(path, options = {})
+  logical = path.to_s.strip.sub(/\A[\/\\]+/, "").tr("\\", "/")
+  roots = [
+    Rails.root.join("app/assets/images"),
+    Rails.root.join("app/javascript/images"),
+    Rails.root.join("app/frontend/images")
+  ]
+
+  # tenta exato
+  direct = roots.map { |r| r.join(logical) }.find { |p| File.exist?(p) }
+
+  file_path =
+    direct ||
+    begin
+      dir  = File.dirname(logical)
+      base = File.basename(logical).downcase
+      root_with_dir = roots.map { |r| r.join(dir) }.find { |d| Dir.exist?(d) }
+      if root_with_dir
+        match = Dir.children(root_with_dir).find { |fn| fn.downcase == base }
+        match ? root_with_dir.join(match) : nil
+      end
+    end
+
+  unless file_path && File.exist?(file_path)
+    Rails.logger.warn "[svg_icon] NOT FOUND: #{logical}"
+    return "(ícone não encontrado)"
+  end
 
   file = File.read(file_path)
-
-  # Remove estilos antigos
   file.gsub!(/\s*(width|height|fill|style)="[^"]*"/, "")
   file.gsub!("<svg", '<svg fill="currentColor"')
 
   doc = Nokogiri::HTML::DocumentFragment.parse(file)
   svg = doc.at_css("svg")
-
-  # 🔴 Aqui aplica um estilo inline se quiser garantir renderização mesmo sem CSS
-  svg["style"] = "height: 13px; fill: currentColor;" unless svg["style"]
-
+  svg["style"] ||= "height: 13px; fill: currentColor;"
   svg["class"] = [svg["class"], options[:class]].compact.join(" ") if options[:class]
-
   doc.to_html.html_safe
 end
+
 
 
 # app/helpers/application_helper.rb

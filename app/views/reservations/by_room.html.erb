@@ -1,309 +1,167 @@
-<!-- TOGGLE -->
-<div style="text-align:center; margin-bottom:1rem;">
-  <button id="toggleViewBtn" class="btn">
-    <i class="fa-solid fa-table"></i> Alternar Visualização
-  </button>
-</div>
+  <!-- BOTÃO FILTRO -->
+<button type="button" id="filtro-toggle" class="filtro-label" aria-expanded="true" aria-controls="filtros-salas">
+  <i class="fa-solid fa-filter"></i>
+  Filtro
+  <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+</button>
+  <br>
 
-<!-- FILTROS (opcional; pode remover se não quiser) -->
-<div id="reservationsFilters" class="filter-form" style="display:flex; gap:.5rem; flex-wrap:wrap; align-items:end; margin: 1rem 0;">
-  <!-- Empresa -->
-  <% if current_user.admin? || current_user.operador? %>
-  <div>
-    <label for="filterEmpresa" class="form-label">Empresa</label>
-    <select id="filterEmpresa" class="form-control" style="min-width:180px">
-      <option value="">Todas</option>
-      <% (@reservations || []).map(&:grupo_empresa).compact.uniq.each do |emp| %>
-        <option value="<%= emp.nome %>"><%= emp.nome %></option>
-      <% end %>
-    </select>
-  </div>
-<% end %>
-  <!-- Sala -->
-  <div>
-    <label for="filterSala" class="form-label">Sala</label>
-    <select id="filterSala" class="form-control" style="min-width:160px">
-      <option value="">Todas</option>
-      <% @reservations.map(&:room).compact.uniq.each do |room| %>
-        <option value="<%= room.name %>"><%= room.name %></option>
-      <% end %>
-    </select>
-  </div>
-
-  <!-- Status -->
-  <div>
-    <label for="filterStatus" class="form-label">Status</label>
-    <select id="filterStatus" class="form-control" style="min-width:160px">
-      <option value="">Todos</option>
-      <option value="ativa">Ativa</option>
-      <option value="encerrada">Encerrada</option>
-      <option value="cancelada">Cancelada</option>
-    </select>
-  </div>
-
-  <!-- Data início/fim -->
-  <div>
-    <label for="filterInicio" class="form-label">Início (de)</label>
-    <input id="filterInicio" type="datetime-local" class="form-control">
-  </div>
-  <div>
-    <label for="filterFim" class="form-label">Início (até)</label>
-    <input id="filterFim" type="datetime-local" class="form-control">
-  </div>
-
-  <!-- Busca por texto -->
-  <div style="flex:1; min-width:220px;">
-    <label for="filterBusca" class="form-label">Buscar (título/empresa/sala)</label>
-    <input id="filterBusca" type="text" class="form-control" placeholder="Digite para filtrar...">
-  </div>
-
-  <div style="display:flex; gap:.5rem;">
-    <button id="filterLimpar" class="btn btn-secondary" type="button">Limpar</button>
-  </div>
-</div>
-
-<!-- CARDS -->
-<!-- CARDS -->
-<div class="rooms" id="reservationsCards">
-  <% if @reservations.any? %>
-    <% grouped_reservas = { 
-      'Ativas'     => @reservations.select { |r| r.cancelada_em.blank? && r.finalizada_em.blank? },
-      'Encerradas' => @reservations.select { |r| r.finalizada_em.present? },
-      'Canceladas' => @reservations.select { |r| r.cancelada_em.present? }
-    } %>
+<div id="reservations-section" class="rooms">
 
 
-    <% if grouped_reservas.values.flatten.any? %>
-      <div class="reservation-section">
-        <h2 class="section-title">Minhas Reservas</h2>
-
-        <% grouped_reservas.each do |status_label, reservas| %>
-          <% if reservas.any? %>
-            <div class="reservation-group">
-              <h3 class="group-title"><%= status_label %></h3>
-              <div class="reservation-list">
-                <% reservas.each do |reservation| %>
-                  <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
-                  <div class="reservation-card" style="<%= background %>">
-                    <div class="reservation-header">
-                      <% if reservation.grupo_empresa.present? %>
-                        <div class="empresa-info">
-                          <strong>Empresa:</strong> <%= reservation.grupo_empresa.nome %><br>
-                          <% if reservation.grupo_empresa&.logo&.attached? %>
-                            <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 60px;" %>
-                          <% end %>
-                        </div>
-                      <% end %>
-
-                      <strong>Nome da Reserva: <%= reservation.title %></strong><br>
-                      Início: <%= l(reservation.starts_at, format: :short) %><br>
-                      Fim: <%= l(reservation.ends_at, format: :short) %><br>
-
-                      <% if reservation.cancelada_em.present? %>
-                        <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
-                      <% elsif reservation.finalizada_em.present? %>
-                        <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
-                      <% else %>
-                        <span class="status ativa">🟢 Ativa</span><br>
-                        <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
-                          <%= reservation.sent_to_facial? ? "Status: Participantes já enviados" : "Aguardando primeiro acesso." %>
-                        </span>
-                      <% end %>
-                    </div>
-
-                    <div class="reservation-actions">
-                      <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
-                        <i class="fa-solid fa-eye"></i> Ver
-                      <% end %>
-
-                      <% if reservation.finalizada_em.blank? && reservation.cancelada_em.blank? %>
-                        <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
-                          <i class="fa-solid fa-pen"></i> Editar
-                        <% end %>
-                        <%= button_to "<i class='fa-solid fa-xmark'></i> Cancelar".html_safe, cancel_reservation_path(reservation),
-                            method: :delete,
-                            data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                            class: "btn cancel",
-                            form: { style: "display: contents;" } %>
-                      <% end %>
-
-                      <%= button_to "<i class='fa-solid fa-trash'></i> Excluir".html_safe, reservation_path(reservation),
-                        method: :delete,
-                        data: { confirm: "Tem certeza que deseja excluir permanentemente esta reserva?" },
-                        class: "btn delete",
-                        form: { style: "display: contents;" } %>
-                    </div>
-                  </div>
-                <% end %>
-              </div>
-            </div>
+  <!-- FILTROS -->
+  <div id="reservationsFilters" class="filter-form">
+    <% if current_user.admin? || current_user.operador? %>
+      <div>
+        <label for="filterEmpresa" class="form-label">Empresa</label>
+        <select id="filterEmpresa" class="form-control" style="min-width:180px">
+          <option value="">Todas</option>
+          <% (@reservations || []).map(&:grupo_empresa).compact.uniq.each do |emp| %>
+            <option value="<%= emp.nome %>"><%= emp.nome %></option>
           <% end %>
-        <% end %>
+        </select>
       </div>
     <% end %>
 
-    <% if current_user&.admin? %>
-  <% grouped_outros = { 
-    'Ativas' => @outras_reservas.select { |r| r.cancelada_em.blank? && r.finalizada_em.blank? },
-    'Encerradas' => @outras_reservas.select { |r| r.finalizada_em.present? },
-    'Canceladas' => @outras_reservas.select { |r| r.cancelada_em.present? }
-  } %>
+    <div>
+      <label for="filterSala" class="form-label">Sala</label>
+      <select id="filterSala" class="form-control" style="min-width:160px">
+        <option value="">Todas</option>
+        <% @reservations.map(&:room).compact.uniq.each do |room| %>
+          <option value="<%= room.name %>"><%= room.name %></option>
+        <% end %>
+      </select>
+    </div>
 
+    <div>
+      <label for="filterStatus" class="form-label">Status</label>
+      <select id="filterStatus" class="form-control" style="min-width:160px">
+        <option value="">Todos</option>
+        <option value="ativa">Ativa</option>
+        <option value="encerrada">Encerrada</option>
+        <option value="cancelada">Cancelada</option>
+      </select>
+    </div>
 
-      <% if grouped_outros.values.flatten.any? %>
-        <div class="reservation-section">
-          <h2 class="section-title">Outras Reservas</h2>
+    <div>
+      <label for="filterInicio" class="form-label">Início (de)</label>
+      <input id="filterInicio" type="datetime-local" class="form-control">
+    </div>
 
-          <% grouped_outros.each do |status_label, reservas| %>
-            <% if reservas.any? %>
-              <div class="reservation-group">
-                <h3 class="group-title"><%= status_label %></h3>
-                <div class="reservation-list">
-                  <% reservas.each do |reservation| %>
-                    <% background = reservation.room.photo.attached? ? "--bg-url: url(#{url_for(reservation.room.photo)});" : "background-color: #ccc;" %>
-                    <div class="reservation-card" style="<%= background %>">
-                      <div class="reservation-header">
-                        <% if reservation.grupo_empresa.present? %>
-                          <div class="empresa-info">
-                            <strong>Empresa:</strong> <%= reservation.grupo_empresa.nome %><br>
-                            <% if reservation.grupo_empresa&.logo&.attached? %>
-                              <%= image_tag reservation.grupo_empresa.logo, alt: "Logo da empresa", style: "max-height: 60px;" %>
-                            <% end %>
-                          </div>
-                        <% end %>
+    <div>
+      <label for="filterFim" class="form-label">Início (até)</label>
+      <input id="filterFim" type="datetime-local" class="form-control">
+    </div>
 
-                        <strong>Nome da Reserva: <%= reservation.title %></strong><br>
-                        Início: <%= l(reservation.starts_at, format: :short) %><br>
-                        Fim: <%= l(reservation.ends_at, format: :short) %><br>
+    <div style="flex:1; min-width:220px;">
+      <label for="filterBusca" class="form-label">Buscar (título/empresa/sala)</label>
+      <input id="filterBusca" type="text" class="form-control" placeholder="Digite para filtrar...">
+    </div>
 
-                        <% if reservation.cancelada_em.present? %>
-                          <span class="status cancelado">⛔ Cancelada em <%= l(reservation.cancelada_em, format: :short) %></span>
-                        <% elsif reservation.finalizada_em.present? %>
-                          <span class="status encerrada">✔️ Encerrada em <%= l(reservation.finalizada_em, format: :short) %></span>
-                        <% else %>
-                          <span class="status ativa">🟢 Ativa</span>
-                        <% end %>
-                      </div>
+    <div style="display:flex; gap:.5rem;">
+      <button id="filterLimpar" class="btn btn-secondary" type="button">Limpar</button>
+    </div>
+  </div>
 
-                      <div class="reservation-actions">
-                        <%= link_to reservation_path(reservation), class: "btn btn-success" do %>
-                          <i class="fa-solid fa-eye"></i> Ver
-                        <% end %>
-                        <%= link_to edit_reservation_path(reservation), class: "btn edit" do %>
-                          <i class="fa-solid fa-pen"></i> Editar
-                        <% end %>
+  <!-- TABELA NO ESTILO DAS MANUTENÇÕES -->
+  <table id="reservationsTable" class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Empresa</th>
+        <th class="hide-sm">Nome Reserva</th>
+        <th class="hide-sm">Sala</th>
+        <th>Início</th>
+        <th>Fim</th>
+        <th>Status</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @reservations.present? %>
+        <% @reservations.each do |reservation| %>
+          <% status =
+               if reservation.cancelada_em.present?
+                 'cancelada'
+               elsif reservation.finalizada_em.present?
+                 'encerrada'
+               else
+                 'ativa'
+               end %>
 
-                        <% if reservation.cancelada_em.blank? && reservation.finalizada_em.blank? %>
-                          <%= button_to "<i class='fa-solid fa-trash'></i> Excluir".html_safe, reservation_path(reservation),
-                              method: :delete,
-                              data: { confirm: "Tem certeza que deseja excluir permanentemente esta reserva?" },
-                              class: "btn delete",
-                              form: { style: "display: contents;" } %>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          <% end %>
-        </div>
+          <tr
+            data-empresa="<%= reservation.grupo_empresa&.nome.to_s %>"
+            data-sala="<%= reservation.room&.name.to_s %>"
+            data-status="<%= status %>"
+            data-inicio="<%= reservation.starts_at&.iso8601 %>"
+            data-fim="<%= reservation.ends_at&.iso8601 %>"
+            data-busca="<%= [reservation.title, reservation.grupo_empresa&.nome, reservation.room&.name].compact.join(' ').downcase %>"
+          >
+            <td class="empresa-cell" data-label="Empresa">
+              <% if reservation.grupo_empresa&.logo&.attached? %>
+                <%= image_tag reservation.grupo_empresa.logo, alt: "", class: "empresa-logo" %>
+              <% end %>
+              <span><%= reservation.grupo_empresa&.nome || "Não informado" %></span>
+            </td>
+
+            <td class="hide-sm" data-label="Nome Reserva"><%= reservation.title %></td>
+            <td class="hide-sm" data-label="Sala"><%= reservation.room&.name %></td>
+            <td data-label="Início"><%= l(reservation.starts_at, format: :short) %></td>
+            <td data-label="Fim"><%= l(reservation.ends_at, format: :short) %></td>
+
+            <td data-label="Status">
+              <% if status == 'cancelada' %>
+                <span class="status-pill status-cancelada">⛔ Cancelada</span>
+              <% elsif status == 'encerrada' %>
+                <span class="status-pill status-encerrada">✔️ Encerrada</span>
+              <% else %>
+                <span class="status-pill status-ativa">🟢 Ativa</span><br>
+                <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
+                  <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
+                </span>
+              <% end %>
+            </td>
+
+            <td class="td-acoes" data-label="Ações">
+              <% if status == 'ativa' %>
+                <%= link_to edit_reservation_path(reservation), class: "btn-dash btn edit", title: "Editar" do %>
+                  <i class="fa-solid fa-pen"></i>
+                <% end %>
+              <% end %>
+
+              <%= link_to reservation_path(reservation), class: "btn-dash btn btn-success", title: "Ver" do %>
+                <i class="fa-solid fa-eye"></i>
+              <% end %>
+
+              <% if status == 'ativa' %>
+                <%= button_to reservation_path(reservation),
+                      method: :delete,
+                      data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
+                      class: "btn-dash btn btn-warning",
+                      form: { style: "display: contents;" } do %>
+                  <i class="fa-solid fa-rectangle-xmark"></i>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="7" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma reserva encontrada.
+          </td>
+        </tr>
       <% end %>
-    <% end %>
-  <% else %>
-    <p style="text-align: center; color: #555;">Nenhuma reserva encontrada.</p>
-  <% end %>
+    </tbody>
+  </table>
 </div>
 
-<!-- TABELA (fica oculta por padrão; o botão alterna) -->
-<table id="reservationsTable" class="reservations-table" style="width:100%; display:none;">
-  <thead>
-    <tr>
-      <th>Empresa</th>
-      <th>Nome Reserva</th>
-      <th>Sala</th>
-      <th>Início</th>
-      <th>Fim</th>
-      <th>Status</th>
-      <th>Ações</th>
-    </tr>
-  </thead>
-  <tbody>
-    <% @reservations.each do |reservation| %>
-      <% status =
-           if reservation.cancelada_em.present?
-             'cancelada'
-           elsif reservation.finalizada_em.present?
-             'encerrada'
-           else
-             'ativa'
-           end %>
 
-      <tr
-        data-empresa="<%= reservation.grupo_empresa&.nome.to_s %>"
-        data-sala="<%= reservation.room&.name.to_s %>"
-        data-status="<%= status %>"
-        data-inicio="<%= reservation.starts_at&.iso8601 %>"
-        data-fim="<%= reservation.ends_at&.iso8601 %>"
-        data-busca="<%= [reservation.title, reservation.grupo_empresa&.nome, reservation.room&.name].compact.join(' ').downcase %>"
-      >
-        <td class="empresa-cell" data-label="Empresa">
-          <% if reservation.grupo_empresa&.logo&.attached? %>
-            <%= image_tag reservation.grupo_empresa.logo, alt: "", class: "empresa-logo" %>
-          <% end %>
-          <span><%= reservation.grupo_empresa&.nome || "Não informado" %></span>
-        </td>
-
-        <td data-label="Nome Reserva"><%= reservation.title %></td>
-        <td data-label="Sala"><%= reservation.room&.name %></td>
-        <td data-label="Início"><%= l(reservation.starts_at, format: :short) %></td>
-        <td data-label="Fim"><%= l(reservation.ends_at, format: :short) %></td>
-
-        <td data-label="Status">
-          <% if status == 'cancelada' %>
-            <span class="status-pill status-cancelada">⛔ Cancelada</span>
-          <% elsif status == 'encerrada' %>
-            <span class="status-pill status-encerrada">✔️ Encerrada</span>
-          <% else %>
-            <span class="status-pill status-ativa">🟢 Ativa</span><br>
-            <span id="status-<%= reservation.id %>" class="tag <%= reservation.sent_to_facial? ? 'success' : 'warning' %>">
-              <%= reservation.sent_to_facial? ? 'Participantes já enviados' : 'Aguardando envio' %>
-            </span>
-          <% end %>
-        </td>
-
-        <td class="actions" data-label="Ações" style="
-    display: grid;
-">
-          <% if status == 'ativa' %>
-            <%= link_to edit_reservation_path(reservation), class: "btn edit", title: "Editar" do %>
-              <i class="fa-solid fa-pen"></i> Editar
-            <% end %>
-          <% end %>
-
-          <%= link_to reservation_path(reservation), class: "btn btn-success", title: "Ver" do %>
-            <i class="fa-solid fa-eye"></i> Ver
-          <% end %>
-
-          <% if status == 'ativa' %>
-            <%= button_to reservation_path(reservation),
-                  method: :delete,
-                  data: { confirm: "Tem certeza que deseja cancelar esta reserva?" },
-                  class: "btn cancel",
-                  form: { style: "display: contents;" } do %>
-              <i class="fa-solid fa-rectangle-xmark"></i> Cancelar
-            <% end %>
-          <% end %>
-        </td>
-      </tr>
-    <% end %>
-  </tbody>
-</table>
-
+<%# JS %>
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  // Atualização periódica "status-<id>"
+  // Atualização periódica do status enviado/aguardando
   const reservationIds = <%= raw @reservations.map(&:id).to_json %>;
+
   function updateStatuses() {
     reservationIds.forEach(id => {
       fetch(`/reservations/${id}/status`)
@@ -313,60 +171,49 @@ document.addEventListener("DOMContentLoaded", function () {
           if (!el) return;
           if (data.sent_to_facial) {
             el.textContent = "Participantes já enviados";
-            el.classList.remove("warning"); el.classList.add("success");
+            el.classList.remove("warning");
+            el.classList.add("success");
           } else {
             el.textContent = "Aguardando envio";
-            el.classList.remove("success"); el.classList.add("warning");
+            el.classList.remove("success");
+            el.classList.add("warning");
           }
-        }).catch(()=>{});
+        })
+        .catch(() => {});
     });
   }
+
   setInterval(updateStatuses, 15000);
 
-  // Toggle cards <-> tabela
-  const toggleBtn = document.getElementById("toggleViewBtn");
-  const cardsContainer = document.getElementById("reservationsCards");
-  const tableContainer = document.getElementById("reservationsTable");
-  function applyViewMode(mode) {
-    if (mode === "table") {
-      tableContainer.style.display = "table";
-      cardsContainer.style.display = "none";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-id-card"></i> Alternar Visualização';
-    } else {
-      tableContainer.style.display = "none";
-      cardsContainer.style.display = "flex";
-      toggleBtn.innerHTML = '<i class="fa-solid fa-table"></i> Alternar Visualização';
-    }
-  }
-  const savedMode = localStorage.getItem("reservationsViewMode") || "cards";
-  applyViewMode(savedMode);
-  toggleBtn.addEventListener("click", function () {
-    const currentMode = tableContainer.style.display === "table" ? "table" : "cards";
-    const newMode = currentMode === "table" ? "cards" : "table";
-    localStorage.setItem("reservationsViewMode", newMode);
-    applyViewMode(newMode);
-  });
-
   // Filtros da tabela
-  const table = document.getElementById("reservationsTable");
-  const tbody = table?.querySelector("tbody");
+  const table  = document.getElementById("reservationsTable");
+  const tbody  = table ? table.querySelector("tbody") : null;
   if (!tbody) return;
 
-  const $emp   = document.getElementById("filterEmpresa");
-  const $sala  = document.getElementById("filterSala");
-  const $stat  = document.getElementById("filterStatus");
-  const $ini   = document.getElementById("filterInicio");
-  const $fim   = document.getElementById("filterFim");
-  const $busca = document.getElementById("filterBusca");
-  const $limpar= document.getElementById("filterLimpar");
+  const $emp    = document.getElementById("filterEmpresa");
+  const $sala   = document.getElementById("filterSala");
+  const $stat   = document.getElementById("filterStatus");
+  const $ini    = document.getElementById("filterInicio");
+  const $fim    = document.getElementById("filterFim");
+  const $busca  = document.getElementById("filterBusca");
+  const $limpar = document.getElementById("filterLimpar");
 
   const saved = JSON.parse(localStorage.getItem("reservationsFilters") || "{}");
-  if ($emp   && saved.empresa) $emp.value = saved.empresa;
-  if ($sala  && saved.sala)    $sala.value = saved.sala;
-  if ($stat  && saved.status)  $stat.value = saved.status;
-  if ($ini   && saved.inicio)  $ini.value = saved.inicio;
-  if ($fim   && saved.fim)     $fim.value = saved.fim;
-  if ($busca && saved.busca)   $busca.value= saved.busca;
+  if ($emp   && saved.empresa) $emp.value   = saved.empresa;
+  if ($sala  && saved.sala)    $sala.value  = saved.sala;
+  if ($stat  && saved.status)  $stat.value  = saved.status;
+  if ($ini   && saved.inicio)  $ini.value   = saved.inicio;
+  if ($fim   && saved.fim)     $fim.value   = saved.fim;
+  if ($busca && saved.busca)   $busca.value = saved.busca;
+  // ===== SOBRESCREVE COM A DATA DA URL (se vier ?date=YYYY-MM-DD) =====
+  const urlParams = new URLSearchParams(window.location.search);
+  const dateParam = urlParams.get("date");
+
+  if (dateParam) {
+    // Preenche início/fim do dia selecionado
+    if ($ini) $ini.value = `${dateParam}T00:00`;
+    if ($fim) $fim.value = `${dateParam}T23:59`;
+  }
 
   function salvaEstado() {
     localStorage.setItem("reservationsFilters", JSON.stringify({
@@ -415,19 +262,95 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   [$emp, $sala, $stat, $ini, $fim, $busca].forEach(el => {
-    el && el.addEventListener("input", aplicaFiltros);
-    el && el.addEventListener("change", aplicaFiltros);
-  });
-  $limpar && $limpar.addEventListener("click", () => {
-    if ($emp) $emp.value = "";
-    if ($sala) $sala.value = "";
-    if ($stat) $stat.value = "";
-    if ($ini) $ini.value = "";
-    if ($fim) $fim.value = "";
-    if ($busca) $busca.value = "";
-    aplicaFiltros();
+    if (!el) return;
+    el.addEventListener("input", aplicaFiltros);
+    el.addEventListener("change", aplicaFiltros);
   });
 
+  if ($limpar) {
+    $limpar.addEventListener("click", () => {
+      if ($emp)   $emp.value = "";
+      if ($sala)  $sala.value = "";
+      if ($stat)  $stat.value = "";
+      if ($ini)   $ini.value = "";
+      if ($fim)   $fim.value = "";
+      if ($busca) $busca.value = "";
+      aplicaFiltros();
+    });
+  }
+
   aplicaFiltros();
+
+  // Colapso dos filtros (igual salas)
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('reservationsFilters');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:reservations-filters-collapsed';
+  const savedCollapse = localStorage.getItem(STORAGE_KEY);
+
+  if (savedCollapse === '1') {
+    filtros.classList.add('collapsed');
+    toggle.setAttribute('aria-expanded', 'false');
+  }
+
+  function setCollapsed(collapsed, save = true) {
+    if (collapsed) {
+      filtros.classList.add('collapsed');
+      toggle.setAttribute('aria-expanded', 'false');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      filtros.classList.remove('collapsed');
+      toggle.setAttribute('aria-expanded', 'true');
+      if (save) localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  toggle.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    const isCollapsed = filtros.classList.contains('collapsed');
+    setCollapsed(!isCollapsed);
+  });
+
+  filtros.querySelectorAll('input, select, textarea').forEach((el) => {
+    el.addEventListener('focus', () => setCollapsed(false, false));
+  });
 });
 </script>
+
+<style>
+.filtro-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .35rem .8rem;
+  border-radius: 999px;
+  border: 1px solid var(--color-btn);
+  background: transparent;
+  color: var(--color-btn);
+  font-size: .9rem;
+  cursor: pointer;
+  transition: all .2s ease;
+}
+
+
+.filtro-chevron {
+  transition: transform .2s ease;
+}
+
+.filtro-label[aria-expanded="false"] .filtro-chevron {
+  transform: rotate(180deg);
+}
+
+#reservationsFilters.filter-form {
+    display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    flex-direction: row;
+}
+
+#reservationsFilters.collapsed {
+  display: none;
+}
+</style>

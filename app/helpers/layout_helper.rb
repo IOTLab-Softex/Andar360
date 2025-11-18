@@ -6,7 +6,7 @@ module LayoutHelper
   def page_title
     case "#{controller_name}##{action_name}"
     when "dashboard#index"
-      "RESERVAS DE SALAS"
+      "INÍCIO"
     when "users#new"
       "RESERVAS DE SALAS"
     when "reservations#new"
@@ -29,17 +29,17 @@ module LayoutHelper
       "Editar Participante"
     when "rooms#index"
       "Salas"
-    when "rooms#new"
+    when "rooms#new", "rooms#create"
       "Adicionar Sala"
     when "rooms#show"
       "DETALHES DA SALA"
-    when "rooms#edit"
+    when "rooms#edit", "rooms#update"
       "Editar Sala"
-    when "devices#edit"
-      "Editar Dispositivo"
+    when "devices#edit", "devices#update"
+      "EDITAR DISPOSITIVO" 
     when "devices#index"
       "Dispositivos"
-    when "devices#new"
+    when "devices#new", "devices#create"
       "Adicionar Dispositivos"
     when "participants#index"
       "USUÁRIOS"
@@ -57,17 +57,17 @@ module LayoutHelper
       "GRUPOS DE SALAS"
     when "chamados#index"
       "CHAMADOS"
-    when "chamados#new"
+    when "chamados#new", "chamados#create"
       "ABRIR CHAMADO"
-    when "chamados#edit"
+    when "chamados#edit", "chamados#update"
       "EDITAR CHAMADO"
     when "chamados#show"
       "CHAMADO: #{@chamado.titulo}"
-    when "manutencao_programadas#edit"
+    when "manutencao_programadas#edit", "manutencao_programadas#update"
       "EDITAR MANUTENÇÃO"
     when "manutencao_programadas#index"
       "MANUTENÇÕES PROGRAMADAS"
-    when "manutencao_programadas#new"
+    when "manutencao_programadas#new", "manutencao_programadas#create"
       "ADICIONAR MANUTENÇÕES PROGRAMADAS"
     when "manutencao_programadas#show"
       "MANUTENÇÕES PROGRAMADAS: #{@manutencao_programada.titulo}"
@@ -101,6 +101,8 @@ module LayoutHelper
       "FEEDBACK"
        when "feedbacks#show"
       "FEEDBACK: #{@feedback.id}"
+      when "room_items#index"
+      "ITEMS DE SALAS"
     else
       content_for?(:title) ? content_for(:title) : "Sistema"
     end
@@ -120,7 +122,7 @@ module LayoutHelper
 
         operador_ou_admin? ?
           link_to(new_room_path, class: "hide-on-mobile menu-btn") do
-          content_tag(:span, "", class: "icon-rectangle-plus") + " ADICIONAR SALA"
+          content_tag(:span, "", class: "icon-rectangle-plus") + " ADICIONAR SALA / ESPAÇO"
         end : nil,
 
         link_to(participants_path, class: "menu-btn") do
@@ -171,9 +173,12 @@ module LayoutHelper
       if params[:room_id].present? && defined?(@room)
         safe_join([
           dashboard_button,
-          link_to(new_reservation_path(room_id: @room.id), class: "menu-btn") do
+          link_to(new_reservation_path(room_id: @room.id), class: "menu-btn hide-sm") do
             content_tag(:i, "", class: "fa-solid fa-plus") + " NOVA RESERVA"
           end,
+          link_to(reservations_path, class: "menu-btn") do
+            content_tag(:i, "", class: "fa-solid fa-calendar-days") + " TODAS RESERVAS"
+          end
         ])
       else
         dashboard_button
@@ -191,7 +196,7 @@ module LayoutHelper
         end,
       ])
     
-    when "rooms#edit"
+    when "rooms#edit", "rooms#update"
       if @room
         safe_join([
           dashboard_button,
@@ -228,18 +233,19 @@ module LayoutHelper
       else
         dashboard_button
       end
-    when "devices#edit"
+    when "devices#edit", "devices#update"
+
       if params[:id].present? && @device.present?
         safe_join([
           dashboard_button,
-          link_to(device_path(@device), class: "menu-btn") do
-            content_tag(:i, "", class: "fa-solid fa-plus") + " VER DISPOSITIVO"
+          link_to(devices_path, class: "menu-btn") do
+            content_tag(:i, "", class: "fa-solid fa-mobile-screen-button") + " VER DISPOSITIVOS"
           end,
         ])
       else
         safe_join([dashboard_button])
       end
-    when "devices#new"
+    when "devices#new", "devices#create"
       safe_join([
         dashboard_button,
         link_to(devices_path, class: "menu-btn") do
@@ -251,10 +257,7 @@ module LayoutHelper
         dashboard_button,
         link_to(new_device_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADICIONAR DISPOSITIVO"
-        end,
-        link_to(settings_path, class: "menu-btn") do
-          content_tag(:i, "", class: "fa-solid fa-gear") + " CONFIGURAÇÃO"
-        end,
+        end
       ])
     when "participants#index"
       safe_join([
@@ -270,7 +273,7 @@ module LayoutHelper
                  link_to(participants_path, class: "menu-btn") do
         content_tag(:i, "", class: "fa-solid fa-user") + " USUÁRIOS"
       end])
-    when "rooms#new"
+    when "rooms#new", "rooms#create"
       if @room
         safe_join([
           dashboard_button,
@@ -324,17 +327,17 @@ module LayoutHelper
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADCIONAR CHAMADOS"
         end,
       ])
-    when "chamados#new"
+    when "chamados#new", "chamados#create"
       safe_join([
         dashboard_button,
         link_to(chamados_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-table-list") + " VER TODOS"
         end,
       ])
-    when "chamados#edit"
+    when "chamados#edit", "chamados#update"
       safe_join([
         dashboard_button,
-        link_to(new_chamado_path, class: "menu-btn") do
+        link_to(new_chamado_path, class: "menu-btn hide-sm") do
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADCIONAR CHAMADOS"
         end,
         link_to(chamados_path, class: "menu-btn") do
@@ -354,7 +357,7 @@ module LayoutHelper
           content_tag(:i, "", class: "fa-solid fa-table-list") + " VER TODOS"
         end,
       ])
-    when "manutencao_programadas#edit"
+    when "manutencao_programadas#edit", "manutencao_programadas#update"
       safe_join([
         link_to(manutencao_programadas_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-arrow-left") + " VOLTAR"
@@ -374,7 +377,7 @@ module LayoutHelper
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADICIONAR"
         end,
       ])
-    when "manutencao_programadas#new"
+    when "manutencao_programadas#new", "manutencao_programadas#create"
       safe_join([
         dashboard_button,
         link_to(manutencao_programadas_path, class: "menu-btn") do
@@ -404,7 +407,7 @@ module LayoutHelper
     when "items#edit"
       safe_join([
         dashboard_button,
-        link_to(new_item_path, class: "menu-btn") do
+        link_to(new_item_path, class: "menu-btn hide-sm") do
           content_tag(:i, "", class: "fa-solid fa-file-pen") + " ADCIONAR OBJETOS"
         end,
         link_to(items_path, class: "menu-btn") do
@@ -456,7 +459,7 @@ module LayoutHelper
         link_to(encomendas_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-box") + " VER TODOS"
         end,
-        link_to(new_encomenda_path, class: "menu-btn") do
+        link_to(new_encomenda_path, class: "menu-btn hide-sm") do
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADCIONAR"
         end,
 
@@ -511,6 +514,11 @@ module LayoutHelper
         dashboard_button
         
       ])
+       when "room_items#index"
+      safe_join([
+        dashboard_button
+        
+      ])
     end
   end
 end
@@ -546,7 +554,7 @@ def sidebar_menu
           link_to(rooms_path) do
             safe_join([
               content_tag(:span, "", class: "icon-rectangle"),
-              "Salas",
+              "Salas / Espaços",
             ])
           end
         end,
@@ -554,7 +562,15 @@ def sidebar_menu
           link_to(new_room_path) do
             safe_join([
               content_tag(:span, "", class: "icon-rectangle-plus"),
-              " Adicionar Sala",
+              " Adicionar Sala / Espaços",
+            ])
+          end
+        end,
+        content_tag(:li) do
+          link_to(room_items_path) do
+            safe_join([
+              content_tag(:span, "", class: "fa-solid fa-cube"),
+              " Items de Sala / Espaços ",
             ])
           end
         end,
@@ -574,7 +590,7 @@ def sidebar_menu
       safe_join([
         content_tag(:span, class: "submenu-toggle", data: { target: "#submenu-salas" }) do
           safe_join([
-            content_tag(:span, "", class: "icon-rectangle"), "Sala",
+            content_tag(:span, "", class: "icon-rectangle"), "Sala / Espaço",
             content_tag(:i, "", class: "fa fa-chevron-down chevron-icon", style: "margin-left: 6px; transition: transform 0.3s ease;"),
           ])
         end,
@@ -699,7 +715,7 @@ def sidebar_menu
   submenu = content_tag(:ul, class: "submenu", id: "submenu-reservas", style: "display: none;") do
     safe_join([
       content_tag(:li) do link_to(reservations_path) do safe_join([content_tag(:span, "", class: "fa-solid fa-calendar-days"),
-                                                                   " Ver Reservas"])       end       end,
+                                                                   " Todas Reservas"])       end       end,
       content_tag(:li) do link_to(new_reservation_path) do safe_join([content_tag(:span, "", class: "fa-solid fa-plus"),
                                                                       " Nova Reserva"])       end       end,
     ])

@@ -20,6 +20,8 @@
   .rooms.hidden {
     display: none !important;
   }
+
+
 </style>
 
 <%# --- CARDS (DASHBOARD) --- %>
@@ -116,7 +118,7 @@ data-ns="<%= @ack_ns %>">
     <div class="modal-dialog" style="max-width: 600px;">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 style="color: var(--color-btn);"><i class="fa-solid fa-triangle-exclamation"></i> Atenção: Manutenções Próximas</h5>
+          <h5 style="color: black !important;"><i class="fa-solid fa-triangle-exclamation"></i> Atenção: Manutenções Próximas</h5>
           <button type="button" class="close-modal" onclick="document.getElementById('modalAvisos').style.display = 'none'">&times;</button>
         </div>
         <div class="modal-body">
@@ -148,6 +150,12 @@ data-ns="<%= @ack_ns %>">
   .p {
     color: black !important;
   }
+
+  /* cola no final do seu CSS para garantir prioridade */
+#modalAvisos.modal-custom .modal-header h5 {
+  color: #000 !important;
+}
+
     #modalAvisos.modal-custom {
       position: fixed;
     z-index: 9999;
@@ -229,9 +237,10 @@ data-ns="<%= @ack_ns %>">
     display:flex; align-items:center; gap:.6rem;
     justify-content: space-between;
     margin:0; padding:12px 16px;
-    background: rgba(255,255,255,.03);
+background: rgb(255 255 255 / 7%);
     border-bottom: 1px solid rgba(255,255,255,.06);
     cursor: pointer;
+        font-size: inherit;
   }
   .board-card .rooms{ padding: 12px; }
 
@@ -287,6 +296,8 @@ data-ns="<%= @ack_ns %>">
 @media (max-width: 768px) {
   .table-salas .hide-sm { display: none; }
 }
+
+
 
 /*********/
 </style>
@@ -443,4 +454,75 @@ data-ns="<%= @ack_ns %>">
       btn.remove();
     });
   });
+
+  document.addEventListener('DOMContentLoaded', () => {
+  const wrap = document.querySelector('.kpi-scroll-wrap');
+  const grid = document.querySelector('.kpi-grid');
+
+  if (!grid) return;
+
+  // Para acessibilidade e performance: só ativa setas se wrapper existir
+  const prevBtn = wrap?.querySelector('.kpi-prev') ?? null;
+  const nextBtn = wrap?.querySelector('.kpi-next') ?? null;
+
+  // função utilitária para verificar overflow horizontal
+  function hasOverflowX(el) {
+    return el.scrollWidth > el.clientWidth + 1; // margem pequena
+  }
+
+  // atualiza estado das setas (desabilita quando no começo/fim)
+  function updateArrows() {
+    if (!prevBtn || !nextBtn) return;
+    const maxScrollLeft = grid.scrollWidth - grid.clientWidth;
+    prevBtn.disabled = grid.scrollLeft <= 2;
+    nextBtn.disabled = grid.scrollLeft >= maxScrollLeft - 2;
+  }
+
+  // rola por um "passo" — largura do primeiro card (ou fallback)
+  function scrollStep(direction = 1) {
+    const firstCard = grid.querySelector('.kpi-grid > *') || grid.children[0];
+    let step = 240; // fallback
+    if (firstCard) {
+      const style = window.getComputedStyle(firstCard);
+      const marginRight = parseFloat(style.marginRight || 0);
+      step = Math.ceil(firstCard.getBoundingClientRect().width + marginRight);
+    }
+    grid.scrollBy({ left: step * direction, behavior: 'smooth' });
+  }
+
+  // attach button handlers
+  if (prevBtn) prevBtn.addEventListener('click', () => { scrollStep(-1); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { scrollStep(1); });
+
+  // update arrow state on scroll & resize
+  grid.addEventListener('scroll', () => updateArrows());
+  window.addEventListener('resize', () => {
+    // espera o resize estabilizar
+    setTimeout(() => updateArrows(), 120);
+  });
+
+  // inicializa visibilidade: se não overflow, esconde as setas
+  if (wrap && (prevBtn && nextBtn)) {
+    if (!hasOverflowX(grid)) {
+      prevBtn.style.display = 'none';
+      nextBtn.style.display = 'none';
+    } else {
+      prevBtn.style.display = '';
+      nextBtn.style.display = '';
+      // garantir estado inicial das setas
+      updateArrows();
+    }
+  }
+
+  // opcional: animação de entrada apenas quando o grid estiver visível (poll curto)
+  // garante que as cards disparem a animação após estarem renderizados
+  setTimeout(() => {
+    grid.querySelectorAll(':scope > *').forEach((card) => {
+      // forçar recomposição para garantir animação
+      card.style.opacity = '';
+      card.style.transform = '';
+    });
+  }, 50);
+});
+
 </script>

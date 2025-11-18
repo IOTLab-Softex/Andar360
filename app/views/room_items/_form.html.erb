@@ -1,0 +1,45 @@
+<%= form_with model: item, html: { multipart: true } do |f| %>
+  <div class="form-group">
+    <%= f.label :name, "Nome do item" %>
+    <%= f.text_field :name, class: "form-control", required: true %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :modelo, "Modelo" %>
+    <%= f.text_field :modelo, class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :valor, "Valor" %>
+    <%= f.number_field :valor, step: "0.01", class: "form-control" %>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :icon, "Ícone" %>
+    <%= f.file_field :icon,
+          accept: ".svg,image/*",
+          class: "form-control",
+          required: (item.new_record? || !item.icon.attached?),
+          direct_upload: true %>
+    <% if item.icon.attached? %>
+      <small>Atual: <%= item.icon.filename %></small>
+    <% end %>
+  </div>
+
+  <div class="form-actions" style="text-align:right;">
+    <%= button_tag type: "submit", class: "btn submit" do %>
+      <i class="fa-solid <%= item.new_record? ? 'fa-plus' : 'fa-floppy-disk' %>"></i>
+      <span style="margin-left:.35rem;"><%= item.new_record? ? "Criar" : "Atualizar" %></span>
+    <% end %>
+  </div>
+
+  <% if item.errors.any? %>
+    <div class="alert alert-danger" style="margin-top:8px;">
+      <ul>
+        <% item.errors.full_messages.each do |m| %>
+          <li><%= m %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+<% end %>

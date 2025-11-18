@@ -2,7 +2,7 @@
 .choices {
   position: relative;
   overflow: hidden;
-  margin-bottom: 24px;
+    margin: 7px !important;
   font-size: 16px;
 }
 
@@ -140,19 +140,19 @@
 .choices__inner {
     display: flex;
     vertical-align: top;
-    width: 85%;
+    /* width: 85%; */
     background-color: #f9f9f9;
     padding: 7px 9px;
-    border: 2px solid #ff8c42;
+    border: 2px solid var(--color-accent);
     border-radius: 10px;
     font-size: 14px;
     min-height: 22px;
     overflow: hidden;
-    height: 22px;
+    /* height: 22px; */
     color: black;
-    align-content: center;
     justify-content: center;
     align-items: center;
+    align-content: center;
 }
 
 .is-focused .choices__inner,
@@ -176,7 +176,6 @@
 
 .choices__list--single {
   display: inline-block;
-  padding: 4px 16px 4px 4px;
   width: 100%;
 }
 

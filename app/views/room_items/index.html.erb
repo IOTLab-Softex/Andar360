@@ -1,0 +1,377 @@
+<!-- TOPO: removido botão/aviso de importação -->
+<button type="button" id="filtro-toggle" class="filtro-label" aria-expanded="true" aria-controls="filtros-salas">
+  <i class="fa-solid fa-filter"></i>
+  Filtro
+  <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+</button>
+<br>
+
+<div class="mb-3" id="filtros-salas">
+  <input type="text" id="filtro-item-nome" class="form-control" placeholder="Filtrar por nome...">
+  <input type="text" id="filtro-item-modelo" class="form-control" placeholder="Filtrar por modelo...">
+  <input type="text" id="filtro-item-valor-min" class="form-control" placeholder="Valor mín. (R$)">
+  <input type="text" id="filtro-item-valor-max" class="form-control" placeholder="Valor máx. (R$)">
+</div>
+
+<div class="infobox infobox--info" role="status" aria-live="polite">
+  <i class="fa-solid fa-circle-info infobox__icon" aria-hidden="true"></i>
+  <div class="infobox__content">
+    <strong class="infobox__title">Dica</strong>
+    <div class="infobox__text">
+      Adicione itens ao catálogo para que possam ser vinculados às salas posteriormente.
+    </div>
+  </div>
+</div>
+
+
+
+<div class="form-group" style="
+    display: flex;
+    flex-direction: column;
+    align-content: center;
+    align-items: center;
+">
+<%= link_to new_room_item_path,
+            class: "btn btn-primary",
+            data: { turbo_frame: "item-modal-frame", open_modal: true } do %>
+  <i class="fa-solid fa-plus"></i> Adicionar
+<% end %>
+
+
+        <small style="    color: var(--color-btn);">
+    Adicione items.
+  </small>
+</div>
+
+<div id="items-section" class="rooms expanded" style="display: flow;">
+  <%= form_with url: bulk_destroy_room_items_path, method: :delete, local: true, id: "items-bulk-form" do %>
+    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
+
+
+    <table class="table table-salas selection-table" id="items-table">
+      <thead class="table-secondary text-dark">
+        <tr>
+          <th class="sel-cell" style="display:none; width:36px; text-align:center;">
+            <input type="checkbox" id="items-check-all">
+          </th>
+          <th style="width:56px;">Ícone</th>
+          <th>Nome</th>
+          <th>Modelo</th>
+          <th>Valor</th>
+          <th class="th-actions">
+            <span>Ações</span>
+            
+          </th>
+        </tr>
+      </thead>
+      <tbody id="catalog-list">
+        <% @room_items.each do |k| %>
+          <% preco = (k.valor || 0).to_f %>
+          <tr id="<%= dom_id(k) %>" data-valor="<%= preco %>">
+            <td class="sel-cell" style="display:none; text-align:center;">
+              <input type="checkbox" class="items-row-check" name="ids[]" value="<%= k.id %>">
+            </td>
+
+<td>
+  <% if k.icon.attached? %>
+    <% ct = k.icon.blob.content_type.to_s %>
+    <% is_svg = ct.include?("svg") || k.icon.filename.extension == "svg" %>
+
+    <% if is_svg %>
+      <% raw_svg = k.icon.blob.download.force_encoding("UTF-8")
+                   .gsub(/\s*(width|height|fill|style)="[^"]*"/, "")
+                   .sub("<svg", '<svg fill="currentColor" focusable="false" aria-hidden="true"') %>
+      <span class="icon-20"><%= raw raw_svg %></span>
+    <% else %>
+      <%= image_tag url_for(k.icon), alt: k.name, class: "icon-20-img" %>
+    <% end %>
+  <% end %>
+</td>
+
+            <td class="td-nome"><strong><%= k.name %></strong></td>
+            <td class="td-modelo"><%= k.modelo.presence || "-" %></td>
+            <td class="td-valor"><%= number_to_currency(preco, unit: "R$ ", separator: ",", delimiter: ".") %></td>
+            <td>
+<%= link_to(
+      edit_room_item_path(k),
+      class: "btn edit",
+      data: { turbo_frame: "item-modal-frame", open_modal: true }
+    ) do %>
+  <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar</div>
+<% end %>
+
+
+<%= button_to room_item_path(k),
+              method: :delete,
+              class: "btn btn-warning btn-excluir-item",
+              form: { data: { turbo_confirm: "Excluir #{k.name}?" },
+                      class: "inline-delete-form" } do %>
+  <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir</div>
+<% end %>
+
+
+
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</div>
+
+<!-- Modal reutilizável -->
+<div id="item-modal" class="modal" hidden>
+  <div class="modal-backdrop" data-close-modal></div>
+
+  <div class="modal-content">
+  
+    <button class="btn btn-close" type="button" data-close-modal aria-label="Fechar">×</button>
+    <turbo-frame id="item-modal-frame">
+      <!-- O conteúdo do form (new/edit) será injetado aqui via Turbo -->
+    </turbo-frame>
+  </div>
+</div>
+
+
+
+<style>
+  /* Reuso do teu CSS — só adiciono os filtros dos itens para manter grid/spacing */
+  #filtros-itens{
+    display:flex; gap:1rem; flex-wrap:nowrap;
+  }
+  #filtros-itens .form-control{ min-width:160px; font-size:.95rem; }
+  @media (max-width:700px){
+    #filtros-itens{ flex-direction:column; gap:.5rem; }
+  }
+
+  /* Responsividade simples: esconder “Modelo” em telas muito estreitas */
+  @media (max-width:576px){
+    #items-table th:nth-child(4), #items-table td:nth-child(4){ display:none; }
+  }
+
+  /* Modal básico */
+.modal[hidden] { display: none !important; }
+.modal {
+  position: fixed; inset: 0; z-index: 10000;
+  display: grid; place-items: center;
+}
+.modal-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,.45);
+}
+.modal-content {
+  position: relative;
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  background: var(--color-card);
+  color: var(--fg, #222);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+  padding: 4rem 1.25rem 1.25rem;
+}
+.btn-close {
+  position: absolute; top: .5rem; right: .75rem;
+  border: none; background: transparent; font-size: 1.5rem; line-height: 1;
+  cursor: pointer;
+  color: black;
+}
+
+
+
+
+.badge.badge-danger{
+  display:inline-flex; gap:.35rem; align-items:center;
+  background:#dc3545; color:#fff; border-radius:10px;
+  padding:.15rem .5rem; font-size:.8rem; font-weight:600;
+}
+.row-missing-icon { background: rgba(220,53,69,.06); }
+.text-danger { color:#dc3545; }
+
+/* ======= CSS do colapso suave ======= */
+#filtros-salas {
+  overflow: hidden;
+  max-height: 9999px;        /* estado expandido padrão */
+  transition: max-height 320ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease, padding 220ms ease;
+  opacity: 1;
+  padding: .6rem 0;          /* ajuste visual */
+  will-change: max-height, opacity;
+}
+
+/* estado colapsado */
+#filtros-salas.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* estilo do botão e chevron */
+
+
+/* chevron que gira */
+.filtro-chevron {
+  display: inline-block;
+  transition: transform 240ms ease;
+  transform-origin: center;
+  margin-left: .4rem;
+}
+#filtros-salas.collapsed + .foco-fake{} /* fallback no caso de ordem diferente */
+
+/* botão com estado aria-expanded="false" (girado) */
+#filtro-toggle[aria-expanded="false"] .filtro-chevron {
+  transform: rotate(-180deg);
+}
+
+/* reduz animação se usuário preferir reduzida */
+@media (prefers-reduced-motion: reduce) {
+  #filtros-salas { transition: none; }
+  .filtro-chevron { transition: none; }
+}
+
+</style>
+
+<script>
+  (function () {
+  const modal = document.getElementById('item-modal');
+  const frame = document.getElementById('item-modal-frame');
+  if (!modal || !frame) return;
+
+  // Intercepta cliques em links que devem abrir no modal
+  document.addEventListener('click', async (e) => {
+    const a = e.target.closest('a[data-open-modal]');
+    if (!a) return;
+
+    // Se tiver data-turbo-frame, usamos o header correto do Turbo
+    const frameId = a.dataset.turboFrame || 'item-modal-frame';
+
+    e.preventDefault(); // impede navegação de página inteira
+    modal.hidden = false; // abre o modal imediatamente
+
+    // (opcional) skeleton enquanto carrega
+  frame.innerHTML = '<div style="padding:16px; text-align:center;"><img style="width:15%;" src="/loading.gif" alt="Carregando…" /><br> <div style="color:var(--color-btn)";> Carregando…</div></div>';
+
+    try {
+      const resp = await fetch(a.href, {
+        headers: { 'Turbo-Frame': frameId, 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      const html = await resp.text();
+      frame.innerHTML = html; // injeta o form no frame
+    } catch (err) {
+      console.error(err);
+      frame.innerHTML = '<div style="color:#b00;padding:16px;">Erro ao carregar formulário.</div>';
+    }
+  });
+
+  // Fechar modal (seu código existente)
+  document.addEventListener('click', (e) => {
+    const closeBtn = e.target.closest('[data-close-modal], .modal-backdrop');
+    if (closeBtn) {
+      modal.hidden = true;
+      frame.innerHTML = '';
+    }
+  });
+
+  // Fecha o modal após submit bem-sucedido
+  document.addEventListener('turbo:submit-end', (e) => {
+    if (e.detail.success) {
+      modal.hidden = true;
+      frame.innerHTML = '';
+    }
+  });
+})();
+
+// ======= JS do colapso suave (auto-expande medindo altura) =======
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-salas');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:filtros-salas-collapsed';
+
+  // Inicializa aria e estado conforme localStorage (ou atributo atual)
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
+  // Função para animar usando max-height calculado (mais suave que só toggle de class)
+  function setCollapsed(collapsed, save = true) {
+    // se preferir reduzir movimento, aplica sem transição
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (collapsed) {
+      // animação de fechar: define max-height para altura atual -> 0
+      const curH = filtros.scrollHeight;
+      filtros.style.maxHeight = curH + 'px';       // garante ponto de partida
+      // force reflow
+      // eslint-disable-next-line no-unused-expressions
+      filtros.offsetHeight;
+      if (prefersReduced) {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '0px';
+      }
+      toggle.setAttribute('aria-expanded', 'false');
+      filtros.setAttribute('aria-hidden', 'true');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      // abre: definir max-height do 0 para scrollHeight
+      filtros.classList.remove('collapsed');
+      filtros.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      const targetH = filtros.scrollHeight;
+      if (prefersReduced) {
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.style.maxHeight = '0px';
+        // força reflow
+        // eslint-disable-next-line no-unused-expressions
+        filtros.offsetHeight;
+        filtros.style.maxHeight = targetH + 'px';
+      }
+      // depois da animação remove max-height inline para ficar fluido quando o conteúdo muda
+      const cleanup = () => {
+        filtros.style.maxHeight = '';
+        filtros.removeEventListener('transitionend', cleanup);
+      };
+      filtros.addEventListener('transitionend', cleanup);
+      if (save) localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  // aplica estado inicial sem animação chata
+  if (startCollapsed) {
+    filtros.classList.add('collapsed');
+    filtros.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    filtros.style.maxHeight = '0px';
+  } else {
+    filtros.classList.remove('collapsed');
+    filtros.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    filtros.style.maxHeight = '';
+  }
+
+  // clique no toggle
+  toggle.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const isCollapsed = filtros.classList.contains('collapsed');
+    setCollapsed(!isCollapsed, true);
+  });
+
+  // abrir painel se foco em qualquer input/select dentro
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
+    el.addEventListener('focus', () => setCollapsed(false, false));
+  });
+
+  // opcional: fecha ao clicar fora (descomente se quiser)
+  // document.addEventListener('click', (ev) => {
+  //   if (filtros.classList.contains('collapsed')) return;
+  //   if (!ev.target.closest('#filtros-salas') && !ev.target.closest('#filtro-toggle')) {
+  //     setCollapsed(true, true);
+  //   }
+  // });
+});
+
+</script>

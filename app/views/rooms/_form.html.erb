@@ -1,5 +1,5 @@
 <%= form_with(model: room, local: true, html: { multipart: true }, class: 'device-form') do |form| %>
-  <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+  <div style="display: flex; flex-wrap: wrap; gap: 0px;">
     <div class="form-group" style="flex: 1 1 30%;">
       <%= form.label :name, "Nome da Sala" %>
       <%= form.text_field :name, class: 'form-control' %>
@@ -135,31 +135,56 @@
 
 
   </div>
-  <div style="display: flex; flex-wrap: wrap; gap: 1rem;">
-    <div class="form-group" style="flex: 1 1 30%;">
-      <h3 style="margin-top: 2rem;">Itens da Sala</h3>
-      <div id="room-items">
-        <%= form.fields_for :room_items do |item_form| %>
-          <div class="item-row" style="margin-bottom: 1rem; display: flex; gap: 1rem; align-items: center;">
-            <%= item_form.text_field :name, placeholder: "Ex: Cadeira, TV, Cabo HDMI", class: "form-control", style: "width: 50%;" %>
-            <%= item_form.number_field :quantity, min: 1, class: "form-control", placeholder: "Qtd", style: "width: 100px;" %>
-            <%= item_form.hidden_field :_destroy, class: "destroy-flag" %>
-            <%= link_to "#", class: "remove-item btn btn-danger" do %>
-              <i class="fa-solid fa-trash"></i> Remover
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-      <div style="margin-bottom: 1rem;">
-        <%= link_to "#", id: "add-item", class: "btn btn-secondary" do %>
-          <i class="fa-solid fa-plus"></i> Adicionar Item
-        <% end %>
-      </div>
+  <div class="full-width full-width" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+    <div class="form-group full-width">
+
+<h3 style="margin-top: 2rem;">Itens da Sala</h3>
+
+<!-- Linha de seleção: dropdown do catálogo + quantidade + adicionar -->
+<div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem;">
+<select id="catalog-select" class="form-control" style="max-width:420px;">
+  <option value="">-- Selecione um item do catálogo --</option>
+  <% (@catalog_items || []).each do |cat| %>
+    <option value="<%= cat.id %>"><%= cat.name %></option>
+  <% end %>
+</select>
+
+
+  <input type="number" id="catalog-qty" min="1" placeholder="Qtd" class="form-control" style="width:120px;">
+  <button id="catalog-add" class="btn btn-secondary"><i class="fa-solid fa-plus"></i> Adicionar</button>
+
+  <%= link_to "Gerenciar Catálogo", room_items_path, class: "btn btn-link", target: "_blank" %>
+</div>
+
+<!-- Lista de itens já adicionados (existentes + novos) -->
+<div id="room-items">
+  <%= form.fields_for :room_items do |item_form| %>
+    <div class="item-row" style="margin-bottom:.65rem; display:flex; gap:1rem; align-items:center;">
+      <%= item_form.hidden_field :id %>       <!-- garante UPDATE -->
+      <%= item_form.hidden_field :name %>     <!-- garante validação -->
+
+      <input type="text"
+             class="form-control"
+             value="<%= item_form.object.name %>"
+             style="width:40%;"
+             readonly>                         <!-- NÃO usar disabled -->
+
+      <%= item_form.number_field :quantity, min: 1, class: "form-control", placeholder: "Qtd", style: "width:110px;" %>
+
+      <%= item_form.hidden_field :_destroy, class: "destroy-flag" %>
+      <a href="#" class="remove-item btn btn-danger"><i class="fa-solid fa-trash"></i> Remover</a>
+    </div>
+  <% end %>
+</div>
+
+
+
     </div>
   </div>
   <div class="form-group">
     <%= form.label :photo do %>
-      <%= svg_icon("icones/icons_custom/solid/photo_room.svg", class: "srs-solid") %> Foto da Sala
+      
+  <%= svg_icon("icons/camera.svg") %> Foto da Sala
     <% end %>
     <%= form.file_field :photo, class: 'form-control' %>
   </div>
@@ -175,17 +200,129 @@
 </div>
 <% end %>
 <% if room.errors.any? %>
-  <div class="alert alert-danger">
-    <h4>Erros ao salvar:</h4>
-    <ul>
-      <% room.errors.full_messages.each do |message| %>
-        <li><%= message %></li>
-      <% end %>
-    </ul>
+  <div
+    id="notification-flash"
+    data-type="error"
+    style="
+      position: fixed;
+      bottom: 20px;
+      right: 15px;
+      background-color: rgb(255, 77, 79);
+      color: white;
+      padding: 12px 20px;
+      border-radius: 6px 0px 6px 6px;
+      font-weight: bold;
+      box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 10px;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 0.6s;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      max-width: 320px;
+      font-size: 14px;
+      line-height: 1.4;
+    "
+  >
+    <i class="fa-solid fa-triangle-exclamation" style="margin-top:2px;"></i>
+    <div>
+      <strong>Erro ao salvar</strong><br>
+      <ul style="margin:6px 0 0 18px; padding:0;">
+        <% room.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
   </div>
 <% end %>
 
+
 <script>
+
+(function(){
+  const catalogSelect = document.getElementById("catalog-select");
+  const qtyInput      = document.getElementById("catalog-qty");
+  const addBtn        = document.getElementById("catalog-add");
+  const listRoot      = document.getElementById("room-items");
+
+  // controla duplicados por ID do catálogo (e também impede re-add ao editar)
+  const addedIds = new Set(
+    Array.from(listRoot.querySelectorAll('input[name$="[catalog_item_id]"]'))
+      .map(i => i.value).filter(Boolean)
+  );
+
+  // também bloqueia pelo nome (para itens já persistidos sem catalog_item_id)
+  Array.from(listRoot.querySelectorAll('.item-row input[disabled]')).forEach(inp => {
+    const name = inp.value.trim();
+    if (name) addedIds.add("name:"+name.toLowerCase());
+  });
+
+  // desabilita opções já adicionadas
+  function refreshDisabledOptions() {
+    Array.from(catalogSelect.options).forEach(opt => {
+      if (!opt.value) return;
+      opt.disabled = addedIds.has(opt.value);
+    });
+  }
+  refreshDisabledOptions();
+
+  addBtn?.addEventListener("click", (e) => {
+    e.preventDefault();
+    const id  = catalogSelect.value;
+    const txt = catalogSelect.options[catalogSelect.selectedIndex]?.text || "";
+    const q   = parseInt(qtyInput.value || "0", 10);
+
+    if (!id) { alert("Selecione um item do catálogo."); return; }
+    if (!q || q < 1) { alert("Informe a quantidade."); return; }
+    if (addedIds.has(id)) { alert("Este item já foi adicionado."); return; }
+
+    const unique = Date.now().toString();
+
+    // monta a linha de nested attributes (sem upload, só catalog_item_id + quantity)
+    const row = document.createElement("div");
+    row.className = "item-row";
+    row.style.cssText = "margin-bottom:.65rem; display:flex; gap:1rem; align-items:center;";
+    row.innerHTML = `
+      <input type="hidden" name="room[room_items_attributes][${unique}][catalog_item_id]" value="${id}">
+      <input type="text" value="${txt}" class="form-control" style="width:40%;" disabled>
+      <input type="number" name="room[room_items_attributes][${unique}][quantity]" min="1" value="${q}" class="form-control" style="width:110px;" placeholder="Qtd">
+      <input type="hidden" name="room[room_items_attributes][${unique}][_destroy]" value="false" class="destroy-flag">
+      <a href="#" class="remove-item btn btn-danger"><i class="fa-solid fa-trash"></i> Remover</a>
+    `;
+    listRoot.appendChild(row);
+
+    // marca como adicionado para evitar duplicados e desabilita a opção
+    addedIds.add(id);
+    refreshDisabledOptions();
+
+    // limpa seleção
+    catalogSelect.value = "";
+    qtyInput.value = "";
+  });
+
+  document.addEventListener("click", (e) => {
+    const rm = e.target.closest(".remove-item");
+    if (!rm) return;
+    e.preventDefault();
+
+    const row = rm.closest(".item-row");
+    const destroy = row.querySelector(".destroy-flag");
+
+    // tenta reabilitar a opção do catálogo (se veio de catálogo)
+    const hiddenCatalog = row.querySelector('input[name$="[catalog_item_id]"]');
+    const disabledName  = row.querySelector('input[disabled]');
+    if (hiddenCatalog && hiddenCatalog.value) {
+      addedIds.delete(hiddenCatalog.value);
+    } else if (disabledName && disabledName.value) {
+      addedIds.delete("name:" + disabledName.value.trim().toLowerCase());
+    }
+    refreshDisabledOptions();
+
+    if (destroy) { destroy.value = "1"; row.style.display = "none"; }
+    else { row.remove(); }
+  });
+})();
+
   document.addEventListener("DOMContentLoaded", function () {
     const espacoSelect = document.getElementById("espaco-comun-select");
     const camposEspacoComum = document.querySelector(".espaco-comum-fields");
@@ -298,7 +435,9 @@
 </script>
 <style>
 .form-group.full-width { flex: 1 1 100% !important; }
-
+p {
+  color: black !important;
+}
 .device-form trix-editor.trix-simples {
   display: block;
   min-height: 180px;

@@ -1,27 +1,35 @@
 <div class="login-container">
-
+<div class="logo-mobile">
+ <img src="/logo.png" alt="Logo do Projeto" style="width: -webkit-fill-available; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));">
+</div>
   <div class="login-box">
     <div class="login-header">
-      <img src="/logo.png" alt="Logo do Projeto" class="login-logo">
-      <h2>Entrar</h2>
+      <img src="/logo.png" alt="Logo do Projeto" class="login-logo" >
+      <h2 class="login-h2">Login</h2>
     </div>
 
     <%= form_with model: resource, as: resource_name, url: session_path(resource_name), data: { turbo: false }, local: true do |f| %>
       <div class="login-field">
-        <%= f.label :cpf, "CPF" %>
+        <%= f.label :cpf do %>
+        <i class="fa-solid fa-address-card"></i> CPF
+        <% end %>
           <%= f.text_field :cpf, autofocus: true, autocomplete: "username" , class: "login-input" %>
 
       </div>
 
       <div class="login-field">
-        <%= f.label :password, "Senha" %>
+        <%= f.label :password do %>
+        <i class="fa-solid fa-key"></i> Senha
+        <% end %>
           <%= f.password_field :password, autocomplete: "current-password" , class: "login-input" %>
       </div>
 
       <% if devise_mapping.rememberable? %>
         <div class="login-remember">
           <%= f.check_box :remember_me %>
-            <%= f.label :remember_me, "Lembrar-me" %>
+            <%= f.label :remember_me do %>
+            <i class="fa-solid fa-star"></i> Lembrar-me
+            <% end %>
         </div>
         <% end %>
 
@@ -63,3 +71,13 @@
         });
       });
     </script>
+
+
+<style>
+.feedback-fab {
+
+    width: 55px !important;
+    height: 55px !important;
+
+}
+</style>

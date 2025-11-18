@@ -38,6 +38,7 @@ module ReservationScheduler
                  .find_each do |reservation|
         NotificarNoShowReservaJob.perform_later(reservation.id)
         reservation.update_column(:no_show_notificado_em, now)
+        
       end
     end
 

@@ -26,13 +26,13 @@
       <tr>
         <th>Imagem</th>
         <th>Unidade</th>
-        <th>Código</th>
-        <th>Transportadora</th>
-        <th>Tipo</th>
-        <th>Tamanho</th>
-        <th>Remetente</th>
+        <th class="hide-sm">Código</th>
+        <th class="hide-sm">Transportadora</th>
+        <th class="hide-sm">Tipo</th>
+        <th class="hide-sm">Tamanho</th>
+        <th class="hide-sm">Remetente</th>
         <th>Destinatário</th>
-        <th>Notificar</th>
+        <th class="hide-sm">Notificar</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -55,13 +55,13 @@
 </td>
 
             <td><%= e.unidade %></td>
-            <td><%= e.codigo %></td>
-            <td><%= e.transportadora %></td>
-            <td><%= e.tipo.presence || "-" %></td>
-            <td><%= e.tamanho.presence || "-" %></td>
-            <td><%= e.remetente.presence || "-" %></td>
+            <td class="hide-sm"><%= e.codigo %></td>
+            <td class="hide-sm"><%= e.transportadora %></td>
+            <td class="hide-sm"><%= e.tipo.presence || "-" %></td>
+            <td class="hide-sm"><%= e.tamanho.presence || "-" %></td>
+            <td class="hide-sm"><%= e.remetente.presence || "-" %></td>
             <td><%= e.destinatario&.name || "-" %></td>
-            <td><%= e.notificar_destinatario == "1" ? "Sim" : "Não" %></td>
+            <td class="hide-sm"><%= e.notificar_destinatario == "1" ? "Sim" : "Não" %></td>
             <td>
              <% unless e.entregue? %>
             <button
@@ -69,23 +69,23 @@
   class="btn btn-success btn-sm"
   data-action="abrir-modal-entregue"
   data-encomenda-id="<%= e.id %>">
-  <i class="fa-solid fa-check"></i> Entregue
+  <i class="fa-solid fa-check"></i> <div class="hide-sm">Entregue</div>
 </button>
  <% end %>
 
               <%= link_to encomenda_path(e), class: "btn btn-success" do %>
-                <i class="fa-solid fa-eye"></i> Ver
+                <i class="fa-solid fa-eye"></i> <div class="hide-sm">Ver</div>
               <% end %>
                <% unless e.entregue? %>
               <%= link_to edit_encomenda_path(e), class: 'btn edit' do %>
-                <i class="fa-solid fa-pen-to-square"></i> Edite
+                <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm">Edite</div>
               <% end %>
               <% end %>
               <%= button_to encomenda_path(e),
                   method: :delete,
                   data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
                   class: 'btn btn-warning' do %>
-                <i class="fa-solid fa-trash"></i> Excluir
+                <i class="fa-solid fa-trash"></i> <div class="hide-sm">Excluir</div>
               <% end %>
             </td>
           </tr>
@@ -180,10 +180,10 @@
 }
 
 .filtros-encomenda .label-filtro {
-  margin-right: 3px;
-  font-size: 1em;
-  color: #fff;
-  font-weight: 500;
+    margin-right: 3px;
+    font-size: 1em;
+    color: var(--color-btn);
+    font-weight: 500;
 }
 
 .filtros-encomenda .select-filtro {

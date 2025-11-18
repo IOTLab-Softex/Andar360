@@ -144,15 +144,12 @@
 
 <div class="form-group">
   <label>
-    <%= svg_icon("icones/icons_custom/solid/photo_room.svg", class: "srs-solid") %> Foto da Sala
+    <%= svg_icon("icones/icons_custom/solid/camera.svg", class: "srs-solid") %> Foto da Sala
   </label>
   <div>
-    <% if @room.photo.attached? %>
-      <%= image_tag @room.photo.variant(resize_to_limit: [1200, 800]) %>
-    <% else %>
-      <span class="text-muted">Sem foto</span>
-    <% end %>
+    <%= room_photo_tag(@room.photo) %>
   </div>
 </div>
+
 
 

@@ -6,6 +6,12 @@ class Chamado < ApplicationRecord
      has_many :ocorrencias, as: :ocorrenciavel, dependent: :destroy
        has_many :arquivos_anexos_chamado, class_name: 'ArquivoAnexo', dependent: :destroy
 
+        validates :titulo, presence: { message: "não pode ficar em branco" }
+  validates :responsavel, presence: { message: "deve ser informado" }
+  validates :observacao,
+            presence: { message: "não pode ficar em branco" },
+            length: { minimum: 5, message: "está muito curta (mínimo 5 caracteres)" }
+            
     after_commit :notificar_chamado_criado, on: :create
   after_commit :notificar_chamado_atualizado, on: :update
 

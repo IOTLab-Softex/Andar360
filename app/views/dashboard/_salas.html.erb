@@ -15,24 +15,41 @@
         <th>Ações</th>
       </tr>
     </thead>
+
     <tbody>
-      <% rooms.reject(&:espaco_comun).each do |room| %>
-        <tr>
-          <td><strong><%= room.name %></strong></td>
-          <td><%= room.empresa_proprietaria.presence || "-" %></td>
-          <td class="hide-sm"><%= room.dados_do_inquilino.presence || "-" %></td>
-          <td class="hide-sm"><%= room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] || "-" %></td>
-          <td class="hide-sm"><%= room.grupo.presence || "-" %></td>
-          <td class="hide-sm"><%= room.alugado? ? "Sim" : "Não" %></td>
-          <td>
-            <% if operador_ou_admin? %>
-              <%= link_to edit_room_path(room), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-pen-to-square"></i>
+      <% salas_visiveis = rooms.reject(&:espaco_comun) %>
+
+      <% if salas_visiveis.any? %>
+        <% salas_visiveis.each do |room| %>
+          <tr>
+            <td>
+  <strong style="color: var(--color-btn) !important;">
+    <%= room.name %>
+  </strong>
+</td>
+
+            <td><%= room.empresa_proprietaria.presence || "-" %></td>
+            <td class="hide-sm"><%= room.dados_do_inquilino.presence || "-" %></td>
+            <td class="hide-sm"><%= room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] || "-" %></td>
+            <td class="hide-sm"><%= room.grupo.presence || "-" %></td>
+            <td class="hide-sm"><%= room.alugado? ? "Sim" : "Não" %></td>
+            <td>
+              <% if operador_ou_admin? %>
+                <%= link_to room_path(room), class: 'btn-dash btn btn-success', onclick: 'event.stopPropagation();' do %>
+                 <i class="fa-solid fa-eye"></i>
+                <% end %>
               <% end %>
-            <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% else %>
+        <tr>
+          <td colspan="7" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma sala cadastrada.
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
 </div>
+

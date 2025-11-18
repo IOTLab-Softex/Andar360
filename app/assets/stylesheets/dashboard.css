@@ -41,11 +41,11 @@ main {
 .logo-title {
    
     height: 80%;
-     content: url('/logo.png');
+     content: url("/logo.png");
 }
 
 :root[data-theme="dark"] .logo-title {
-  content: url('/logo-dark.png');
+  content: url("/logo-dark.png");
 }
 
 
@@ -121,9 +121,301 @@ main {
 }
 }
 
+ .logo-mobile {
+display: none;
+        position: fixed;
+        top: 44px;
+        width: 81%;
+    }
 
+    /* --- colapso do filtro --- */
+#filtro-toggle .filtro-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--color-btn);
+    border: 0;
+    padding: 6px 8px;
+    cursor: pointer;
+    color: var(--color-btn--text);
+    font-weight: 600;
+    border-radius: 6px;
+}
+
+#filtro-toggle .filtro-chevron {
+  transition: transform .22s ease, opacity .18s ease;
+  font-size: 0.9rem;
+  margin-left: 6px;
+}
+
+/* corpo do filtro: controlar via max-height para animação */
+#filtros-salas {
+  overflow: hidden;
+  transition: max-height .32s cubic-bezier(.2,.9,.2,1), opacity .24s ease, padding .24s ease;
+  max-height: 999px; /* valor grande suficiente para conter o conteúdo */
+  opacity: 1;
+  padding: 0.6rem 0 0 0; /* ajuste conforme seu layout */
+}
+
+/* estado colapsado */
+#filtros-salas.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* quando fechado, vira a seta pra baixo */
+#filtro-toggle[aria-expanded="false"] .filtro-chevron {
+  transform: rotate(180deg);
+  opacity: 0.75;
+}
+.reservationsFilters{display: flex;
+    gap: .5rem;
+    flex-wrap: wrap;
+    align-items: end;
+    margin: 1rem 0;}
+
+/* Responsivo: garante que inputs ocupem toda largura no mobile quando visível */
+@media (max-width: 700px) {
+  #filtros-salas { padding: 0.5rem 0 0 0; }}
+
+@media (max-width: 470px) {
+  .table-salas .hide-sm-470 { display: none; }
+  .reservationsFilters{display: flex;
+
+    flex-wrap: wrap;
+    align-items: end;
+}
+
+}
 
 @media (max-width: 768px) {
+
+  .table-salas .btn {
+    font-size: 1.5rem !important;
+
+    width: auto !important;
+
+}
+
+  .image-thumb {
+
+    width: -webkit-fill-available !important;
+    height: -webkit-fill-available !important;
+
+}
+
+  .filtros-encomenda .filtro-form {
+
+    flex-wrap: wrap;
+}
+
+  #filtros-salas {
+    display: flex;
+    flex-direction: column;
+}
+
+  #reservationsFilters.filter-form {
+    flex-direction: column !important;
+}
+  .room-card {
+    width: 632px !important;
+    max-width: 632px !important;
+}
+
+/* container que engloba grid + setas */
+.kpi-scroll-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.form-group{
+
+      font-size: 13px;
+}
+
+
+/* manter grid responsivo (a mesma lógica que você já tem) */
+.kpi-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+  margin-top: 10px;
+  overflow: visible;
+  padding: 0 6px;
+  scroll-behavior: smooth; /* rolagem suave por padrão */
+}
+
+
+/* comportamento mobile: fila rolável a partir do breakpoint 800px */
+@media (max-width: 800px) {
+
+  
+
+  .board-card .subtitle {
+    font-size: small !important;
+}
+
+  #modalAvisos .modal-dialog {
+width: -webkit-fill-available !important;
+}
+
+  .kpi-grid {
+    display: flex !important;
+    gap: 1rem;
+    align-items: stretch;
+    padding: 10px 8px;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    margin-top: 10px;
+    margin-bottom: 1rem;
+  }
+
+  .kpi-grid > * {
+    flex: 0 0 240px;
+    scroll-snap-align: start;
+    min-width: 0; /* evita overflow inesperado */
+  }
+
+  .kpi-grid::-webkit-scrollbar { height: 8px; }
+  .kpi-grid::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 6px; }
+  .kpi-grid { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.12) transparent; }
+}
+
+/* ---------- Animação de entrada (fade + slide up) ---------- */
+@keyframes cardEnter {
+  from { opacity: 0; transform: translateY(10px) scale(.995); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* aplica animação em cada card com stagger (delay por índice) */
+/* define duração e easing */
+.kpi-grid > * {
+  opacity: 0;
+  transform: translateY(10px) scale(.995);
+  animation-name: cardEnter;
+  animation-duration: 420ms;
+  animation-timing-function: cubic-bezier(.2,.9,.25,1);
+  animation-fill-mode: forwards;
+  /* para reduzir repetições quando reflow: */
+  will-change: transform, opacity;
+}
+
+/* stagger usando nth-child — ajusta até 12 children com delay crescente */
+.kpi-grid > *:nth-child(1)  { animation-delay: 0ms;   }
+.kpi-grid > *:nth-child(2)  { animation-delay: 60ms;  }
+.kpi-grid > *:nth-child(3)  { animation-delay: 120ms; }
+.kpi-grid > *:nth-child(4)  { animation-delay: 180ms; }
+.kpi-grid > *:nth-child(5)  { animation-delay: 240ms; }
+.kpi-grid > *:nth-child(6)  { animation-delay: 300ms; }
+.kpi-grid > *:nth-child(7)  { animation-delay: 360ms; }
+.kpi-grid > *:nth-child(8)  { animation-delay: 420ms; }
+.kpi-grid > *:nth-child(9)  { animation-delay: 480ms; }
+.kpi-grid > *:nth-child(10) { animation-delay: 540ms; }
+.kpi-grid > *:nth-child(11) { animation-delay: 600ms; }
+.kpi-grid > *:nth-child(12) { animation-delay: 660ms; }
+
+/* hover sutil para destacar card (desktop) */
+@media (hover: hover) {
+  .kpi-grid > * {
+    transition: transform .22s ease, box-shadow .22s ease;
+    border-radius: 8px;
+  }
+  .kpi-grid > *:hover {
+    transform: translateY(-6px) scale(1.01);
+    box-shadow: 0 10px 30px rgba(12, 20, 40, 0.08);
+  }
+}
+
+/* ---------- Setas de navegação ---------- */
+.kpi-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.95);
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--color-btn, #333);
+  transition: transform .16s ease, background .12s ease, opacity .12s ease;
+  user-select: none;
+}
+
+/* esconde por padrão em telas grandes sem precisar (apenas se usar o wrapper) */
+.kpi-scroll-wrap .kpi-nav { display: none; }
+
+/* mostra setas em telas pequenas quando houver overflow */
+@media (max-width: 800px) {
+  .kpi-scroll-wrap { gap: 6px; }
+  .kpi-scroll-wrap .kpi-nav { display: inline-flex; }
+  .kpi-nav[disabled] { opacity: 0.32; pointer-events: none; }
+}
+
+.kpi-nav:hover { transform: translateY(-2px) scale(1.03); }
+
+.login-box {
+        background-color: #3a3a3a;
+        padding: 1.0rem 3rem 4rem 2rem;
+        border-radius: 80px 12px 0px 0px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        /* backdrop-filter: blur(10px); */
+        width: -webkit-fill-available;
+        /* max-width: 420px; */
+        color: #fff;
+        margin: 0px !important;
+        position: absolute;
+        bottom: 0;
+    }
+
+    .login-logo {
+        display: none;
+    }
+.logo-mobile{display: flex;}
+.login-header {
+    text-align: center;
+     margin-bottom: 0rem; 
+}
+
+    .login-h2 {
+        margin-top: 0px;
+        margin-bottom: -9px;
+    }
+
+.login-field {
+    margin-bottom: 5px;
+}
+
+
+.login-input {
+    width: 100%;
+    padding: 0.6rem;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+    font-size: 10px;
+}
+
+.wallpaper {
+    position: absolute;
+    /* top: 0; */
+    /* right: 0; */
+    width: -webkit-fill-available;
+    height: 100%;
+    background: url(/srs.png) no-repeat right center;
+    background-size: cover !important;
+    z-index: -2;
+}
+
   .hide-on-mobile {
     display: none !important;
   }
@@ -154,8 +446,8 @@ width: 12% !important;
   background: linear-gradient(
     to right,
     #ff8c4100,
-    #FF8C41 30%,
-    #FF8C41 70%,
+    #7014f1 30%,
+    #7014f1 70%,
     #ff8c4100
   );
   background-size: 200% 100%;
@@ -172,7 +464,7 @@ width: 12% !important;
     left: 17px;
     height: 3px;
     width: 98%;
-    background: linear-gradient(to right, #6969691c, #FF8C41 30%, #FF8C41 70%, #69696914);
+    background: linear-gradient(to right, #6969691c, #7014f1 30%, #7014f1 70%, #69696914);
     background-position: 100% 0;
     z-index: 10;
     opacity: 1;
@@ -216,11 +508,11 @@ width: 12% !important;
   --color-header: #fbfcfc;
    --color-reservation-header: rgba(255, 255, 255, 0.45);
   --color-card: #e0e0e0;
-  --color-text: #335570;
+  --color-text: #000000;
   --color-muted: #555;
 
-  --color-accent: #ff8c42;
-  --color-accent-hover: #b15b21;
+  --color-accent: #8e46f3;
+  --color-accent-hover: #5712b9;
   --color-span: #666;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
@@ -237,7 +529,7 @@ width: 12% !important;
     --bg-color: #dce1e5;
   --color-bg-green: #44ff44;
   --color-bg-green-20: #2da32d;
- 
+ --color-bg-sidebar: #360778;
   --btn-warning-hover: #ff4b5c;
 }
 :root[data-theme="dark"] {
@@ -251,8 +543,8 @@ width: 12% !important;
   --color-text: #ffffff;
   --color-muted: #999;
 
-  --color-accent: #ff8c42;
-  --color-accent-hover: #b15b21;
+  --color-accent: #7014f1;
+  --color-accent-hover: #5712b9;
   --color-span: #b1b1b1;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
@@ -272,6 +564,7 @@ width: 12% !important;
   --color-text: #f4f4f4;
   --color-bg-green: #2fb32f;
   --color-bg-green-20: #1e721e;
+   --color-bg-sidebar: #360778;
     --btn-warning-hover: #ff4b5c;
 }
 
@@ -329,17 +622,19 @@ body,.device-form, .form-group, .form-control, .menu, .room-card, .reservation-c
 }
 
 .btn.open-door {
-   display: flex;
+    display: flex;
     align-items: center;
-  background-color: var(--color-btn);
-  padding: 0.5rem 1.2rem;
+    background-color: var(--color-btn);
+    padding: 0.5rem 1.2rem;
     border-radius: 10px;
     text-decoration: none;
     color: var(--color-btn--text);
     font-weight: bold;
     font-size: 65%;
     border: 2px solid;
-    transition: 0.3s ease;
+    transition: 0.3s 
+ease;
+    height: -webkit-fill-available;
 }
 
 .btn.open-door:hover {
@@ -421,7 +716,7 @@ position: relative; z-index: 1; padding: 2rem;
   max-width: 90%;
   margin: auto;
   border-radius: 18px;
-  padding: 2rem;
+  padding: 1rem;
   background-color: rgba(255, 255, 255, 0.4);
   backdrop-filter: blur(10px);
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
@@ -600,28 +895,29 @@ display: flex !important;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
-  padding: 1rem;
+
 }
 
 .room-card {
-  font-size: 23px;
-  text-align: center;
-  border-radius: 12px;
-  color: var(--color-text);
-  padding: 2rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 10px #00000055;
-  position: relative;
-  display: flex
-;
-  flex-direction: column;
-  justify-content: space-between;
-  background: var(--color-card);
-  height: 12em;
-  width: 345px;
+    font-size: 23px;
+    text-align: center;
+    border-radius: 12px;
+    color: var(--color-text);
+    padding: 2rem;
+    margin-bottom: 1rem;
+    box-shadow: 0 2px 10px #00000055;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    background: var(--color-card);
+    height: 12em;
+    width: 446px;
     cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    max-width: 345px;
+    transition: transform 0.2s 
+ease, box-shadow 0.2s 
+ease;
+    max-width: 446px;
 }
 
 .room-card:hover {
@@ -820,7 +1116,7 @@ display: flex !important;
   background: var(--color-card);
   /* border: 2px solid var(--color-accent); */
   border-radius: 20px;
-  height: 18em;
+  height: 20em;
   width: auto;
   padding: 22px;
   display: flex
@@ -1022,7 +1318,7 @@ left: 0;
 }
 
 #participantModal .submit {
-  background-color: #ff7a2f;
+  background-color: #7014f1;
   color: white;
   padding: 10px 16px;
   border-radius: 8px;
@@ -1183,13 +1479,42 @@ left: 0;
   transform: scale(1.03);
 }
 
-.room-card-scroll input[type="radio"] {
-  position: absolute;
-  top: 34px;
-  left: 25px;
-  width: 24px;
-  height: 24px;
-  z-index: 1;
+.room-meta {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    /* bottom: 12px; */
+    display: grid
+;
+    grid-template-columns: 28px 1fr;
+    align-items: center;
+    gap: .6rem;
+    padding: .55rem .7rem;
+    border-radius: 12px;
+    /* backdrop-filter: blur(10px); */
+    background: var(--color-header);
+    /* color: var(--btn-warning-hover); */
+}
+
+/* Rádio volta ao fluxo normal (sem posição absoluta) */
+.room-meta input[type="radio"] {
+  width: 22px;
+  height: 22px;
+  margin: 0;
+}
+
+/* Nome não quebra e não “desce” para baixo do rádio */
+.room-name {
+  font-weight: 700;
+  font-size: 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;  /* se o nome for muito longo, mostra reticências */
+}
+
+/* Garanta que o label seja posicionado relativamente */
+.room-card-scroll {
+  position: relative;
 }
 
 .room-info {
@@ -1348,8 +1673,8 @@ left: 0;
 
 
 .sidebar {
-width: 220px;
-    background-color: #2c3e50;
+    width: 220px;
+    background-color: var(--color-bg-sidebar);
     color: #fff;
     padding: 0px 15px;
     position: fixed;
@@ -1362,8 +1687,8 @@ ease;
     overflow-y: auto;
     /* max-height: calc(100vh - 120px); */
     scrollbar-width: thin;
-    scrollbar-color: #ff8c42 transparent;
-    border-top: solid 63px #2c3e50;
+    scrollbar-color: #7014f1 transparent;
+    border-top: solid 63px var(--color-bg-sidebar);
     height: -webkit-fill-available;
 }
 
@@ -1395,7 +1720,7 @@ ease;
 }
 
 .sidebar-links a:hover {
-  background-color: #fd8215;
+  background-color: #7014f1;
 }
 
 .main-content {
@@ -1405,15 +1730,16 @@ ease;
 }
 
 .menu-toggle-btn {
-  background: #2c3e50;
+    background: var(--color-bg-sidebar);
     color: #fff;
-    border: none;
+    border: solid var(--color-btn);
     font-size: 1.4rem;
     padding: 8px 12px;
     border-radius: 8px;
     /* margin-left: 10px; */
     cursor: pointer;
-    transition: background 0.3s ease;
+    transition: background 0.3s 
+ease;
     position: fixed;
     left: 21px;
     z-index: 2;
@@ -1422,7 +1748,7 @@ ease;
 
 
 .menu-toggle-btn:hover {
-  background: #fd8215;
+  background: #7014f1;
 }
 .sidebar-hidden {
   transform: translateX(-100%);
@@ -1463,7 +1789,7 @@ ease;
 }
 
 .submenu li a:hover {
-  background-color: #be6211;
+  background-color: #5712b9;
 }
 
 .submenu li {
@@ -1490,7 +1816,7 @@ ease;
 }
 
 .submenu-toggle:hover {
-  background-color: #fd8215;
+  background-color: #7014f1;
 }
 
 .btn-exit{
@@ -1504,7 +1830,10 @@ ease;
 }
 
 .menu-btn.disabled {
-  pointer-events: none;
+    pointer-events: none;
+    background: #1f0347;
+    color: white;
+    display: block;
 }
 
 .reservation-list {
@@ -1607,7 +1936,7 @@ body, html {
   right: 0;
   width: -webkit-fill-available;
   height: 100%;
-  background: url('/srs.png') no-repeat right center;
+  background: url("/srs.png") no-repeat right center;
   background-size: contain;
   z-index: -2;
 }
@@ -1620,11 +1949,9 @@ body, html {
   z-index: 1;
 }
 
-strong {
-  color: var(--color-text);
-}
+
 p {
-  color: var(--color-text) !important;
+  color: var(--color-btn) !important;
 }
 
 #senha_gerada_label{
@@ -1929,8 +2256,8 @@ width: 19px;
 }
 
 .table-salas {
-    width: 100%;
-    max-width: -webkit-fill-available;
+    width: -webkit-fill-available;
+    /* max-width: -webkit-fill-available; */
     border-collapse: separate;
     border-spacing: 0;
     background-color: var(--color-bg-table-salas);
@@ -1938,7 +2265,7 @@ width: 19px;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 0 8px #00000040;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     margin-top: 1rem;
 }
 
@@ -1951,7 +2278,7 @@ background-color: var(--color-bg-table-salas-thead);
 }
 
 .table-salas th, .table-salas td {
-  padding: 12px 20px;
+      padding: 12px 7px;
   text-align: left;
   border-bottom: 1px solid #333;
 }
@@ -1963,23 +2290,31 @@ background-color: var(--color-bg-table-salas-thead);
 }
 
 .table-salas .btn {
-font-size: 0.8rem;
+    font-size: 1.2rem;
     padding: 4px 8px;
     margin-right: 4px;
     margin-bottom: 4px;
-    display: inline-flex
-;
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 0px;
     border-radius: 4px;
-    width: -webkit-fill-available;
+    width: -webkit-fill-available; 
     text-align: left;
+    justify-content: flex-start;
 }
 
 .table-responsive {
   overflow-x: auto;
 }
 
+.btn-dash{
+
+
+
+    width: auto !important;
+
+
+}
 /*status de chamados dashboard*/
 
 /* app/assets/stylesheets/dashboard.css */
@@ -2067,15 +2402,16 @@ font-size: 0.8rem;
 }
 
 #modal-image-viewer {
-  position: fixed;
-  top: 0; left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0, 0, 0, 0.85);
-  display: none;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: -webkit-fill-available;
+    height: -webkit-fill-available;
+    background: rgba(0, 0, 0, 0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
 }
 #modal-image-viewer img {
   max-width: none;
@@ -2171,7 +2507,7 @@ position: absolute;
   width: 75px;
   height: 75px;
   border-radius: 50%;
-  background: #0d6efd;
+  background: var(--color-accent);
   color: #fff;
   box-shadow: 0 10px 25px rgba(0,0,0,.25);
   position: fixed;
@@ -2253,7 +2589,7 @@ position: absolute;
 /* ===== Modal básico (puro) ===== */
 .pmodal { position:fixed; inset:0; display:none; }
 .pmodal.is-open { display:block;  position: absolute;}
-.pmodal__backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index: 7;}
+.pmodal__backdrop { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index: 1;}
 .pmodal__dialog {   position: fixed;
     z-index: 8;
     /* margin: 12vh auto; */
@@ -2308,7 +2644,7 @@ position: absolute;
 .btn-danger  { background:#d9363e; border:0; color:#fff; padding:.55rem .85rem; border-radius:.45rem; cursor:pointer; }
 .btn-ghost { background:transparent; border:1px solid #aaa; color:#ddd; padding:.55rem .85rem; border-radius:.45rem; cursor:pointer; }
 .pmodal__close { background: #00000091; border:1px solid #aaa; color:#ddd; padding:.55rem .85rem; border-radius:.45rem; cursor:pointer; }
-.pmodal__close:hover { background: #ff6c00d1;
+.pmodal__close:hover { background: #7014f1;
     color: black;}
 body.noscroll { overflow:hidden; }
 
@@ -2319,7 +2655,15 @@ body.noscroll { overflow:hidden; }
 
 /* colapso dashboard */
 
-.kpi-grid { display:grid; gap:1rem; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); margin-bottom:1rem; }
+.kpi-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-bottom: 1rem;
+  margin-top: 10px;
+  overflow: visible; /* sem scroll em desktop */
+  padding: 0 6px;
+}
 .kpi-card { background: var(--card-bg, var(--color-btn--text)); border:1px solid #2a2a2a; padding:1rem; border-radius:16px; box-shadow: 0 6px 16px rgba(0,0,0,.2); display:flex; align-items:center; gap:.75rem; }
 .kpi-icon i { font-size: 1.6rem; }
 .kpi-label { opacity:.65; font-size:.9rem; }
@@ -2371,4 +2715,284 @@ body.noscroll { overflow:hidden; }
   box-shadow: 0 6px 18px rgba(0,0,0,.12);
 }
 
+.btn-icon i {
+  margin-right: 8px; /* ou o valor que quiser */
+}
 /******/
+
+/* ===== Tokens ===== */
+:root{
+  --trk-surface: var(--fx-surface, #fff);
+  --trk-border:  var(--fx-border, rgba(0,0,0,.08));
+  --trk-text:    var(--fx-text, #0e1420);
+  --trk-muted:   var(--fx-muted, #7a8aa0);
+
+  --trk-req:   #6f42c1;  /* solicitada */
+  --trk-prog:  #0d6efd;  /* em andamento */
+  --trk-done:  #198754;  /* finalizada */
+  --trk-mutedc:#6c757d;  /* ignorado */
+}
+:root[data-theme="dark"]{
+  --trk-surface: #1a2431;
+  --trk-border:  rgba(255,255,255,.10);
+  --trk-text:    #e7eef7;
+  --trk-muted:   #9fb2c9;
+
+  --trk-req:   #b992ff;
+  --trk-prog:  #9ec5fe;
+  --trk-done:  #75b798;
+  --trk-mutedc:#adb5bd;
+}
+
+/* ===== Container ===== */
+.trk {
+    display: grid
+;
+    gap: 12px;
+    background: var(--color-card);
+    border: 1px solid var(--trk-border);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.trk-head{
+  display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.trk-title{ margin:0; font-size:1.1rem; display:flex; gap:8px; align-items:center; color:var(--trk-text); }
+.trk-sub{ margin:.2rem 0 0; color:var(--trk-muted); font-size:.92rem; }
+
+.trk-kpis{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.kpi{ display:flex; flex-direction:column; gap:4px; }
+.kpi-label{ color:var(--trk-muted); font-size:.8rem; }
+.kpi-value{ font-weight:800; font-size:1.05rem; color:var(--trk-text); }
+.kpi-chip{
+  display:inline-flex; gap:6px; align-items:center;
+  padding:.22rem .55rem; border-radius:999px; font-weight:700; font-size:.82rem;
+  border:1px solid var(--trk-border); background: transparent; color: var(--trk-text);
+}
+.kpi-chip small{ font-weight:600; color:var(--trk-muted); }
+
+/* Cores */
+.trk--requested{ border-color: color-mix(in srgb, var(--trk-req) 40%, transparent); color: var(--trk-req); }
+.trk--progress { border-color: color-mix(in srgb, var(--trk-prog) 40%, transparent); color: var(--trk-prog); }
+.trk--done     { border-color: color-mix(in srgb, var(--trk-done) 40%, transparent); color: var(--trk-done); }
+.trk--muted    { border-color: color-mix(in srgb, var(--trk-mutedc) 40%, transparent); color: var(--trk-mutedc); }
+
+/* ===== Barra segmentada ===== */
+/* ===== Barra segmentada ===== */
+.trk-bar{
+  position: relative;
+  display:flex;
+  width:100%;
+  height:14px;
+  border-radius:999px;
+  overflow:hidden;
+  border:1px solid var(--trk-border);
+  background: color-mix(in srgb, var(--trk-text) 6%, transparent);
+}
+
+/* Começa em 0 (somente quando NÃO montado) */
+.trk-seg{
+  display:block;
+  height:100%;
+  width: 0;                 /* <- começa zerado */
+  flex: 0 0 auto;           /* garante que width seja respeitado no flex */
+  transition: width .55s ease;
+  position: relative;
+}
+.trk-seg:hover{ filter: brightness(1.05); }
+.trk-seg .trk-seg-label{ position:absolute; inset:0; opacity:0; }
+
+/* Quando a barra estiver "montada", use a largura alvo */
+.trk-bar.mounted .trk-seg{
+  width: var(--seg-w);      /* <- anima até aqui */
+}
+
+/* Cores dos segmentos */
+.trk-seg.trk--requested{ background: color-mix(in srgb, var(--trk-req) 55%, transparent); }
+.trk-seg.trk--progress { background: color-mix(in srgb, var(--trk-prog) 55%, transparent); }
+.trk-seg.trk--done     { background: color-mix(in srgb, var(--trk-done) 55%, transparent); }
+
+/* Placeholder quando tudo = 0 */
+.trk-empty{
+  position:absolute; inset:0; display:grid; place-items:center;
+  color:var(--trk-muted); font-size:.85rem;
+}
+
+
+/* ===== Legenda ===== */
+.trk-legend{
+  display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+}
+.trk-leg{
+  display:inline-flex; gap:8px; align-items:center;
+  padding:.28rem .6rem; border-radius:999px; text-decoration:none;
+  border:1px solid var(--trk-border); color:var(--trk-text);
+}
+.trk-leg .trk-dot{
+  width:10px; height:10px; border-radius:50%;
+  background: var(--trk-text); opacity:.85;
+}
+.trk-leg.trk--requested .trk-dot{ background: var(--trk-req); }
+.trk-leg.trk--progress  .trk-dot{ background: var(--trk-prog); }
+.trk-leg.trk--done      .trk-dot{ background: var(--trk-done); }
+.trk-leg.trk--muted     .trk-dot{ background: var(--trk-mutedc); }
+
+/* infobox */
+
+.infobox {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+    padding: .8rem 1rem;
+    border-radius: 12px;
+    background: 
+ color-mix(in oklab, var(--bg-elev, #7014f1) 75%, #4da3ff 25%);
+    border: 1px solid
+ color-mix(in oklab, #4da3ff 60%, #000 10%);
+    color: white;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+    margin-top: 10px;
+}
+.infobox__icon{
+  font-size:1.25rem; line-height:1; margin-top:.15rem;
+}
+.infobox__title{
+  display:block; font-weight:600; margin-bottom:.15rem;
+}
+.infobox__text{
+  font-size:.95rem; opacity:.95;
+}
+
+/* Variante neutra, caso prefira: troque "infobox--info" por uma delas */
+.infobox--success{
+  background: color-mix(in oklab, var(--bg-elev, #fff) 75%, #17c964 25%);
+  border-color: color-mix(in oklab, #17c964 60%, #000 10%);
+  color:#063b25;
+}
+.infobox--warning{
+  background: color-mix(in oklab, var(--bg-elev, #fff) 75%, #f5a524 25%);
+  border-color: color-mix(in oklab, #f5a524 60%, #000 10%);
+  color:#4a2e00;
+}
+.infobox--danger{
+  background: color-mix(in oklab, var(--bg-elev, #fff) 75%, #f31260 25%);
+  border-color: color-mix(in oklab, #f31260 60%, #000 10%);
+  color:#4a0b1b;
+}
+
+/* Dark mode opcional, se você já usa --bg-elev/--fg */
+@media (prefers-color-scheme: dark){
+  .infobox{ box-shadow: 0 6px 18px rgba(0,0,0,.2); }
+}
+
+/* garante que padding/border não aumentem largura total */
+*, *::before, *::after { box-sizing: border-box; }
+
+/* wrapper do formulário: limita e mantém conteúdo dentro */
+.device-form { width: 100%; max-width: 100%; position: relative; }
+
+/* suas linhas "full-width" */
+.full-width { flex: 1 1 100% !important; width: 100% !important; }
+
+/* grupo que contém select + qty + botão — permite quebra se for pequeno */
+.full-width .form-group > div[style*="display:flex"], 
+.full-width > .form-group > div[style*="display:flex"] {
+  display: flex;
+  gap: .5rem;
+  align-items: center;
+  flex-wrap: wrap;          /* permite quebrar linha para caber */
+}
+
+/* evita que selects/inputs forcem overflow */
+.form-control,
+.device-form select,
+.device-form input[type="text"],
+.device-form input[type="number"],
+.device-form .item-row input[type="text"] {
+  max-width: 100%;
+  min-width: 0;             /* importante para flex items */
+}
+
+/* item row: permite quebra interna quando a tela for estreita */
+.item-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* forçar largura dos elementos de quantidade e botões sem extrapolar */
+.item-row .form-control[type="number"] { width: 110px; min-width: 90px; }
+.item-row input[disabled], .item-row input[readonly] { max-width: 100%; }
+
+/* evita que o botão cause overflow */
+.btn { white-space: nowrap; }
+
+/* quando overflow acontecer, mostra scroll horizontal apenas no bloco */
+#room-items { width: 100%; overflow: auto; }
+
+/* segurança: evita que qualquer pseudo-elemento cubra campos */
+.device-form .form-group::before, .device-form .form-group::after { pointer-events: none; }
+
+
+/* ======= CSS do colapso suave ======= */
+#filtros-salas {
+  overflow: hidden;
+  max-height: 9999px;        /* estado expandido padrão */
+  transition: max-height 320ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease, padding 220ms ease;
+  opacity: 1;
+  padding: .6rem 0;          /* ajuste visual */
+  will-change: max-height, opacity;
+  
+}
+
+/* estado colapsado */
+#filtros-salas.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* estilo do botão e chevron */
+#filtro-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+    border: none;
+    background: var(--color-accent-hover);
+    padding: .35rem .6rem;
+    font-weight: 600;
+    border-radius: 6px;
+        margin: 10px;
+}
+
+#filtro-toggle:hover {
+background: var(--color-accent);
+}
+
+#filtro-toggle:focus { outline: 2px solid var(--color-accent); border-radius:6px; }
+
+/* chevron que gira */
+.filtro-chevron {
+  display: inline-block;
+  transition: transform 240ms ease;
+  transform-origin: center;
+  margin-left: .4rem;
+}
+#filtros-salas.collapsed + .foco-fake{} /* fallback no caso de ordem diferente */
+
+/* botão com estado aria-expanded="false" (girado) */
+#filtro-toggle[aria-expanded="false"] .filtro-chevron {
+  transform: rotate(-180deg);
+}
+
+/* reduz animação se usuário preferir reduzida */
+@media (prefers-reduced-motion: reduce) {
+  #filtros-salas { transition: none; }
+  .filtro-chevron { transition: none; }
+}
+
+

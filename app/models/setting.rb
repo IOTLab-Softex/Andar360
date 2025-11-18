@@ -1,5 +1,5 @@
 class Setting < ApplicationRecord
-
+  has_rich_text :room_rules
     def self.get(key)
   find_by(key: key)&.value
 end
@@ -8,6 +8,10 @@ end
 # app/models/setting.rb
 after_commit :reload_schedulers, on: [:update]
 
+  def require_room_rules_ack?
+    require_room_rules_ack == true
+  end
+  
 def reload_schedulers
   SchedulerManager.reload_all
 end

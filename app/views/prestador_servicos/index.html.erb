@@ -6,13 +6,13 @@
         <th>Foto</th>
         <th>Nome</th>
         <th>CPF</th>
-        <th>RG</th>
-        <th>Telefone</th>
-        <th>WhatsApp</th>
-        <th>Email</th>
-        <th>Placa</th>
-        <th>Publicado no App</th>
-        <th>Bloqueado</th>
+        <th class="hide-sm">RG</th>
+        <th class="hide-sm">Telefone</th>
+        <th class="hide-sm">WhatsApp</th>
+        <th class="hide-sm">Email</th>
+        <th class="hide-sm">Placa</th>
+        <th class="hide-sm">Publicado no App</th>
+        <th class="hide-sm">Bloqueado</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -29,25 +29,25 @@
             </td>
             <td><%= p.nome %></td>
             <td><%= p.cpf.presence || "-" %></td>
-            <td><%= p.rg.presence || "-" %></td>
-            <td><%= p.fone1.presence || "-" %></td>
-            <td><%= p.whatsapp.presence || "-" %></td>
-            <td><%= p.email.presence || "-" %></td>
-            <td><%= p.placa.presence || "-" %></td>
-            <td><%= p.publicado_no_app? ? "Sim" : "Não" %></td>
-            <td><%= p.bloqueado? ? "Sim" : "Não" %></td>
+            <td class="hide-sm"><%= p.rg.presence || "-" %></td>
+            <td class="hide-sm"><%= p.fone1.presence || "-" %></td>
+            <td class="hide-sm"><%= p.whatsapp.presence || "-" %></td>
+            <td class="hide-sm"><%= p.email.presence || "-" %></td>
+            <td class="hide-sm"><%= p.placa.presence || "-" %></td>
+            <td class="hide-sm"><%= p.publicado_no_app? ? "Sim" : "Não" %></td>
+            <td class="hide-sm"><%= p.bloqueado? ? "Sim" : "Não" %></td>
             <td>
               <%= link_to prestador_servico_path(p), class: "btn btn-success" do %>
-                <i class="fa-solid fa-eye"></i> Ver
+                <i class="fa-solid fa-eye"></i> <div class="hide-sm"> Ver </div>
               <% end %>
               <%= link_to edit_prestador_servico_path(p), class: 'btn edit' do %>
-                <i class="fa-solid fa-pen-to-square"></i> Edite
+                <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Edite </div>
               <% end %>
               <%= button_to prestador_servico_path(p),
                   method: :delete,
                   data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
                   class: 'btn btn-warning' do %>
-                <i class="fa-solid fa-trash"></i> Excluir
+                <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir </div>
               <% end %>
             </td>
           </tr>

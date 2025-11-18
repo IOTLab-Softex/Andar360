@@ -1,25 +1,86 @@
-<%= form_with model: device, local: true, class: 'device-form' do |form| %>
+<%# Aviso de erros (opcional: pode virar _errors.html.erb) %>
+<% if @device.errors.any? %>
+  <div
+    id="notification-flash"
+    style="
+      position: fixed; bottom: 20px; right: 15px;
+      background-color: rgb(255,77,79); color: #fff;
+      padding: 12px 20px; border-radius: 6px 0 6px 6px;
+      font-weight: bold; box-shadow: rgba(0,0,0,.2) 0 4px 10px;
+      z-index: 9999; opacity: 1; transition: opacity .6s;
+      display: flex; align-items: center; gap: 10px;
+    ">
+    <strong>Erro ao salvar</strong><br>
+    <ul>
+      <% @device.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<%= form_with model: @device, local: true, class: 'device-form' do |form| %>
   <div class="form-group">
-    <%= form.label :name, "Nome do Dispositivo" %>
+    <%= form.label :name do %>
+      <i class="fa-solid fa-font-awesome"></i> Nome do Dispositivo
+    <% end %>
     <%= form.text_field :name, class: 'form-control' %>
   </div>
 
   <div class="form-group">
-    <%= form.label :ip, "Endereço IP" %>
+    <%= form.label :ip do %>
+      <i class="fa-solid fa-globe"></i> Endereço IP
+    <% end %>
     <%= form.text_field :ip, class: 'form-control' %>
   </div>
 
   <div class="form-group">
-    <%= form.label :user, "Usuário" %>
+    <%= form.label :user do %>
+      <i class="fa-solid fa-user"></i> Usuário
+    <% end %>
     <%= form.text_field :user, class: 'form-control' %>
   </div>
 
   <div class="form-group">
-    <%= form.label :password, "Senha" %>
+    <%= form.label :password do %>
+      <i class="fa-solid fa-key"></i> Senha
+    <% end %>
     <%= form.password_field :password, class: 'form-control' %>
   </div>
 
-  <div class="form-actions" style="text-align: center;">
-    <%= form.submit "Atualizar Dispositivo", class: 'btn submit' %>
+  <div class="form-actions" style="text-align:center;">
+    <%= form.button type: "submit", class: 'btn submit' do %>
+      <i class="fa-solid fa-floppy-disk"></i>
+      <%= @device.persisted? ? " Atualizar Dispositivo" : " Salvar Dispositivo" %>
+    <% end %>
   </div>
 <% end %>
+
+
+<% if @device.errors.any? %>
+  <div style="
+    position: fixed;
+    bottom: 20px;
+    right: 15px;
+    background-color: rgb(255, 77, 79);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px 0px 6px 6px;
+    font-weight: bold;
+    box-shadow: rgba(0, 0, 0, 0.2) 0px 4px 10px;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.6s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  " id="notification-flash"  ...>
+    <strong>Erro ao salvar</strong><br>
+    <ul>
+      <% @device.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+

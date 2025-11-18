@@ -16,7 +16,7 @@ end
       get :mine              # meus feedbacks (do usuário logado)
     end
   end
-  
+  get "rooms/:id/rules", to: "rooms#rules", as: :room_rules
 # config/routes.rb
 resources :formulario_cadastros do
   member do
@@ -33,6 +33,14 @@ end
 resources :formulario_cadastros do
   member do
     post :reenviar_para_aprovacao
+  end
+end
+
+resources :room_items, only: [:index, :new, :create, :edit, :update, :destroy] do
+  collection do
+    delete :bulk_destroy
+    post   :import
+    get    :template
   end
 end
 
@@ -123,6 +131,7 @@ devise_for :users, controllers: {
   resources :devices
   resources :room_groups, except: [:show]
 
+
   resources :grupo_empresas, only: [:index, :new, :create]
   resources :grupo_empresas
   resources :sub_grupo_empresas, only: [:create, :destroy]
@@ -134,6 +143,9 @@ devise_for :users, controllers: {
   end
 
   resources :rooms do
+     member do
+    get "reservations/json", to: "rooms#reservations_json"
+  end
     # Correção: Apenas este já é suficiente para by_room
     get "reservations", to: "reservations#by_room", as: :reservations
     resources :reservations, only: [:index, :new, :create]
@@ -144,7 +156,7 @@ devise_for :users, controllers: {
     get  :template # baixa planilha-modelo
   end
   end
-  get "rooms/:room_id/reservations/json", to: "reservations#reservations", defaults: { format: :json }
+
 
   resources :participants
 resources :participants do

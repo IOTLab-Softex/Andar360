@@ -52,61 +52,78 @@
 
 
 <div class="rooms">
-  <% @import_logs.each do |log| %>
-    <% is_error = log.dados_incompletos || log.sem_foto || log.status == 'erro' %>
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Status</th>
+        <th>Nome</th>
+        <th>CPF</th>
+        <th class="hide-sm">Mensagem</th>
+        <th class="hide-sm">Registrado em</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if @import_logs.empty? %>
+        <tr>
+          <td colspan="6" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhum log encontrado.
+          </td>
+        </tr>
+      <% else %>
+        <% @import_logs.each do |log| %>
+          <% is_error = log.dados_incompletos || log.sem_foto || log.status == 'erro' %>
 
-    <% participant = nil %>
-    <% if log.cpf.present? && log.cpf != "Desconhecido" %>
-      <% participant = Participant.find_by(cpf: log.cpf) %>
-    <% end %>
-
-    <% if participant.nil? %>
-      <% participant = Participant.where("LOWER(name) = ?", log.nome.downcase).first %>
-    <% end %>
-
-    <div class="participant-card" style="background: <%= is_error ? '#ffe6e6' : '#e0ffe6' %>;">
-      <div class="participant-photo">
-        <div class="photo-wrapper" style="font-size: 2rem;">
-          <% if is_error %>
-            ⚠️
-          <% else %>
-            ✔️
+          <% participant = nil %>
+          <% if log.cpf.present? && log.cpf != "Desconhecido" %>
+            <% participant = Participant.find_by(cpf: log.cpf) %>
           <% end %>
-        </div>
-      </div>
+          <% if participant.nil? %>
+            <% participant = Participant.where("LOWER(name) = ?", log.nome.downcase).first %>
+          <% end %>
 
-      <div class="participant-info">
-        <strong style="color: var(--color-btn--text);"><%= log.nome %></strong><br>
-        CPF: <%= log.cpf %><br>
-        Status: <%= log.status.capitalize %><br>
-        <span style="font-size: 0.9rem;">Mensagem: <%= truncate(log.mensagem, length: 100) %></span><br><br>
+          <tr style="background: <%= is_error ? '#ffe6e6' : '#e0ffe6' %>;">
+            <td style="text-align: center; width: 10%;">
+              <% if is_error %>
+                <span title="Erro na importação" style="font-size: 1.2rem;">⚠️</span>
+              <% else %>
+                <span title="Importado com sucesso" style="font-size: 1.2rem;">✔️</span>
+              <% end %>
+            </td>
+            <td><%= log.nome %></td>
+            <td><%= log.cpf %></td>
+            <td class="hide-sm"><%= truncate(log.mensagem, length: 80) %></td>
+            <td class="hide-sm"><%= log.created_at.strftime("%d/%m/%Y %H:%M") %></td>
+            <td>
+              <% if is_error && participant.present? %>
+                <%= link_to edit_participant_path(participant), class: 'btn-dash btn btn-sm btn-warning', title: "Ajustar usuário", onclick: 'event.stopPropagation();' do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                <% end %>
+              <% elsif is_error %>
+                <span style="color: #b00; font-size: 0.85rem;">Não encontrado</span>
+              <% else %>
+                <span style="color: #28a745;">Sucesso</span>
+              <% end %>
+            </td>
+          </tr>
 
-        <% if log.dados_incompletos %>
-          <span class="participant-tag">Dados incompletos</span>
+          <%# Exibe tags de erro abaixo da linha, se necessário — opcional e estilizado %>
+          <% if is_error %>
+            <tr>
+              <td colspan="6" style="padding: 0.3rem 1rem; background: #fff5f5; font-size: 0.85rem; border-top: none;">
+                <% if log.dados_incompletos %>
+                  <span class="participant-tag">Dados incompletos</span>
+                <% end %>
+                <% if log.sem_foto %>
+                  <span class="participant-tag">Sem foto</span>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
         <% end %>
-
-        <% if log.sem_foto %>
-          <span class="participant-tag">Sem foto</span>
-        <% end %>
-
-        <div style="font-size: 0.8rem; margin-top: 0.5rem; color: #666;">
-          Registrado em: <%= log.created_at.strftime("%d/%m/%Y %H:%M") %>
-        </div>
-
-        <% if is_error && participant.present? %>
-          <div style="margin-top: 0.5rem;">
-            <%= link_to edit_participant_path(participant), class: "btn edit" do %>
-              <i class="fa-solid fa-pen-to-square"></i> Ajustar Usuário
-            <% end %>
-          </div>
-        <% elsif is_error %>
-          <div style="margin-top: 0.5rem; color: #b00; font-size: 0.85rem;">
-            ⚠️ Participante não encontrado
-          </div>
-        <% end %>
-      </div>
-    </div>
-  <% end %>
+      <% end %>
+    </tbody>
+  </table>
 </div>
 
 

@@ -8,6 +8,14 @@ class Feedback < ApplicationRecord
   enum :status,   { aberto: 0, em_andamento: 1, resolvido: 2, ignorado: 3 }, prefix: true
   enum :severity, { baixa: 0, media: 1, alta: 2, critica: 3 }, prefix: true
 
-  validates :message, presence: true, length: { minimum: 5 }
+  # presença com mensagem PT-BR
+  validates :message,
+    presence: { message: "não pode ficar em branco" }
+
+  # tamanho mínimo; só roda se não estiver em branco
+  validates :message,
+    length: { minimum: 10, too_short: "precisa ter pelo menos %{count} caracteres" },
+    allow_blank: true
+
   validates :category, :status, :severity, presence: true
 end

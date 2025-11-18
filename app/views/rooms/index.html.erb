@@ -15,10 +15,11 @@
     Importe .xls, .xlsx ou .csv, com salas ja existente.
   </small>
 </div>
-<span class="filtro-label">
+<button type="button" id="filtro-toggle" class="filtro-label" aria-expanded="true" aria-controls="filtros-salas">
   <i class="fa-solid fa-filter"></i>
-  Filtrar
-</span>
+  Filtro
+  <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+</button>
 <br>
 <div class="mb-3" id="filtros-salas">
   <input type="text" id="filtro-nome" class="form-control" placeholder="Filtrar por nome...">
@@ -39,6 +40,11 @@
     <option value="Sim">Sim</option>
     <option value="Não">Não</option>
   </select>
+  <select id="filtro-comum" class="form-control">
+  <option value="">Espaço comum?</option>
+  <option value="Sim">Sim</option>
+  <option value="Não">Não</option>
+</select>
 </div>
 <div id="salas-section" class="rooms expanded">
   <%= form_with url: bulk_destroy_rooms_path, method: :delete, local: true, id: "rooms-bulk-form" do %>
@@ -46,9 +52,9 @@
     <!-- Barra de ações em massa (aparece ao ativar seleção) -->
     <div id="rooms-bulk-toolbar"
      class="hidden"
-     style="display:flex;gap:.6rem;align-items:center;justify-content:space-between;background:#ff8c42;color:var(--color-btn);padding:.6rem .9rem;border-radius: 10px 10px 0px 0px;margin-bottom: -1.2rem;">
+     style="display:flex;gap:.6rem;align-items:center;justify-content:space-between;background:#7014f1;color:var(--color-btn);padding:.6rem .9rem;border-radius: 10px 10px 0px 0px;margin-bottom: -1.2rem;">
       <div>
-        <strong id="rooms-selected-count">0</strong> selecionada(s)
+        <strong id="rooms-selected-count" style="color: #ffffffff">0</strong> selecionada(s)
       </div>
       <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
         <!-- NOVO: cancelar seleção -->
@@ -97,43 +103,56 @@
           </th>
         </tr>
       </thead>
-      <tbody>
-        <% @rooms.reject(&:espaco_comun).each do |room| %>
-          <tr>
-            <!-- checkbox por linha (oculto fora do modo seleção) -->
-            <td class="sel-cell" style="display:none; text-align:center;">
-              <input type="checkbox" class="rooms-row-check" name="ids[]" value="<%= room.id %>">
-            </td>
-            <td><strong><%= room.name %></strong></td>
-            <td><%= room.empresa_proprietaria.presence || "-" %></td>
-            <td><%= room.dados_do_inquilino.presence || "-" %></td>
-            <td>
-              <% cnpj = room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] rescue nil %>
-              <%= cnpj || "-" %>
-            </td>
-            <td><%= room.grupo.presence || "-" %></td>
-            <td><%= room.ativo? ? "Sim" : "Não" %></td>
-            <td><%= room.virtual? ? "Sim" : "Não" %></td>
-            <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
-            <td><%= room.alugado? ? "Sim" : "Não" %></td>
-            <td>
-              <%= link_to room_path(room), class: "btn btn-sm btn-outline-primary btn-success" do %>
-                <i class="fa-solid fa-eye"></i> Ver
-              <% end %>
-              <% if operador_ou_admin? %>
-                <%= link_to edit_room_path(room), class: 'btn btn-sm edit' do %>
-                  <i class="fa-solid fa-pen-to-square"></i> Edite
-                <% end %>
-                <%= link_to room_path(room),
-        class: "btn btn-sm btn-warning btn-excluir-sala",
-        data: { turbo_method: :delete, room_name: room.name } do %>
-                  <i class="fa-solid fa-trash"></i> Excluir
-                <% end %>
-              <% end %>
-            </td>
-          </tr>
+<tbody>
+  <% @rooms.each do |room| %>
+    <tr data-comum="<%= room.espaco_comun? ? 'Sim' : 'Não' %>">
+      <!-- checkbox por linha (oculto fora do modo seleção) -->
+      <td class="sel-cell" style="display:none; text-align:center;">
+        <input type="checkbox" class="rooms-row-check" name="ids[]" value="<%= room.id %>">
+      </td>
+      <td>
+        <strong><%= room.name %></strong>
+        <% if room.espaco_comun? %>
+          <span class="badge bg-secondary" style="margin-left:.4rem;">Espaço comum</span>
         <% end %>
-      </tbody>
+      </td>
+      <td><%= room.empresa_proprietaria.presence || "-" %></td>
+      <td><%= room.dados_do_inquilino.presence || "-" %></td>
+      <td>
+        <% cnpj = room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] rescue nil %>
+        <%= cnpj || "-" %>
+      </td>
+      <td><%= room.grupo.presence || "-" %></td>
+      <td><%= room.ativo? ? "Sim" : "Não" %></td>
+      <td><%= room.virtual? ? "Sim" : "Não" %></td>
+      <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
+      <td><%= room.alugado? ? "Sim" : "Não" %></td>
+      <td>
+        <%= link_to room_path(room), class: "btn btn-sm btn-outline-primary btn-success" do %>
+          <i class="fa-solid fa-eye"></i> <div class="hide-sm"> Ver </div>
+        <% end %>
+        <% if operador_ou_admin? %>
+          <%= link_to edit_room_path(room), class: 'btn btn-sm edit' do %>
+            <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Edite </div>
+          <% end %>
+          <%= link_to room_path(room),
+              class: "btn btn-sm btn-warning btn-excluir-sala",
+              data: { turbo_method: :delete, room_name: room.name } do %>
+            <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir </div>
+          <% end %>
+        <% end %>
+      </td>
+    </tr>
+  <% end %>
+    <!-- linha de "nenhum resultado" -->
+  <tr id="rooms-empty" style="display:none;" class="text-center">
+    <!-- colspan deve cobrir todas as colunas visíveis (ajuste se adicionar/remover colunas) -->
+    <td colspan="11" style="padding:1.2rem; color:var(--color-muted);">
+      Nenhuma sala encontrada.
+    </td>
+  </tr>
+</tbody>
+
     </table>
   <% end %>
 </div>
@@ -193,28 +212,55 @@
     const rows = document.querySelectorAll("#salas-section tbody tr");
 
     function filtrar() {
-      const nome = document.getElementById('filtro-nome').value.toLowerCase();
-      const empresa = document.getElementById('filtro-empresa').value.toLowerCase();
-      const inquilino = document.getElementById('filtro-inquilino').value.toLowerCase();
-      const ativo = document.getElementById('filtro-ativo').value;
-      const virtual = document.getElementById('filtro-virtual').value;
-      const alugado = document.getElementById('filtro-alugado').value;
+  const nome = document.getElementById('filtro-nome').value.trim().toLowerCase();
+  const empresa = document.getElementById('filtro-empresa').value.trim().toLowerCase();
+  const inquilino = document.getElementById('filtro-inquilino').value.trim().toLowerCase();
+  const ativo = document.getElementById('filtro-ativo').value;
+  const virtual = document.getElementById('filtro-virtual').value;
+  const alugado = document.getElementById('filtro-alugado').value;
+  const comum = document.getElementById('filtro-comum').value;
 
-      rows.forEach(row => {
-        const tds = row.querySelectorAll('td');
-        const [tdNome, tdEmpresa, tdInquilino, , , tdAtivo, tdVirtual, , tdAlugado] = tds;
+  const emptyRow = document.getElementById('rooms-empty');
 
-        let show = true;
-        if (nome && !tdNome.textContent.toLowerCase().includes(nome)) show = false;
-        if (empresa && !tdEmpresa.textContent.toLowerCase().includes(empresa)) show = false;
-        if (inquilino && !tdInquilino.textContent.toLowerCase().includes(inquilino)) show = false;
-        if (ativo && tdAtivo.textContent.trim() !== ativo) show = false;
-        if (virtual && tdVirtual.textContent.trim() !== virtual) show = false;
-        if (alugado && tdAlugado.textContent.trim() !== alugado) show = false;
+  let visibleCount = 0;
 
-        row.style.display = show ? "" : "none";
-      });
-    }
+  rows.forEach(row => {
+    // Seleciona as colunas pelo índice real na tabela (1-based)
+    // td:nth-child(1) é a sel-cell (checkbox) -> por isso o nome está em nth-child(2)
+    const tdNome = row.querySelector('td:nth-child(2)');
+    const tdEmpresa = row.querySelector('td:nth-child(3)');
+    const tdInquilino = row.querySelector('td:nth-child(4)');
+    const tdAtivo = row.querySelector('td:nth-child(7)');
+    const tdVirtual = row.querySelector('td:nth-child(8)');
+    const tdAlugado = row.querySelector('td:nth-child(10)');
+
+    // Textos seguros (null-check)
+    const txtNome = tdNome ? tdNome.textContent.trim().toLowerCase() : '';
+    const txtEmpresa = tdEmpresa ? tdEmpresa.textContent.trim().toLowerCase() : '';
+    const txtInquilino = tdInquilino ? tdInquilino.textContent.trim().toLowerCase() : '';
+    const txtAtivo = tdAtivo ? tdAtivo.textContent.trim() : '';
+    const txtVirtual = tdVirtual ? tdVirtual.textContent.trim() : '';
+    const txtAlugado = tdAlugado ? tdAlugado.textContent.trim() : '';
+
+    let show = true;
+    if (nome && !txtNome.includes(nome)) show = false;
+    if (empresa && !txtEmpresa.includes(empresa)) show = false;
+    if (inquilino && !txtInquilino.includes(inquilino)) show = false;
+    if (ativo && txtAtivo !== ativo) show = false;
+    if (virtual && txtVirtual !== virtual) show = false;
+    if (alugado && txtAlugado !== alugado) show = false;
+    if (comum && (row.dataset.comum !== comum)) show = false;
+
+    row.style.display = show ? "" : "none";
+    if (show) visibleCount++;
+  });
+
+  // mostra/oculta mensagem de "nenhuma sala"
+  if (emptyRow) {
+    emptyRow.style.display = (visibleCount === 0) ? "" : "none";
+  }
+}
+
 
     document.querySelectorAll('#filtros-salas input, #filtros-salas select').forEach(el => {
       el.addEventListener('input', filtrar);
@@ -460,6 +506,70 @@
     document.addEventListener('DOMContentLoaded', bind);
     document.addEventListener('turbo:load',    bind);
   })();
+
+  document.addEventListener('DOMContentLoaded', function () {
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-salas');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:filtros-salas-collapsed';
+
+  // restaura estado salvo
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved === '1') {
+    filtros.classList.add('collapsed');
+    toggle.setAttribute('aria-expanded', 'false');
+  } else {
+    filtros.classList.remove('collapsed');
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+
+  // função para alternar
+  function setCollapsed(collapsed, save = true) {
+    if (collapsed) {
+      filtros.classList.add('collapsed');
+      toggle.setAttribute('aria-expanded', 'false');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      filtros.classList.remove('collapsed');
+      toggle.setAttribute('aria-expanded', 'true');
+      if (save) localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  // clique no botão
+  toggle.addEventListener('click', function (ev) {
+    ev.preventDefault();
+    const isCollapsed = filtros.classList.contains('collapsed');
+    setCollapsed(!isCollapsed);
+  });
+
+  // teclado: Enter / Space
+  toggle.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      toggle.click();
+    }
+  });
+
+  // opcional: fecha o filtro ao clicar fora (somente se estiver aberto)
+  document.addEventListener('click', function (ev) {
+    // se estiver colapsado ignore
+    if (filtros.classList.contains('collapsed')) return;
+    const insideToggle = ev.target.closest('#filtro-toggle');
+    const insideFiltros = ev.target.closest('#filtros-salas');
+    if (!insideToggle && !insideFiltros) {
+      // fecha sem salvar (se quiser salvar, passe true)
+      setCollapsed(true, true);
+    }
+  });
+
+  // se os inputs fizerem foco, garante que o painel esteja aberto
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach((el) => {
+    el.addEventListener('focus', () => setCollapsed(false, false));
+  });
+});
+
 </script>
 <style>
 
@@ -508,9 +618,9 @@
     border-radius: 0 0 10px 10px;
 
     /* “borda” laranja com cantos arredondados */
-    box-shadow: 0 0 0 2px #ff8c42 inset;
+    box-shadow: 0 0 0 2px #7014f1 inset;
     /* fallback caso algum navegador ignore o box-shadow no <table> */
-    outline: 2px solid #ff8c42;
+    outline: 2px solid #7014f1;
     outline-offset: -2px;
 
     /* garante que os cantos arredondados apareçam bem */
@@ -521,16 +631,16 @@
 
   /* Deixa as linhas/grades com tom laranja suave enquanto selecionável */
   .selection-table.table--select thead th{
-    border-bottom-color: #ff8c42 !important;
+    border-bottom-color: #7014f1 !important;
   }
   .selection-table.table--select tbody td,
   .selection-table.table--select tbody th{
-    border-bottom-color: rgba(255, 138, 66, 1) !important;
+    border-bottom-color: #7014f1 !important;
   }
 
   /* Opcional: realce leve ao passar o mouse nas linhas no modo seleção */
   .selection-table.table--select tbody tr:hover{
-    background-color: rgba(255, 138, 66, 0.86);
+    background-color: #7014f1;
   }
 
 

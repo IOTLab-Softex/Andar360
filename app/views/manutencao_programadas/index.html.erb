@@ -1,42 +1,39 @@
 <div class="table-responsive">
-<span class="filtro-label">
+
+  <button type="button" id="filtro-toggle" class="filtro-label" aria-expanded="true" aria-controls="filtros-salas">
     <i class="fa-solid fa-filter"></i>
-    Filtrar
-  </span>
-<%= form_with url: manutencao_programadas_path, method: :get, local: true, class: "d-flex gap-2 mb-3", style: "align-items: center;" do %>
-  <%= select_tag :categoria,
+    Filtro
+    <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+  </button>
+  <%= form_with url: manutencao_programadas_path, method: :get, local: true, id:"filtros-salas", class: "d-flex gap-2 mb-3", style: "align-items: center;" do %>
+    <%= select_tag :categoria,
     options_for_select(["Todas as categorias"] + @manutencao_programadas.map(&:categoria).uniq.compact, params[:categoria]),
     class: "form-control" %>
-
-  <%= select_tag :responsavel,
+    <%= select_tag :responsavel,
     options_for_select(["Todos os responsáveis"] + @manutencao_programadas.map(&:responsavel).uniq.compact, params[:responsavel]),
     class: "form-control" %>
-
-  <%= select_tag :periodicidade,
+    <%= select_tag :periodicidade,
     options_for_select(["Todas as periodicidades"] + @manutencao_programadas.map(&:periodicidade).uniq.compact, params[:periodicidade]),
     class: "form-control" %>
-
-  <%= date_field_tag :inicio, params[:inicio], class: "form-control", placeholder: "Data início" %>
-  <span>a</span>
-  <%= date_field_tag :fim, params[:fim], class: "form-control", placeholder: "Data fim" %>
-
-  <%= button_tag type: "submit", class: "btn btn-success" do %>
-    <i class="fa fa-search"></i>
+    <%= date_field_tag :inicio, params[:inicio], class: "form-control", placeholder: "Data início" %>
+    <span>a</span>
+    <%= date_field_tag :fim, params[:fim], class: "form-control", placeholder: "Data fim" %>
+    <%= button_tag type: "submit", class: "btn btn-success" do %>
+      <i class="fa fa-search"></i>
+    <% end %>
   <% end %>
-<% end %>
-
   <table class="table-salas">
     <thead>
       <tr>
         <th>Título</th>
-        <th>Exibir no App</th>
-        <th>Categoria</th>
+        <th class="hide-sm">Exibir no App</th>
+        <th class="hide-sm">Categoria</th>
         <th>Local</th>
-        <th>Responsável</th>
-        <th>Periodicidade</th>
+        <th class="hide-sm">Responsável</th>
+        <th class="hide-sm">Periodicidade</th>
         <th>Data Prevista</th>
-        <th>Dias p/ Aviso</th>
-        <th>Observação</th>
+        <th class="hide-sm">Dias p/ Aviso</th>
+        <th class="hide-sm">Observação</th>
         <th>Ações</th>
       </tr>
     </thead>
@@ -44,31 +41,32 @@
       <% @manutencao_programadas.each do |manutencao| %>
         <tr>
           <td><%= manutencao.titulo %></td>
-          <td><%= manutencao.exibir_no_app ? "Sim" : "Não" %></td>
-          <td><%= manutencao.categoria %></td>
+          <td class="hide-sm"><%= manutencao.exibir_no_app ? "Sim" : "Não" %></td>
+          <td class="hide-sm"><%= manutencao.categoria %></td>
           <td><%= manutencao.local %></td>
-          <td><%= manutencao.responsavel %></td>
-          <td><%= manutencao.periodicidade %></td>
+          <td class="hide-sm"><%= manutencao.responsavel %></td>
+          <td class="hide-sm"><%= manutencao.periodicidade %></td>
           <td><%= l(manutencao.data_prevista) if manutencao.data_prevista %></td>
-          <td><%= manutencao.dias_para_aviso %></td>
-          <td><%= truncate(manutencao.observacao.to_s, length: 50) %></td>
+          <td class="hide-sm"><%= manutencao.dias_para_aviso %></td>
+          <td class="hide-sm"><%= truncate(manutencao.observacao.to_s, length: 50) %></td>
           <td>
             <%= link_to manutencao_programada_path(manutencao), class: "btn btn-success" do %>
-              <i class="fa-solid fa-eye"></i> Ver
+              <i class="fa-solid fa-eye"></i>  
+              <div class="hide-sm-470">Ver </div>
+            <% end %>
+            <%if operador_ou_admin? %>
+              <%= link_to edit_manutencao_programada_path(manutencao), class: "edit btn btn-sm btn-outline-secondary" do %>
+                <i class="fa-solid fa-pen-to-square"></i> 
+                <div class="hide-sm-470">Editar </div>
               <% end %>
-              <%if operador_ou_admin? %>
-            <%= link_to edit_manutencao_programada_path(manutencao), class: "edit btn btn-sm btn-outline-secondary" do %>
-              <i class="fa-solid fa-pen-to-square"></i> Editar
-              <% end %>
-
-                            <%= button_to adiar_manutencao_programada_path(manutencao),
+              <%= button_to adiar_manutencao_programada_path(manutencao),
   method: :post,
   class: "btn btn-success",
   data: { confirm: "Deseja adiar essa manutenção para a próxima data?" },
   form: { style: "display:inline" } do %>
-  <i class="fa-solid fa-clock-rotate-left"></i> Adiar
-<% end %>
-
+                <i class="fa-solid fa-clock-rotate-left"></i>  
+                <div class="hide-sm-470">Adiar </div>
+              <% end %>
               <%= button_to manutencao_programada_path(manutencao),
       method: :delete,
       class: "btn btn-warning",
@@ -77,42 +75,134 @@
         data:  { record_name: (manutencao.titulo.presence || "esta manutenção"), turbo: false },
         style: "display:inline"
       } do %>
-  <i class="fa-solid fa-trash"></i> Excluir
-<% end %>
-
-<% end %>
+                <i class="fa-solid fa-trash"></i>  
+                <div class="hide-sm-470">Excluir </div>
+              <% end %>
+            <% end %>
           </td>
         </tr>
       <% end %>
     </tbody>
   </table>
 </div>
-
 <script>
-document.addEventListener("submit", async function(e) {
-  const form = e.target;
-  if (!form.classList.contains("form-excluir-manutencao")) return;
+  document.addEventListener("submit", async function(e) {
+    const form = e.target;
+    if (!form.classList.contains("form-excluir-manutencao")) return;
 
-  e.preventDefault(); // impede o submit automático
+    e.preventDefault(); // impede o submit automático
 
-  const nome = form.dataset.recordName || "esta manutenção";
+    const nome = form.dataset.recordName || "esta manutenção";
 
-  if (window.Swal) {
-    const res = await Swal.fire({
-      title: "Excluir manutenção?",
-      html: `Tem certeza que deseja excluir <b>${nome}</b>?`,
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonText: "Sim, excluir",
-      cancelButtonText: "Cancelar",
-      reverseButtons: true,
-      focusCancel: true
-    });
-    if (res.isConfirmed) form.submit();
-  } else {
-    if (confirm(`Tem certeza que deseja excluir ${nome}?`)) {
-      form.submit();
+    if (window.Swal) {
+      const res = await Swal.fire({
+        title: "Excluir manutenção?",
+        html: `Tem certeza que deseja excluir <b>${nome}</b>?`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Sim, excluir",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+        focusCancel: true
+      });
+      if (res.isConfirmed) form.submit();
+    } else {
+      if (confirm(`Tem certeza que deseja excluir ${nome}?`)) {
+        form.submit();
+      }
+    }
+  });
+
+  // ======= JS do colapso suave (auto-expande medindo altura) =======
+document.addEventListener('DOMContentLoaded', () => {
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-salas');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:filtros-salas-collapsed';
+
+  // Inicializa aria e estado conforme localStorage (ou atributo atual)
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
+  // Função para animar usando max-height calculado (mais suave que só toggle de class)
+  function setCollapsed(collapsed, save = true) {
+    // se preferir reduzir movimento, aplica sem transição
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (collapsed) {
+      // animação de fechar: define max-height para altura atual -> 0
+      const curH = filtros.scrollHeight;
+      filtros.style.maxHeight = curH + 'px';       // garante ponto de partida
+      // force reflow
+      // eslint-disable-next-line no-unused-expressions
+      filtros.offsetHeight;
+      if (prefersReduced) {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.classList.add('collapsed');
+        filtros.style.maxHeight = '0px';
+      }
+      toggle.setAttribute('aria-expanded', 'false');
+      filtros.setAttribute('aria-hidden', 'true');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      // abre: definir max-height do 0 para scrollHeight
+      filtros.classList.remove('collapsed');
+      filtros.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+      const targetH = filtros.scrollHeight;
+      if (prefersReduced) {
+        filtros.style.maxHeight = '';
+      } else {
+        filtros.style.maxHeight = '0px';
+        // força reflow
+        // eslint-disable-next-line no-unused-expressions
+        filtros.offsetHeight;
+        filtros.style.maxHeight = targetH + 'px';
+      }
+      // depois da animação remove max-height inline para ficar fluido quando o conteúdo muda
+      const cleanup = () => {
+        filtros.style.maxHeight = '';
+        filtros.removeEventListener('transitionend', cleanup);
+      };
+      filtros.addEventListener('transitionend', cleanup);
+      if (save) localStorage.removeItem(STORAGE_KEY);
     }
   }
+
+  // aplica estado inicial sem animação chata
+  if (startCollapsed) {
+    filtros.classList.add('collapsed');
+    filtros.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    filtros.style.maxHeight = '0px';
+  } else {
+    filtros.classList.remove('collapsed');
+    filtros.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    filtros.style.maxHeight = '';
+  }
+
+  // clique no toggle
+  toggle.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    const isCollapsed = filtros.classList.contains('collapsed');
+    setCollapsed(!isCollapsed, true);
+  });
+
+  // abrir painel se foco em qualquer input/select dentro
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
+    el.addEventListener('focus', () => setCollapsed(false, false));
+  });
+
+  // opcional: fecha ao clicar fora (descomente se quiser)
+  // document.addEventListener('click', (ev) => {
+  //   if (filtros.classList.contains('collapsed')) return;
+  //   if (!ev.target.closest('#filtros-salas') && !ev.target.closest('#filtro-toggle')) {
+  //     setCollapsed(true, true);
+  //   }
+  // });
 });
 </script>

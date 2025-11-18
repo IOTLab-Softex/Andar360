@@ -26,9 +26,9 @@
     </thead>
     <tbody>
       <% if chamados_abertos.empty? %>
-        <tr>
-          <td colspan="7" class="text-center text-muted">Sem chamados abertos</td>
-        </tr>
+          <td colspan="5" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Sem chamados abertos.
+          </td>
       <% else %>
         <% chamados_abertos.each do |chamado| %>
           <tr class="<%= classe_linha_atualizada(chamado, 'chamado') %>" id="chamado-<%= chamado.id %>">
@@ -45,14 +45,10 @@
             <td class="hide-sm"><%= chamado.room&.name || "Sem unidade" %></td>
             <td><%= chamado.titulo %></td>
             <td>
-              <%= link_to chamado_path(chamado), class: 'btn btn-sm btn-success', onclick: 'event.stopPropagation();' do %>
+              <%= link_to chamado_path(chamado), class: 'btn-dash btn btn-sm btn-success', onclick: 'event.stopPropagation();' do %>
                 <i class="fa-solid fa-eye"></i>
               <% end %>
-              <% if operador_ou_admin? %>
-                <%= link_to edit_chamado_path(chamado), class: 'btn btn-sm edit', onclick: 'event.stopPropagation();' do %>
-                  <i class="fa-solid fa-pen-to-square"></i>
-                <% end %>
-              <% end %>
+            
             </td>
           </tr>
         <% end %>

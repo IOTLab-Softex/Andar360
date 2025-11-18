@@ -59,7 +59,7 @@ end
       :smtp_from_email, :smtp_reply_to,
       :smtp_address, :smtp_port, :smtp_domain,
       :smtp_username, :smtp_password,
-      :smtp_authentication, :smtp_enable_starttls_auto
+      :smtp_authentication, :smtp_enable_starttls_auto,:require_room_rules_ack, :room_rules
     )
   end
 end

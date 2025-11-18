@@ -13,16 +13,7 @@
   </div>
 </div>
   <br>
-  <% if manutencao_programada.errors.any? %>
-    <div class="alert alert-danger">
-      <h4><%= pluralize(manutencao_programada.errors.count, "erro") %> impediram o salvamento:</h4>
-      <ul>
-        <% manutencao_programada.errors.each do |error| %>
-          <li><%= error.full_message %></li>
-        <% end %>
-      </ul>
-    </div>
-  <% end %>
+
 
   <div class="form-group" style="display: flex; flex-wrap: wrap; gap: 1rem;">
     <div style="flex: 2;">

@@ -20,6 +20,6 @@
 # Learn more: http://github.com/javan/whenever
 every 1.minute do
     runner "CheckUpcomingReservationsJob.perform_later"
-    
+      runner "AdvanceManutencoesJob.perform_later"
   end
   

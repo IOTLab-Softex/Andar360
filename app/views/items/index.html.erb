@@ -34,24 +34,24 @@
     flex-direction: column;
 ">
             <% if item.status == "disponivel" %>
-              <button type="button" class="btn btn-sm btn-success" onclick="abrirModal('modal-retirar-<%= item.id %>')">
-                <i class="fa-solid fa-box-open"></i> Retirar
+              <button type="button" class="btn btn-success" onclick="abrirModal('modal-retirar-<%= item.id %>')">
+                <i class="fa-solid fa-box-open"></i> <div class="hide-sm"> Retirar </div>
               </button>
            <% elsif item.status == "em uso" %>
-  <button type="button" class="edit btn btn-sm btn-secondary" onclick="abrirModal('modal-devolver-<%= item.id %>')">
-    <i class="fa-solid fa-undo"></i> Devolver
+  <button type="button" class="btn btn-success" onclick="abrirModal('modal-devolver-<%= item.id %>')">
+    <i class="fa-solid fa-undo"></i> <div class="hide-sm"> Devolver </div>
   </button>
 
             <% else %>
               <span class="text-muted">Sem ação</span>
             <% end %>
          
-          <%= link_to edit_item_path(item), class: "btn btn-sm edit" do %>
-            <i class="fa-solid fa-pen-to-square"></i> Editar
+          <%= link_to edit_item_path(item), class: "btn edit" do %>
+            <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
             <% end %>
           
-            <%= button_to item_path(item), method: :delete, data: { confirm: 'Tem certeza que deseja excluir este item?' }, class: "btn btn-sm btn-warning", style:" width: -webkit-fill-available" do %>
-              <i class="fa-solid fa-trash"></i> Excluir
+            <%= button_to item_path(item), method: :delete, data: { confirm: 'Tem certeza que deseja excluir este item?' }, class: "btn btn-warning", style:" width: -webkit-fill-available" do %>
+              <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir </div>
             <% end %>
           </td>
         </tr>
@@ -163,7 +163,6 @@
     width: 100%;
     max-width: 500px;
     position: relative;
-    color: var(--color-btn--text);
 }
 
 .modal-custom .close-modal {

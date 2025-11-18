@@ -14,8 +14,18 @@
     display: flex;
     justify-content: center;
 ">
-      <%= form.submit "Salvar", class: "btn" %>
-      <%= link_to "Cancelar", encomendas_path, class: "btn btn-secondary" %>
+     <div class="mt-4 text-center" style="display: flex; justify-content: center; gap: .5rem;">
+  <%= form.button type: "submit", class: "btn" do %>
+    <i class="fa-solid fa-floppy-disk"></i>
+    <span>Salvar</span>
+  <% end %>
+
+  <%= link_to encomendas_path, class: "btn btn-secondary" do %>
+    <i class="fa-solid fa-xmark"></i>
+    <span>Cancelar</span>
+  <% end %>
+</div>
+
     </div>
     <hr>
     <div style="
@@ -51,7 +61,11 @@
     📷 Tirar foto
   </button>
   <!-- Anexar arquivo normalmente -->
-  <%= form.file_field :imagem, class: "form-control mt-2", id: "imagem-file", onchange: "previewImagem(event)" %>
+  <%= form.file_field :imagem,
+      class: "form-control mt-2",
+      id: "imagem-file",
+      onchange: "previewImagem(event)" %>
+
 
   <!-- Tirar foto no modal (sem Bootstrap) -->
  
@@ -156,218 +170,215 @@
 
 
 <script>
-  function previewImagem(event) {
-    const preview = document.getElementById('imagem-preview');
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        preview.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
+// Preview genérico (upload manual + câmera)
+function previewImagem(event) {
+  const preview = document.getElementById('imagem-preview');
+  const file = event.target.files[0];
+  if (!file || !preview) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => { preview.src = e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+// Para funcionar com Turbo e com páginas "normais"
+function initEncomendaForm() {
+  // evita inicializar duas vezes
+  if (window._encomendaFormInited) return;
+  window._encomendaFormInited = true;
+
+  // ---------- SELECT2 / DESTINATÁRIO ----------
+  if (window.jQuery && $.fn.select2) {
+    $('#destinatario_select').select2({
+      width: '100%',
+      placeholder: 'Selecione um participante',
+      allowClear: true
+    });
   }
 
-   function previewImagem(event) {
-    const preview = document.getElementById('imagem-preview');
-    const file = event.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        preview.src = e.target.result;
-      };
-      reader.readAsDataURL(file);
-    }
-  }
+  const empresaSelect = document.getElementById('empresa_select');
+  const destSelect    = document.getElementById('destinatario_select');
 
-  document.addEventListener("DOMContentLoaded", function() {
-    // Inicializa Select2 (se jQuery/Select2 estiverem presentes)
-    if (window.jQuery && $.fn.select2) {
-      $('#destinatario_select').select2({
-        width: '100%',
-        placeholder: 'Selecione um participante',
-        allowClear: true
-      });
-    }
-
-    const empresaSelect = document.getElementById('empresa_select');
-    const destSelect    = document.getElementById('destinatario_select');
-
+  if (empresaSelect && destSelect) {
     empresaSelect.addEventListener('change', async (e) => {
-  const empresaId = e.target.value;
+      const empresaId = e.target.value;
 
-  // Destroi o Select2 antes de trocar as options (se estiver ativo)
-  if (window.jQuery && $.fn.select2 && $('#destinatario_select').data('select2')) {
-    $('#destinatario_select').select2('destroy');
+      // Destroi o Select2 antes de trocar as options (se estiver ativo)
+      if (window.jQuery && $.fn.select2 && $('#destinatario_select').data('select2')) {
+        $('#destinatario_select').select2('destroy');
+      }
+
+      destSelect.innerHTML = '<option value="">Carregando...</option>';
+      destSelect.disabled = true;
+
+      if (!empresaId) {
+        destSelect.innerHTML = '<option value="">Selecione um participante</option>';
+        destSelect.disabled = false;
+
+        if (window.jQuery && $.fn.select2) {
+          $('#destinatario_select').select2({
+            width: '100%',
+            placeholder: 'Selecione um participante',
+            allowClear: true
+          });
+        }
+        return;
+      }
+
+      try {
+        const resp = await fetch(`/participants/por_empresa/${empresaId}.json`, {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+        const result = await resp.json();
+        const data = result.participantes;
+        const selecionadoId = result.selecionado_id;
+
+        destSelect.innerHTML = '<option value="">Selecione um participante</option>';
+        data.forEach(p => {
+          const opt = document.createElement('option');
+          opt.value = p.id;
+          const nomeExibido = p.tem_usuario ? `${p.name} ⭐` : p.name;
+          opt.textContent = nomeExibido;
+
+          if (Number(p.id) === Number(selecionadoId)) {
+            opt.selected = true;
+          }
+          destSelect.appendChild(opt);
+        });
+      } catch (err) {
+        console.error('Erro carregando participantes:', err);
+        destSelect.innerHTML = '<option value="">Erro ao carregar participantes</option>';
+      } finally {
+        destSelect.disabled = false;
+
+        if (window.jQuery && $.fn.select2) {
+          $('#destinatario_select').select2({
+            width: '100%',
+            placeholder: 'Selecione um participante',
+            allowClear: true
+          });
+        }
+      }
+    });
   }
 
-  // Limpa, desativa e adiciona opção de carregamento
-  destSelect.innerHTML = '<option value="">Carregando...</option>';
-  destSelect.disabled = true;
+  // ---------- CÂMERA ----------
+  const openBtn   = document.getElementById('open-camera');
+  const modal     = document.getElementById('camera-modal');
+  const backdrop  = document.getElementById('camera-backdrop');
+  const closeBtn  = document.getElementById('camera-close');
+  const cancelBtn = document.getElementById('camera-cancel');
+  const retakeBtn = document.getElementById('camera-retake');
+  const captureBtn= document.getElementById('camera-capture');
 
-  if (!empresaId) {
-    destSelect.innerHTML = '<option value="">Selecione um participante</option>';
-    destSelect.disabled = false;
+  const videoEl   = document.getElementById('camera-video');
+  const canvasEl  = document.getElementById('camera-canvas');
+  const fileInput = document.getElementById('imagem-file');
+  const previewEl = document.getElementById('imagem-preview');
 
-    if (window.jQuery && $.fn.select2) {
-      $('#destinatario_select').select2({
-        width: '100%',
-        placeholder: 'Selecione um participante',
-        allowClear: true
-      });
-    }
+  let stream = null;
+
+  if (!modal || !openBtn || !videoEl || !canvasEl || !fileInput || !previewEl) {
+    // formulário não está completo nesta página
     return;
   }
 
-  try {
-    const resp = await fetch(`/participants/por_empresa/${empresaId}.json`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-    const result = await resp.json();
-  const data = result.participantes;
-  const selecionadoId = result.selecionado_id;
-
-    // Limpa e popula com os dados
-    destSelect.innerHTML = '<option value="">Selecione um participante</option>';
-    data.forEach(p => {
-  const opt = document.createElement('option');
-  opt.value = p.id;
-
-  // Destacar se tiver acesso (usuário Devise)
-  const nomeExibido = p.tem_usuario ? `${p.name} ⭐` : p.name;
-  opt.textContent = nomeExibido;
-
-  if (Number(p.id) === Number(selecionadoId)) {
-    opt.selected = true;
+  function openModal() {
+    modal.classList.add('is-open');
+    document.body.classList.add('noscroll');
+    startCamera();
+  }
+  function closeModal() {
+    stopCamera();
+    modal.classList.remove('is-open');
+    document.body.classList.remove('noscroll');
   }
 
-  destSelect.appendChild(opt);
+  openBtn.addEventListener('click', openModal);
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  backdrop?.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e)=> {
+    if(e.key==='Escape' && modal.classList.contains('is-open')) closeModal();
   });
 
-
-
-  } catch (err) {
-    console.error('Erro carregando participantes:', err);
-    destSelect.innerHTML = '<option value="">Erro ao carregar participantes</option>';
-  } finally {
-    // Reativa e re-aplica Select2
-    destSelect.disabled = false;
-
-    if (window.jQuery && $.fn.select2) {
-      $('#destinatario_select').select2({
-        width: '100%',
-        placeholder: 'Selecione um participante',
-        allowClear: true
+  async function startCamera() {
+    stopCamera();
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal:'environment' },
+          width:  { ideal:1280 },
+          height: { ideal:720 }
+        },
+        audio: false
       });
+      videoEl.srcObject = stream;
+    } catch (err) {
+      console.error(err);
+      alert('Não foi possível acessar a câmera.\n- Permita o uso da câmera no navegador\n- Use HTTPS (ou http://localhost)');
+      closeModal();
     }
   }
-  });
 
-  });
-
- // Preview quando o usuário anexa arquivo manualmente
-  function previewImagem(event) {
-    const preview = document.getElementById('imagem-preview');
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => { preview.src = e.target.result; };
-    reader.readAsDataURL(file);
+  function stopCamera() {
+    if (stream) {
+      stream.getTracks().forEach(t=>t.stop());
+      stream = null;
+    }
+    videoEl.srcObject = null;
   }
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // ------- refs ------
-    const openBtn   = document.getElementById('open-camera');
-    const modal     = document.getElementById('camera-modal');
-    const backdrop  = document.getElementById('camera-backdrop');
-    const closeBtn  = document.getElementById('camera-close');
-    const cancelBtn = document.getElementById('camera-cancel');
-    const retakeBtn = document.getElementById('camera-retake');
-    const captureBtn= document.getElementById('camera-capture');
+  // Capturar -> cria File, joga no input e atualiza preview
+  function capture() {
+    const w = videoEl.videoWidth || 1280;
+    const h = videoEl.videoHeight || 720;
+    canvasEl.width = w;
+    canvasEl.height = h;
 
-    const videoEl   = document.getElementById('camera-video');
-    const canvasEl  = document.getElementById('camera-canvas');
-    const fileInput = document.getElementById('imagem-file');
-    const previewEl = document.getElementById('imagem-preview');
+    const ctx = canvasEl.getContext('2d');
+    ctx.drawImage(videoEl, 0, 0, w, h);
 
-    let stream = null;
+    canvasEl.toBlob((blob) => {
+      if (!blob) return;
 
-    // ------- modal helpers ------
-    function openModal() {
-      modal.classList.add('is-open');
-      document.body.classList.add('noscroll');
-      startCamera();
-    }
-    function closeModal() {
-      stopCamera();
-      modal.classList.remove('is-open');
-      document.body.classList.remove('noscroll');
-    }
+      const file = new File(
+        [blob],
+        `encomenda_${Date.now()}.jpg`,
+        { type: 'image/jpeg' }
+      );
 
-    openBtn?.addEventListener('click', openModal);
-    closeBtn?.addEventListener('click', closeModal);
-    cancelBtn?.addEventListener('click', closeModal);
-    backdrop?.addEventListener('click', closeModal);
-    document.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('is-open')) closeModal(); });
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      fileInput.files = dt.files;
 
-    // ------- camera -------
-    async function startCamera() {
-      stopCamera();
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } },
-          audio: false
-        });
-        videoEl.srcObject = stream;
-      } catch (err) {
-        alert('Não foi possível acessar a câmera.\n- Permita o uso da câmera no navegador\n- Use HTTPS (ou http://localhost)');
-        closeModal();
-      }
-    }
-    function stopCamera() {
-      if (stream) { stream.getTracks().forEach(t=>t.stop()); stream = null; }
-      videoEl.srcObject = null;
-    }
+      // atualiza o preview
+      const reader = new FileReader();
+      reader.onload = (e) => { previewEl.src = e.target.result; };
+      reader.readAsDataURL(file);
 
-    // Capturar -> envia para o input file e atualiza o preview da página
-    function capture() {
-      const w = videoEl.videoWidth || 1280;
-      const h = videoEl.videoHeight || 720;
-      canvasEl.width = w; canvasEl.height = h;
-      const ctx = canvasEl.getContext('2d');
-      ctx.drawImage(videoEl, 0, 0, w, h);
+      closeModal();
+    }, 'image/jpeg', 0.92);
+  }
 
-      canvasEl.toBlob((blob) => {
-        if (!blob) return;
-        const file = new File([blob], `encomenda_${Date.now()}.jpg`, { type: 'image/jpeg' });
+  function retake() {
+    videoEl.classList.add('flash');
+    setTimeout(()=>videoEl.classList.remove('flash'), 120);
+  }
 
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        fileInput.files = dt.files;
+  captureBtn?.addEventListener('click', capture);
+  retakeBtn?.addEventListener('click', retake);
 
-        const reader = new FileReader();
-        reader.onload = e => { previewEl.src = e.target.result; };
-        reader.readAsDataURL(file);
+  window.addEventListener('beforeunload', stopCamera);
+}
 
-        closeModal();
-      }, 'image/jpeg', 0.92);
-    }
-
-    // Repetir: apenas dá um “flash” e mantém a câmera (o usuário pode capturar de novo)
-    function retake() {
-      videoEl.classList.add('flash');
-      setTimeout(()=>videoEl.classList.remove('flash'), 120);
-    }
-
-    captureBtn?.addEventListener('click', capture);
-    retakeBtn?.addEventListener('click', retake);
-
-    // segurança ao sair
-    window.addEventListener('beforeunload', stopCamera);
-  });
+// Inicializa tanto em páginas normais quanto com Turbo
+document.addEventListener('DOMContentLoaded', initEncomendaForm);
+document.addEventListener('turbo:load', initEncomendaForm);
 </script>
+
 
 <style>
 /* ---- Botões (tema opcional) ---- */
@@ -379,11 +390,19 @@
 /* ---- Modal puro ---- */
 .pmodal { position:fixed; inset:0; display:none; }
 .pmodal.is-open { display:block; }
-.pmodal__backdrop { position:absolute; inset:0; background:rgba(0,0,0,.6); }
-.pmodal__dialog {
-  position:relative; z-index:1; margin:16vh auto; width:min(92vw, 900px);
-  background:#1f1f1f; color:#fff; border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.5);
-  display:flex; flex-direction:column; overflow:hidden;
+.pmodal__backdrop { inset:0; background:rgba(0,0,0,.6); z-index: 1; }
+.pmodal__dialog {    position: relative;
+    z-index: 1;
+    margin: 16vh auto;
+    width: min(92vw, 900px);
+    background: #1f1f1f;
+    color: #fff;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    top: 14%;
 }
 .pmodal__header, .pmodal__footer { padding:12px 16px; display:flex; align-items:center; gap:8px; }
 .pmodal__header { justify-content:space-between; border-bottom:1px solid #333; }

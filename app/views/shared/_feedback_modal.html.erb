@@ -28,7 +28,8 @@
        <%= f.text_area :message,
       rows: 1,
       class: "form-control fm-control js-autogrow",
-      style: "height:55px",
+      style: "    height: 55px;
+    background: aliceblue;",
       data: { minheight: 55 },
       placeholder: "Descreva o problema, o que esperava acontecer e como reproduzir..." %>
 
@@ -61,8 +62,14 @@
       <%= f.hidden_field :url_params, id: "feedback_url_params" %>
 
       <footer class="fm-actions">
-        <button type="button" class="btn btn-outline-light feedback-cancel">Cancelar</button>
-        <%= f.submit "Enviar", class: "btn btn-primary fm-submit" %>
+
+
+<%= button_tag type: 'submit', class: 'btn btn-success btn-icon' do %>
+  <i class="fa-solid fa-arrow-right"></i> Enviar
+<% end %>
+
+
+
       </footer>
     <% end %>
   </div>
@@ -82,16 +89,17 @@
 }
 
 /* Card central moderno */
-.feedback-modal{
-  margin: clamp(32px, 6vh, 80px) auto;
-  width: min(720px, 96%);
-  background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--bg-main, #1e2a38);
-  border: 1px solid rgba(255,255,255,.08);
-  border-radius: 16px;
-  box-shadow: 0 24px 60px rgba(0,0,0,.35);
-  color: var(--color-text, #e7eef7);
-  position: relative;
-  animation: fm-pop .18s ease-out;
+.feedback-modal {
+    margin: clamp(32px, 6vh, 80px) auto;
+    width: min(720px, 96%);
+    background: var(--color-bg-sidebar);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
+    color: var(--color-bg-table-salas-thead);
+    position: relative;
+    animation: fm-pop .18s 
+ease-out;
 }
 @keyframes fm-pop{ from { transform: scale(.98); opacity: 0 } to { transform: scale(1); opacity: 1 } }
 
@@ -113,7 +121,11 @@
 }
 .fm-icon{ width: 28px; height: 28px; filter: brightness(0) invert(1); align-self: start; }
 .fm-titles h3{ margin: 0; font-size: 1.1rem; }
-.fm-sub{ margin: 4px 0 0 0; font-size: .9rem; color: #a8b3c7; }
+.fm-sub {
+    margin: 4px 0 0 0;
+    font-size: .9rem;
+    color: var(--color-common-space-form-group) !important;
+}
 
 .fm-form{ padding: 14px 18px 18px 18px; }
 
@@ -229,7 +241,8 @@
 
 /* peça tema escuro nativo p/ controles (Chrome/Edge/Firefox suportam) */
 .fm-control.form-select {
-  color-scheme: dark;
+    color-scheme: dark;
+    color: white;
 }
 
 /* Fallback: force as cores das opções quando o popup vier claro */

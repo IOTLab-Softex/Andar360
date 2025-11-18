@@ -4,7 +4,8 @@
 
 <div id="comuns-section" class="rooms expanded">
   <% if rooms.blank? %>
-    <div class="p-3 text-muted">Nenhum espaço comum cadastrado.</div>
+    <div style="text-align:center; padding:1rem; font-style:italic; color:#888;">Nenhum espaço comum cadastrado.</div>
+     
   <% else %>
     <% rooms.each do |room| %>
       <% background = room.photo.attached? ? "--bg-url: url(#{url_for(room.photo)});" : "background-color: black;" %>

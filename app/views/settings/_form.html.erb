@@ -1,161 +1,293 @@
-
-
 <div class="settings-container">
   <%= form_with model: @setting, local: true do |f| %>
-  <%= f.hidden_field :grupo_empresa_id %>
-    <div class="settings-form">
-      <!-- Diretório de Backup -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-folder-open me-2"></i> Diretório de Backup do Icontrol</label>
-        <%= f.text_field :backup_dir, class: "form-control", placeholder: "Ex: C:\\temp\\" %>
-        <small class="form-text text-muted">Informe o caminho onde os dados do Icontrol serão extraídos.</small>
-      </div>
-      <!-- Checagem de Reservas -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-calendar-check me-2"></i> Frequência de checagem de reservas</label>
-        <div class="d-flex gap-2">
-          <%= f.number_field :tempo_checagem_reservas, class: "form-control", min: 2, max: 10, step: 1 %>
-          <%= f.select :tempo_checagem_reservas_unidade, ["minutos", "segundos"], class: "form-control" %>
+    <%= f.hidden_field :grupo_empresa_id %>
+
+    <!-- NAV ABAS -->
+    <div class="tabs-nav" role="tablist" aria-label="Configurações">
+      <button class="tab-link active" data-tab="tab-sistema"   role="tab" aria-selected="true">
+        <i class="fa-solid fa-gear"></i> Sistema
+      </button>
+      <button class="tab-link"        data-tab="tab-reservas"  role="tab" aria-selected="false">
+        <i class="fa-solid fa-calendar-check"></i> Reservas
+      </button>
+      <button class="tab-link"        data-tab="tab-turnos"    role="tab" aria-selected="false">
+        <i class="fa-solid fa-clock"></i> Limites por turno
+      </button>
+      <button class="tab-link"        data-tab="tab-email"     role="tab" aria-selected="false">
+        <i class="fa-solid fa-envelope"></i> E-mail (SMTP)
+      </button>
+    </div>
+
+    <div class="tabs-panels settings-form">
+      <!-- ===== ⚙️ SISTEMA ===== -->
+      <section id="tab-sistema" class="tab-panel active" role="tabpanel">
+        <h2 class="subtitle mt-1 mb-3"><i class="fa-solid fa-gear me-2"></i> Sistema</h2>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-folder-open me-2"></i> Diretório de Backup do Icontrol</label>
+          <%= f.text_field :backup_dir, class: "form-control", placeholder: "Ex: C:\\temp\\" %>
+          <small class="form-text text-muted">Informe o caminho onde os dados do Icontrol serão extraídos.</small>
         </div>
-        <small class="form-text text-muted">Intervalo para buscar novas reservas (entre 2 e 10).</small>
-      </div>
-      <!-- Checagem de Acesso -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-user-check me-2"></i> Frequência de checagem de acesso</label>
-        <div class="d-flex gap-2">
-          <%= f.number_field :tempo_checagem_acesso, class: "form-control", min: 10, max: 20, step: 1 %>
-          <%= f.select :tempo_checagem_acesso_unidade, ["segundos", "minutos"], class: "form-control" %>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-plug me-2"></i> Frequência de verificação dos dispositivos</label>
+          <div class="d-flex gap-2">
+            <%= f.number_field :tempo_verificacao_online, class: "form-control", min: 1, max: 10, step: 1 %>
+            <%= f.select :tempo_verificacao_online_unidade, ["minutos", "segundos"], class: "form-control" %>
+          </div>
+          <small class="form-text text-muted">Verifica se os dispositivos de reconhecimento facial estão online (entre 1 e 10).</small>
         </div>
-        <small class="form-text text-muted">Intervalo para verificar se o solicitante/responsável acessou a sala (entre 10 e 20).</small>
-      </div>
-      <!-- Verificação de Dispositivos -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-plug me-2"></i> Frequência de verificação dos dispositivos</label>
-        <div class="d-flex gap-2">
-          <%= f.number_field :tempo_verificacao_online, class: "form-control", min: 1, max: 10, step: 1 %>
-          <%= f.select :tempo_verificacao_online_unidade, ["minutos", "segundos"], class: "form-control" %>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-clock me-2"></i> Horário da rotina de importação</label>
+          <%= f.time_field :horario_rotina_importacao, class: "form-control" %>
+          <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
         </div>
-        <small class="form-text text-muted">Verifica se os dispositivos de reconhecimento facial estão online (entre 1 e 10).</small>
-      </div>
-      <!-- Rotina de Importação -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-clock me-2"></i> Horário da rotina de importação</label>
-        <%= f.time_field :horario_rotina_importacao, class: "form-control" %>
-        <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
-      </div>
-      <h2 class="subtitle mt-4 mb-3">⏰ Limite de Horas por Turno</h2>
-      <!-- Turno Manhã -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-sun me-2"></i> Limite para turno da manhã</label>
-        <%= f.time_field :limite_horas_turno_reservas_manha, class: "form-control" %>
-        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela manhã.</small>
-      </div>
-      <!-- Turno Tarde -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-cloud-sun me-2"></i> Limite para turno da tarde</label>
-        <%= f.time_field :limite_horas_turno_reservas_tarde, class: "form-control" %>
-        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela tarde.</small>
-      </div>
-      <!-- Turno Noite -->
-      <div class="form-group">
-        <label><i class="fa-solid fa-moon me-2"></i> Limite para turno da noite</label>
-        <%= f.time_field :limite_horas_turno_reservas_noite, class: "form-control" %>
-        <small class="form-text text-muted">Defina o tempo máximo permitido para reservas à noite.</small>
-      </div>
-      <h2 class="subtitle mt-4 mb-3">📨 E-mail (SMTP)</h2>
-      <div class="form-group">
-        <label>Remetente (From)</label>
-        <%= f.email_field :smtp_from_email, class: "form-control", placeholder: "ex.: infraestrutura@softexpe.org.br" %>
-        <small class="form-text text-muted">De onde os e-mails serão enviados (precisa ser compatível com o servidor SMTP).</small>
-      </div>
-      <div class="form-group">
-        <label>Reply-To (opcional)</label>
-        <%= f.email_field :smtp_reply_to, class: "form-control", placeholder: "ex.: suporte@seu-dominio.com" %>
-      </div>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-group">
-            <label>Servidor SMTP</label>
-            <%= f.text_field :smtp_address, class: "form-control", placeholder: "smtp.gmail.com / smtp.office365.com / mail.seu-dominio.com" %>
+      </section>
+
+      <!-- ===== 📅 RESERVAS ===== -->
+      <section id="tab-reservas" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-4 mb-3"><i class="fa-solid fa-calendar-check me-2"></i> Reservas</h2>
+
+        <div class="form-check form-group mb-3">
+          <%= f.check_box :require_room_rules_ack, class: "form-check-input", id: "setting_require_room_rules_ack" %>
+          <label class="form-check-label" for="setting_require_room_rules_ack">
+            Exigir que o usuário aceite as regras antes de reservar
+          </label>
+          <small class="form-text text-muted d-block">
+            Quando habilitado, o formulário de reserva mostrará a regra da sala solicitando o aceite obrigatório.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-calendar-check me-2"></i> Frequência de checagem de reservas</label>
+          <div class="d-flex gap-2">
+            <%= f.number_field :tempo_checagem_reservas, class: "form-control", min: 2, max: 10, step: 1 %>
+            <%= f.select :tempo_checagem_reservas_unidade, ["minutos", "segundos"], class: "form-control" %>
+          </div>
+          <small class="form-text text-muted">Intervalo para buscar novas reservas (entre 2 e 10).</small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-user-check me-2"></i> Frequência de checagem de acesso</label>
+          <div class="d-flex gap-2">
+            <%= f.number_field :tempo_checagem_acesso, class: "form-control", min: 10, max: 20, step: 1 %>
+            <%= f.select :tempo_checagem_acesso_unidade, ["segundos", "minutos"], class: "form-control" %>
+          </div>
+          <small class="form-text text-muted">Intervalo para verificar se o solicitante/responsável acessou a sala (entre 10 e 20).</small>
+        </div>
+      </section>
+
+      <!-- ===== ⏰ LIMITES POR TURNO ===== -->
+      <section id="tab-turnos" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-4 mb-3"><i class="fa-solid fa-clock me-2"></i> Limite de Horas por Turno</h2>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-sun me-2"></i> Limite para turno da manhã</label>
+          <%= f.time_field :limite_horas_turno_reservas_manha, class: "form-control" %>
+          <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela manhã.</small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-cloud-sun me-2"></i> Limite para turno da tarde</label>
+          <%= f.time_field :limite_horas_turno_reservas_tarde, class: "form-control" %>
+          <small class="form-text text-muted">Defina o tempo máximo permitido para reservas pela tarde.</small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-moon me-2"></i> Limite para turno da noite</label>
+          <%= f.time_field :limite_horas_turno_reservas_noite, class: "form-control" %>
+          <small class="form-text text-muted">Defina o tempo máximo permitido para reservas à noite.</small>
+        </div>
+      </section>
+
+      <!-- ===== 📨 E-MAIL (SMTP) ===== -->
+      <section id="tab-email" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-4 mb-3"><i class="fa-solid fa-envelope me-2"></i> E-mail (SMTP)</h2>
+
+        <div class="form-group">
+          <label>Remetente (From)</label>
+          <%= f.email_field :smtp_from_email, class: "form-control", placeholder: "ex.: infraestrutura@softexpe.org.br" %>
+          <small class="form-text text-muted">De onde os e-mails serão enviados (precisa ser compatível com o servidor SMTP).</small>
+        </div>
+
+        <div class="form-group">
+          <label>Reply-To (opcional)</label>
+          <%= f.email_field :smtp_reply_to, class: "form-control", placeholder: "ex.: suporte@seu-dominio.com" %>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Servidor SMTP</label>
+              <%= f.text_field :smtp_address, class: "form-control", placeholder: "smtp.gmail.com / smtp.office365.com / mail.seu-dominio.com" %>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Porta</label>
+              <%= f.number_field :smtp_port, class: "form-control", min: 1, max: 65535, value: (@setting.smtp_port || 587) %>
+            </div>
+          </div>
+          <div class="col-md-3">
+            <div class="form-group">
+              <label>Domínio (opcional)</label>
+              <%= f.text_field :smtp_domain, class: "form-control", placeholder: "gmail.com / seu-dominio.com" %>
+            </div>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="form-group">
-            <label>Porta</label>
-            <%= f.number_field :smtp_port, class: "form-control", min: 1, max: 65535, value: (@setting.smtp_port || 587) %>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Usuário</label>
+              <%= f.text_field :smtp_username, class: "form-control", placeholder: "e-mail de login do SMTP" %>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Senha</label>
+              <div class="input-group">
+                <%= f.password_field :smtp_password, class: "form-control", placeholder: "Deixe em branco para manter a atual", id: "smtp_password_field" %>
+                <button class="btn btn-outline-secondary" type="button" aria-label="Mostrar/ocultar senha"
+                        onclick="(function(){const f=document.getElementById('smtp_password_field'); f.type = (f.type==='password'?'text':'password');})();">
+                  <i class="fa-solid fa-eye"></i>
+                </button>
+              </div>
+              <small class="form-text text-muted">Se usar Gmail/Workspace, use <strong>Senha de App</strong> (16 dígitos), não a senha normal.</small>
+            </div>
           </div>
         </div>
-        <div class="col-md-3">
-          <div class="form-group">
-            <label>Domínio (opcional)</label>
-            <%= f.text_field :smtp_domain, class: "form-control", placeholder: "gmail.com / seu-dominio.com" %>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="form-group">
-            <label>Usuário</label>
-            <%= f.text_field :smtp_username, class: "form-control", placeholder: "e-mail de login do SMTP" %>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="form-group">
-            <label>Senha</label>
-            <%= f.password_field :smtp_password, class: "form-control", placeholder: "Deixe em branco para manter a atual" %>
-            <small class="form-text text-muted">Se usar Gmail/Workspace, use <strong>Senha de App</strong> (16 dígitos), não a senha normal.</small>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        
+
         <div class="form-group">
           <label>Autenticação</label>
           <%= f.select :smtp_authentication, [["plain","plain"],["login","login"],["cram_md5","cram_md5"]],
-               {}, class: "form-control" %>
+                {}, class: "form-control" %>
           <small class="form-text text-muted d-block mt-2">
             <strong>plain</strong>: envia usuário e senha já dentro do túnel TLS (com STARTTLS ativo). Compatível com Gmail, Office 365 e a maioria dos provedores.<br>
             <strong>login</strong>: variação baseada em Base64 (AUTH LOGIN). Compatível com Office 365/cPanel; costuma funcionar no Gmail também.<br>
-            <strong>cram_md5</strong>: desafio-resposta sem enviar a senha “em claro”. Poucos provedores suportam. <em>Não funciona no Gmail/Workspace.</em>
+            <strong>cram_md5</strong>: desafio-resposta. Poucos provedores suportam (não funciona no Gmail/Workspace).
           </small>
         </div>
+
         <div class="form-check mt-2">
-          <%= f.check_box :smtp_enable_starttls_auto, class: "form-check-input", checked: (@setting.smtp_enable_starttls_auto != false) %>
-          <label class="form-check-label">Ativar STARTTLS</label>
+          <%= f.check_box :smtp_enable_starttls_auto, class: "form-check-input", id: "setting_smtp_enable_starttls_auto", checked: (@setting.smtp_enable_starttls_auto != false) %>
+          <label class="form-check-label" for="setting_smtp_enable_starttls_auto">Ativar STARTTLS</label>
           <small class="form-text text-muted d-block">
             <strong>STARTTLS</strong> promove a conexão para TLS na porta 587. Mantenha ligado para Gmail, Office 365 e cPanel.
           </small>
         </div>
+
         <details class="mt-2">
-          <summary class="text-muted">Dicas rápidas por provedor</summary>
+          <summary class="text-muted"><i class="fa-solid fa-lightbulb me-1"></i> Dicas rápidas por provedor</summary>
           <ul class="small mb-0 mt-2">
-            <li><strong>Gmail/Workspace</strong>: servidor <code>smtp.gmail.com</code>, porta <code>587</code>, autenticação <code>plain</code>, STARTTLS ✓, usuário = e-mail completo, senha = <em>Senha de app</em> (16 dígitos; exige 2FA).</li>
-            <li><strong>Office 365</strong>: <code>smtp.office365.com</code>, porta <code>587</code>, <code>login</code> ou <code>plain</code>, STARTTLS ✓. É preciso ter “SMTP AUTH” habilitado no tenant.</li>
-            <li><strong>cPanel/Outros</strong>: <code>mail.seu-dominio.com</code> (ou <code>smtp.seu-dominio.com</code>), porta <code>587</code>, <code>login</code>, STARTTLS ✓.</li>
+            <li><strong>Gmail/Workspace</strong>: <code>smtp.gmail.com</code>, porta <code>587</code>, <code>plain</code>, STARTTLS ✓, usuário = e-mail completo, senha = <em>Senha de app</em> (16 dígitos; exige 2FA).</li>
+            <li><strong>Office 365</strong>: <code>smtp.office365.com</code>, porta <code>587</code>, <code>login</code> ou <code>plain</code>, STARTTLS ✓. Necessário “SMTP AUTH” habilitado.</li>
+            <li><strong>cPanel</strong>: <code>mail.seu-dominio.com</code>, porta <code>587</code>, <code>login</code>, STARTTLS ✓.</li>
           </ul>
         </details>
-      </div>
-      <!-- Botão de salvar -->
-      <div class="text-end mt-4">
-        <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
-          <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
-        <% end %>
-      </div>
+      </section>
+    </div>
+
+    <!-- AÇÕES -->
+    <div class="settings-actions text-end mt-4">
+     <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
+  <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
+<% end %>
+
     </div>
   <% end %>
 
-<%= form_with url: test_mail_setting_path(@setting),
-              method: :post,
-              local: true,
-              html: { class: "text-end mt-2 d-flex gap-2 justify-content-end" } do %>
-
-  <%= email_field_tag :test_to,
-        (current_user&.email.presence || @setting.smtp_username),
-        placeholder: "destinatário do teste",
-        class: "form-control w-auto" %>
-
-  <%= submit_tag "✉️ Enviar e-mail de teste",
-        class: "btn btn-outline-secondary" %>
-<% end %>
+  <!-- E-mail de teste (fora do form principal) -->
+  <!-- E-mail de teste (aparece só na aba E-mail) -->
+<div id="test-email-bar" class="text-end mt-2 d-flex gap-2 justify-content-end form-group" style="display:none;">
+  <%= form_with url: test_mail_setting_path(@setting), method: :post, local: true do %>
+    <div class="d-flex gap-2 align-items-center">
+      <i class="fa-solid fa-paper-plane"></i>
+      <%= email_field_tag :test_to,
+            (current_user&.email.presence || @setting.smtp_username),
+            placeholder: "destinatário do teste",
+            class: "form-control w-auto" %>
+      <%= submit_tag "✉️ Enviar e-mail de teste", class: "btn btn-outline-secondary" %>
+    </div>
+  <% end %>
+</div>
 
 </div>
+
+<!-- ===== CSS tabs (leve; respeita seu tema) ===== -->
+<style>
+  .tabs-nav {
+    display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem;
+    background: var(--color-header); padding:.5rem; border-radius:12px;
+  }
+  .tab-link{
+    appearance:none; border:0; background:transparent; color:var(--color-text,#eaeaea);
+    padding:.6rem .9rem; border-radius:10px; cursor:pointer; display:flex; gap:.5rem; align-items:center;
+    transition:all .2s ease;
+  }
+  .tab-link:hover{ background: rgba(255,255,255,.06); }
+  .tab-link.active{
+    background: var(--color-accent, #3b82f6); color:#fff; box-shadow: 0 3px 12px rgba(0,0,0,.2);
+  }
+  .tab-panel[hidden]{ display:none !important; }
+  .tab-panel {
+    background: var(--color-bg-table-salas);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+}
+  .settings-actions{ position: sticky; bottom: 0; background: transparent; padding-top: .75rem; }
+</style>
+
+<!-- ===== JS tabs (com persistência no localStorage) ===== -->
+<script>
+  (function(){
+    const KEY = "settingsActiveTab";
+    const nav = document.querySelector('.tabs-nav');
+    const links = Array.from(document.querySelectorAll('.tab-link'));
+    const panels = Array.from(document.querySelectorAll('.tab-panel'));
+
+    function activate(id){
+      links.forEach(btn=>{
+        const on = btn.dataset.tab === id;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach(p=>{
+        p.hidden = (p.id !== id);
+        p.classList.toggle('active', p.id === id);
+      });
+      try { localStorage.setItem(KEY, id); } catch(e){}
+       const testBar = document.getElementById('test-email-bar');
+  if (testBar) testBar.style.display = (id === 'tab-email') ? 'flex' : 'none';
+    }
+
+    // restaura aba
+    let initial = null;
+    try { initial = localStorage.getItem(KEY); } catch(e){}
+    if (!initial || !document.getElementById(initial)) initial = 'tab-sistema';
+    activate(initial);
+
+    // click
+    nav.addEventListener('click', (e)=>{
+      const btn = e.target.closest('.tab-link');
+      if (!btn) return;
+      e.preventDefault();
+      activate(btn.dataset.tab);
+    });
+
+    // acessibilidade com setas
+    nav.addEventListener('keydown', (e)=>{
+      const idx = links.findIndex(b=>b.classList.contains('active'));
+      if (e.key === 'ArrowRight'){
+        const next = links[(idx+1)%links.length];
+        next.focus(); activate(next.dataset.tab);
+      } else if (e.key === 'ArrowLeft'){
+        const prev = links[(idx-1+links.length)%links.length];
+        prev.focus(); activate(prev.dataset.tab);
+      }
+    });
+  })();
+</script>

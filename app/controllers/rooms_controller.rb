@@ -2,10 +2,10 @@ class RoomsController < ApplicationController
   before_action :authenticate_user!
 
   # Operador OU Admin podem ver/listar/abrir formulário/criar/editar/abrir porta
- before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :open_door, :import]
+ before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :open_door, :import, :reservations_json, :rules]
 
   # Apenas Admin nas demais ações (update/destroy, etc.)
-  before_action :authorize_admin!, except: [:index, :show, :new, :create, :edit, :open_door, :import]
+  before_action :authorize_admin!, except: [:index, :show, :new, :create, :edit, :open_door, :import, :reservations_json, :rules]
 
   before_action :set_room, only: %i[show edit update destroy open_door]
   before_action :carregar_empresas, only: [:new, :edit, :create, :update]
@@ -13,7 +13,9 @@ class RoomsController < ApplicationController
 
   # GET /rooms or /rooms.json
   def index
+    
     @rooms = Room.with_attached_photo
+    
   end
 
   # GET /rooms/1 or /rooms/1.json
@@ -23,31 +25,37 @@ class RoomsController < ApplicationController
   # GET /rooms/new
  def new
   @room = Room.new
-  @room.room_items.build
+  
   carregar_empresas
+  @catalog_items = RoomItem.catalog.order(:name)
+  
 end
 
 
   # GET /rooms/1/edit
   def edit
     carregar_empresas
+    @catalog_items = RoomItem.catalog.order(:name)
   end
 
   # POST /rooms or /rooms.json
-  def create
-    @room = Room.new(room_params)
+def create
+  @room = Room.new(room_params)
 
-    respond_to do |format|
-      if @room.save
-        format.html { redirect_to dashboard_path, notice: "Room was successfully created." }
-        format.json { render :show, status: :created, location: @room }
-      else
-        carregar_empresas
-        format.html { render :new, status: :unprocessable_entity }
-        format.json { render json: @room.errors, status: :unprocessable_entity }
-      end
+  respond_to do |format|
+    if @room.save
+      format.html { redirect_to dashboard_path, notice: "Room was successfully created." }
+      format.json { render :show, status: :created, location: @room }
+    else
+      carregar_empresas
+      @catalog_items = RoomItem.catalog.order(:name)
+
+      format.html { render :new, status: :unprocessable_entity }
+      format.json { render json: @room.errors, status: :unprocessable_entity }
     end
   end
+end
+
 
   def open_door
     room = Room.find(params[:id])
@@ -60,6 +68,20 @@ end
     end
     redirect_to dashboard_path
   end
+
+def rules
+  @room = Room.find(params[:id])
+
+  html_room_rules =
+    @room.try(:rules)&.body&.to_s.presence ||
+    @room.try(:regras_de_uso)&.body&.to_s.presence
+
+  html_global =
+    Setting.first&.try(:room_rules)&.body&.to_s # se você declarou has_rich_text :room_rules no model Setting
+
+  render html: (html_room_rules.presence || html_global.presence || "").to_s.html_safe, layout: false
+end
+
 
   # app/controllers/rooms_controller.rb
 def import
@@ -145,17 +167,21 @@ rescue => e
 end
 
   # PATCH/PUT /rooms/1 or /rooms/1.json
-  def update
-    respond_to do |format|
-      if @room.update(room_params)
-        format.html { redirect_to dashboard_path, notice: "Room was successfully updated." }
-        format.json { render :show, status: :ok, location: @room }
-      else
-        format.html { render :edit, status: :unprocessable_entity }
-        format.json { render json: @room.errors, status: :unprocessable_entity }
-      end
+def update
+  respond_to do |format|
+    if @room.update(room_params)
+      format.html { redirect_to rooms_path, notice: "Room was successfully updated." }
+      format.json { render :show, status: :ok, location: @room }
+    else
+      carregar_empresas
+      @catalog_items = RoomItem.catalog.order(:name)
+
+      format.html { render :edit, status: :unprocessable_entity }
+      format.json { render json: @room.errors, status: :unprocessable_entity }
     end
   end
+end
+
 
   # DELETE /rooms/1 or /rooms/1.json
   def destroy
@@ -167,7 +193,80 @@ end
     end
   end
 
-  private
+def reservations_json
+  room = Room.find(params[:id])
+
+  reservas = room.reservations
+                 .where(cancelada_em: nil)
+                 .where("ends_at > ?", Time.current)
+                 .order(:starts_at)
+                 .select(:starts_at, :ends_at)
+
+  itens = room.room_items.map do |ri|
+    { name: ri.name, quantity: ri.quantity, icon_svg: icon_html_for(ri) }
+  end
+
+  render json: {
+    reservas: reservas.map { |r| { starts_at: r.starts_at, ends_at: r.ends_at } },
+    itens: itens
+  }
+end
+
+
+private
+
+def icon_filename_for(name)
+  # mapeie NOME → arquivo SVG dentro de app/assets/images/icons
+  case name
+  when "TV"             then "icons/fa-tv.svg"
+  when "Cadeiras"       then "icons/fa-chair.svg"
+  when "Mesa"           then "icons/fa-table.svg"
+  when "Telefone"       then "icons/fa-phone.svg"
+  when "Lousa"          then "icons/fa-chalkboard.svg"
+  when "Projetor"       then "icons/fa-video.svg"
+  when "Ar Condicionado" then "icons/fa-fan.svg"     # escolha um equivalente
+  when "HDMI"           then "icons/fa-plug.svg"     # não existe 'hdmi' no FA, escolha similar
+  when "Tomadas"        then "icons/fa-plug.svg"
+  else                      "icons/fa-circle-question.svg" # fallback
+  end
+end
+
+def icon_html_for(room_item)
+  return "" unless room_item.icon.attached?
+
+  ct = room_item.icon.content_type
+
+  if ct == "image/svg+xml"
+    data = room_item.icon.download.force_encoding("UTF-8")
+    data.gsub!(/\s*(width|height|fill|style)="[^"]*"/, "")
+    data.gsub!("<svg", '<svg fill="currentColor"')
+
+    frag = Nokogiri::HTML::DocumentFragment.parse(data)
+    svg  = frag.at_css("svg")
+    return "" unless svg
+
+    frag.css("script, foreignObject").remove
+    frag.traverse do |n|
+      next unless n.element?
+      n.attribute_nodes.select { |a| a.name.downcase.start_with?("on") }.each(&:remove)
+    end
+
+    svg["style"] ||= "height:13px; fill:currentColor; vertical-align:middle;"
+    frag.to_html
+  else
+    view_context.image_tag(
+      Rails.application.routes.url_helpers.url_for(room_item.icon),
+      alt: room_item.name,
+      style: "height:13px; vertical-align:middle;"
+    )
+  end
+end
+
+
+def fallback_icon(room_item)
+  view_context.svg_icon(icon_filename_for(room_item.name))
+end
+
   def carregar_empresas
   @empresas = GrupoEmpresa.all.pluck(:nome)
    @empresa_padrao = current_user&.participant&.grupo_empresa&.nome
@@ -205,8 +304,8 @@ end
     :area, :matricula, :fracao_ideal, :fracao_extra,
     :interfone, :vagas_garagem, :empresa_proprietaria, :proprietario_formal,
     :dados_do_inquilino, :observacao, :regras_de_uso,
-    :photo,
-    room_items_attributes: [:id, :name, :quantity, :_destroy]
+    :photo,:room_group_id,
+    room_items_attributes: [:id, :name, :quantity, :_destroy, :catalog_item_id]
   )
 end
 
