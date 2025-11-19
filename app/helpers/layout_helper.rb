@@ -173,10 +173,10 @@ module LayoutHelper
       if params[:room_id].present? && defined?(@room)
         safe_join([
           dashboard_button,
-          link_to(new_reservation_path(room_id: @room.id), class: "menu-btn hide-sm") do
+          link_to(new_reservation_path(room_id: @room.id), class: "menu-btn") do
             content_tag(:i, "", class: "fa-solid fa-plus") + " NOVA RESERVA"
           end,
-          link_to(reservations_path, class: "menu-btn") do
+          link_to(reservations_path, class: "menu-btn hide-sm") do
             content_tag(:i, "", class: "fa-solid fa-calendar-days") + " TODAS RESERVAS"
           end
         ])
@@ -696,6 +696,10 @@ def sidebar_menu
         content_tag(:li) do link_to(new_participant_path) do safe_join([content_tag(:span, "", class: "fa-solid fa-plus"),
                                                                         " Adicionar Usuários"])         end         end
       end,
+      if current_user&.client? 
+content_tag(:li) do link_to(new_formulario_cadastro_path) do safe_join([content_tag(:span, "", class: "fa-solid fa-id-badge"),
+                                                                        " Cadastrar Acesso"])         end         end
+end
     ])
   end
 

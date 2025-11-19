@@ -2,7 +2,7 @@ class RoomsController < ApplicationController
   before_action :authenticate_user!
 
   # Operador OU Admin podem ver/listar/abrir formulário/criar/editar/abrir porta
- before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :open_door, :import, :reservations_json, :rules]
+ before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :open_door, :import]
 
   # Apenas Admin nas demais ações (update/destroy, etc.)
   before_action :authorize_admin!, except: [:index, :show, :new, :create, :edit, :open_door, :import, :reservations_json, :rules]

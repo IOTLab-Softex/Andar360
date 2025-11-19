@@ -1,4 +1,5 @@
 
+
 <div class="table-responsive">
 <%# ==== Stats de Chamados (Pendente / Em andamento / Concluído) ==== %>
 <% ordem_status = ["Pendente", "Em andamento", "Concluído"] %>
@@ -9,7 +10,10 @@
 } %>
 
 <%
-  raw = Chamado.group(:status).count
+  # usa o escopo já aplicado no controller (admin vê todos, cliente vê só do grupo)
+  scope = @chamados || Chamado.all
+
+  raw = scope.group(:status).count
 
   # Normalização retrocompatível:
   # - "Solicitada" conta como "Pendente"
@@ -21,6 +25,7 @@
   }
   tot_geral = tot_por_status.values.sum
 %>
+
 
 <section class="trk">
   <header class="trk-head">
@@ -87,18 +92,44 @@
 <%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form", id: "filtros-salas" do %>
   <div style="margin-bottom: 20px;">
     
-    <%= select_tag :local, options_for_select(["Todos os locais"] + Chamado.distinct.pluck(:local), params[:local]), class: "form-control" %>
+    <% scope = @chamados || Chamado.all %>
 
+<%= select_tag :local,
+      options_for_select(
+        ["Todos os locais"] + scope.distinct.pluck(:local),
+        params[:local]
+      ),
+      class: "form-control" %>
 
-    <%= select_tag :unidade, options_for_select(["Todas as unidades"] + Chamado.distinct.pluck(:unidade), params[:unidade]), class: "form-control" %>
+<%= select_tag :unidade,
+      options_for_select(
+        ["Todas as unidades"] + scope.distinct.pluck(:unidade),
+        params[:unidade]
+      ),
+      class: "form-control" %>
 
-    <%= select_tag :status,
+<%= select_tag :status,
   options_for_select(
     ["Todos os status", "Pendente", "Em andamento", "Concluído"],
     params[:status]
   ),
   class: "form-control"
 %>
+
+<%= select_tag :prioridade,
+      options_for_select(
+        ["Todas as prioridades"] + scope.distinct.pluck(:prioridade),
+        params[:prioridade]
+      ),
+      class: "form-control" %>
+
+<%= select_tag :responsavel,
+      options_for_select(
+        ["Todos os responsáveis"] + scope.distinct.pluck(:responsavel),
+        params[:responsavel]
+      ),
+      class: "form-control" %>
+
 
 
 

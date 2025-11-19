@@ -1,23 +1,35 @@
 <%= form_with model: @grupo_empresa, local: true do |form| %>
-  <div class="form-group">
-    <%= form.label :nome %>
-    <%= form.text_field :nome, class: "form-control" %>
-  </div>
+<% readonly_for_client = current_user && current_user.role == "client" %>
 
-  <div class="form-group">
+<div class="form-group">
+  <%= form.label :nome %>
+  <%= form.text_field :nome,
+        class: "form-control",
+        readonly: readonly_for_client %>
+</div>
+
+<div class="form-group">
   <%= form.label :cnpj %>
-  <%= form.text_field :cnpj, class: "form-control", placeholder: "Digite o CNPJ" %>
-  </div>
+  <%= form.text_field :cnpj,
+        class: "form-control",
+        placeholder: "Digite o CNPJ",
+        readonly: readonly_for_client %>
+</div>
 
-  <div class="form-group">
-    <%= form.label :sala %>
-    <%= form.text_field :sala, class: "form-control" %>
-  </div>
+<div class="form-group">
+  <%= form.label :sala %>
+  <%= form.text_field :sala,
+        class: "form-control",
+        readonly: readonly_for_client %>
+</div>
 
-  <div class="form-group">
-    <%= form.label :andar %>
-    <%= form.text_field :andar, class: "form-control" %>
-  </div>
+<div class="form-group">
+  <%= form.label :andar %>
+  <%= form.text_field :andar,
+        class: "form-control",
+        readonly: readonly_for_client %>
+</div>
+
 
   <div class="form-group">
     <%= form.label :logo %>
@@ -26,12 +38,28 @@
 <div class="form-group">
   <%= label_tag "Subgrupos (Setores)" %>
 
- <div style="display: flex; gap: 0.5rem; align-items: center;">
-  <%= select_tag "subgrupo_list", options_from_collection_for_select(@grupo_empresa.sub_grupo_empresas, :id, :nome), multiple: true, size: 5, class: "form-control", id: "subgrupo-listbox", style: "flex: 1;" %>
+  <div style="display: flex; gap: 0.5rem; align-items: center;">
+    <%= select_tag "subgrupo_list",
+      options_from_collection_for_select(@grupo_empresa.sub_grupo_empresas, :id, :nome),
+      multiple: true,
+      size: 5,
+      class: "form-control",
+      id: "subgrupo-listbox",
+      style: "flex: 1;" %>
 
-  <button type="button" onclick="abrirModalSubgrupo()" class="btn btn-success">+</button>
-  <button type="button" onclick="removerSubgrupos()" class="btn btn-danger">–</button>
+    <button type="button" onclick="abrirModalSubgrupo()" class="btn btn-success">+</button>
+    <button type="button" onclick="editarSubgrupoSelecionado()" class="btn edit">✎</button>
+    <button type="button" onclick="removerSubgrupos()" class="btn btn-warning">–</button>
+  </div>
+
+  <!-- JSON com dados dos subgrupos para o JS conseguir preencher o modal -->
+  <div id="subgrupos-data"
+       data-subgrupos="<%= @grupo_empresa.sub_grupo_empresas
+        .select(:id, :nome, :can_request_purchase, :can_approve_purchase, :can_buy)
+        .to_json %>">
+  </div>
 </div>
+
 
 </div>
 
@@ -40,36 +68,125 @@
 
 
 <!-- Modal customizado -->
-<div id="modal-subgrupo" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: 100vw; height: 100vh;
+<!-- Modal customizado -->
+<div id="modal-subgrupo" style="display: none; position: fixed; z-index: 9999; top: 0; left: 0; width: -webkit-fill-available; height: -webkit-fill-available;
   background: rgba(0, 0, 0, 0.5); align-items: center; justify-content: center;">
   <div class="modal-dialog-subgrupo">
-    <h3>Adicionar Subgrupo</h3>
+    <h3 id="modal-subgrupo-title">Adicionar Subgrupo</h3>
 
-    <%= form_with url: sub_grupo_empresas_path, method: :post, local: true do |f| %>
-      <%= hidden_field_tag :grupo_empresa_id, @grupo_empresa.id %>
+    <%= form_with model: SubGrupoEmpresa.new,
+                  url: sub_grupo_empresas_path,
+                  method: :post,
+                  local: true,
+                  html: { id: "form-subgrupo" } do |f| %>
+
+      <!-- vamos controlar esse _method via JS: "post" p/ criar, "patch" p/ editar -->
+      <%= hidden_field_tag :_method, "post", id: "form-subgrupo-method" %>
+
+      <%= f.hidden_field :grupo_empresa_id, value: @grupo_empresa.id %>
 
       <div class="form-group" style="margin-top: 1rem;">
         <%= f.label :nome, "Nome do Subgrupo" %>
-        <%= f.text_field :nome, class: "form-control", required: true %>
+        <%= f.text_field :nome, class: "form-control", required: true, id: "sub_grupo_empresa_nome" %>
       </div>
 
+<% readonly_for_client = current_user && current_user.role == "client" %>
+
+<fieldset class="groupbox-solicitacao-compra"
+          style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;<%= ' display:none;' if readonly_for_client %>">
+  <legend style="font-weight: 600; padding: 0 .5rem;">Solicitação de compras</legend>
+
+  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: .5rem;">
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_request_purchase, id: "sub_grupo_empresa_can_request_purchase" %>
+      Solicitar compra
+    </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_approve_purchase, id: "sub_grupo_empresa_can_approve_purchase" %>
+      Autorizar compra
+    </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_buy, id: "sub_grupo_empresa_can_buy" %>
+      Comprador
+    </label>
+  </div>
+</fieldset>
+
+
       <div style="margin-top: 1.5rem;
-    display: flex
-;
-    justify-content: center;
-    gap: 1rem;
-    flex-direction: row-reverse;">
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        flex-direction: row-reverse;">
         <button type="button" onclick="fecharModalSubgrupo()" class="btn-primary btn">Cancelar</button>
-        <%= f.submit "Adicionar", class: "btn btn-primary" %>
+        <%= f.submit "Salvar", class: "btn btn-primary" %>
       </div>
     <% end %>
   </div>
 </div>
 
 
+
+
 <script>
   function abrirModalSubgrupo() {
-    document.getElementById('modal-subgrupo').style.display = 'flex';
+    // modo CRIAR
+    const modal = document.getElementById('modal-subgrupo');
+    const title = document.getElementById('modal-subgrupo-title');
+    const form = document.getElementById('form-subgrupo');
+    const methodInput = document.getElementById('form-subgrupo-method');
+
+    // volta para rota de create
+    form.action = '/sub_grupo_empresas';
+    methodInput.value = 'post';
+
+    // limpa campos
+    document.getElementById('sub_grupo_empresa_nome').value = '';
+    document.getElementById('sub_grupo_empresa_can_request_purchase').checked = false;
+    document.getElementById('sub_grupo_empresa_can_approve_purchase').checked = false;
+    document.getElementById('sub_grupo_empresa_can_buy').checked = false;
+
+    title.textContent = 'Adicionar Subgrupo';
+    modal.style.display = 'flex';
+  }
+
+  function editarSubgrupoSelecionado() {
+    const listbox = document.getElementById("subgrupo-listbox");
+    const selectedId = listbox.value;
+
+    if (!selectedId) {
+      alert("Selecione um subgrupo para editar.");
+      return;
+    }
+
+    const dataElement = document.getElementById("subgrupos-data");
+    const subgrupos = JSON.parse(dataElement.dataset.subgrupos || "[]");
+    const sg = subgrupos.find(s => String(s.id) === String(selectedId));
+
+    if (!sg) {
+      alert("Não foi possível carregar os dados do subgrupo selecionado.");
+      return;
+    }
+
+    const modal = document.getElementById('modal-subgrupo');
+    const title = document.getElementById('modal-subgrupo-title');
+    const form = document.getElementById('form-subgrupo');
+    const methodInput = document.getElementById('form-subgrupo-method');
+
+    // modo EDITAR
+    form.action = `/sub_grupo_empresas/${sg.id}`;
+    methodInput.value = 'patch';
+
+    // preenche campos
+    document.getElementById('sub_grupo_empresa_nome').value = sg.nome || '';
+    document.getElementById('sub_grupo_empresa_can_request_purchase').checked = !!sg.can_request_purchase;
+    document.getElementById('sub_grupo_empresa_can_approve_purchase').checked = !!sg.can_approve_purchase;
+    document.getElementById('sub_grupo_empresa_can_buy').checked = !!sg.can_buy;
+
+    title.textContent = 'Editar Subgrupo';
+    modal.style.display = 'flex';
   }
 
   function fecharModalSubgrupo() {
@@ -83,7 +200,8 @@
       fecharModalSubgrupo();
     }
   });
-function removerSubgrupos() {
+
+  function removerSubgrupos() {
     const listbox = document.getElementById("subgrupo-listbox");
     const selected = Array.from(listbox.selectedOptions);
 
@@ -108,7 +226,6 @@ function removerSubgrupos() {
       })
       .then(response => {
         if (response.ok) {
-          // Remove o <option> da listbox
           option.remove();
         } else {
           alert("Erro ao remover subgrupo " + option.text);

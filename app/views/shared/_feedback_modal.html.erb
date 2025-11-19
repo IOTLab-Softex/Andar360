@@ -28,8 +28,9 @@
        <%= f.text_area :message,
       rows: 1,
       class: "form-control fm-control js-autogrow",
-      style: "    height: 55px;
-    background: aliceblue;",
+      style: "        height: 55px;
+    background: aliceblue;
+    color: black;",
       data: { minheight: 55 },
       placeholder: "Descreva o problema, o que esperava acontecer e como reproduzir..." %>
 
@@ -120,7 +121,11 @@ ease-out;
   border-bottom: 1px solid rgba(255,255,255,.08);
 }
 .fm-icon{ width: 28px; height: 28px; filter: brightness(0) invert(1); align-self: start; }
-.fm-titles h3{ margin: 0; font-size: 1.1rem; }
+.fm-titles h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #eee;
+}
 .fm-sub {
     margin: 4px 0 0 0;
     font-size: .9rem;
@@ -134,7 +139,13 @@ ease-out;
 }
 @media (max-width: 640px){ .fm-grid{ grid-template-columns: 1fr; } }
 
-.fm-field label{ display: block; margin: 8px 0 6px; font-weight: 600; font-size: .92rem; }
+.fm-field label {
+    display: block;
+    margin: 8px 0 6px;
+    font-weight: 600;
+    font-size: .92rem;
+    color: #eee;
+}
 .fm-control.form-select,
 .fm-control.form-control{
   background: rgba(255,255,255,.06);

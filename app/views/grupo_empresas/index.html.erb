@@ -12,6 +12,9 @@
       <% end %>
     </div>
   </div>
+
+
+
 <% end %>
 
 <div class="table-responsive">
@@ -48,11 +51,7 @@
               <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
             <% end %>
 
-            <%= link_to new_formulario_cadastro_path(grupo_empresa_id: empresa.id), class: "btn btn-success", style: "margin-left: 5px;" do %>
-    <i class="fa-solid fa-id-badge"></i> <div class="hide-sm"> Cadastrar Acesso </div>
-  <% end %>
-
-   <%= link_to participants_path(), class: "btn btn-success", style: "margin-left: 5px;" do %>
+               <%= link_to participants_path(), class: "btn btn-success", style: "margin-left: 5px;" do %>
     <i class="fa-solid fa-user"></i> <div class="hide-sm"> Gerenciar Funcionários </div>
   <% end %>
 

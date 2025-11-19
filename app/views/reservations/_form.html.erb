@@ -151,7 +151,7 @@
     z-index: 1101;
     overflow: hidden;">
   <div style="padding:12px 16px; border-bottom:1px solid #eee; display:flex; align-items:center; justify-content:space-between;">
-    <strong><i class="fa-solid fa-scale-balanced"></i> Regras de uso da sala</strong>
+    <strong style="color:#eee"><i class="fa-solid fa-scale-balanced"></i> Regras de uso da sala</strong>
     <button type="button" id="rulesCloseBtn" class="btn btn-light" style="padding:.25rem .6rem;"><i class="fa-solid fa-xmark"></i></button>
   </div>
   <div id="rulesScrollArea" style="padding:16px; overflow:auto; max-height: calc(84vh - 120px);">
@@ -890,15 +890,18 @@
     }
 
     // Fallback global (se existir)
-    const fallback = document.getElementById('globalRulesHtml');
-    const glob = (fallback ? (fallback.innerHTML || "").trim() : "");
-    if (glob.length > 0) {
-      content.innerHTML = glob;
-      return true;
-    }
+const fallback = document.getElementById('globalRulesHtml');
+const glob = (fallback ? (fallback.innerHTML || "").trim() : "");
+if (glob.length > 0) {
+  content.style.color = "#eee";
+  content.innerHTML = glob;
+  // Aplicar cor ao container inteiro
+   // ou qualquer cor desejada
+  return true;
+}
 
     // Nada encontrado
-    content.innerHTML = '<p style="text-align:center;color:#666;padding:10px;">Sem regras cadastradas.</p>';
+    content.innerHTML = '<p style="text-align:center;color:#eee;padding:10px;">Sem regras cadastradas.</p>';
     return false;
   }
 
@@ -908,8 +911,8 @@
     // Mensagem didática e um leve destaque na área de salas
     content.innerHTML = `
       <div style="text-align:center;padding:20px;">
-        <i class="fa-solid fa-circle-info" style="font-size:22px;"></i>
-        <div style="margin-top:10px;font-weight:600;">Selecione a sala primeiro</div>
+        <i class="fa-solid fa-circle-info" style="font-size:22px;color:#ffffff"></i>
+        <div style="margin-top:10px;font-weight:600;color:#ffffff">Selecione a sala primeiro</div>
         <div style="color:#ffffff;margin-top:6px;">Depois de escolher, as regras aparecerão aqui automaticamente.</div>
       </div>
     `;
@@ -1003,5 +1006,8 @@
     0%   { outline-color: rgba(136,136,136, 0.0); }
     50%  { outline-color: rgba(136,136,136, 0.8); }
     100% { outline-color: rgba(136,136,136, 0.0); }
+  }
+   .global-rules {
+    color: #eee;
   }
 </style>

@@ -218,9 +218,10 @@ display: none;
 
   #reservationsFilters.filter-form {
     flex-direction: column !important;
+    margin: 15px !important;
 }
   .room-card {
-    width: 632px !important;
+
     max-width: 632px !important;
 }
 
@@ -696,7 +697,7 @@ body {
 }
 
 .reservation-container{
-position: relative; z-index: 1; padding: 2rem;
+position: relative; z-index: 1; padding: 0rem;
 
 }
 
@@ -2668,7 +2669,12 @@ body.noscroll { overflow:hidden; }
 .kpi-icon i { font-size: 1.6rem; }
 .kpi-label { opacity:.65; font-size:.9rem; }
 .kpi-value { font-weight:700; font-size:1.6rem; line-height:1.2; }
-.kpi-subtitle { font-size:.8rem; opacity:.6; margin-top:.25rem; }
+.kpi-subtitle {
+    font-size: .8rem;
+    opacity: .6;
+    margin-top: .25rem;
+    text-shadow: 0 2px 6px rgb(0 0 0);
+}
 
 .kpi-card {
   position: relative;
@@ -2700,7 +2706,7 @@ body.noscroll { overflow:hidden; }
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
-  opacity: 0.28;
+  opacity: 0.10;
 }
 
 /* onde já estão seus estilos */

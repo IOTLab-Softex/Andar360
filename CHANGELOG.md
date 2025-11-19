@@ -15,6 +15,7 @@ Correções de bugs e ajustes internos compatíveis, sem mudar comportamento pú
 
 ### Adicionado
 
+* **Inicia importação manual**
 * **Solicitação de compra**
 
   * **Função do usuario por cargo** Selecionar no cargo qual funcionario tem permissão para Solicitar comprar, autorizar comprar e quem compra.
