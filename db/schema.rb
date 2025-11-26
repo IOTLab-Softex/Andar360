@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_19_134940) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_25_145135) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -440,6 +440,36 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_134940) do
     t.boolean "require_room_rules_ack"
   end
 
+  create_table "solicitacao_compra_items", force: :cascade do |t|
+    t.bigint "solicitacao_compra_id", null: false
+    t.string "descricao"
+    t.integer "quantidade"
+    t.decimal "valor_unitario", precision: 10, scale: 2
+    t.decimal "total", precision: 10, scale: 2
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["solicitacao_compra_id"], name: "index_solicitacao_compra_items_on_solicitacao_compra_id"
+  end
+
+  create_table "solicitacao_compras", force: :cascade do |t|
+    t.string "colaborador"
+    t.string "setor"
+    t.date "item_data"
+    t.string "item_descricao"
+    t.decimal "valor_estimado", precision: 10, scale: 2
+    t.text "justificativa"
+    t.integer "forma_pagamento"
+    t.integer "parcelas"
+    t.string "cidade"
+    t.date "data_solicitacao"
+    t.string "autorizado_por"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.integer "status_autorizacao", default: 0, null: false
+    t.text "motivo_rejeicao"
+    t.integer "status_compra", default: 0, null: false
+  end
+
   create_table "solicitacao_participantes", force: :cascade do |t|
     t.bigint "participant_id", null: false
     t.string "status", default: "pendente", null: false
@@ -507,6 +537,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_19_134940) do
   add_foreign_key "reservations", "rooms"
   add_foreign_key "room_items", "rooms"
   add_foreign_key "rooms", "room_groups"
+  add_foreign_key "solicitacao_compra_items", "solicitacao_compras"
   add_foreign_key "solicitacao_participantes", "participants"
   add_foreign_key "sub_grupo_empresas", "grupo_empresas"
   add_foreign_key "users", "participants"

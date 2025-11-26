@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  solicitacao_compra: one
+  descricao: MyString
+  quantidade: 1
+  valor_unitario: 9.99
+  total: 9.99
+
+two:
+  solicitacao_compra: two
+  descricao: MyString
+  quantidade: 1
+  valor_unitario: 9.99
+  total: 9.99

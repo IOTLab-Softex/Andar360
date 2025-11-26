@@ -1,0 +1,193 @@
+<div class="print-form">
+  <div class="print-content">
+    <h1>Formulário de Autorização de Compras e Serviços</h1>
+
+    <table class="box">
+      <tr>
+        <th colspan="2">DADOS DO SOLICITANTE</th>
+      </tr>
+      <tr>
+        <td class="label">Colaborador(a)</td>
+        <td><%= @solicitacao_compra.colaborador %></td>
+      </tr>
+      <tr>
+        <td class="label">Setor</td>
+        <td><%= @solicitacao_compra.setor %></td>
+      </tr>
+    </table>
+
+  <table class="box">
+    <tr>
+      <th colspan="4">DETALHAMENTO DA COMPRA OU SERVIÇO</th>
+    </tr>
+    <tr>
+      <th style="width:15%">Data</th>
+      <th style="width:55%">Item/Serviço</th>
+      <th style="width:15%">Valor Estimado</th>
+      <th style="width:15%"></th>
+    </tr>
+    <% @solicitacao_compra.itens.each do |item| %>
+  <tr>
+    <td><%= @solicitacao_compra.item_data&.strftime("%d/%m/%Y") %></td>
+    <td><%= item.descricao %></td>
+    <td><%= number_to_currency(item.valor_unitario * item.quantidade, unit: "R$ ") %></td>
+    <td></td>
+  </tr>
+<% end %>
+
+    <% 4.times do %>
+      <tr>
+        <td>&nbsp;</td><td></td><td></td><td></td>
+      </tr>
+    <% end %>
+    <tr>
+      <th colspan="2" style="text-align:right;">TOTAL</th>
+<th colspan="2"><%= number_to_currency(@solicitacao_compra.total_geral, unit: "R$ ") %></th>
+
+    </tr>
+  </table>
+
+  <table class="box">
+    <tr>
+      <th>JUSTIFICATIVA PARA AQUISIÇÃO DO BEM OU CONTRATAÇÃO DO SERVIÇO</th>
+    </tr>
+    <tr>
+      <td style="height:80px; vertical-align:top;"><%= simple_format(@solicitacao_compra.justificativa) %></td>
+    </tr>
+  </table>
+
+  <table class="box">
+    <tr>
+      <th>Forma de Pagamento</th>
+    </tr>
+    <tr>
+      <td>
+        ( <%= @solicitacao_compra.a_vista? ? "X" : "&nbsp;".html_safe %> ) À Vista&nbsp;&nbsp;&nbsp;
+        ( <%= @solicitacao_compra.cartao_credito? ? "X" : "&nbsp;".html_safe %> ) Cartão de crédito – Parcelas
+        <%= @solicitacao_compra.parcelas.presence || "____" %>&nbsp;&nbsp;&nbsp;
+        ( <%= @solicitacao_compra.faturado? ? "X" : "&nbsp;".html_safe %> ) Faturado
+      </td>
+    </tr>
+  </table>
+
+  <div class="footer">
+    <p>
+      <%= @solicitacao_compra.cidade.presence || "Recife" %>,
+      <%= (@solicitacao_compra.data_solicitacao || Date.today).strftime("%d de %B de %Y") %>
+    </p>
+
+    <div class="assinatura">
+    <% if @solicitacao_compra.autorizado? %>
+    <% nome_aut = @solicitacao_compra.autorizado_por.presence || "Autor não informado" %>
+    <p>Autorizado(a): <%= nome_aut %></p>
+  <% else %>
+    <p>Autorizado(a): ________________________________</p>
+   
+  <% end %>
+</div>
+
+  </div>
+
+  <div class="no-print" style="margin-top:20px; display:flex; gap:8px; flex-wrap:wrap;">
+    
+    <%# ✅ Botão AUTORIZAR – só aparece se usuário tiver permissão e ainda estiver pendente %>
+    <% if can_current_user_authorize?(@solicitacao_compra) && @solicitacao_compra.pendente? %>
+      <%= button_to "Autorizar",
+            autorizar_solicitacao_compra_path(@solicitacao_compra),
+            method: :post,
+            data: { confirm: "Confirmar autorização desta solicitação?" },
+            class: "btn btn-success" %>
+    <% end %>
+  </div>
+
+</div>
+
+<style>
+  .print-form {
+    max-width: 800px;
+    margin: 20px auto;
+    position: relative;
+    min-height: 1120px; /* aproximado A4 em px */
+    background: url(<%= asset_path 'timbrado_aponti.png' %>) no-repeat center top;
+    background-size: cover; /* ou contain, se preferir */
+  }
+
+  /* conteúdo em cima do timbrado */
+  .print-content {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    color:#000;
+    padding: 160px 60px 80px; /* ajusta pra não bater no topo/rodapé do timbrado */
+  }
+
+  .print-content h1 {
+    text-align:center;
+    font-size:18px;
+    margin-bottom:16px;
+  }
+
+  .box {
+    width:100%;
+    border-collapse:collapse;
+    margin-bottom:10px;
+    font-size:13px;
+    background: transparent; /* pra aparecer o fundo */
+  }
+
+  .box th, .box td {
+    border:1px solid #000;
+    padding:4px 6px;
+    background: rgba(255,255,255,0.85); /* leve branco pra contraste sobre o timbrado */
+  }
+
+  .box th {
+    text-align:center;
+  }
+
+  .box .label {
+    width:20%;
+    font-weight:600;
+  }
+
+  .footer { margin-top:20px; text-align:center; font-size:13px; }
+  .assinatura { margin-top:40px; }
+  .assinatura .linha {
+    border-bottom:1px solid #000;
+    width:60%;
+    margin:0 auto 4px;
+  }
+  .no-print .btn { margin-right:8px; }
+
+  /* 🔥 Imprimir só o formulário, com timbrado */
+  @media print {
+    /* esconde tudo da página */
+    body * {
+      visibility: hidden;
+    }
+
+    /* mostra só o formulário e seu conteúdo */
+    .print-form, .print-form * {
+      visibility: visible;
+    }
+
+    /* garante que o formulário ocupe a página inteira ao imprimir */
+    .print-form {
+      position: absolute;
+      left: 0;
+      top: 0;
+      margin: 0;
+      max-width: 100%;
+      width: 100%;
+
+      /* força o navegador a respeitar o fundo na impressão */
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      background: url(<%= asset_path 'timbrado_aponti.png' %>) no-repeat center top !important;
+      background-size: cover !important;
+    }
+
+    /* some com os botões de ação */
+    .no-print {
+      display: none !important;
+    }
+  }
+</style>

@@ -1,6 +1,8 @@
 module LayoutHelper
   def operador_ou_admin?
-    current_user.admin? || current_user.role == "operador"
+    return false unless current_user
+
+    current_user.admin? || current_user.role.to_s == "operador"
   end
 
   def page_title
@@ -103,6 +105,14 @@ module LayoutHelper
       "FEEDBACK: #{@feedback.id}"
       when "room_items#index"
       "ITEMS DE SALAS"
+       when "solicitacao_compras#index"
+      "SOLICITAÇÃO DE COMPRAS"
+      when "solicitacao_compras#show"
+      "SOLICITAÇÃO DE COMPRA: #{@solicitacao_compra.id}"
+      when "solicitacao_compras#new"
+      "SOLICITAÇÃO DE COMPRA"
+      when "solicitacao_compras#edit"
+      "EDITAR SOLICITAÇÃO DE COMPRA: #{@solicitacao_compra.id}"
     else
       content_for?(:title) ? content_for(:title) : "Sistema"
     end
@@ -519,6 +529,52 @@ module LayoutHelper
         dashboard_button
         
       ])
+      when "solicitacao_compras#index"
+      safe_join([
+        dashboard_button,
+        link_to(new_solicitacao_compra_path, class: "menu-btn") do
+          content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " SOLICITAR COMPRA"
+        end
+        
+      ])
+    when "solicitacao_compras#show"
+  safe_join([
+    link_to(solicitacao_compras_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-left-long") + " Voltar"
+    end,
+    dashboard_button,   
+
+    link_to("#", class: "menu-btn-destaque", onclick: "window.print(); return false;") do
+      content_tag(:i, "", class: "fa-solid fa-print") + " IMPRIMIR"
+    end,
+
+    link_to(new_solicitacao_compra_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " SOLICITAR COMPRA"
+    end
+  ])
+  when "solicitacao_compras#new"
+  safe_join([
+    link_to(solicitacao_compras_path, class: "menu-btn hide-sm") do
+      content_tag(:i, "", class: "fa-solid fa-left-long") + " Voltar"
+    end,
+    dashboard_button,   
+
+    link_to(solicitacao_compras_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " SOLICITAÇÕES COMPRA"
+    end
+  ])
+
+  when "solicitacao_compras#edit"
+  safe_join([
+    link_to(solicitacao_compras_path, class: "menu-btn hide-sm") do
+      content_tag(:i, "", class: "fa-solid fa-left-long") + " Voltar"
+    end,
+    dashboard_button,   
+
+    link_to(solicitacao_compras_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " SOLICITAÇÕES COMPRA"
+    end
+  ])
     end
   end
 end
@@ -815,12 +871,53 @@ end
   end
 
   if operador_ou_admin?
+  submenu_compras = content_tag(:ul, class: "submenu", id: "submenu-compras", style: "display: none;") do
+    safe_join([
+      # Lista de solicitações
+      content_tag(:li) do
+        link_to(solicitacao_compras_path) do
+          safe_join([
+            content_tag(:span, "", class: "fa-solid fa-list-ul"),
+            " Solicitações de compras"
+          ])
+        end
+      end,
+
+      # Nova solicitação
+      content_tag(:li) do
+        link_to(new_solicitacao_compra_path) do
+          safe_join([
+            content_tag(:span, "", class: "fa-solid fa-file-circle-plus"),
+            " Solicitar compra"
+          ])
+        end
+      end
+    ])
+  end
+
+  items << content_tag(:li) do
+    safe_join([
+      content_tag(:span, class: "submenu-toggle", data: { target: "#submenu-compras" }) do
+        safe_join([
+          content_tag(:span, "", class: "fa-solid fa-file-invoice-dollar"),
+          " Compras",
+          content_tag(:i, "", class: "fa fa-chevron-down chevron-icon",
+                      style: "margin-left: 6px; transition: transform 0.3s ease;")
+        ])
+      end,
+      submenu_compras
+    ])
+  end
+end
+
+  if operador_ou_admin?
     items << content_tag(:li) do
       link_to prestador_servicos_path, class: "submenu-toggle btn-exit" do
         content_tag(:i, "", class: "fa-solid fa-toolbox") + " Prestadores de Serviços"
       end
     end
   end
+
 
   items << content_tag(:li) do
     safe_join([

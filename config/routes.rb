@@ -35,6 +35,14 @@ resources :formulario_cadastros do
     post :reenviar_para_aprovacao
   end
 end
+resources :solicitacao_compras
+resources :solicitacao_compras do
+  member do
+    post :autorizar
+    get :confirm_destroy
+    # depois você pode criar :rejeitar aqui também
+  end
+end
 
 resources :room_items, only: [:index, :new, :create, :edit, :update, :destroy] do
   collection do

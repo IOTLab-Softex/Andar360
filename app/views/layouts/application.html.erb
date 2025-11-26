@@ -117,42 +117,49 @@
                 </div>
               </div>
             </div>
-          <% end %>
-        </div>
-      </div>
-    <% end %>
+          <% end %>  <!-- fim do if user_signed_in? -->
+        </div>       <!-- fim da div.user-info -->
+      <% end %>      <!-- fim do unless controller_path == "users/registrations" && action_name == "edit" -->
+    <% end %>        <!-- fim do unless tela_de_alteracao_de_senha? -->
     <main>
       <div class="banner">
         <% unless (controller_path == "users/registrations" && action_name == "edit") || 
           (controller_path == "devise/sessions" && action_name == "new") ||
           (controller_path == "users/sessions" && action_name == "new") %>
-        <div class="title-wrapper">
-          <button id="toggleSidebarBtn" class="menu-toggle-btn" title="Abrir Menu">
-            <i class="fa-solid fa-bars"></i>
-          </button>
-          <img src="/logo.png" alt="Logo" class="logo-title">
-          <h1 class="hide-on-mobile title"><%= page_title %></h1>
-        </div>
-        <% if page_menu.present? %>
-          <div class="fade-border menu">
-            <%= page_menu %>
+          <div class="title-wrapper">
+            <button id="toggleSidebarBtn" class="menu-toggle-btn" title="Abrir Menu">
+              <i class="fa-solid fa-bars"></i>
+            </button>
+            <img src="/logo.png" alt="Logo" class="logo-title">
+            <h1 class="hide-on-mobile title"><%= page_title %></h1>
           </div>
+          <% if page_menu.present? %>
+            <div class="fade-border menu">
+              <%= page_menu %>
+            </div>
+          <% end %>
         <% end %>
       </div>
+
       <nav class="sidebar sidebar-hidden">
         <ul class="sidebar-links">
           <%= sidebar_menu %>
         </ul>
       </nav>
-      <br>
-      <br>
-      <br>
-      <br>
-      <br>
-    <% end %>
-  <% end %>
+
+      <!-- 🔹 Aqui começa o “container” com margem lateral -->
+<% if controller_path == "devise/sessions" && action_name == "new" %>
+  <%# Login do Devise: sem page-shell, sem margem %>
   <%= yield %>
-</main>
+<% else %>
+  <%# Demais telas: usam o container com margem %>
+  <div class="page-shell">
+    <%= yield %>
+  </div>
+<% end %>
+
+    </main>
+
 <div id="backup-progress" style="
   position: fixed;
   bottom: 30px;
@@ -1047,4 +1054,20 @@ ease-out infinite;
   @media (max-width: 768px) {
     .hide-sm { display: none; }
   }
+
+.page-shell {
+    /* max-width: 1280px; */
+    margin: 9rem auto;
+    padding: 0 1.5rem;
+    width: 100%;
+    position: absolute;
+}
+
+/* em telas bem pequenas, um pouco menos de padding pra caber tudo */
+@media (max-width: 768px){
+  .page-shell{
+    padding: 0 1rem 2rem;
+  }
+}
+
 </style>

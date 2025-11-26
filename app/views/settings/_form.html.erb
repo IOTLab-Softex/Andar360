@@ -215,31 +215,6 @@
 
 </div>
 
-<!-- ===== CSS tabs (leve; respeita seu tema) ===== -->
-<style>
-  .tabs-nav {
-    display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:1rem;
-    background: var(--color-header); padding:.5rem; border-radius:12px;
-  }
-  .tab-link{
-    appearance:none; border:0; background:transparent; color:var(--color-text,#eaeaea);
-    padding:.6rem .9rem; border-radius:10px; cursor:pointer; display:flex; gap:.5rem; align-items:center;
-    transition:all .2s ease;
-  }
-  .tab-link:hover{ background: rgba(255,255,255,.06); }
-  .tab-link.active{
-    background: var(--color-accent, #3b82f6); color:#fff; box-shadow: 0 3px 12px rgba(0,0,0,.2);
-  }
-  .tab-panel[hidden]{ display:none !important; }
-  .tab-panel {
-    background: var(--color-bg-table-salas);
-    border: 1px solid rgba(255, 255, 255, .06);
-    border-radius: 14px;
-    padding: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
-}
-  .settings-actions{ position: sticky; bottom: 0; background: transparent; padding-top: .75rem; }
-</style>
 
 <!-- ===== JS tabs (com persistência no localStorage) ===== -->
 <script>

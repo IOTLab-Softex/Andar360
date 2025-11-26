@@ -1,0 +1,114 @@
+<div class="page-wrap">
+  <div class="page-header">
+    <h1>Confirmar exclusão</h1>
+    <p class="page-subtitle">
+      Tem certeza que deseja excluir esta solicitação de compra?<br>
+      Esta ação não poderá ser desfeita.
+    </p>
+  </div>
+
+  <div class="card card-danger">
+    <div class="card-body">
+      <h2>
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        Solicitação #<%= @solicitacao_compra.id %>
+      </h2>
+
+      <dl class="confirm-dl">
+        <div>
+          <dt>Colaborador</dt>
+          <dd><%= @solicitacao_compra.colaborador %></dd>
+        </div>
+
+        <div>
+          <dt>Setor</dt>
+          <dd><%= @solicitacao_compra.setor %></dd>
+        </div>
+
+        <div>
+          <dt>Data da solicitação</dt>
+          <dd><%= (@solicitacao_compra.data_solicitacao || @solicitacao_compra.created_at.to_date).strftime("%d/%m/%Y") %></dd>
+        </div>
+
+        <div>
+          <dt>Valor estimado</dt>
+          <dd><%= number_to_currency(@solicitacao_compra.valor_estimado, unit: "R$ ") if @solicitacao_compra.valor_estimado.present? %></dd>
+        </div>
+      </dl>
+
+      <div class="confirm-actions">
+        <%= link_to solicitacao_compras_path, class: "btn btn-secondary" do %>
+          <i class="fa-solid fa-arrow-left"></i>
+          Cancelar
+        <% end %>
+
+        <%= button_to @solicitacao_compra,
+              method: :delete,
+              class: "btn btn-danger",
+              form: { data: { turbo_confirm: "Tem certeza que deseja excluir esta solicitação?" } } do %>
+          <i class="fa-solid fa-trash-can"></i>
+          Excluir definitivamente
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.card-danger{
+  border-radius: 16px;
+  padding: 20px;
+  background: radial-gradient(circle at top left, rgba(244, 67, 54, .18), transparent 55%),
+              rgba(15, 10, 24, .9);
+  border: 1px solid rgba(244, 67, 54, .4);
+  box-shadow: 0 18px 40px rgba(0,0,0,.6);
+}
+
+.card-danger h2{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:1.1rem;
+  margin-bottom:16px;
+}
+
+.card-danger h2 i{
+  color:#f44336;
+}
+
+.confirm-dl{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap:12px 24px;
+  margin-bottom:24px;
+}
+
+.confirm-dl dt{
+  font-size:.75rem;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  opacity:.7;
+}
+
+.confirm-dl dd{
+  margin:2px 0 0;
+  font-weight:600;
+}
+
+.confirm-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:12px;
+  margin-top:8px;
+}
+
+.btn-danger{
+  background:#d32f2f;
+  border:none;
+  color:#fff;
+}
+
+.btn-danger:hover{
+  background:#b71c1c;
+}
+</style>

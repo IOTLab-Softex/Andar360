@@ -1,0 +1,269 @@
+<%= form_with model: solicitacao_compra, local: true do |f| %>
+  <% if solicitacao_compra.errors.any? %>
+    <div class="alert">
+      <h4><%= pluralize(solicitacao_compra.errors.count, "erro") %>:</h4>
+      <ul>
+        <% solicitacao_compra.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <!-- BOTÃO SALVAR CENTRALIZADO -->
+  <div class="form-group" style="display:flex;gap:10px;justify-content: center;">
+    <div style="display:flex; gap:10px;">
+      <%= f.submit "Salvar", class: "btn btn-success" %>
+      <%= link_to "Cancelar", solicitacao_compras_path, class: "btn btn-secondary" %>
+    </div>
+  </div>
+
+  <br>
+
+  <!-- BLOCO PRINCIPAL -->
+  <div class="tab-panel" style="display:flex; flex-wrap:wrap; gap:0rem;">
+
+    <!-- Dados do Solicitante -->
+<div style="flex: 1 1 50%;">
+  <%= f.label :colaborador, "Colaborador(a)" %>
+  <%= f.select :colaborador,
+        options_from_collection_for_select(
+          @colaboradores,
+          :name,   # valor salvo na coluna string "colaborador"
+          :name,   # texto exibido
+          solicitacao_compra.colaborador # já vem preenchido no new se for o usuário logado
+        ),
+        { include_blank: "Selecione o colaborador" },
+        class: "form-control"
+      %>
+</div>
+
+
+    <div style="flex: 1 1 50%;">
+      <%= f.label :setor, "Setor" %>
+      <%= f.text_field :setor, class: "form-control" %>
+    </div>
+
+    <!-- DETALHAMENTO DA COMPRA / SERVIÇO -->
+    <div style="flex: 1 1 100%; margin-top: 1rem;">
+      <div class="section-box">
+        <div class="section-header">
+          <h5>
+            <i class="fa-solid fa-cart-shopping"></i>
+            Detalhamento da Compra ou Serviço
+          </h5>
+
+          <button type="button" id="add-item" class="btn btn-sm btn-primary">
+            <i class="fa-solid fa-plus"></i> Adicionar item
+          </button>
+        </div>
+
+        <div class="section-body solicitacao-itens">
+
+          <!-- Data geral da solicitação de compra -->
+          <div style="max-width: 220px; margin-bottom: 10px;">
+            <%= f.label :item_data, "Data" %>
+            <%= f.date_field :item_data, class: "form-control" %>
+          </div>
+
+          <!-- ITENS DA SOLICITAÇÃO (múltiplos) -->
+          <div class="table-responsive">
+            <table class="table-salas itens-table" id="itens-table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th style="width: 90px;">Qtd</th>
+                  <th style="width: 140px;">Valor unitário</th>
+                  <th style="width: 80px;"></th>
+                </tr>
+              </thead>
+              <tbody id="itens-body" data-index="<%= solicitacao_compra.itens&.size || 0 %>">
+                <%= f.fields_for :itens do |item_form| %>
+                  <tr class="item-row">
+                    <td>
+                      <%= item_form.text_field :descricao, class: "form-control" %>
+                    </td>
+                    <td>
+                      <%= item_form.number_field :quantidade,
+                            class: "form-control",
+                            min: 1 %>
+                    </td>
+                    <td>
+                      <%= item_form.number_field :valor_unitario,
+                            step: 0.01,
+                            class: "form-control" %>
+                    </td>
+                    <td class="text-center">
+                      <button type="button" class="btn btn-sm btn-warning remove-item">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                      <%= item_form.hidden_field :_destroy, class: "destroy-flag" %>
+                    </td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Justificativa -->
+    <div style="flex: 1 1 100%; margin-top: 1rem; color: var(--color-text) !important;">
+      <%= f.label :justificativa, "Justificativa para Aquisição" %>
+      <%= f.text_area :justificativa, rows: 4, class: "form-control" %>
+    </div>
+
+    <!-- Forma de Pagamento -->
+    <div style="flex: 1 1 100%; margin-top: 1rem;">
+      <label style="font-weight:600;">Forma de Pagamento</label>
+
+      <div class="form-group" style="margin-top: 0.5rem;">
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+          <%= f.radio_button :forma_pagamento, :a_vista %>
+          À vista
+        </label>
+
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px; flex-wrap:wrap;">
+          <%= f.radio_button :forma_pagamento, :cartao_credito %>
+          Cartão de crédito –
+          <span>Parcelas:</span>
+          <%= f.number_field :parcelas, min: 1, class: "form-control", style: "width:80px; display:inline-block;" %>
+        </label>
+
+        <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+          <%= f.radio_button :forma_pagamento, :faturado %>
+          Faturado
+        </label>
+      </div>
+    </div>
+
+    <!-- Rodapé -->
+    <div style="flex: 1 1 100%; margin-top: 1rem;">
+      <label style="font-weight:600;">Rodapé</label>
+    </div>
+
+    <div style="flex: 1 1 33%;">
+      <%= f.label :cidade, "Cidade" %>
+      <%= f.text_field :cidade, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1 1 33%;">
+      <%= f.label :data_solicitacao, "Data da Solicitação" %>
+      <%= f.date_field :data_solicitacao, class: "form-control" %>
+    </div>
+
+    <div style="flex: 1 1 33%;">
+      <%= f.label :autorizado_por, "Autorizado por" %>
+      <%= f.text_field :autorizado_por, class: "form-control" %>
+    </div>
+
+  </div>
+<% end %>
+
+
+<style>
+  /* Isola o estilo só para a tabela de itens da solicitação */
+.solicitacao-itens .table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0;        /* zera o que tiver global */
+  padding: 0;       /* opcional, mas ajuda */
+  max-width: 100%;  /* garante que não passe da largura */
+}
+
+
+.solicitacao-itens .table-salas {
+  width: 100%;
+  border-collapse: collapse;
+  background: #202020;
+}
+
+/* ... resto já tá ok ... */
+
+
+  .solicitacao-itens .table-salas thead th {
+    background: #111;
+    color: #fff;
+    font-size: 12px;
+    text-transform: uppercase;
+    padding: 8px 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    white-space: nowrap;
+  }
+
+  /* Garante que as linhas sejam normais, não grid/flex como nos chamados */
+  .solicitacao-itens .table-salas tbody tr {
+    display: table-row;
+  }
+
+  .solicitacao-itens .table-salas tbody td {
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    vertical-align: middle;
+  }
+
+  .solicitacao-itens .table-salas input.form-control {
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 13px;
+    border-radius: 4px;
+  }
+
+  .solicitacao-itens .table-salas .btn.btn-sm.btn-warning {
+    padding: 4px 6px;
+  }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const addButton = document.getElementById("add-item");
+  const itensBody = document.getElementById("itens-body");
+
+  if (!addButton || !itensBody) return;
+
+  addButton.addEventListener("click", function () {
+    // índice atual vindo do data-index
+    let index = parseInt(itensBody.dataset.index) || 0;
+
+    // HTML base de um novo item (substituindo os nomes por [index])
+    const newRow = `
+      <tr class="item-row">
+        <td>
+          <input type="text" name="solicitacao_compra[itens_attributes][${index}][descricao]"
+                 class="form-control">
+        </td>
+        <td>
+          <input type="number" name="solicitacao_compra[itens_attributes][${index}][quantidade]"
+                 class="form-control" min="1">
+        </td>
+        <td>
+          <input type="number" step="0.01"
+                 name="solicitacao_compra[itens_attributes][${index}][valor_unitario]"
+                 class="form-control">
+        </td>
+        <td class="text-center">
+          <button type="button" class="btn btn-sm btn-warning remove-item">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+          <input type="hidden"
+                 name="solicitacao_compra[itens_attributes][${index}][_destroy]"
+                 class="destroy-flag" value="false">
+        </td>
+      </tr>
+    `;
+
+    itensBody.insertAdjacentHTML("beforeend", newRow);
+    itensBody.dataset.index = index + 1;
+  });
+
+  // Remover linha
+  itensBody.addEventListener("click", function (e) {
+    if (e.target.closest(".remove-item")) {
+      const row = e.target.closest("tr");
+      row.remove();
+    }
+  });
+});
+</script>
