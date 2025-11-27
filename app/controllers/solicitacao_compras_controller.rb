@@ -14,7 +14,7 @@ before_action :ensure_can_edit_or_destroy,   only: %i[edit update destroy confir
 
 def index
   # base: admin vê tudo, usuário comum vê só as próprias solicitações
-  if current_user&.role == "admin"
+   if current_user&.role == "admin" || current_user&.role == "operador"
     scope = SolicitacaoCompra.all
   else
     if current_user&.participant
@@ -119,15 +119,17 @@ end
     end
   end
 
-  def create
-    @solicitacao_compra = SolicitacaoCompra.new(solicitacao_compra_params)
+ def create
+  @solicitacao_compra = SolicitacaoCompra.new(solicitacao_compra_params)
 
-    if @solicitacao_compra.save
-      redirect_to @solicitacao_compra, notice: "Solicitação criada com sucesso."
-    else
-      render :new, status: :unprocessable_entity
-    end
+  if @solicitacao_compra.save
+    notificar_autorizadores(@solicitacao_compra)
+    redirect_to @solicitacao_compra, notice: "Solicitação criada com sucesso."
+  else
+    render :new, status: :unprocessable_entity
   end
+end
+
 
   def edit
   end
@@ -162,21 +164,96 @@ def autorizar
       current_user.name
     end
 
-  @solicitacao_compra.update(
-    status_autorizacao: :autorizado,
-    autorizado_por: nome_autorizador
-  )
+  if @solicitacao_compra.update(
+      status_autorizacao: :autorizado,
+      autorizado_por:     nome_autorizador
+    )
 
-  redirect_to @solicitacao_compra, notice: "Solicitação autorizada com sucesso."
+    notificar_solicitante_aprovacao(@solicitacao_compra, nome_autorizador)
+
+    redirect_to @solicitacao_compra, notice: "Solicitação autorizada com sucesso."
+  else
+    redirect_to @solicitacao_compra,
+                alert: "Não foi possível atualizar o status da solicitação."
+  end
 end
+
 
 
 
 private
 
+def notificar_autorizadores(solicitacao)
+  # 🔎 Descobre o participant que é o COLABORADOR da solicitação
+  solicitante = Participant.find_by(name: solicitacao.colaborador)
+
+  # Se não achar o participant ou ele não tiver empresa, não tem como descobrir autorizadores
+  return unless solicitante&.grupo_empresa_id.present?
+
+  empresa_id = solicitante.grupo_empresa_id
+
+  Rails.logger.debug "[SC][notify] Solicitante=#{solicitante.name} empresa_id=#{empresa_id}"
+
+  # ✅ Busca TODOS os participants da MESMA EMPRESA
+  #    que tenham permissão de AUTORIZAR compra (can_approve_purchase = true)
+  autorizadores_participants = Participant
+    .joins(:sub_grupo_empresa)
+    .where(
+      sub_grupo_empresas: {
+        grupo_empresa_id:     empresa_id,
+        can_approve_purchase: true
+      }
+    )
+
+  Rails.logger.debug "[SC][notify] Autorizadores (participants): " +
+    autorizadores_participants.map { |p|
+      "#{p.name} (subgrupo=#{p.sub_grupo_empresa.nome}, empresa_id=#{p.sub_grupo_empresa.grupo_empresa_id})"
+    }.join(", ")
+
+  # 🔁 Converte para usuários (nem todo participant tem user)
+  usuarios_autorizadores = autorizadores_participants
+    .map(&:user)
+    .compact
+    .uniq
+
+  Rails.logger.debug "[SC][notify] Autorizadores (users): " +
+    usuarios_autorizadores.map { |u| "#{u.id}-#{u.email}" }.join(", ")
+
+  return if usuarios_autorizadores.empty?
+
+  # 🔔 Cria uma notificação para cada usuário autorizador
+  usuarios_autorizadores.each do |user|
+    Notification.create!(
+      user: user,
+      titulo: "Solicitação de compra para aprovação",
+      corpo:  "Há uma nova solicitação de compra do colaborador #{solicitacao.colaborador} aguardando sua autorização.",
+      lida:   false,
+      # Só use esta linha se seu model tiver:
+      # belongs_to :notificavel, polymorphic: true
+      notificavel: solicitacao
+    )
+  end
+end
+
+def notificar_solicitante_aprovacao(solicitacao, nome_autorizador)
+  # 🔎 Descobre o participant que é o COLABORADOR da solicitação
+  solicitante = Participant.find_by(name: solicitacao.colaborador)
+  return unless solicitante&.user # precisa ter user associado
+
+  usuario_solicitante = solicitante.user
+
+  Notification.create!(
+    user:  usuario_solicitante,
+    titulo: "Sua solicitação de compra foi aprovada",
+    corpo:  "A solicitação de compra criada por você foi aprovada por #{nome_autorizador}.",
+    lida:   false,
+    notificavel: solicitacao # se seu Notification tiver associação polymorphic
+  )
+end
+
 
 def admin?
-  current_user&.role == "admin"
+  current_user&.role == "admin" || current_user&.role == "operador"
 end
 
 def owns_solicitacao?(solicitacao)
@@ -296,8 +373,8 @@ def load_colaboradores
   # base: todos os participantes com sub_grupo
   participants_scope = Participant.joins(:sub_grupo_empresa)
 
-  # se não for admin, filtra pela EMPRESA do usuário logado
-  if current_user&.role != "admin" && current_user&.participant&.grupo_empresa_id.present?
+  # se não for admin NEM operador, filtra pela EMPRESA do usuário logado
+  if !admin? && current_user&.participant&.grupo_empresa_id.present?
     empresa_id = current_user.participant.grupo_empresa_id
 
     participants_scope = participants_scope.where(
@@ -320,6 +397,7 @@ def load_colaboradores
                        "#{p.name} (#{p.sub_grupo_empresa.nome} rq=#{p.sub_grupo_empresa.can_request_purchase} ap=#{p.sub_grupo_empresa.can_approve_purchase})"
                      }.join(", ")
 end
+
 
 
 end
