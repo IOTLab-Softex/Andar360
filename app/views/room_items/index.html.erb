@@ -83,7 +83,9 @@
                    .sub("<svg", '<svg fill="currentColor" focusable="false" aria-hidden="true"') %>
       <span class="icon-20"><%= raw raw_svg %></span>
     <% else %>
-      <%= image_tag url_for(k.icon), alt: k.name, class: "icon-20-img" %>
+      <%= image_tag url_for(k.icon), alt: k.name, class: "icon-20-img", style: "
+    max-width: 160px;
+" %>
     <% end %>
   <% end %>
 </td>

@@ -1,107 +1,147 @@
 <%# app/views/ocorrencias/_ocorrencia_section.html.erb %>
 <% somente_visualizacao = local_assigns[:somente_visualizacao] || false %>
 
-<%# --- Caixa da Seção de Ocorrências --- %>
-<div class="form-group">
-  <div class="section-header">
-    <h5><i class="fa fa-history"></i> Histórico de Ocorrências</h5>
-   <% unless somente_visualizacao %>
-  <button type="button" class="btn btn-primary btn-sm" id="abrir-modal-ocorrencia">
-    <i class="fa-solid fa-file-pen"></i> Registrar Ocorrência
-  </button>
-<% end %>
+<% if somente_visualizacao %>
+  <%# === MODO SOMENTE VISUALIZAÇÃO (show) === %>
+  <% if parent.ocorrencias.any? %>
+    <div class="lista-anexos">
+      <% parent.ocorrencias.order(created_at: :desc).each do |ocorrencia| %>
+        <div class="anexo-item">
+          <div class="anexo-info">
+            <strong><%= ocorrencia.data_ocorrencia.strftime("%d/%m/%Y") %>:</strong>
+            <%= ocorrencia.descricao.presence || "Sem descrição" %>
+            <% if ocorrencia.proxima_data.present? %>
+              <br>
+              <small>
+                <i class="fa fa-calendar-alt"></i>
+                Próxima: <%= ocorrencia.proxima_data.strftime("%d/%m/%Y") %>
+              </small>
+            <% end %>
+          </div>
+        </div>
+      <% end %>
+    </div>
+  <% else %>
+    <p class="text-muted text-center">Nenhuma ocorrência registrada.</p>
+  <% end %>
 
-  </div>
-  <div class="section-body">
-    <% if parent.ocorrencias.any? %>
-      <div class="lista-anexos">
-        <% parent.ocorrencias.order(created_at: :desc).each do |ocorrencia| %>
-          <div class="anexo-item">
-            <div class="anexo-info">
-              <strong><%= ocorrencia.data_ocorrencia.strftime("%d/%m/%Y") %>:</strong>
-              <%= ocorrencia.descricao.presence || "Sem descrição" %>
-              <% if ocorrencia.proxima_data.present? %>
-                <br><small><i class="fa fa-calendar-alt"></i> Próxima: <%= ocorrencia.proxima_data.strftime("%d/%m/%Y") %></small>
-              <% end %>
-            </div>
-            <% unless somente_visualizacao %>
+<% else %>
+  <%# === MODO COMPLETO (edição, cadastro, etc.) === %>
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5><i class="fa fa-history"></i> Histórico de Ocorrências</h5>
+      <button type="button" class="btn btn-primary btn-sm" id="abrir-modal-ocorrencia">
+        <i class="fa-solid fa-file-pen"></i> Registrar Ocorrência
+      </button>
+    </div>
+
+    <div class="section-body">
+      <% if parent.ocorrencias.any? %>
+        <div class="lista-anexos">
+          <% parent.ocorrencias.order(created_at: :desc).each do |ocorrencia| %>
+            <div class="anexo-item">
+              <div class="anexo-info">
+                <strong><%= ocorrencia.data_ocorrencia.strftime("%d/%m/%Y") %>:</strong>
+                <%= ocorrencia.descricao.presence || "Sem descrição" %>
+                <% if ocorrencia.proxima_data.present? %>
+                  <br>
+                  <small>
+                    <i class="fa fa-calendar-alt"></i>
+                    Próxima: <%= ocorrencia.proxima_data.strftime("%d/%m/%Y") %>
+                  </small>
+                <% end %>
+              </div>
+
               <div class="anexo-actions">
                 <button type="button"
-                  class="btn btn-warning btn-sm editar-ocorrencia"
-                  data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Editar"
-                  data-ocorrencia='<%= ocorrencia.to_json(only: [:id, :data_ocorrencia, :proxima_data, :descricao]) %>'
-                  data-checklist="<%= ocorrencia.checklist_items.pluck(:id).to_json %>">
+                        class="btn btn-warning btn-sm editar-ocorrencia"
+                        data-bs-toggle="tooltip" data-bs-placement="top" data-bs-title="Editar"
+                        data-ocorrencia='<%= ocorrencia.to_json(only: [:id, :data_ocorrencia, :proxima_data, :descricao]) %>'
+                        data-checklist="<%= ocorrencia.checklist_items.pluck(:id).to_json %>">
                   <i class="fa-solid fa-pen-to-square"></i>
                 </button>
-                <%= button_to ocorrencia_path(ocorrencia), method: :delete, class: "btn btn-danger btn-sm", data: { turbo_confirm: "Excluir ocorrência?", bs_toggle: 'tooltip', bs_placement: 'top', bs_title: 'Excluir' } do %>
+
+                <%= button_to ocorrencia_path(ocorrencia),
+                               method: :delete,
+                               class: "btn btn-danger btn-sm",
+                               data: { turbo_confirm: "Excluir ocorrência?",
+                                       bs_toggle: 'tooltip',
+                                       bs_placement: 'top',
+                                       bs_title: 'Excluir' } do %>
                   <i class="fa-solid fa-trash"></i>
                 <% end %>
               </div>
-            <% end %>
-          </div>
-        <% end %>
-      </div>
-    <% else %>
-      <p class="text-muted text-center">Nenhuma ocorrência registrada.</p>
-    <% end %>
-  </div>
-</div>
-
-<% unless somente_visualizacao %>
-<div id="modalOcorrencia" class="modal-custom" style="display: none;">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="ocorrencia-modal-title"  style="color: black;">Registrar Ocorrência</h5>
-        <button type="button" class="close-modal">&times;</button>
-      </div>
-      <div class="modal-body">
-        <%# ESTE FORMULÁRIO PRECISA SER CORRIGIDO %>
-        <%= form_with model: Ocorrencia.new, scope: :ocorrencia, url: ocorrencias_path, local: true, multipart: true, id: 'formOcorrencia' do |f| %>
-  
-  <%# Estes são os campos corretos para a associação polimórfica %>
-  <%= f.hidden_field :ocorrenciavel_type, value: parent.class.name %>
-  <%= f.hidden_field :ocorrenciavel_id, value: parent.id %>
-          
-          <%= hidden_field_tag :ocorrencia_id, "", id: "ocorrencia_id" %>
-
-          <%= f.label :data_ocorrencia, "Data da Ocorrência", style: "color: black;" %>
-          <%= f.date_field :data_ocorrencia, class: "form-control mb-2", required: true, id: 'ocorrencia_data_ocorrencia' %>
-
-          <%= f.label :proxima_data, "Próxima Data", style: "color: black;" %>
-          <%= f.date_field :proxima_data, class: "form-control mb-2", id: 'ocorrencia_proxima_data' %>
-
-          <%= f.label :descricao, "Descrição", style: "color: black;" %>
-          <%= f.text_area :descricao, class: "form-control mb-2", maxlength: 1000, id: 'ocorrencia_descricao' %>
-
-          <% if parent.respond_to?(:checklist_items) && parent.checklist_items.any? %>
-            <hr>
-            <%= f.label :checklist_item_ids, "Checklist" %>
-            <div class="form-check" style="max-height: 150px; overflow-y: auto;">
-              <% parent.checklist_items.each do |item| %>
-                <div>
-                  <%= check_box_tag "ocorrencia[checklist_ocorrencias_attributes][#{item.id}][marcado]", "1", false, id: "check_#{item.id}", class: "checklist-checkbox" %>
-                  <%= hidden_field_tag "ocorrencia[checklist_ocorrencias_attributes][#{item.id}][checklist_item_id]", item.id %>
-                  <%= label_tag "check_#{item.id}", item.descricao %>
-                </div>
-              <% end %>
             </div>
           <% end %>
+         </div>
+      <% else %>
+        <p class="text-muted text-center">Nenhuma ocorrência registrada.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
 
-          <hr>
-          <h6 style= "color: black;">Vincular anexo</h6>
-          <%= f.label :nome, "Nome do arquivo", style: "color: black;" %>
-          <%= f.text_field :nome, class: "form-control mb-2" %>
-          <%= f.file_field :arquivos, class: "form-control", style: "color: black;", multiple: true %>
+<%# Modal só quando NÃO é somente_visualizacao %>
+<% unless somente_visualizacao %>
+  <div id="modalOcorrencia" class="modal-custom" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="ocorrencia-modal-title" style="color: black;">Registrar Ocorrência</h5>
+          <button type="button" class="close-modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <%= form_with model: Ocorrencia.new,
+                        scope: :ocorrencia,
+                        url: ocorrencias_path,
+                        local: true,
+                        multipart: true,
+                        id: 'formOcorrencia' do |f| %>
 
-          <div class="text-end mt-3">
-            <%= f.submit "Registrar", class: "btn btn-success", id: "submitOcorrenciaBtn" %>
-          </div>
-        <% end %>
+            <%= f.hidden_field :ocorrenciavel_type, value: parent.class.name %>
+            <%= f.hidden_field :ocorrenciavel_id, value: parent.id %>
+
+            <%= hidden_field_tag :ocorrencia_id, "", id: "ocorrencia_id" %>
+
+            <%= f.label :data_ocorrencia, "Data da Ocorrência", style: "color: black;" %>
+            <%= f.date_field :data_ocorrencia, class: "form-control mb-2", required: true, id: 'ocorrencia_data_ocorrencia' %>
+
+            <%= f.label :proxima_data, "Próxima Data", style: "color: black;" %>
+            <%= f.date_field :proxima_data, class: "form-control mb-2", id: 'ocorrencia_proxima_data' %>
+
+            <%= f.label :descricao, "Descrição", style: "color: black;" %>
+            <%= f.text_area :descricao, class: "form-control mb-2", maxlength: 1000, id: 'ocorrencia_descricao' %>
+
+            <% if parent.respond_to?(:checklist_items) && parent.checklist_items.any? %>
+              <hr>
+              <%= f.label :checklist_item_ids, "Checklist" %>
+              <div class="form-check" style="max-height: 150px; overflow-y: auto;">
+                <% parent.checklist_items.each do |item| %>
+                  <div>
+                    <%= check_box_tag "ocorrencia[checklist_ocorrencias_attributes][#{item.id}][marcado]",
+                                      "1",
+                                      false,
+                                      id: "check_#{item.id}",
+                                      class: "checklist-checkbox" %>
+                    <%= hidden_field_tag "ocorrencia[checklist_ocorrencias_attributes][#{item.id}][checklist_item_id]", item.id %>
+                    <%= label_tag "check_#{item.id}", item.descricao %>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+
+            <hr>
+            <h6 style="color: black;">Vincular anexo</h6>
+            <%= f.label :nome, "Nome do arquivo", style: "color: black;" %>
+            <%= f.text_field :nome, class: "form-control mb-2" %>
+            <%= f.file_field :arquivos, class: "form-control", style: "color: black;", multiple: true %>
+
+            <div class="text-end mt-3">
+              <%= f.submit "Registrar", class: "btn btn-success", id: "submitOcorrenciaBtn" %>
+            </div>
+          <% end %>
+        </div>
       </div>
     </div>
   </div>
-</div>
 <% end %>
-
-

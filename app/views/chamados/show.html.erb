@@ -1,527 +1,507 @@
-<div class="device-form" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-<div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>OS:</strong><br>
-    <%= @chamado.os %>
-  </div>
-</div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Unidade:</strong><br>
-    <%= @chamado.room&.name %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 2;">
-    <strong>Título:</strong><br>
-    <%= @chamado.titulo %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Prioridade:</strong><br>
-    <%= @chamado.prioridade %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Status:</strong><br>
-    <%= @chamado.status %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Data Resolução:</strong><br>
-    <%= l(@chamado.data_resolucao) if @chamado.data_resolucao %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Exibir no App:</strong><br>
-    <%= @chamado.exibir_no_app ? 'Sim' : 'Não' %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Local:</strong><br>
-    <%= @chamado.local %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 30%;">
-  <div style="flex: 1;">
-    <strong>Responsável:</strong><br>
-    <%= @chamado.responsavel %>
-  </div>
-
-  </div>
-  <div class="form-group" style="flex: 1 1 100%;">
-  <div style="flex: 1 1 100%;">
-    <strong>Observação:</strong><br>
-    <%= simple_format(@chamado.observacao) %>
-  </div>
-  </div>
-</div>
-
-<% if @chamado.fotos.attached? %>
-  <div class="device-form" style="margin-top: 2rem;">
-    <strong>Fotos:</strong>
-    <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1rem;">
-      <% @chamado.fotos.each do |foto| %>
-        <div class="image-thumb">
-          <%= image_tag url_for(foto), data: { full: url_for(foto) } %>
-          <div class="overlay-eye" onclick="showModal(this)">
-            <i class="fa-solid fa-eye"></i>
-          </div>
-        </div>
-      <% end %>
-    </div>
-  </div>
-<% end %>
-
-<!-- Modal para visualizar imagens -->
-<div id="modal-image-viewer" onclick="hideModal()">
-  <span class="close-modal">&times;</span>
-  <img src="" alt="Visualizar imagem">
-</div>
-<hr>
-<!-- Seção de Anexos -->
-<% if @chamado.persisted? %>
-  <div class="form-group">
+  <div class="chamado-section section-box">
     <div class="section-header">
-      <h5><i class="fa fa-paperclip"></i> Anexos</h5>
+      <h5>
+        <i class="fa-solid fa-circle-info"></i>
+        Dados do chamado
+      </h5>
     </div>
-    <div class="section-body lista-anexos">
-      <% any = false %>
 
-      <% @chamado.arquivos_anexos_chamado.each do |anexo| %>
-        <% any = true %>
-        <div class="anexo-item">
-          <div class="anexo-info">
-            <%= link_to url_for(anexo.arquivo), target: "_blank", class: "anexo-link" do %>
-              <i class="fa fa-download"></i> <%= anexo.nome %>
-            <% end %>
-          </div>
+    <div class="section-body chamado-grid">
+      <div class="chamado-field">
+        <span class="label">OS:</span>
+        <span class="value"><%= @chamado.os %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Unidade:</span>
+        <span class="value"><%= @chamado.room&.name %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Título:</span>
+        <span class="value"><%= @chamado.titulo %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Prioridade:</span>
+        <span class="value badge-prioridade prioridade-<%= @chamado.prioridade.to_s.parameterize %>">
+          <%= @chamado.prioridade %>
+        </span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Status:</span>
+        <span class="value badge-status status-<%= @chamado.status.to_s.parameterize %>">
+          <%= @chamado.status %>
+        </span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Data resolução:</span>
+        <span class="value"><%= l(@chamado.data_resolucao) if @chamado.data_resolucao %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Exibir no App:</span>
+        <span class="value"><%= @chamado.exibir_no_app ? 'Sim' : 'Não' %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Local:</span>
+        <span class="value"><%= @chamado.local %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Responsável:</span>
+        <span class="value"><%= @chamado.responsavel %></span>
+      </div>
+
+      <div class="chamado-field chamado-observacao">
+        <span class="label">Observação:</span>
+        <div class="value">
+          <%= simple_format(@chamado.observacao.presence || "—") %>
         </div>
-      <% end %>
+      </div>
+    </div>
+  </div>
 
-      <% @chamado.ocorrencias.order(created_at: :desc).each do |oc| %>
-        <% if oc.arquivos.attached? %>
-          <div class="subsection-header mt-2">
-            <small><i class="fa fa-history"></i> Ocorrência em <%= l(oc.data_ocorrencia) %></small>
-          </div>
-          <% oc.arquivos.each do |blob| %>
-            <% any = true %>
-            <div class="anexo-item">
-              <div class="anexo-info">
-                <%= link_to url_for(blob), target: "_blank", class: "anexo-link" do %>
-                  <i class="fa fa-download"></i> <%= blob.filename.to_s %>
-                <% end %>
-              </div>
+  <% if @chamado.fotos.attached? %>
+    <div class="section-box">
+      <div class="section-header">
+        <h5>
+          <i class="fa-solid fa-image"></i>
+          Fotos
+        </h5>
+      </div>
+      <div class="section-body fotos-grid">
+        <% @chamado.fotos.each do |foto| %>
+          <div class="image-thumb">
+            <%= image_tag url_for(foto), data: { full: url_for(foto) } %>
+            <div class="overlay-eye" onclick="showModal(this)">
+              <i class="fa-solid fa-eye"></i>
             </div>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+
+  <!-- Modal para visualizar imagens -->
+  <div id="modal-image-viewer" onclick="hideModal()">
+    <span class="close-modal">&times;</span>
+    <img src="" alt="Visualizar imagem">
+  </div>
+
+  <% if @chamado.persisted? %>
+    <div class="section-box">
+      <div class="section-header">
+        <h5><i class="fa fa-paperclip"></i> Anexos</h5>
+      </div>
+      <div class="section-body lista-anexos">
+        <% any = false %>
+
+        <% @chamado.arquivos_anexos_chamado.each do |anexo| %>
+          <% any = true %>
+          <div class="anexo-item">
+            <div class="anexo-info">
+              <%= link_to url_for(anexo.arquivo), target: "_blank", class: "anexo-link" do %>
+                <i class="fa fa-download"></i> <%= anexo.nome %>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+
+        <% @chamado.ocorrencias.order(created_at: :desc).each do |oc| %>
+          <% if oc.arquivos.attached? %>
+            <div class="subsection-header mt-2">
+              <small><i class="fa fa-history"></i> Ocorrência em <%= l(oc.data_ocorrencia) %></small>
+            </div>
+            <% oc.arquivos.each do |blob| %>
+              <% any = true %>
+              <div class="anexo-item">
+                <div class="anexo-info">
+                  <%= link_to url_for(blob), target: "_blank", class: "anexo-link" do %>
+                    <i class="fa fa-download"></i> <%= blob.filename.to_s %>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
           <% end %>
         <% end %>
-      <% end %>
 
-      <% unless any %>
-        <p class="text-muted text-center">Nenhum anexo encontrado.</p>
-      <% end %>
+        <% unless any %>
+          <p class="text-muted text-center">Nenhum anexo encontrado.</p>
+        <% end %>
+      </div>
     </div>
-  </div>
-<% end %>
+  <% end %>
 
-<!-- Seção do histórico de ocorrências -->
-<% if @chamado.persisted? %>
-  <%= render 'ocorrencias/ocorrencia_section', parent: @chamado, somente_visualizacao: true%>
-<% end %>
-
-
-<style>
-.image-thumb {
-  position: relative;
-  display: inline-block;
-  width: 150px;
-  height: 150px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  overflow: hidden;
-}
-
-.image-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.overlay-eye {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.4);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-  cursor: pointer;
-}
-
-.overlay-eye i {
-  font-size: 1.8rem;
-}
-
-.overlay-eye:hover {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-
-.image-thumb:hover .overlay-eye {
-  opacity: 1;
-}
-
-.remove-foto-btn {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  background: #f44336;
-  color: white;
-  border-radius: 50%;
-  padding: 0 6px;
-  text-decoration: none;
-  font-weight: bold;
-  z-index: 2;
-}
+  <% if @chamado.persisted? %>
+    <div class="section-box">
+      <div class="section-header">
+        <h5><i class="fa fa-clock-rotate-left"></i> Histórico de ocorrências</h5>
+      </div>
+      <div class="section-body">
+        <%= render 'ocorrencias/ocorrencia_section',
+                  parent: @chamado,
+                  somente_visualizacao: true %>
+      </div>
+    </div>
+  <% end %>
 
 
 
-#modal-image-viewer img {
-  max-width: none;
-  max-height: none;
-  width: auto;
-  height: auto;
-  border-radius: 12px;
-  transition: transform 0.2s ease;
-  transform-origin: center center;
-}
+  <style>
+  .image-thumb {
+    position: relative;
+    display: inline-block;
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+  }
+
+  .image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .overlay-eye {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+  }
+
+  .overlay-eye i {
+    font-size: 1.8rem;
+  }
+
+  .overlay-eye:hover {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
 
 
-#modal-image-viewer .close-modal {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-}
+  .image-thumb:hover .overlay-eye {
+    opacity: 1;
+  }
 
-
-.section-box {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  background-color: #fcfcfc;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.section-header h5 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.section-header h5 i {
-  margin-right: 0.75rem;
-  color: #555;
-}
-
-.section-body {
-  padding: 1.5rem;
-}
-
-.lista-anexos {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.anexo-item {
-  display: flex;
-  align-items: center;
-  background-color: #3b6ea5;
-  padding: 0.5rem 1rem;
-  border-radius: 5px;
-  color: #fff;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-
-.anexo-link {
-  color: white;
-  text-decoration: none;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem; /* espaço entre ícone e texto */
-}
-
-.anexo-link i {
-  font-size: 1rem;
-}
-
-.anexo-remover {
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 1.1rem;
-  padding-left: 1rem; /* GAP do botão em relação ao nome */
-  cursor: pointer;
-}
-
-.anexo-remover i {
-  color: #f88;
-}
-
-
-.modal-custom {
-  position: fixed;
-  z-index: 9999;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  overflow: auto;
-  background-color: rgba(0,0,0,0.4);
-}
-.modal-dialog {
-  background: #fff;
-  margin: 10% auto;
-  padding: 20px;
-  width: 400px;
-  border-radius: 6px;
-  color: var(--color-btn--text);
-}
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.image-thumb {
-  position: relative;
-  display: inline-block;
-  width: 150px;
-  height: 150px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
-  overflow: hidden;
-}
-
-.image-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 8px;
-}
-
-.overlay-eye {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 8px;
-  background-color: rgba(0, 0, 0, 0.4);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  transition: opacity 0.2s;
-  cursor: pointer;
-}
-
-.overlay-eye i {
-  font-size: 1.8rem;
-}
-
-.overlay-eye:hover {
-  background-color: rgba(0, 0, 0, 0.6);
-}
-
-
-.image-thumb:hover .overlay-eye {
-  opacity: 1;
-}
-
-.remove-foto-btn {
-  position: absolute;
-  top: 4px;
-  right: 6px;
-  background: #f44336;
-  color: white;
-  border-radius: 50%;
-  padding: 0 6px;
-  text-decoration: none;
-  font-weight: bold;
-  z-index: 2;
-}
+  .remove-foto-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 0 6px;
+    text-decoration: none;
+    font-weight: bold;
+    z-index: 2;
+  }
 
 
 
-#modal-image-viewer img {
-  max-width: none;
-  max-height: none;
-  width: auto;
-  height: auto;
-  border-radius: 12px;
-  transition: transform 0.2s ease;
-  transform-origin: center center;
-}
+  #modal-image-viewer img {
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    transition: transform 0.2s ease;
+    transform-origin: center center;
+  }
 
 
-#modal-image-viewer .close-modal {
-  position: absolute;
-  top: 20px;
-  right: 30px;
-  color: white;
-  font-size: 2rem;
-  cursor: pointer;
-}
-</style>
+  #modal-image-viewer .close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+  }
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  const input = document.getElementById("fotos-upload");
-const previewContainer = document.getElementById("fotos-preview");
-let allFiles = [];
 
-input.addEventListener("change", function () {
-  const selectedFiles = Array.from(input.files);
+  .lista-anexos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
 
-  // Adiciona os novos arquivos à lista acumulada
-  selectedFiles.forEach(file => {
-    allFiles.push(file);
+  .anexo-item {
+    display: flex;
+    align-items: center;
+    background-color: #3b6ea5;
+    padding: 0.5rem 1rem;
+    border-radius: 5px;
+    color: #fff;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-      const wrapper = document.createElement("div");
-      wrapper.style.position = "relative";
-      wrapper.style.display = "inline-block";
+  .anexo-link {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem; /* espaço entre ícone e texto */
+  }
 
-      const img = document.createElement("img");
-      img.src = e.target.result;
-      img.style.width = "150px";
-      img.style.height = "150px";
-      img.style.objectFit = "cover";
-      img.style.borderRadius = "8px";
-      img.style.border = "1px solid #ccc";
+  .anexo-link i {
+    font-size: 1rem;
+  }
 
-      const removeBtn = document.createElement("div");
-      removeBtn.innerText = "✕";
-      removeBtn.style.position = "absolute";
-      removeBtn.style.top = "2px";
-      removeBtn.style.right = "6px";
-      removeBtn.style.background = "#f44336";
-      removeBtn.style.color = "white";
-      removeBtn.style.borderRadius = "50%";
-      removeBtn.style.padding = "0 6px";
-      removeBtn.style.cursor = "pointer";
-      removeBtn.style.fontWeight = "bold";
+  .anexo-remover {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    padding-left: 1rem; /* GAP do botão em relação ao nome */
+    cursor: pointer;
+  }
 
-      removeBtn.onclick = () => {
-        previewContainer.removeChild(wrapper);
-        allFiles = allFiles.filter(f => f !== file);
+  .anexo-remover i {
+    color: #f88;
+  }
 
-        const dataTransfer = new DataTransfer();
-        allFiles.forEach(f => dataTransfer.items.add(f));
-        input.files = dataTransfer.files;
+
+  .modal-custom {
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0,0,0,0.4);
+  }
+  .modal-dialog {
+    background: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    width: 400px;
+    border-radius: 6px;
+    color: var(--color-btn--text);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .image-thumb {
+    position: relative;
+    display: inline-block;
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    overflow: hidden;
+  }
+
+  .image-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+
+  .overlay-eye {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+    background-color: rgba(0, 0, 0, 0.4);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s;
+    cursor: pointer;
+  }
+
+  .overlay-eye i {
+    font-size: 1.8rem;
+  }
+
+  .overlay-eye:hover {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+
+
+  .image-thumb:hover .overlay-eye {
+    opacity: 1;
+  }
+
+  .remove-foto-btn {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    background: #f44336;
+    color: white;
+    border-radius: 50%;
+    padding: 0 6px;
+    text-decoration: none;
+    font-weight: bold;
+    z-index: 2;
+  }
+
+
+
+  #modal-image-viewer img {
+    max-width: none;
+    max-height: none;
+    width: auto;
+    height: auto;
+    border-radius: 12px;
+    transition: transform 0.2s ease;
+    transform-origin: center center;
+  }
+
+
+  #modal-image-viewer .close-modal {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 2rem;
+    cursor: pointer;
+  }
+
+
+  </style>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const input = document.getElementById("fotos-upload");
+  const previewContainer = document.getElementById("fotos-preview");
+  let allFiles = [];
+
+  input.addEventListener("change", function () {
+    const selectedFiles = Array.from(input.files);
+
+    // Adiciona os novos arquivos à lista acumulada
+    selectedFiles.forEach(file => {
+      allFiles.push(file);
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const wrapper = document.createElement("div");
+        wrapper.style.position = "relative";
+        wrapper.style.display = "inline-block";
+
+        const img = document.createElement("img");
+        img.src = e.target.result;
+        img.style.width = "150px";
+        img.style.height = "150px";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "8px";
+        img.style.border = "1px solid #ccc";
+
+        const removeBtn = document.createElement("div");
+        removeBtn.innerText = "✕";
+        removeBtn.style.position = "absolute";
+        removeBtn.style.top = "2px";
+        removeBtn.style.right = "6px";
+        removeBtn.style.background = "#f44336";
+        removeBtn.style.color = "white";
+        removeBtn.style.borderRadius = "50%";
+        removeBtn.style.padding = "0 6px";
+        removeBtn.style.cursor = "pointer";
+        removeBtn.style.fontWeight = "bold";
+
+        removeBtn.onclick = () => {
+          previewContainer.removeChild(wrapper);
+          allFiles = allFiles.filter(f => f !== file);
+
+          const dataTransfer = new DataTransfer();
+          allFiles.forEach(f => dataTransfer.items.add(f));
+          input.files = dataTransfer.files;
+        };
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(removeBtn);
+        previewContainer.appendChild(wrapper);
       };
+      reader.readAsDataURL(file);
+    });
 
-      wrapper.appendChild(img);
-      wrapper.appendChild(removeBtn);
-      previewContainer.appendChild(wrapper);
-    };
-    reader.readAsDataURL(file);
+    // Atualiza o input com todos os arquivos acumulados
+    const dataTransfer = new DataTransfer();
+    allFiles.forEach(f => dataTransfer.items.add(f));
+    input.files = dataTransfer.files;
+
+
   });
 
-  // Atualiza o input com todos os arquivos acumulados
-  const dataTransfer = new DataTransfer();
-  allFiles.forEach(f => dataTransfer.items.add(f));
-  input.files = dataTransfer.files;
-
-
-});
-
-});
-
-function showModal(el) {
-  const thumb = el.closest(".image-thumb");
-  const image = thumb.querySelector("img");
-  const fullUrl = image?.getAttribute("src");
-
-  if (fullUrl) {
-    const modal = document.getElementById("modal-image-viewer");
-    modal.querySelector("img").src = fullUrl;
-    modal.style.display = "flex";
-  }
-}
-
-
-function hideModal() {
-  const modal = document.getElementById("modal-image-viewer");
-  modal.style.display = "none";
-}
-
-let currentZoom = 0;
-
-document.addEventListener("DOMContentLoaded", function () {
-  const modalImg = document.querySelector("#modal-image-viewer img");
-
-  modalImg.addEventListener("wheel", function (e) {
-    e.preventDefault();
-
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    currentZoom += delta;
-
-    if (currentZoom < 0.2) currentZoom = 0.2;
-    if (currentZoom > 5) currentZoom = 5;
-
-    modalImg.style.transform = `scale(${currentZoom})`;
   });
-});
 
-function showModal(el) {
-  const thumb = el.closest(".image-thumb");
-  const image = thumb.querySelector("img");
-  const fullUrl = image?.getAttribute("src");
+  function showModal(el) {
+    const thumb = el.closest(".image-thumb");
+    const image = thumb.querySelector("img");
+    const fullUrl = image?.getAttribute("src");
 
-  if (fullUrl) {
-    const modal = document.getElementById("modal-image-viewer");
-    const modalImg = modal.querySelector("img");
-    modalImg.src = fullUrl;
-    modalImg.style.transform = "scale(0.5)";
-    currentZoom = 1;
-    modal.style.display = "flex";
+    if (fullUrl) {
+      const modal = document.getElementById("modal-image-viewer");
+      modal.querySelector("img").src = fullUrl;
+      modal.style.display = "flex";
+    }
   }
-}
 
-</script>
+
+  function hideModal() {
+    const modal = document.getElementById("modal-image-viewer");
+    modal.style.display = "none";
+  }
+
+  let currentZoom = 0;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const modalImg = document.querySelector("#modal-image-viewer img");
+
+    modalImg.addEventListener("wheel", function (e) {
+      e.preventDefault();
+
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      currentZoom += delta;
+
+      if (currentZoom < 0.2) currentZoom = 0.2;
+      if (currentZoom > 5) currentZoom = 5;
+
+      modalImg.style.transform = `scale(${currentZoom})`;
+    });
+  });
+
+  function showModal(el) {
+    const thumb = el.closest(".image-thumb");
+    const image = thumb.querySelector("img");
+    const fullUrl = image?.getAttribute("src");
+
+    if (fullUrl) {
+      const modal = document.getElementById("modal-image-viewer");
+      const modalImg = modal.querySelector("img");
+      modalImg.src = fullUrl;
+      modalImg.style.transform = "scale(0.5)";
+      currentZoom = 1;
+      modal.style.display = "flex";
+    }
+  }
+
+  </script>

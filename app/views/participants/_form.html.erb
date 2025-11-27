@@ -1,116 +1,227 @@
+<%= form_with(model: participant, local: true) do |form| %>
 
-
-<%= form_with(model: participant, local: true, class: "device-form") do |form| %>
-
-  <div class="form-group">
-    <%= form.label :name do %>
-<i class="fa-solid fa-font-awesome"></i> Nome
-      <% end %>
-    <%= form.text_field :name, class: "form-control" %>
-    <small class="form-text text-muted">Digite o nome completo do usuário.</small>
+  <!-- BOTÃO SALVAR CENTRALIZADO FIXO (igual chamado) -->
+  <div class="form-group-fixed" style="display:flex; justify-content:center;">
+    <div class="mt-3 text-center">
+      <%= form.submit participant.new_record? ? "Criar Participante" : "Atualizar Participante",
+                     class: "btn btn-success" %>
+    </div>
   </div>
 
-  <div class="form-group">
-    <%= form.label :cpf do %>
-<i class="fa-solid fa-address-card"></i> CPF
+  <br>
+
+  <!-- CARD: DADOS DO PARTICIPANTE (MESMO ESTILO DO CHAMADO) -->
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-user"></i>
+        Dados do participante
+      </h5>
+    </div>
+
+    <div class="section-body chamado-grid">
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :name do %>
+            <i class="fa-solid fa-font-awesome"></i> Nome
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.text_field :name, class: "form-control" %>
+          <small class="form-text text-muted">Digite o nome completo do usuário.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :cpf do %>
+            <i class="fa-solid fa-address-card"></i> CPF
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.text_field :cpf, class: "form-control" %>
+          <small class="form-text text-muted">Informe o CPF válido do usuário.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :telefone do %>
+            <i class="fa-solid fa-phone"></i> Telefone
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.text_field :telefone, class: "form-control" %>
+          <small class="form-text text-muted">Informe um número de telefone para contato.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :email do %>
+            <i class="fa-solid fa-envelope"></i> Email
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.email_field :email, class: "form-control" %>
+          <small class="form-text text-muted">E-mail de contato (Recomendado).</small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CARD: EMPRESA E SETOR (MESMO VISUAL DO CHAMADO) -->
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-building"></i>
+        Empresa e Setor
+      </h5>
+    </div>
+
+    <div class="section-body chamado-grid">
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :grupo_empresa_id do %>
+            <i class="fa-solid fa-group-arrows-rotate"></i> Grupo Empresa
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.collection_select :grupo_empresa_id,
+                                     scoped_grupo_empresas,
+                                     :id, :nome,
+                                     { prompt: "Selecione uma empresa" },
+                                     { class: "form-control", id: "grupo_empresa_select" } %>
+          <small class="form-text text-muted">
+            Selecione a empresa à qual o usuário pertence.
+          </small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">
+          <%= form.label :sub_grupo_empresa_id do %>
+            <i class="fa-solid fa-group-arrows-rotate"></i> Setor (Subgrupo da empresa)
+          <% end %>
+        </span>
+        <div class="value">
+          <%= form.select :sub_grupo_empresa_id,
+                          [],
+                          { prompt: "Selecione um setor" },
+                          class: "form-control", id: "subgrupo_select" %>
+          <small class="form-text text-muted">
+            Escolha o setor (subgrupo) correspondente à empresa.
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- CARD: ACESSO AO SISTEMA (SÓ ADMIN) -->
+  <% if current_user.admin? %>
+    <div class="chamado-section section-box">
+      <div class="section-header">
+        <h5>
+          <i class="fa-solid fa-user-lock"></i>
+          Acesso ao sistema
+        </h5>
+      </div>
+
+      <div class="section-body">
+
+        <div class="form-group">
+          <label>
+            <%= check_box_tag :criar_usuario,
+                              "1",
+                              participant.user.present?,
+                              id: "criar_usuario_checkbox",
+                              onclick: "togglePermissoes()" %>
+            Conceder acesso ao sistema
+          </label>
+        </div>
+
+        <div class="form-group" id="permissoes_wrap" style="display: none;">
+          <%= label_tag :user_role, "Permissão de Acesso" %>
+          <%= select_tag :user_role,
+                         options_for_select([["Admin", "admin"],
+                                             ["Client", "client"],
+                                             ["Operador", "operador"]],
+                                            participant.user&.role),
+                         class: "form-control" %>
+          <%= hidden_field_tag :senha_gerada, "", id: "senha_gerada_input" %>
+        </div>
+
+        <div class="form-group" id="senha_wrap" style="display: none;">
+          <label>Senha gerada:</label>
+          <div id="senha_gerada_label"></div>
+
+          <label style="margin-top: 10px;">
+            <%= check_box_tag :manter_senha,
+                              "1",
+                              participant.user&.encrypted_password.present?,
+                              id: "manter_senha_checkbox" %>
+            Manter senha atual
+          </label>
+        </div>
+
+      </div>
+    </div>
+  <% end %>
+
+  <!-- CARD: FOTO / RECONHECIMENTO FACIAL (MESMO CARD STYLE) -->
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-camera"></i>
+        Foto do participante
+      </h5>
+    </div>
+
+    <div class="section-body">
+      <div class="form-group">
+        <%= form.label :photo_base64 do %>
+          <i class="fa-solid fa-camera"></i> Foto
+        <% end %><br>
+
+        <input type="file"
+               accept="image/*"
+               onchange="handleImageUpload(event)"
+               style="margin-bottom: 10px;" />
+        <div id="image-feedback" style="color: #f66; margin-bottom: 5px;"></div>
+
+        <div style="margin-bottom: 10px;">
+          <img id="photo-preview"
+               style="max-width: 150px; max-height: 300px; display: none;" />
+        </div>
+
+        <%= form.hidden_field :photo_base64, id: "photo-base64" %>
+
+        <button type="button" class="btn submit" onclick="openCamera()">
+          Capturar com Câmera
+        </button><br>
+
+        <small class="form-text text-muted">
+          Anexe ou capture uma foto nítida do rosto do usuário (tamanho ideal: 150x300px).
+        </small>
+        <br><br>
+
+        <small class="small-alert form-text text-muted">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          A foto será usada para reconhecimento facial. Garanta que o rosto esteja visível,
+          centralizado e com boa iluminação.
+        </small>
+      </div>
+    </div>
+  </div>
+
 <% end %>
-    <%= form.text_field :cpf, class: "form-control" %>
-    <small class="form-text text-muted">Informe o CPF válido do usuário.</small>
-  </div>
 
-  <div class="form-group">
-    <%= form.label :telefone do %>
-      <i class="fa-solid fa-phone"></i> Telefone 
-      <% end %>
-    <%= form.text_field :telefone, class: "form-control" %>
-    <small class="form-text text-muted">Informe um número de telefone para contato.</small>
-  </div>
-
-  <div class="form-group">
-    <%= form.label :email do %>
-      <i class="fa-solid fa-envelope"></i> Email
-      <% end %>
-    <%= form.email_field :email, class: "form-control" %>
-    <small class="form-text text-muted">E-mail de contato (Recomendado).</small>
-  </div>
-
-<div class="form-group">
-  <%= form.label :grupo_empresa_id do %>
-    <i class="fa-solid fa-group-arrows-rotate"></i> Grupo Empresa
-    <% end %>
-  <%= form.collection_select :grupo_empresa_id, scoped_grupo_empresas, :id, :nome,
-        { prompt: "Selecione uma empresa" },
-        { class: "form-control", id: "grupo_empresa_select" } %>
-       <small class="form-text text-muted">Selecione a empresa à qual o usuário pertence.</small>
-</div>
-
-
-<div class="form-group">
-  <%= form.label :sub_grupo_empresa_id do %>
-   <i class="fa-solid fa-group-arrows-rotate"></i> Setor (Subgrupo da empresa)
-   <% end %>
-  <%= form.select :sub_grupo_empresa_id, [], { prompt: "Selecione um setor" },
-        class: "form-control", id: "subgrupo_select" %>
-    <small class="form-text text-muted">Escolha o setor (subgrupo) correspondente à empresa.</small>
-</div>
-
-
-
-  <div class="form-group">
-  <%= form.label :photo_base64 do %>
-    <i class="fa-solid fa-camera"></i> Foto
-    <% end %><br>
-
-  <input type="file" accept="image/*" onchange="handleImageUpload(event)" style="margin-bottom: 10px;" />
-  <div id="image-feedback" style="color: #f66; margin-bottom: 5px;"></div>
-
-  <div style="margin-bottom: 10px;">
-    <img id="photo-preview" style="max-width: 150px; max-height: 300px; display: none;" />
-  </div>
-
-  <%= form.hidden_field :photo_base64, id: "photo-base64" %>
-  <button type="button" class="btn submit" onclick="openCamera()">Capturar com Câmera</button><br>
-
-  <small class="form-text text-muted">Anexe ou capture uma foto nítida do rosto do usuário (tamanho ideal: 150x300px).</small><br><br>
-    <small class="small-alert form-text text-muted"><i class="fa-solid fa-circle-exclamation"></i>
-  A foto será usada para reconhecimento facial. Garanta que o rosto esteja visível, centralizado e com boa iluminação.
-</small>
-</div>
-<% if current_user.admin? %>
-<div class="form-group">
-  <label>
-    <%= check_box_tag :criar_usuario, "1", participant.user.present?, id: "criar_usuario_checkbox", onclick: "togglePermissoes()" %>
-
-    Conceder acesso ao sistema
-  </label>
-</div>
-
-<div class="form-group" id="permissoes_wrap" style="display: none;">
-  <%= label_tag :user_role, "Permissão de Acesso" %>
-  <%= select_tag :user_role, options_for_select([["Admin", "admin"], ["Client", "client"], ["Operador", "operador"]], participant.user&.role), class: "form-control" %>
-  <%= hidden_field_tag :senha_gerada, "", id: "senha_gerada_input" %>
-
-</div>
-
-<div class="form-group" id="senha_wrap" style="display: none;">
-  <label>Senha gerada:</label>
-  <div id="senha_gerada_label"></div>
-  <label style="margin-top: 10px;">
-  <%= check_box_tag :manter_senha, "1", participant.user&.encrypted_password.present?, id: "manter_senha_checkbox" %>
-  Manter senha atual
-</label>
-
-</div>
-  
-<% end %>
-  <div class="form-actions" style="text-align: center;">
-    <%= form.submit participant.new_record? ? "Criar Participante" : "Atualizar Participante", class: "btn submit" %>
-  </div>
-<% end %>
-
-<!-- Sobreposição da câmera -->
-<div id="camera-overlay" style="display: none
-;
+<!-- SOBREPOSIÇÃO DA CÂMERA (MANTIDO IGUAL) -->
+<div id="camera-overlay" style="display: none;
     position: fixed;
     top: 0px;
     left: 0px;
@@ -121,11 +232,20 @@
     justify-content: center;
     align-items: stretch;
     padding-top: 42px;">
-<div style="position:relative;">
-  <iframe id="camera-frame" src="/camera" width="510px" height="90%" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
-  <button type="button" onclick="closeCamera()" style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">X</button>
+  <div style="position:relative;">
+    <iframe id="camera-frame"
+            src="/camera"
+            width="510px"
+            height="90%"
+            style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
+    <button type="button"
+            onclick="closeCamera()"
+            style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">
+      X
+    </button>
+  </div>
 </div>
-</div>
+
 
 
 <script>

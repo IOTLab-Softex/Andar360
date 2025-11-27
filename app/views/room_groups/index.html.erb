@@ -23,16 +23,17 @@
           <td><%= group.description %></td>
           <td>
   <%= link_to '#',
-      class: "btn edit",
-      data: {
-        id: group.id,
-        name: group.name,
-        description: group.description,
-        url: room_group_path(group)
-      } do %>
-    <i class="fa-solid fa-pen-to-square me-1" aria-hidden="true"></i>
-    <div class="hide-sm"> Editar </div>
-  <% end %>
+    class: "btn edit openEditModal",
+    data: {
+      id: group.id,
+      name: group.name,
+      description: group.description,
+      url: room_group_path(group)
+    } do %>
+  <i class="fa-solid fa-pen-to-square me-1" aria-hidden="true"></i>
+  <div class="hide-sm"> Editar </div>
+<% end %>
+
 
   <%= form_with url: room_group_path(group), method: :delete, data: { turbo: false }, class: "d-inline" do %>
     <%= button_tag type: "submit",

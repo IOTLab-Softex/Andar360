@@ -435,8 +435,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_145135) do
     t.text "smtp_password"
     t.string "smtp_authentication"
     t.boolean "smtp_enable_starttls_auto"
-    t.boolean "require_rules_before_reservation", default: false, null: false
-    t.string "reservation_rules_title"
     t.boolean "require_room_rules_ack"
   end
 

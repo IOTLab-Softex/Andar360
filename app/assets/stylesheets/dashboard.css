@@ -538,8 +538,8 @@ width: 12% !important;
   --color-span: #666;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
-   --fade-left: linear-gradient(to right, rgb(255 255 255), rgb(255 255 255 / 0%));
-  --fade-right: linear-gradient(to left, rgb(255 255 255), rgba(255, 255, 255, 0));
+--fade-left: linear-gradient(to right, rgb(249 249 249), rgb(255 255 255 / 0%));
+    --fade-right: linear-gradient(to left, rgb(249 249 249), rgba(255, 255, 255, 0));
   --header-color:  rgb(255 255 255 / 51%);
   --foto-user-avatar: #ddd;
   --color-form-group: #ffffff;
@@ -570,8 +570,8 @@ width: 12% !important;
   --color-span: #b1b1b1;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
- --fade-left: linear-gradient(to right, rgb(153 153 153), rgb(255 255 255 / 0%));
- --fade-right: linear-gradient(to left, rgb(153 153 153), rgba(255, 255, 255, 0));
+--fade-left: linear-gradient(to right, rgb(43 43 43), rgb(255 255 255 / 0%));
+    --fade-right: linear-gradient(to left, rgb(43 43 43), rgba(255, 255, 255, 0));
  --header-color: rgb(0 0 0 / 51%);
  --foto-user-avatar: #606060;
  --color-muted: #555;
@@ -746,19 +746,31 @@ position: relative; z-index: 1; padding: 0rem;
 
 
 .form-group {
-   background: var(--color-form-group);
-  border-radius: 12px;
-  padding: 7px;
-  margin: 1rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
- 
+    background: var(--color-bg-table-salas);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 14px;
+    padding: 16px;
+    margin: 10px;
 }
 
+.form-group-fixed {
+    background: var(--color-bg-table-salas);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 14px 14px 0px 0px;
+    padding: 7px;
+    /* margin: 10px; */
+    position: fixed;
+    bottom: 0;
+    z-index: 2;
+    width: -webkit-fill-available;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+}
 
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
   font-weight: bold;
+  color: var(--color-btn);
 }
 
 .form-control {
@@ -912,13 +924,6 @@ display: flex !important;
   transform: rotate(-90deg);
 }
 
-.rooms {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.5rem;
-
-}
 
 .room-card {
     font-size: 23px;
@@ -2025,10 +2030,11 @@ text-align: center;
     width: 100%;
     border-collapse: collapse;
     background-color: var(--color-card);
-    border-radius: 0px 0px 12px 12px;
+    border-radius: 12px 12px 12px 12px;
     overflow: hidden;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     margin-top: 0rem;
+    border: solid 3px var(--color-modal-bg);
 }
 
 #participantsTable thead {
@@ -2807,15 +2813,16 @@ body.noscroll { overflow:hidden; }
 
 /* ===== Barra segmentada ===== */
 /* ===== Barra segmentada ===== */
-.trk-bar{
-  position: relative;
-  display:flex;
-  width:100%;
-  height:14px;
-  border-radius:999px;
-  overflow:hidden;
-  border:1px solid var(--trk-border);
-  background: color-mix(in srgb, var(--trk-text) 6%, transparent);
+.trk-bar {
+    position: relative;
+    display: flex;
+    width: 100%;
+    height: 20px;
+    border-radius: 999px;
+    overflow: hidden;
+    border: 1px solid var(--trk-border);
+    background: 
+ color-mix(in srgb, var(--trk-text) 6%, transparent);
 }
 
 /* Começa em 0 (somente quando NÃO montado) */
@@ -2880,6 +2887,7 @@ body.noscroll { overflow:hidden; }
     color: white;
     box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
     margin-top: 10px;
+    margin-bottom: 10px;
 }
 .infobox__icon{
   font-size:1.25rem; line-height:1; margin-top:.15rem;
@@ -3046,6 +3054,217 @@ background: var(--color-accent);
     border: 1px solid rgba(255, 255, 255, .06);
     border-radius: 14px;
     padding: 16px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+
 }
   .settings-actions{ position: sticky; bottom: 0; background: transparent; padding-top: .75rem; }
+
+
+/* CSS NOVO SHOW */
+/* ===== Cards / sections genéricos (usam as variáveis do tema) ===== */
+
+.chamado-section {
+  margin-bottom: 2rem;
+}
+
+.section-box {
+  border: 1px solid var(--fx-border);
+  border-radius: 8px;
+  margin-bottom: 2rem;
+  background-color: var(--fx-surface);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--fx-border);
+  background: var(--fx-surface-2);
+}
+
+.section-header h5 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fx-text);
+}
+
+.section-header h5 i {
+  margin-right: 0.75rem;
+  color: var(--fx-muted);
+}
+
+.section-body {
+  padding: 1.5rem;
+  color: var(--fx-text);
+}
+
+/* ===== Grid dos campos do chamado ===== */
+
+.chamado-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem 1.5rem;
+}
+
+.chamado-field {
+    background: var(--bg-color);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    border: 1px solid var(--fx-border);
+}
+
+.chamado-field .label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--fx-muted);
+  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chamado-field .value {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--fx-text);
+}
+
+
+
+@media (max-width: 1024px) {
+  .chamado-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .chamado-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== Fotos ===== */
+
+.fotos-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.image-thumb {
+  position: relative;
+  display: inline-block;
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  border: 1px solid var(--fx-border);
+  overflow: hidden;
+}
+
+.image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.overlay-eye {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.4);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+  cursor: pointer;
+}
+
+.overlay-eye i {
+  font-size: 1.8rem;
+}
+
+.image-thumb:hover .overlay-eye {
+  opacity: 1;
+}
+
+/* Modal de zoom da foto */
+
+#modal-image-viewer {
+  position: fixed;
+  inset: 0;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(0,0,0,0.7);
+  z-index: 9999;
+}
+
+#modal-image-viewer img {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+}
+
+#modal-image-viewer .close-modal {
+  position: absolute;
+  top: 20px;
+  right: 30px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+}
+
+/* ===== Anexos ===== */
+
+.lista-anexos {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.anexo-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--color-accent);
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  color: var(--color-btn--text);
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.anexo-link {
+  color: var(--color-btn--text);
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.anexo-link i {
+  font-size: 1rem;
+}
+
+.anexo-remover {
+  background: none;
+  border: none;
+  color: var(--color-btn--text);
+  font-size: 1.1rem;
+  padding-left: 1rem;
+  cursor: pointer;
+}
+
+.anexo-remover i {
+  color: #f88;
+}

@@ -1,56 +1,68 @@
 <p style="color: green"><%= notice %></p>
 
-<div class="device-form" style="display: flex; flex-wrap: wrap; gap: 0px;">
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Título:</strong><br>
-    <%= @manutencao_programada.titulo %>
+<!-- DADOS DA MANUTENÇÃO -->
+<div class="chamado-section section-box">
+  <div class="section-header">
+    <h5>
+      <i class="fa-solid fa-circle-info"></i>
+      Dados da manutenção
+    </h5>
   </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Exibir no App:</strong><br>
-    <%= @manutencao_programada.exibir_no_app ? "Sim" : "Não" %>
-  </div>
+  <div class="section-body chamado-grid">
+    <div class="chamado-field">
+      <span class="label">Título:</span>
+      <span class="value"><%= @manutencao_programada.titulo %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Categoria:</strong><br>
-    <%= @manutencao_programada.categoria %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Exibir no App:</span>
+      <span class="value"><%= @manutencao_programada.exibir_no_app ? "Sim" : "Não" %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Local:</strong><br>
-    <%= @manutencao_programada.local %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Categoria:</span>
+      <span class="value"><%= @manutencao_programada.categoria %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Responsável:</strong><br>
-    <%= @manutencao_programada.responsavel %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Local:</span>
+      <span class="value"><%= @manutencao_programada.local %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Periodicidade:</strong><br>
-    <%= @manutencao_programada.periodicidade %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Responsável:</span>
+      <span class="value"><%= @manutencao_programada.responsavel %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Data Prevista:</strong><br>
-    <%= l(@manutencao_programada.data_prevista) if @manutencao_programada.data_prevista %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Periodicidade:</span>
+      <span class="value"><%= @manutencao_programada.periodicidade %></span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 30%;">
-    <strong>Dias p/ Aviso:</strong><br>
-    <%= @manutencao_programada.dias_para_aviso %>
-  </div>
+    <div class="chamado-field">
+      <span class="label">Data prevista:</span>
+      <span class="value">
+        <%= l(@manutencao_programada.data_prevista) if @manutencao_programada.data_prevista %>
+      </span>
+    </div>
 
-  <div class="form-group" style="flex: 1 1 100%;">
-    <strong>Observação:</strong><br>
-    <%= simple_format(@manutencao_programada.observacao) %>
+    <div class="chamado-field">
+      <span class="label">Dias p/ aviso:</span>
+      <span class="value"><%= @manutencao_programada.dias_para_aviso %></span>
+    </div>
+
+    <div class="chamado-field chamado-observacao">
+      <span class="label">Observação:</span>
+      <div class="value">
+        <%= simple_format(@manutencao_programada.observacao.presence || "—") %>
+      </div>
+    </div>
   </div>
 </div>
 
-<hr>
-
-<!-- Checklist -->
-<div class="form-group">
+<!-- CHECKLIST -->
+<div class="section-box">
   <div class="section-header">
     <h5><i class="fa fa-list-ul"></i> Checklist</h5>
   </div>
@@ -67,8 +79,8 @@
   </div>
 </div>
 
-<!-- Anexos -->
-<div class="form-group">
+<!-- ANEXOS -->
+<div class="section-box">
   <div class="section-header">
     <h5><i class="fa fa-paperclip"></i> Anexos</h5>
   </div>
@@ -125,43 +137,23 @@
   </div>
 </div>
 
-<!-- Ocorrências -->
-<%= render 'ocorrencias/ocorrencia_section', parent: @manutencao_programada, somente_visualizacao: true %>
+<!-- HISTÓRICO DE OCORRÊNCIAS -->
+<div class="section-box">
+  <div class="section-header">
+    <h5><i class="fa fa-clock-rotate-left"></i> Histórico de ocorrências</h5>
+  </div>
+  <div class="section-body">
+    <%= render 'ocorrencias/ocorrencia_section',
+               parent: @manutencao_programada,
+               somente_visualizacao: true %>
+  </div>
+</div>
 
 
 <style>
 /* Adicione este CSS à sua página ou arquivo .css */
 
-.section-box {
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  margin-bottom: 2rem;
-  background-color: #fcfcfc;
-}
 
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e0e0e0;
-}
-
-.section-header h5 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--color-text);
-}
-
-.section-header h5 i {
-  margin-right: 0.75rem;
-  color: #555;
-}
-
-.section-body {
-  padding: 1.5rem;
-}
 
 .lista-anexos {
   display: flex;

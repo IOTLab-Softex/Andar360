@@ -89,8 +89,8 @@
   Filtro
   <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
 </button>
-<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form", id: "filtros-salas" do %>
-  <div style="margin-bottom: 20px;">
+<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form tab-panel", id: "filtros-salas" do %>
+  <div style="margin-bottom: 20px;display: flex;">
     
     <% scope = @chamados || Chamado.all %>
 

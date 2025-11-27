@@ -1,153 +1,186 @@
+<p style="color: green"><%= notice %></p>
 
-
-<div class="device-form">
-<div style="display:flex; flex-wrap:wrap; gap:8px;">
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Nome da Sala</label>
-    <div class="form-control-plaintext"><%= @room.name.presence || "—" %></div>
+<!-- DADOS DA SALA -->
+<div class="chamado-section section-box">
+  <div class="section-header">
+    <h5>
+      <i class="fa-solid fa-circle-info"></i>
+      Dados da sala
+    </h5>
   </div>
 
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Grupo de Salas</label>
-    <div class="form-control-plaintext"><%= @room.room_group&.name || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Virtual</label>
-    <div class="form-control-plaintext"><%= @room.virtual? ? "Sim" : "Não" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Alugado</label>
-    <div class="form-control-plaintext"><%= @room.alugado? ? "Sim" : "Não" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Unidade Vazia</label>
-    <div class="form-control-plaintext"><%= @room.unidade_vazia? ? "Sim" : "Não" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Ativo</label>
-    <div class="form-control-plaintext"><%= @room.ativo? ? "Sim" : "Não" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Área (m²)</label>
-    <div class="form-control-plaintext"><%= @room.area || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Matrícula</label>
-    <div class="form-control-plaintext"><%= @room.matricula.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Fração Ideal</label>
-    <div class="form-control-plaintext"><%= @room.fracao_ideal.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Fração Extra</label>
-    <div class="form-control-plaintext"><%= @room.fracao_extra.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Interfone</label>
-    <div class="form-control-plaintext"><%= @room.interfone.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Vaga(s) de Garagem</label>
-    <div class="form-control-plaintext"><%= @room.vagas_garagem.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Empresa Proprietária</label>
-    <div class="form-control-plaintext"><%= @room.empresa_proprietaria.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Inquilino</label>
-    <div class="form-control-plaintext"><%= @room.dados_do_inquilino.presence || "—" %></div>
-  </div>
-
-  <div class="form-group" style="flex:1 1 30%;">
-    <label>Proprietário Formal</label>
-    <div class="form-control-plaintext"><%= @room.proprietario_formal.presence || "—" %></div>
-  </div>
-
-  <%# ESPAÇO COMUM + DISPOSITIVO APENAS SE FOR TRUE %>
-  <div class="form-group" style="flex:1 1 100%;">
-    <label>Espaço Comum</label>
-    <div class="form-control-plaintext"><%= @room.espaco_comun? ? "Sim" : "Não" %></div>
-
-    <% if @room.espaco_comun? %>
-      <div style="display:flex; flex-wrap:wrap; gap:1rem; margin-top:.5rem;">
-        <div class="form-group" style="flex:1 1 30%; background: var(--color-common-space-form-group); color:black;">
-          <label>Categoria</label>
-          <div class="form-control-plaintext"><%= @room.categoria.presence || "—" %></div>
-        </div>
-        <div class="form-group" style="flex:1 1 30%; background: var(--color-common-space-form-group); color:black;">
-          <label>Capacidade</label>
-          <div class="form-control-plaintext"><%= @room.capacidade.presence || "—" %></div>
-        </div>
-        <div class="form-group" style="flex:1 1 30%; background: var(--color-common-space-form-group); color:black;">
-          <label>Taxa</label>
-          <div class="form-control-plaintext"><%= @room.taxa.presence || "—" %></div>
-        </div>
-      </div>
-
-      <div class="form-group device-field" style="background: var(--color-common-space-form-group); color:black; margin-top:.5rem;">
-        <label><i class="fa-solid fa-mobile-screen-button"></i> Dispositivo</label>
-        <div class="form-control-plaintext"><%= @room.device&.name || "—" %></div>
-      </div>
-    <% end %>
-  </div>
-
-  <div class="form-group" style="flex:1 1 100%;">
-    <label>Observação</label>
-    <div class="form-control-plaintext trix-content">
-      <%= @room.observacao %>
+  <div class="section-body chamado-grid">
+    <div class="chamado-field">
+      <span class="label">Nome da Sala:</span>
+      <span class="value"><%= @room.name.presence || "—" %></span>
     </div>
-  </div>
 
-  <div class="form-group" style="flex:1 1 100%;">
-    <label>Regras de Uso</label>
-    <div class="form-control-plaintext trix-content">
-      <%= @room.regras_de_uso %>
+    <div class="chamado-field">
+      <span class="label">Grupo de Salas:</span>
+      <span class="value"><%= @room.room_group&.name || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Virtual:</span>
+      <span class="value"><%= @room.virtual? ? "Sim" : "Não" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Alugada:</span>
+      <span class="value"><%= @room.alugado? ? "Sim" : "Não" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Unidade vazia:</span>
+      <span class="value"><%= @room.unidade_vazia? ? "Sim" : "Não" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Ativa:</span>
+      <span class="value"><%= @room.ativo? ? "Sim" : "Não" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Área (m²):</span>
+      <span class="value"><%= @room.area || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Matrícula:</span>
+      <span class="value"><%= @room.matricula.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Fração ideal:</span>
+      <span class="value"><%= @room.fracao_ideal.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Fração extra:</span>
+      <span class="value"><%= @room.fracao_extra.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Interfone:</span>
+      <span class="value"><%= @room.interfone.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Vaga(s) de garagem:</span>
+      <span class="value"><%= @room.vagas_garagem.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Empresa proprietária:</span>
+      <span class="value"><%= @room.empresa_proprietaria.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Inquilino:</span>
+      <span class="value"><%= @room.dados_do_inquilino.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Proprietário formal:</span>
+      <span class="value"><%= @room.proprietario_formal.presence || "—" %></span>
+    </div>
+
+    <div class="chamado-field">
+      <span class="label">Espaço comum:</span>
+      <span class="value"><%= @room.espaco_comun? ? "Sim" : "Não" %></span>
+    </div>
+
+    <div class="chamado-field chamado-observacao">
+      <span class="label">Observação:</span>
+      <div class="value trix-content">
+        <%= @room.observacao.presence || "—" %>
+      </div>
+    </div>
+
+    <div class="chamado-field chamado-observacao">
+      <span class="label">Regras de uso:</span>
+      <div class="value trix-content">
+        <%= @room.regras_de_uso.presence || "—" %>
+      </div>
     </div>
   </div>
 </div>
-</div>
-<hr>
 
-<div style="display:flex; flex-wrap:wrap; gap:1rem;">
-  <div class="form-group" style="flex:1 1 30%;">
-    <h3 style="margin-top:2rem;">Itens da Sala</h3>
+<!-- SEÇÃO ESPECÍFICA PARA ESPAÇO COMUM -->
+<% if @room.espaco_comun? %>
+  <div class="section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-people-roof"></i>
+        Detalhes do espaço comum
+      </h5>
+    </div>
+    <div class="section-body chamado-grid">
+      <div class="chamado-field">
+        <span class="label">Categoria:</span>
+        <span class="value"><%= @room.categoria.presence || "—" %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Capacidade:</span>
+        <span class="value"><%= @room.capacidade.presence || "—" %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Taxa:</span>
+        <span class="value"><%= @room.taxa.presence || "—" %></span>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">Dispositivo:</span>
+        <span class="value"><%= @room.device&.name || "—" %></span>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- ITENS DA SALA -->
+<div class="section-box">
+  <div class="section-header">
+    <h5>
+      <i class="fa fa-list-ul"></i>
+      Itens da sala
+    </h5>
+  </div>
+  <div class="section-body">
     <% if @room.room_items.any? %>
-      <ul class="list-group">
+      <div class="lista-anexos">
         <% @room.room_items.each do |item| %>
-          <li class="list-group-item d-flex justify-content-between">
-            <span><%= item.name %></span>
-            <span class="badge bg-secondary"><%= item.quantity %></span>
-          </li>
+          <div class="anexo-item">
+            <div class="anexo-info">
+              <%= item.name %>
+            </div>
+            <div>
+              <span class="badge bg-secondary"><%= item.quantity %></span>
+            </div>
+          </div>
         <% end %>
-      </ul>
+      </div>
     <% else %>
-      <div class="text-muted">Nenhum item cadastrado.</div>
+      <p class="text-muted text-center">Nenhum item cadastrado.</p>
     <% end %>
   </div>
 </div>
 
-<hr>
-
-<div class="form-group">
-  <label>
-    <%= svg_icon("icones/icons_custom/solid/camera.svg", class: "srs-solid") %> Foto da Sala
-  </label>
-  <div>
-    <%= room_photo_tag(@room.photo) %>
+<!-- FOTO DA SALA -->
+<div class="section-box">
+  <div class="section-header">
+    <h5>
+      <i class="fa-solid fa-camera"></i>
+      Foto da sala
+    </h5>
+  </div>
+  <div class="section-body">
+    <% if @room.photo.attached? %>
+      <%= room_photo_tag(@room.photo) %>
+    <% else %>
+      <p class="text-muted">Nenhuma foto enviada para esta sala.</p>
+    <% end %>
   </div>
 </div>
 

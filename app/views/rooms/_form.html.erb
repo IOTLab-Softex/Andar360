@@ -1,204 +1,332 @@
-<%= form_with(model: room, local: true, html: { multipart: true }, class: 'device-form') do |form| %>
-  <div style="display: flex; flex-wrap: wrap; gap: 0px;">
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :name, "Nome da Sala" %>
-      <%= form.text_field :name, class: 'form-control' %>
+<%= form_with(model: room, local: true, html: { multipart: true }) do |form| %>
+  <p style="color: green"><%= notice %></p>
+
+  <!-- DADOS DA SALA -->
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-circle-info"></i>
+        Dados da sala
+      </h5>
     </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :room_group_id, "Grupo de Salas" %>
-      <%= form.collection_select :room_group_id, RoomGroup.all, :id, :name, { prompt: "Selecione um grupo" }, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :virtual, "Virtual" %>
-      <%= form.select :virtual, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :alugado, "Alugado" %>
-      <%= form.select :alugado, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :unidade_vazia, "Unidade Vazia" %>
-      <%= form.select :unidade_vazia, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :ativo, "Ativo" %>
-      <%= form.select :ativo, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 100%;">
-      <%= form.label :espaco_comun, "Espaço Comum" %>
-      <%= form.select :espaco_comun, [["Sim", true], ["Não", false]], {}, class: 'form-control', id: 'espaco-comun-select' %>
-      <div class="espaco-comum-fields" style="display: none; flex: 1 1 100%; flex-wrap: wrap; gap: 1rem;">
-        <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
-          <%= form.label :categoria, "Categoria" %>
-          <%= form.text_field :categoria, class: 'form-control' %>
-        </div>
-        <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
-          <%= form.label :capacidade, "Capacidade" %>
-          <%= form.text_field :capacidade, class: 'form-control' %>
-        </div>
-        <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
-          <%= form.label :taxa, "Taxa" %>
-          <%= form.text_field :taxa, class: 'form-control' %>
+
+    <div class="section-body chamado-grid">
+      <div class="chamado-field">
+        <%= form.label :name, "Nome da Sala", class: "label" %>
+        <div class="value">
+          <%= form.text_field :name, class: 'form-control' %>
         </div>
       </div>
-      <div class="form-group device-field" style="display: none; background: var(--color-common-space-form-group); color: black;">
-        <%= form.label :device_id do %>
-          <i class="fa-solid fa-mobile-screen-button"></i> Dispositivo
+
+      <div class="chamado-field">
+        <%= form.label :room_group_id, "Grupo de Salas", class: "label" %>
+        <div class="value">
+          <%= form.collection_select :room_group_id, RoomGroup.all, :id, :name,
+                { prompt: "Selecione um grupo" }, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :virtual, "Virtual", class: "label" %>
+        <div class="value">
+          <%= form.select :virtual, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :alugado, "Alugado", class: "label" %>
+        <div class="value">
+          <%= form.select :alugado, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :unidade_vazia, "Unidade Vazia", class: "label" %>
+        <div class="value">
+          <%= form.select :unidade_vazia, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :ativo, "Ativo", class: "label" %>
+        <div class="value">
+          <%= form.select :ativo, [["Sim", true], ["Não", false]], {}, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :area, "Área (m²)", class: "label" %>
+        <div class="value">
+          <%= form.number_field :area, step: 0.01, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :matricula, "Matrícula", class: "label" %>
+        <div class="value">
+          <%= form.text_field :matricula, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :fracao_ideal, "Fração Ideal", class: "label" %>
+        <div class="value">
+          <%= form.text_field :fracao_ideal, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :fracao_extra, "Fração Extra", class: "label" %>
+        <div class="value">
+          <%= form.text_field :fracao_extra, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :interfone, "Interfone", class: "label" %>
+        <div class="value">
+          <%= form.text_field :interfone, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :vagas_garagem, "Vaga(s) de Garagem", class: "label" %>
+        <div class="value">
+          <%= form.text_field :vagas_garagem, class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :empresa_proprietaria, "Empresa Proprietária", class: "label" %>
+        <div class="value">
+          <%= form.select :empresa_proprietaria,
+                options_for_select(@empresas, room.empresa_proprietaria.presence || @empresa_padrao),
+                { prompt: "Selecione uma empresa" },
+                class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :dados_do_inquilino, "Inquilino", class: "label" %>
+        <div class="value">
+          <%= form.select :dados_do_inquilino,
+                options_for_select(@empresas, room.dados_do_inquilino),
+                { prompt: "Selecione uma empresa" },
+                class: 'form-control' %>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <%= form.label :proprietario_formal, "Proprietário Formal", class: "label" %>
+        <div class="value">
+          <%= form.select :proprietario_formal,
+                options_for_select(@empresas, room.proprietario_formal),
+                { prompt: "Selecione uma empresa" },
+                class: 'form-control' %>
+        </div>
+      </div>
+
+      <!-- ESPAÇO COMUM + DISPOSITIVO -->
+      <div class="chamado-field" style="grid-column: 1 / -1;">
+        <%= form.label :espaco_comun, "Espaço Comum", class: "label" %>
+        <div class="value">
+          <%= form.select :espaco_comun,
+                [["Sim", true], ["Não", false]],
+                {},
+                class: 'form-control',
+                id: 'espaco-comun-select' %>
+        </div>
+
+        <div class="espaco-comum-fields"
+             style="display: none; flex: 1 1 100%; flex-wrap: wrap; gap: 1rem; margin-top:.75rem;">
+          <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
+            <%= form.label :categoria, "Categoria" %>
+            <%= form.text_field :categoria, class: 'form-control' %>
+          </div>
+          <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
+            <%= form.label :capacidade, "Capacidade" %>
+            <%= form.text_field :capacidade, class: 'form-control' %>
+          </div>
+          <div class="form-group" style="flex: 1 1 30%; background: var(--color-common-space-form-group); color: black;">
+            <%= form.label :taxa, "Taxa" %>
+            <%= form.text_field :taxa, class: 'form-control' %>
+          </div>
+        </div>
+
+        <div class="form-group device-field"
+             style="display: none; background: var(--color-common-space-form-group); color: black; margin-top:.5rem;">
+          <%= form.label :device_id do %>
+            <i class="fa-solid fa-mobile-screen-button"></i> Dispositivo
+          <% end %>
+          <%= form.collection_select :device_id, Device.all, :id, :name,
+                { prompt: "Selecione o dispositivo" }, class: "form-control" %>
+        </div>
+      </div>
+
+      <!-- OBSERVAÇÃO -->
+      <div class="chamado-field chamado-observacao" data-me>
+        <%= form.label :observacao, "Observação", class: "label" %>
+
+        <div class="me-toolbar" role="toolbar">
+          <button type="button" data-me-cmd="bold" style="
+    color: var(--color-btn);
+"><b>B</b></button>
+          <button type="button" data-me-cmd="italic" style="
+    color: var(--color-btn);
+"><i>I</i></button>
+          <button type="button" data-me-cmd="underline" style="
+    color: var(--color-btn);
+"><u>U</u></button>
+          <button type="button" data-me-cmd="insertUnorderedList" style="
+    color: var(--color-btn);
+">• Lista</button>
+          <button type="button" data-me-cmd="insertOrderedList" style="
+    color: var(--color-btn);
+">1. Lista</button>
+          <button type="button" data-me-link style="
+    color: var(--color-btn);
+">🔗 Link</button>
+          <button type="button" data-me-clear style="
+    color: var(--color-btn);
+">✖ Limpar</button>
+        </div>
+
+        <div class="me-editor"
+             contenteditable="true"
+             data-me-editable
+             data-placeholder="Digite a descrição da sala..."></div>
+
+        <%= form.hidden_field :observacao %>
+      </div>
+
+      <!-- REGRAS DE USO -->
+      <div class="chamado-field chamado-observacao" data-me>
+        <%= form.label :regras_de_uso, "Regras de Uso", class: "label" %>
+
+        <div class="me-toolbar" role="toolbar">
+          <button type="button" data-me-cmd="bold" style="
+    color: var(--color-btn);
+"><b>B</b></button>
+          <button type="button" data-me-cmd="italic" style="
+    color: var(--color-btn);
+"><i>I</i></button>
+          <button type="button" data-me-cmd="underline" style="
+    color: var(--color-btn);
+"><u>U</u></button>
+          <button type="button" data-me-cmd="insertUnorderedList" style="
+    color: var(--color-btn);
+">• Lista</button>
+          <button type="button" data-me-cmd="insertOrderedList" style="
+    color: var(--color-btn);
+">1. Lista</button>
+          <button type="button" data-me-link style="
+    color: var(--color-btn);
+">🔗 Link</button>
+          <button type="button" data-me-clear style="
+    color: var(--color-btn);
+">✖ Limpar</button>
+        </div>
+
+        <div class="me-editor"
+             contenteditable="true"
+             data-me-editable
+             data-placeholder="Defina as regras (ex.: horários, limpeza, multa)..."></div>
+
+        <%= form.hidden_field :regras_de_uso %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ITENS DA SALA -->
+  <div class="section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa fa-list-ul"></i>
+        Itens da sala
+      </h5>
+    </div>
+    <div class="section-body">
+      <h3 style="margin-top: 0;">Itens da Sala</h3>
+
+      <!-- Linha de seleção: dropdown do catálogo + quantidade + adicionar -->
+      <div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem;">
+        <select id="catalog-select" class="form-control" style="max-width:420px;">
+          <option value="">-- Selecione um item do catálogo --</option>
+          <% (@catalog_items || []).each do |cat| %>
+            <option value="<%= cat.id %>"><%= cat.name %></option>
+          <% end %>
+        </select>
+
+        <input type="number" id="catalog-qty" min="1" placeholder="Qtd"
+               class="form-control" style="width:120px;">
+
+        <button id="catalog-add" class="btn btn-secondary">
+          <i class="fa-solid fa-plus"></i> Adicionar
+        </button>
+
+        <%= link_to "Gerenciar Catálogo", room_items_path,
+              class: "btn btn-link", target: "_blank" %>
+      </div>
+
+      <!-- Lista de itens já adicionados (existentes + novos) -->
+      <div id="room-items">
+        <%= form.fields_for :room_items do |item_form| %>
+          <div class="item-row" style="margin-bottom:.65rem; display:flex; gap:1rem; align-items:center;">
+            <%= item_form.hidden_field :id %>
+            <%= item_form.hidden_field :name %>
+
+            <input type="text"
+                   class="form-control"
+                   value="<%= item_form.object.name %>"
+                   style="width:40%;"
+                   readonly>
+
+            <%= item_form.number_field :quantity,
+                  min: 1,
+                  class: "form-control",
+                  placeholder: "Qtd",
+                  style: "width:110px;" %>
+
+            <%= item_form.hidden_field :_destroy, class: "destroy-flag" %>
+            <a href="#" class="remove-item btn btn-danger">
+              <i class="fa-solid fa-trash"></i> Remover
+            </a>
+          </div>
         <% end %>
-        <%= form.collection_select :device_id, Device.all, :id, :name, prompt: "Selecione o dispositivo", class: "form-control" %>
       </div>
     </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :area, "Área (m²)" %>
-      <%= form.number_field :area, step: 0.01, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :matricula, "Matrícula" %>
-      <%= form.text_field :matricula, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :fracao_ideal, "Fração Ideal" %>
-      <%= form.text_field :fracao_ideal, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :fracao_extra, "Fração Extra" %>
-      <%= form.text_field :fracao_extra, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :interfone, "Interfone" %>
-      <%= form.text_field :interfone, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :vagas_garagem, "Vaga(s) de Garagem" %>
-      <%= form.text_field :vagas_garagem, class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :empresa_proprietaria, "Empresa Proprietária" %>
-      <%= form.select :empresa_proprietaria, options_for_select(@empresas, room.empresa_proprietaria.presence || @empresa_padrao), prompt: "Selecione uma empresa", class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :dados_do_inquilino, "Inquilino" %>
-      <%= form.select :dados_do_inquilino, options_for_select(@empresas, room.dados_do_inquilino), prompt: "Selecione uma empresa", class: 'form-control' %>
-    </div>
-    <div class="form-group" style="flex: 1 1 30%;">
-      <%= form.label :proprietario_formal, "Proprietário Formal" %>
-      <%= form.select :proprietario_formal, options_for_select(@empresas, room.proprietario_formal), prompt: "Selecione uma empresa", class: 'form-control' %>
-    </div>
-
-<div class="form-group full-width" data-me>
-  <%= form.label :observacao, "Observação" %>
-
-  <div class="me-toolbar" role="toolbar">
-    <button type="button" data-me-cmd="bold"><b>B</b></button>
-    <button type="button" data-me-cmd="italic"><i>I</i></button>
-    <button type="button" data-me-cmd="underline"><u>U</u></button>
-    <button type="button" data-me-cmd="insertUnorderedList">• Lista</button>
-    <button type="button" data-me-cmd="insertOrderedList">1. Lista</button>
-    <button type="button" data-me-link>🔗 Link</button>
-    <button type="button" data-me-clear>✖ Limpar</button>
   </div>
 
-  <div class="me-editor"
-       contenteditable="true"
-       data-me-editable
-       data-placeholder="Digite a descrição da sala..."></div>
-
-  <%= form.hidden_field :observacao %>
-</div>
-
-
-<div class="form-group full-width" data-me>
-  <%= form.label :regras_de_uso, "Regras de Uso" %>
-
-  <div class="me-toolbar" role="toolbar">
-    <button type="button" data-me-cmd="bold"><b>B</b></button>
-    <button type="button" data-me-cmd="italic"><i>I</i></button>
-    <button type="button" data-me-cmd="underline"><u>U</u></button>
-    <button type="button" data-me-cmd="insertUnorderedList">• Lista</button>
-    <button type="button" data-me-cmd="insertOrderedList">1. Lista</button>
-    <button type="button" data-me-link>🔗 Link</button>
-    <button type="button" data-me-clear>✖ Limpar</button>
-  </div>
-
-  <div class="me-editor"
-       contenteditable="true"
-       data-me-editable
-       data-placeholder="Defina as regras (ex.: horários, limpeza, multa)..."></div>
-
-  <%= form.hidden_field :regras_de_uso %>
-</div>
-
-
-
-
-
-
-
-  </div>
-  <div class="full-width full-width" style="display: flex; flex-wrap: wrap; gap: 1rem;">
-    <div class="form-group full-width">
-
-<h3 style="margin-top: 2rem;">Itens da Sala</h3>
-
-<!-- Linha de seleção: dropdown do catálogo + quantidade + adicionar -->
-<div style="display:flex; gap:.5rem; align-items:center; margin-bottom:.75rem;">
-<select id="catalog-select" class="form-control" style="max-width:420px;">
-  <option value="">-- Selecione um item do catálogo --</option>
-  <% (@catalog_items || []).each do |cat| %>
-    <option value="<%= cat.id %>"><%= cat.name %></option>
-  <% end %>
-</select>
-
-
-  <input type="number" id="catalog-qty" min="1" placeholder="Qtd" class="form-control" style="width:120px;">
-  <button id="catalog-add" class="btn btn-secondary"><i class="fa-solid fa-plus"></i> Adicionar</button>
-
-  <%= link_to "Gerenciar Catálogo", room_items_path, class: "btn btn-link", target: "_blank" %>
-</div>
-
-<!-- Lista de itens já adicionados (existentes + novos) -->
-<div id="room-items">
-  <%= form.fields_for :room_items do |item_form| %>
-    <div class="item-row" style="margin-bottom:.65rem; display:flex; gap:1rem; align-items:center;">
-      <%= item_form.hidden_field :id %>       <!-- garante UPDATE -->
-      <%= item_form.hidden_field :name %>     <!-- garante validação -->
-
-      <input type="text"
-             class="form-control"
-             value="<%= item_form.object.name %>"
-             style="width:40%;"
-             readonly>                         <!-- NÃO usar disabled -->
-
-      <%= item_form.number_field :quantity, min: 1, class: "form-control", placeholder: "Qtd", style: "width:110px;" %>
-
-      <%= item_form.hidden_field :_destroy, class: "destroy-flag" %>
-      <a href="#" class="remove-item btn btn-danger"><i class="fa-solid fa-trash"></i> Remover</a>
+  <!-- FOTO DA SALA -->
+  <div class="section-box">
+    <div class="section-header">
+      <h5>
+        <i class="fa-solid fa-camera"></i>
+        Foto da sala
+      </h5>
     </div>
-  <% end %>
-</div>
-
-
-
+    <div class="section-body">
+      <div class="form-group">
+        <%= form.label :photo do %>
+          <%= svg_icon("icons/camera.svg") %> Foto da Sala
+        <% end %>
+        <%= form.file_field :photo, class: 'form-control' %>
+      </div>
     </div>
   </div>
-  <div class="form-group">
-    <%= form.label :photo do %>
-      
-  <%= svg_icon("icons/camera.svg") %> Foto da Sala
+
+  <!-- BOTÃO SALVAR -->
+  <div class="form-group-fixed" style="text-align: center;">
+    <%= form.button type: 'submit', class: 'btn submit' do %>
+      <% if room.new_record? %>
+        <i class="fa-solid fa-plus"></i> Criar Sala
+      <% else %>
+        <i class="fa-solid fa-rotate"></i> Atualizar Sala
+      <% end %>
     <% end %>
-    <%= form.file_field :photo, class: 'form-control' %>
   </div>
-
-<div class="form-actions" style="text-align: center;">
-  <%= form.button type: 'submit', class: 'btn submit' do %>
-    <% if room.new_record? %>
-      <i class="fa-solid fa-plus"></i> Criar Sala
-    <% else %>
-      <i class="fa-solid fa-rotate"></i> Atualizar Sala
-    <% end %>
-  <% end %>
-</div>
 <% end %>
+
 <% if room.errors.any? %>
   <div
     id="notification-flash"
@@ -235,6 +363,7 @@
     </div>
   </div>
 <% end %>
+
 
 
 <script>
