@@ -32,7 +32,9 @@ class SolicitacaoCompra < ApplicationRecord
   def total_geral
     itens.sum { |i| (i.quantidade || 0) * (i.valor_unitario || 0) }
   end
-
+ def compra_fechada?
+    comprado? || cancelado?
+  end
   private
 
   def deve_ter_ao_menos_um_item

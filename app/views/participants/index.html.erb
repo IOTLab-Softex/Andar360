@@ -8,30 +8,47 @@
     margin-bottom: 1.5rem;
     justify-content: center;">
     <div>
-      <i class="fa-solid fa-filter"></i>
-      <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
-      <% if current_user.admin? || current_user.operador? %>
-        <%= select_tag :grupo_empresa_id,
-      options_for_select(
-        [["TODOS", ""]] + GrupoEmpresa.all.map { |g| [g.nome, g.id] },
-        params[:grupo_empresa_id]
-      ),
-      class: "form-control" %>
-      <% else %>
-        <% empresa = current_user.participant&.grupo_empresa %>
-        <% if empresa.present? %>
-          <%= select_tag :grupo_empresa_id,
-        options_for_select([[empresa.nome, empresa.id]], empresa.id),
-        class: "form-control",
-        disabled: true %>
-        <% else %>
-          <%= select_tag :grupo_empresa_id,
-        options_for_select([["Nenhuma empresa", ""]], ""),
-        class: "form-control",
-        disabled: true %>
-        <% end %>
-      <% end %>
-    </div>
+  <i class="fa-solid fa-filter"></i>
+  <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
+
+  <% if current_user.admin? || current_user.operador? %>
+    <% empresas = GrupoEmpresa.all.order(:nome) %>
+
+    <% selected_empresa_id =
+         if params[:grupo_empresa_id].present?
+           params[:grupo_empresa_id]
+         elsif current_user.participant&.grupo_empresa_id.present?
+           current_user.participant.grupo_empresa_id
+         elsif empresas.size >= 2
+           empresas.second.id          # 👉 segunda empresa da lista
+         else
+           ""                          # cai em "TODOS"
+         end
+    %>
+
+    <%= select_tag :grupo_empresa_id,
+          options_for_select(
+            [["TODOS", ""]] + empresas.map { |g| [g.nome, g.id] },
+            selected_empresa_id
+          ),
+          class: "form-control" %>
+
+  <% else %>
+    <% empresa = current_user.participant&.grupo_empresa %>
+    <% if empresa.present? %>
+      <%= select_tag :grupo_empresa_id,
+            options_for_select([[empresa.nome, empresa.id]], empresa.id),
+            class: "form-control",
+            disabled: true %>
+    <% else %>
+      <%= select_tag :grupo_empresa_id,
+            options_for_select([["Nenhuma empresa", ""]], ""),
+            class: "form-control",
+            disabled: true %>
+    <% end %>
+  <% end %>
+</div>
+
     <div>
       <%= label_tag :sub_grupo_empresa_id, "Setor (Sub Grupos Empresa)" %><br>
       <%= select_tag :sub_grupo_empresa_id, 

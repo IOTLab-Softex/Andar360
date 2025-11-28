@@ -25,7 +25,50 @@
 
   meses_ordenados = compras_por_mes.keys.sort
   total_valor     = compras_por_mes.values.sum.to_f
+
+  # ==== KPIs extras de status ====
+  total_regs = @solicitacao_compras.size
+
+  autorizadas      = 0
+  pendentes_aut    = 0
+  rejeitadas       = 0
+
+  compradas        = 0
+  aguardando_comp  = 0
+  canceladas_comp  = 0
+
+  total_autorizado_valor = 0.0
+  total_comprado_valor   = 0.0
+
+  @solicitacao_compras.each do |sc|
+    status_auth   = sc.status_autorizacao.presence || "pendente"
+    status_compra = sc.status_compra.presence     || "aguardando"
+    valor_sc      = calc_total.call(sc).to_f
+
+    case status_auth
+    when "autorizado"
+      autorizadas += 1
+      total_autorizado_valor += valor_sc
+    when "rejeitado"
+      rejeitadas += 1
+    else
+      pendentes_aut += 1
+    end
+
+    case status_compra
+    when "comprado"
+      compradas += 1
+      total_comprado_valor += valor_sc
+    when "cancelado"
+      canceladas_comp += 1
+    else
+      aguardando_comp += 1
+    end
+  end
+
+  pct_autorizadas = total_regs.zero? ? 0 : (autorizadas * 100.0 / total_regs)
 %>
+
 <section class="trk trk--compras">
   <!-- Sparkline REAL de compras, com fundo decorativo -->
   <% valores = meses_ordenados.map { |mes| (compras_por_mes[mes] || 0).to_f } %>
@@ -77,30 +120,70 @@
         Valor total e distribuição por mês (considerando os filtros atuais).
       </p>
     </div>
-    <div class="trk-kpis">
+        <div class="trk-kpis">
       <div class="kpi">
         <span class="kpi-label">Solicitações</span>
         <span class="kpi-value"><%= @total_solicitacoes %></span>
       </div>
+
       <div class="kpi">
         <span class="kpi-label">Valor total</span>
         <span class="kpi-chip trk--done">
           <%= number_to_currency(total_valor, unit: "R$ ") %>
         </span>
       </div>
+
       <div class="kpi">
         <span class="kpi-label">Ticket médio</span>
         <span class="kpi-chip trk--progress">
           <%= number_to_currency(@ticket_medio_compras, unit: "R$ ") %>
         </span>
       </div>
-    </div>
-  </header>
 
+      <!-- 🔹 Novo KPI: Autorização -->
+      <div class="kpi kpi--compact">
+        <span class="kpi-label">Autorização</span>
+        <span class="kpi-chip trk--progress">
+          <strong><%= autorizadas %></strong> aut. 
+          • <%= pendentes_aut %> pend. 
+          • <%= rejeitadas %> rej.
+          <% unless total_regs.zero? %>
+            &nbsp;(<%= pct_autorizadas.round %>% aut.)
+          <% end %>
+        </span>
+      </div>
+
+      <!-- 🔹 Novo KPI: Status da compra -->
+      <div class="kpi kpi--compact">
+        <span class="kpi-label">Status da compra</span>
+        <span class="kpi-chip">
+          <strong><%= compradas %></strong> comp.
+          • <%= aguardando_comp %> aguard.
+          • <%= canceladas_comp %> canc.
+        </span>
+      </div>
+
+      <!-- 🔹 Opcional: resumo de valor autorizado/comprado -->
+      <div class="kpi kpi--mini">
+        <span class="kpi-label">Valor autorizado</span>
+        <span class="kpi-chip trk--done">
+          <%= number_to_currency(total_autorizado_valor, unit: "R$ ") %>
+        </span>
+      </div>
+
+      <div class="kpi kpi--mini">
+        <span class="kpi-label">Valor comprado</span>
+        <span class="kpi-chip trk--done">
+          <%= number_to_currency(total_comprado_valor, unit: "R$ ") %>
+        </span>
+      </div>
+    </div>
+
+  </header>
   <% if @filter_di.present? && @filter_df.present? && @filter_di == @filter_di.beginning_of_month && @filter_df == @filter_df.end_of_month %>
-  <% label_filtro = @filter_di.strftime("%m/%Y") %>
-  <div style="margin-top: 4px; font-size: .78rem; color: #A9A4BD;">
-    <span style="
+    <% label_filtro = @filter_di.strftime("%m/%Y") %>
+    <div style="margin-top: 4px; font-size: .78rem; color: #A9A4BD;">
+      <span style="
       display:inline-flex;
       align-items:center;
       gap:6px;
@@ -109,14 +192,12 @@
       border:1px solid rgba(124,58,237,.35);
       background:rgba(15,10,35,.85);
     ">
-      <i class="fa-solid fa-filter"></i>
-      Mostrando somente <strong style="margin-left:4px;"><%= label_filtro %></strong>
-      <%= link_to "limpar", solicitacao_compras_path, style: "margin-left:8px; font-size:.72rem; text-decoration:underline; color:#A9A4BD;" %>
-    </span>
-  </div>
-<% end %>
-
-
+        <i class="fa-solid fa-filter"></i>
+        Mostrando somente <strong style="margin-left:4px;"><%= label_filtro %></strong>
+        <%= link_to "limpar", solicitacao_compras_path, style: "margin-left:8px; font-size:.72rem; text-decoration:underline; color:#A9A4BD;" %>
+      </span>
+    </div>
+  <% end %>
   <div class="trk-bar" aria-label="Distribuição de compras por mês">
     <% meses_ordenados.each do |mes_key| %>
       <% valor = compras_por_mes[mes_key] || 0 %>
@@ -140,37 +221,32 @@
     <% end %>
   </div>
   <div class="trk-legend">
-  <% meses_ordenados.each do |mes_key| %>
-    <% valor = compras_por_mes[mes_key] || 0 %>
-    <% next if valor.to_f.zero? %>
-    <% pct = total_valor.zero? ? 0 : (valor.to_f / total_valor * 100.0).round %>
-
-    <% mes_inicio = mes_key.to_date.beginning_of_month %>
-    <% mes_fim    = mes_key.to_date.end_of_month %>
-
-    <% label =
+    <% meses_ordenados.each do |mes_key| %>
+      <% valor = compras_por_mes[mes_key] || 0 %>
+      <% next if valor.to_f.zero? %>
+      <% pct = total_valor.zero? ? 0 : (valor.to_f / total_valor * 100.0).round %>
+      <% mes_inicio = mes_key.to_date.beginning_of_month %>
+      <% mes_fim    = mes_key.to_date.end_of_month %>
+      <% label =
       begin
         mes_key.to_date.strftime("%m/%Y")
       rescue
         mes_key.strftime("%m/%Y")
       end %>
-
-    <% is_active =
+      <% is_active =
          @filter_di.present? && @filter_df.present? &&
          @filter_di == mes_inicio && @filter_df == mes_fim %>
-
-    <div class="trk-leg trk--progress <%= 'is-active' if is_active %>"
+      <div class="trk-leg trk--progress <%= 'is-active' if is_active %>"
          data-month-start="<%= mes_inicio.strftime('%Y-%m-%d') %>"
          data-month-end="<%= mes_fim.strftime('%Y-%m-%d') %>">
-      <i class="trk-dot"></i>
-      <strong><%= label %></strong>
-      <span>
-        <%= number_to_currency(valor, unit: "R$ ") %> • <%= pct %>% 
-      </span>
-    </div>
-  <% end %>
-</div>
-
+        <i class="trk-dot"></i>
+        <strong><%= label %></strong>
+        <span>
+          <%= number_to_currency(valor, unit: "R$ ") %> • <%= pct %>% 
+        </span>
+      </div>
+    <% end %>
+  </div>
 </section>
 <button type="button"
         id="filtro-toggle"
@@ -179,7 +255,6 @@
         aria-controls="filtros-salas">
   <i class="fa-solid fa-filter"></i>
   Filtro
-
   <%# 👉 Se tiver qualquer data aplicada, mostra o intervalo aqui %>
   <% if @filter_di.present? || @filter_df.present? %>
     <% label_filtro =
@@ -190,25 +265,25 @@
          else
            "até #{@filter_df.strftime('%d/%m/%Y')}"
          end %>
-
     <span class="filtro-pill">
       <i class="fa-solid fa-calendar-day"></i>
       <%= label_filtro %>
     </span>
   <% end %>
-
   <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
 </button>
-
 <%= form_with url: solicitacao_compras_path,
               method: :get,
               local: true,
               class: "filtros-form tab-panel",
               id: "filtros-salas" do %>
-  <div style="margin-bottom: 20px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+  <div style="margin-bottom: 20px; display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));">
     <% base_scope = SolicitacaoCompra.all %>
+
     <!-- Setor -->
-    <%= select_tag :setor,
+    <div>
+      <label for="setor">Setor</label>
+      <%= select_tag :setor,
           options_for_select(
             ["Todos os setores"] +
               base_scope.
@@ -220,9 +295,14 @@
             params[:setor]
           ),
           class: "form-control",
-          include_blank: false %>
+          include_blank: false,
+          id: "setor" %>
+    </div>
+
     <!-- Colaborador -->
-    <%= select_tag :colaborador,
+    <div>
+      <label for="colaborador">Colaborador(a)</label>
+      <%= select_tag :colaborador,
           options_for_select(
             ["Todos os colaboradores"] +
               base_scope.
@@ -234,33 +314,107 @@
             params[:colaborador]
           ),
           class: "form-control",
-          include_blank: false %>
+          include_blank: false,
+          id: "colaborador" %>
+    </div>
+
+    <!-- Forma de pagamento -->
+    <div>
+      <label for="forma_pagamento">Forma de pagamento</label>
+      <%= select_tag :forma_pagamento,
+          options_for_select(
+            ["Todas as formas"] +
+              base_scope.
+                select(:forma_pagamento).
+                where.not(forma_pagamento: [nil, ""]).
+                distinct.
+                order(:forma_pagamento).
+                pluck(:forma_pagamento),
+            params[:forma_pagamento]
+          ),
+          class: "form-control",
+          id: "forma_pagamento" %>
+    </div>
+
+    <!-- Status de autorização / Status de compra -->
+    <div class="status-filter">
+      <div class="status-field">
+        <label for="status_autorizacao">Autorização</label>
+        <%= select_tag :status_autorizacao,
+            options_for_select(
+              [
+                ["Todas",      "todos"],
+                ["Pendente",   "pendente"],
+                ["Autorizado", "autorizado"],
+                ["Rejeitado",  "rejeitado"]
+              ],
+              params[:status_autorizacao].presence || "todos"
+            ),
+            class: "form-control",
+            id: "status_autorizacao" %>
+      </div>
+      <div class="status-field">
+        <label for="status_compra">Compra</label>
+        <%= select_tag :status_compra,
+            options_for_select(
+              [
+                ["Todas",      "todos"],
+                ["Aguardando", "aguardando"],
+                ["Comprado",   "comprado"],
+                ["Cancelado",  "cancelado"]
+              ],
+              params[:status_compra].presence || "todos"
+            ),
+            class: "form-control",
+            id: "status_compra" %>
+      </div>
+    </div>
+
+    <!-- Ordem -->
+    <div>
+      <label for="ordem">Ordem</label>
+      <%= select_tag :ordem,
+          options_for_select(
+            [
+              ["Mais recentes primeiro", "desc"],
+              ["Mais antigos primeiro",  "asc"]
+            ],
+            params[:ordem].presence || "desc"
+          ),
+          class: "form-control",
+          id: "ordem" %>
+    </div>
+
+    <!-- Período -->
     <div class="date-range-filter">
       <div class="date-field">
         <label for="data_inicio">De</label>
         <%= date_field_tag :data_inicio,
-              params[:data_inicio],
-              class: "form-control",
-              id: "data_inicio" %>
+            params[:data_inicio],
+            class: "form-control",
+            id: "data_inicio" %>
       </div>
       <div class="date-field">
         <label for="data_fim">Até</label>
         <%= date_field_tag :data_fim,
-              params[:data_fim],
-              class: "form-control",
-              id: "data_fim" %>
+            params[:data_fim],
+            class: "form-control",
+            id: "data_fim" %>
       </div>
     </div>
+
+    <!-- Botões -->
     <div style="display:flex;align-items: stretch;gap:8px;padding: 15px;">
       <%= button_tag type: "submit", class: "btn btn-success" do %>
         <i class="fa fa-search"></i> <span class="hide-sm">Filtrar</span>
       <% end %>
       <%= link_to solicitacao_compras_path, class: "btn btn-success" do %>
-      <i class="fa-solid fa-rotate-left"></i> Limpar
+        <i class="fa-solid fa-rotate-left"></i> Limpar
       <% end %>
     </div>
   </div>
 <% end %>
+
 <div class="table-responsive">
   <table class="table-salas">
     <thead>
@@ -344,21 +498,59 @@
               <i class="fa-solid fa-eye"></i>
               <div class="hide-sm">Ver</div>
             <% end %>
-            <% if admin? || (owns_solicitacao?(s) && !s.autorizado?) %>
+            <%# 🔹 Botões de status da COMPRA (comprado / cancelado) %>
+            <% if can_current_user_buy?(s) %>
+              <% unless s.comprado? %>
+                <%= button_to marcar_comprado_solicitacao_compra_path(s),
+            method: :patch,
+            class: "btn btn-success btn-sm",
+            form: { data: { turbo_confirm: "Marcar esta solicitação como COMPRADA?" } } do %>
+                  <i class="fa-solid fa-cart-shopping"></i>
+                  <div class="hide-sm">Comprado</div>
+                <% end %>
+              <% end %>
+              <% unless s.cancelado? %>
+                <button type="button"
+              class="btn btn-danger btn-sm btn-open-cancel"
+              data-url="<%= cancelar_compra_solicitacao_compra_path(s) %>"
+              data-id="<%= s.id %>">
+                  <i class="fa-solid fa-ban"></i>
+                  <div class="hide-sm">Compra cancelada</div>
+                </button>
+              <% end %>
+            <% end %>
+            <% can_edit =
+     if admin?
+       true                       # admin/operador pode sempre editar
+     else
+       !s.autorizado? && owns_solicitacao?(s)
+     end
+%>
+
+<% can_destroy =
+     if admin?
+       true                       # admin/operador pode sempre excluir
+     else
+       owns_solicitacao?(s) && (!s.autorizado? || s.cancelado?)
+     end
+%>
+
+            <% if can_edit %>
               <%= link_to edit_solicitacao_compra_path(s),
-                class: "edit btn btn-sm btn-outline-secondary" do %>
+      class: "edit btn btn-sm btn-outline-secondary" do %>
                 <i class="fa-solid fa-pen-to-square"></i>
                 <div class="hide-sm">Editar</div>
               <% end %>
-              <!-- 🔴 Botão que abre o modal -->
+            <% end %>
+            <% if can_destroy %>
               <button type="button"
-            class="btn btn-warning btn-open-delete"
-            data-url="<%= solicitacao_compra_path(s) %>"
-            data-id="<%= s.id %>"
-            data-colaborador="<%= s.colaborador %>"
-            data-setor="<%= s.setor %>"
-            data-data="<%= (s.data_solicitacao || s.created_at.to_date).strftime("%d/%m/%Y") %>"
-            data-valor="<%= number_to_currency(linha_total, unit: 'R$ ') %>">
+    class="btn btn-warning btn-open-delete"
+    data-url="<%= solicitacao_compra_path(s) %>"
+    data-id="<%= s.id %>"
+    data-colaborador="<%= s.colaborador %>"
+    data-setor="<%= s.setor %>"
+    data-data="<%= (s.data_solicitacao || s.created_at.to_date).strftime("%d/%m/%Y") %>"
+    data-valor="<%= number_to_currency(linha_total, unit: 'R$ ') %>">
                 <i class="fa-solid fa-trash-can"></i>
                 <div class="hide-sm">Excluir</div>
               </button>
@@ -424,510 +616,652 @@
     </div>
   </div>
 </div>
+<!-- 🟥 Modal de cancelamento de compra -->
+<div id="cancel-modal" class="modal-backdrop" hidden>
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h2>
+        <i class="fa-solid fa-ban"></i>
+        Cancelar compra
+      </h2>
+      <button type="button" class="modal-close" data-modal-close>&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-warning">
+        Informe o motivo do cancelamento da compra.<br>
+        <strong>Esse motivo ficará registrado junto à solicitação.</strong>
+      </p>
+      <form id="cancel-form" action="" method="post" data-turbo="true">
+        <input type="hidden" name="_method" value="patch">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+        <div class="form-group">
+          <label for="cancel-motivo" style="color:white; font-size:.85rem;">
+            Motivo do cancelamento
+          </label>
+          <textarea name="motivo_cancelamento_compra"
+                    id="cancel-motivo"
+                    rows="4"
+                    class="form-control"
+                    required
+                    placeholder="Descreva o motivo do cancelamento..."></textarea>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-modal-close>
+            <i class="fa-solid fa-arrow-left"></i>
+            Voltar
+          </button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa-solid fa-ban"></i>
+            Confirmar cancelamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 <script>
-function initLegendMonthFilter(){
-  const form        = document.getElementById('filtros-salas');
-  const dataInicio  = document.getElementById('data_inicio');
-  const dataFim     = document.getElementById('data_fim');
+  function initLegendMonthFilter(){
+    const form        = document.getElementById('filtros-salas');
+    const dataInicio  = document.getElementById('data_inicio');
+    const dataFim     = document.getElementById('data_fim');
 
-  if (!form || !dataInicio || !dataFim) return;
+    if (!form || !dataInicio || !dataFim) return;
 
-  document.querySelectorAll('.trk-legend .trk-leg').forEach(leg => {
-    leg.style.cursor = 'pointer';
+    document.querySelectorAll('.trk-legend .trk-leg').forEach(leg => {
+      leg.style.cursor = 'pointer';
 
-    leg.addEventListener('click', (ev) => {
-      ev.preventDefault();
+      leg.addEventListener('click', (ev) => {
+        ev.preventDefault();
 
-      const start = leg.dataset.monthStart;
-      const end   = leg.dataset.monthEnd;
-      if (!start || !end) return;
+        const start = leg.dataset.monthStart;
+        const end   = leg.dataset.monthEnd;
+        if (!start || !end) return;
 
-      // preenche os filtros
-      dataInicio.value = start;
-      dataFim.value    = end;
+        // preenche os filtros
+        dataInicio.value = start;
+        dataFim.value    = end;
 
-      // opcional: destacar o mês selecionado
-      document.querySelectorAll('.trk-legend .trk-leg')
-        .forEach(l => l.classList.remove('is-active'));
-      leg.classList.add('is-active');
+        // opcional: destacar o mês selecionado
+        document.querySelectorAll('.trk-legend .trk-leg')
+          .forEach(l => l.classList.remove('is-active'));
+        leg.classList.add('is-active');
 
-      // envia o formulário (mantém a experiência Rails bonitinha)
-      if (form.requestSubmit) {
-        form.requestSubmit();
-      } else {
-        form.submit();
-      }
-    });
-  });
-}
-
-
-  function mountTrkBars(){
-    document.querySelectorAll(".trk-bar").forEach(bar=>{
-      bar.classList.remove("mounted");
-      void bar.offsetWidth;
-      bar.classList.add("mounted");
-    });
-  }
-
-
-  function initDeleteModal(){
-    const modal      = document.getElementById('delete-modal');
-    if (!modal) return;
-
-    const idEl       = document.getElementById('del-sc-id');
-    const colabEl    = document.getElementById('del-sc-colaborador');
-    const setorEl    = document.getElementById('del-sc-setor');
-    const dataEl     = document.getElementById('del-sc-data');
-    const valorEl    = document.getElementById('del-sc-valor');
-    const form       = document.getElementById('delete-form');
-
-    function openModalFromButton(btn){
-      const url  = btn.dataset.url;
-      const id   = btn.dataset.id;
-      const col  = btn.dataset.colaborador;
-      const set  = btn.dataset.setor;
-      const data = btn.dataset.data;
-      const val  = btn.dataset.valor;
-
-      if (idEl)    idEl.textContent    = '#' + id;
-      if (colabEl) colabEl.textContent = col || '-';
-      if (setorEl) setorEl.textContent = set || '-';
-      if (dataEl)  dataEl.textContent  = data || '-';
-      if (valorEl) valorEl.textContent = val || '-';
-
-      if (form && url){
-        form.action = url;
-      }
-
-      modal.hidden = false;
-      modal.classList.add('is-open');
-      document.body.classList.add('modal-open');
-    }
-
-    function closeModal(){
-      modal.classList.remove('is-open');
-      modal.hidden = true;
-      document.body.classList.remove('modal-open');
-    }
-
-    // 🔗 Clique nos botões "Excluir" da tabela
-    document.querySelectorAll('.btn-open-delete').forEach(btn=>{
-      btn.addEventListener('click', ()=> openModalFromButton(btn));
-    });
-
-    // ❌ Botões que fecham o modal
-    modal.querySelectorAll('[data-modal-close]').forEach(btn=>{
-      btn.addEventListener('click', closeModal);
-    });
-
-    // Clique no backdrop fecha
-    modal.addEventListener('click', (ev)=>{
-      if (ev.target === modal){
-        closeModal();
-      }
-    });
-
-    // Esc fecha
-    document.addEventListener('keydown', (ev)=>{
-      if (ev.key === 'Escape' && modal.classList.contains('is-open')){
-        closeModal();
-      }
-    });
-  }
-
-  // 🔹 Primeiro carregamento “normal”
-  document.addEventListener("DOMContentLoaded", function(){
-    mountTrkBars();
-    initDeleteModal();
-    initLegendMonthFilter();
-  });
-
-  // 🔹 Se estiver usando Turbo, garante que reatacha nos reloads
-  document.addEventListener("turbo:load", function(){
-    mountTrkBars();
-    initDeleteModal();
-    initLegendMonthFilter();
-  });
-
-  document.addEventListener("turbo:frame-load", function(){
-    mountTrkBars();
-    initDeleteModal();
-    initLegendMonthFilter();
-  });
-
-
-  // ======= JS do colapso suave do filtro =======
-  document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('filtro-toggle');
-    const filtros = document.getElementById('filtros-salas');
-    if (!toggle || !filtros) return;
-
-    const STORAGE_KEY = 'ui:filtros-solicitacao-compra-collapsed';
-
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
-
-    function setCollapsed(collapsed, save = true) {
-      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-      if (collapsed) {
-        const curH = filtros.scrollHeight;
-        filtros.style.maxHeight = curH + 'px';
-        filtros.offsetHeight;
-        if (prefersReduced) {
-          filtros.classList.add('collapsed');
-          filtros.style.maxHeight = '';
+        // envia o formulário (mantém a experiência Rails bonitinha)
+        if (form.requestSubmit) {
+          form.requestSubmit();
         } else {
-          filtros.classList.add('collapsed');
-          filtros.style.maxHeight = '0px';
+          form.submit();
         }
-        toggle.setAttribute('aria-expanded', 'false');
+      });
+    });
+  }
+
+
+    function mountTrkBars(){
+      document.querySelectorAll(".trk-bar").forEach(bar=>{
+        bar.classList.remove("mounted");
+        void bar.offsetWidth;
+        bar.classList.add("mounted");
+      });
+    }
+
+
+    function initDeleteModal(){
+      const modal      = document.getElementById('delete-modal');
+      if (!modal) return;
+
+      const idEl       = document.getElementById('del-sc-id');
+      const colabEl    = document.getElementById('del-sc-colaborador');
+      const setorEl    = document.getElementById('del-sc-setor');
+      const dataEl     = document.getElementById('del-sc-data');
+      const valorEl    = document.getElementById('del-sc-valor');
+      const form       = document.getElementById('delete-form');
+
+      function openModalFromButton(btn){
+        const url  = btn.dataset.url;
+        const id   = btn.dataset.id;
+        const col  = btn.dataset.colaborador;
+        const set  = btn.dataset.setor;
+        const data = btn.dataset.data;
+        const val  = btn.dataset.valor;
+
+        if (idEl)    idEl.textContent    = '#' + id;
+        if (colabEl) colabEl.textContent = col || '-';
+        if (setorEl) setorEl.textContent = set || '-';
+        if (dataEl)  dataEl.textContent  = data || '-';
+        if (valorEl) valorEl.textContent = val || '-';
+
+        if (form && url){
+          form.action = url;
+        }
+
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-open');
+      }
+
+      function closeModal(){
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+
+      // 🔗 Clique nos botões "Excluir" da tabela
+      document.querySelectorAll('.btn-open-delete').forEach(btn=>{
+        btn.addEventListener('click', ()=> openModalFromButton(btn));
+      });
+
+      // ❌ Botões que fecham o modal
+      modal.querySelectorAll('[data-modal-close]').forEach(btn=>{
+        btn.addEventListener('click', closeModal);
+      });
+
+      // Clique no backdrop fecha
+      modal.addEventListener('click', (ev)=>{
+        if (ev.target === modal){
+          closeModal();
+        }
+      });
+
+      // Esc fecha
+      document.addEventListener('keydown', (ev)=>{
+        if (ev.key === 'Escape' && modal.classList.contains('is-open')){
+          closeModal();
+        }
+      });
+    }
+
+    // 🔹 Primeiro carregamento “normal”
+        document.addEventListener("DOMContentLoaded", function(){
+      mountTrkBars();
+      initDeleteModal();
+      initCancelModal();
+      initLegendMonthFilter();
+    });
+
+    document.addEventListener("turbo:load", function(){
+      mountTrkBars();
+      initDeleteModal();
+      initCancelModal();
+      initLegendMonthFilter();
+    });
+
+    document.addEventListener("turbo:frame-load", function(){
+      mountTrkBars();
+      initDeleteModal();
+      initCancelModal();
+      initLegendMonthFilter();
+    });
+
+
+
+    // ======= JS do colapso suave do filtro =======
+    document.addEventListener('DOMContentLoaded', () => {
+      const toggle = document.getElementById('filtro-toggle');
+      const filtros = document.getElementById('filtros-salas');
+      if (!toggle || !filtros) return;
+
+      const STORAGE_KEY = 'ui:filtros-solicitacao-compra-collapsed';
+
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
+      function setCollapsed(collapsed, save = true) {
+        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (collapsed) {
+          const curH = filtros.scrollHeight;
+          filtros.style.maxHeight = curH + 'px';
+          filtros.offsetHeight;
+          if (prefersReduced) {
+            filtros.classList.add('collapsed');
+            filtros.style.maxHeight = '';
+          } else {
+            filtros.classList.add('collapsed');
+            filtros.style.maxHeight = '0px';
+          }
+          toggle.setAttribute('aria-expanded', 'false');
+          filtros.setAttribute('aria-hidden', 'true');
+          if (save) localStorage.setItem(STORAGE_KEY, '1');
+        } else {
+          filtros.classList.remove('collapsed');
+          filtros.setAttribute('aria-hidden', 'false');
+          toggle.setAttribute('aria-expanded', 'true');
+          const targetH = filtros.scrollHeight;
+          if (prefersReduced) {
+            filtros.style.maxHeight = '';
+          } else {
+            filtros.style.maxHeight = '0px';
+            filtros.offsetHeight;
+            filtros.style.maxHeight = targetH + 'px';
+          }
+          const cleanup = () => {
+            filtros.style.maxHeight = '';
+            filtros.removeEventListener('transitionend', cleanup);
+          };
+          filtros.addEventListener('transitionend', cleanup);
+          if (save) localStorage.removeItem(STORAGE_KEY);
+        }
+      }
+
+      if (startCollapsed) {
+        filtros.classList.add('collapsed');
         filtros.setAttribute('aria-hidden', 'true');
-        if (save) localStorage.setItem(STORAGE_KEY, '1');
+        toggle.setAttribute('aria-expanded', 'false');
+        filtros.style.maxHeight = '0px';
       } else {
         filtros.classList.remove('collapsed');
         filtros.setAttribute('aria-hidden', 'false');
         toggle.setAttribute('aria-expanded', 'true');
-        const targetH = filtros.scrollHeight;
-        if (prefersReduced) {
-          filtros.style.maxHeight = '';
-        } else {
-          filtros.style.maxHeight = '0px';
-          filtros.offsetHeight;
-          filtros.style.maxHeight = targetH + 'px';
+        filtros.style.maxHeight = '';
+      }
+
+      toggle.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const isCollapsed = filtros.classList.contains('collapsed');
+        setCollapsed(!isCollapsed, true);
+      });
+
+      document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
+        el.addEventListener('focus', () => setCollapsed(false, false));
+      });
+    });
+
+    //modal de cancelar compra
+
+        function initCancelModal(){
+      const modal = document.getElementById('cancel-modal');
+      if (!modal) return;
+
+      const form     = document.getElementById('cancel-form');
+      const textarea = document.getElementById('cancel-motivo');
+
+      function openModalFromButton(btn){
+        const url = btn.dataset.url;
+
+        if (form && url){
+          form.action = url;              // PATCH /solicitacao_compras/:id/cancelar_compra
         }
-        const cleanup = () => {
-          filtros.style.maxHeight = '';
-          filtros.removeEventListener('transitionend', cleanup);
-        };
-        filtros.addEventListener('transitionend', cleanup);
-        if (save) localStorage.removeItem(STORAGE_KEY);
+
+        if (textarea){
+          textarea.value = '';           // limpa texto antigo
+          // foca depois de abrir
+          setTimeout(() => textarea.focus(), 50);
+        }
+
+        modal.hidden = false;
+        modal.classList.add('is-open');
+        document.body.classList.add('modal-open');
+      }
+
+      function closeModal(){
+        modal.classList.remove('is-open');
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+      }
+
+      // 🔗 Botões "Compra cancelada" na tabela
+      document.querySelectorAll('.btn-open-cancel').forEach(btn => {
+        btn.addEventListener('click', () => openModalFromButton(btn));
+      });
+
+      // ❌ Botões que fecham o modal (tem data-modal-close)
+      modal.querySelectorAll('[data-modal-close]').forEach(btn => {
+        btn.addEventListener('click', closeModal);
+      });
+
+      // Clique no fundo fecha
+      modal.addEventListener('click', (ev) => {
+        if (ev.target === modal){
+          closeModal();
+        }
+      });
+
+      // ESC fecha
+      document.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Escape' && modal.classList.contains('is-open')){
+          closeModal();
+        }
+      });
+    }
+</script>
+<style>
+.status-filter{
+  display:flex;
+  gap:8px;
+  align-items:flex-end;
+}
+
+.status-field{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+
+.status-field label{
+  font-size:.78rem;
+  opacity:.8;
+}
+
+  .date-range-filter {
+      display: flex;
+      gap: 8px;
+      justify-content: space-evenly;
+  }
+
+    .date-range-filter .date-field{
+      display:flex;
+      flex-direction:column;
+      gap:4px;
+    }
+
+    .date-range-filter label{
+      font-size:.78rem;
+      opacity:.8;
+    }
+
+    /* Card de compras precisa permitir o fundo “vazar” por trás */
+    .trk--compras{
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Faixa de fundo estilo KPI, ocupando o card, mas só decorativa */
+    .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: transparent;
+    }
+
+
+    /* responsivo – triângulo um pouco mais estreito no mobile, se quiser */
+    @media (max-width: 768px){
+      .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
+        clip-path: polygon(100% 0, 100% 100%, 55% 100%);
       }
     }
 
-    if (startCollapsed) {
-      filtros.classList.add('collapsed');
-      filtros.setAttribute('aria-hidden', 'true');
-      toggle.setAttribute('aria-expanded', 'false');
-      filtros.style.maxHeight = '0px';
-    } else {
-      filtros.classList.remove('collapsed');
-      filtros.setAttribute('aria-hidden', 'false');
-      toggle.setAttribute('aria-expanded', 'true');
-      filtros.style.maxHeight = '';
+    .status-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:2px 8px;
+      border-radius:999px;
+      font-size:0.78rem;
+      font-weight:600;
+      white-space:nowrap;
     }
 
-    toggle.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      const isCollapsed = filtros.classList.contains('collapsed');
-      setCollapsed(!isCollapsed, true);
-    });
+    .status-pill i{
+      font-size:0.8rem;
+    }
 
-    document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
-      el.addEventListener('focus', () => setCollapsed(false, false));
-    });
-  });
-</script>
-<style>
-.date-range-filter {
-    display: flex;
-    gap: 8px;
-    justify-content: space-evenly;
+    /* Cores básicas */
+    .status-pill--ok{
+      background:rgba(46, 125, 50, .12);
+      color:#2e7d32;
+    }
+
+    .status-pill--warn{
+      background:rgba(255, 193, 7, .14);
+      color:#ff8f00;
+    }
+
+    .status-pill--danger{
+      background:rgba(244, 67, 54, .14);
+      color:#d32f2f;
+    }
+
+    .status-pill--neutral{
+      background:rgba(120, 144, 156, .14);
+      color:#455a64;
+    }
+
+    /* container geral continua igual */
+    .trk--compras{
+      position: relative;
+      overflow: hidden;
+    }
+
+    .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg{
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      border-radius: inherit;
+      background: transparent;
+    }
+
+    /* Triângulo de luz no fundo (já existia) */
+    .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(
+          135deg,
+          rgba(255,255,255,0) 0%,
+          rgba(255,255,255,.22) 55%,
+          rgba(255,255,255,.6) 100%
+        );
+      clip-path: polygon(100% 0, 100% 100%, 40% 100%);
+      opacity: .85;
+    }
+
+    /* O SVG do sparkline por cima do triângulo */
+    .trk-sparkline-chart{
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+          transform: scaleX(-1);
+    }
+
+    /* Linha e preenchimento do gráfico */
+    .trk-sparkline-line {
+        fill: none;
+        stroke: rgb(124 58 237 / 32%);
+        stroke-width: 0.4px;
+        stroke-linejoin: round;
+        stroke-linecap: round;
+    }
+
+.trk-kpis{
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
 }
 
-  .date-range-filter .date-field{
-    display:flex;
+.kpi--compact .kpi-chip{
+  font-size:.76rem;
+  white-space:normal;
+}
+
+.kpi--mini .kpi-chip{
+  font-size:.74rem;
+}
+
+@media (max-width: 768px){
+  .trk-kpis{
     flex-direction:column;
-    gap:4px;
+    align-items:flex-start;
   }
-
-  .date-range-filter label{
-    font-size:.78rem;
-    opacity:.8;
-  }
-
-  /* Card de compras precisa permitir o fundo “vazar” por trás */
-  .trk--compras{
-    position: relative;
-    overflow: hidden;
-  }
-
-  /* Faixa de fundo estilo KPI, ocupando o card, mas só decorativa */
-  .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg{
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    border-radius: inherit;
-    background: transparent;
-  }
+}
 
 
-  /* responsivo – triângulo um pouco mais estreito no mobile, se quiser */
-  @media (max-width: 768px){
-    .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
-      clip-path: polygon(100% 0, 100% 100%, 55% 100%);
+    /* Responsivo: triângulo um pouco mais estreito no mobile */
+    @media (max-width: 768px){
+      .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
+        clip-path: polygon(100% 0, 100% 100%, 55% 100%);
+      }
     }
+
+    /* === MODAL GENERICO === */
+    .modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(5,4,10,.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease-out;
+    }
+
+    .modal-backdrop.is-open{
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-dialog {
+        width: min(520px, 92vw);
+        background: radial-gradient(circle at top left, #673AB7, transparent 55%), rgb(59 32 107);
+        border-radius: 18px;
+        box-shadow: 0 22px 50px rgba(0, 0, 0, .7);
+        border: 1px solid #673AB7;
+        padding: 18px 20px 16px;
+        transform: translateY(10px) scale(.98);
+        transition: transform .22s
+    ease-out, opacity .22s
+    ease-out;
+    }
+
+    .modal-backdrop.is-open .modal-dialog{
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+
+    .modal-header h2{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:1rem;
+      color: white;
+    }
+
+    .modal-header h2 i{
+      color:#f44336;
+    }
+
+    .modal-close{
+      background:transparent;
+      border:none;
+      color:#fff;
+      font-size:1.1rem;
+      cursor:pointer;
+      opacity:.7;
+    }
+
+    .modal-close:hover{
+      opacity:1;
+    }
+
+    .modal-body{
+      margin-bottom: 10px;
+    }
+
+    .modal-warning{
+      font-size:.9rem;
+      margin-bottom:12px;
+      color: white !important;
+    }
+
+    .modal-warning strong{
+      color:#ff8f00;
+    }
+
+    .confirm-dl {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 10px 20px;
+        font-size: .86rem;
+        color: white;
+    }
+
+    .confirm-dl dt{
+      font-size:.72rem;
+      text-transform:uppercase;
+      letter-spacing:.08em;
+      opacity:.7;
+    }
+
+    .confirm-dl dd{
+      margin:2px 0 0;
+      font-weight:600;
+    }
+
+    .modal-footer{
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      margin-top:8px;
+    }
+
+    .btn-danger{
+      background:#d32f2f;
+      border:none;
+      color:#fff;
+    }
+
+    .btn-danger:hover{
+      background:#b71c1c;
+    }
+
+    body.modal-open{
+      overflow:hidden;
+    }
+
+    .trk-legend .trk-leg{
+    cursor: pointer;
+    transition: background .16s ease-out, transform .12s ease-out;
   }
 
-  .status-pill{
+  .trk-legend .trk-leg:hover{
+    transform: translateY(-1px);
+    background: rgba(124, 58, 237, 0.10);
+    border-radius: 10px;
+  }
+
+  .trk-legend .trk-leg.is-active{
+    background: rgba(124, 58, 237, 0.18);
+    border-radius: 10px;
+  }
+
+  .filtro-label{
     display:inline-flex;
     align-items:center;
-    gap:6px;
+    gap:8px;
+    padding:6px 12px;
+    border-radius:999px;
+    border:1px solid rgba(124,58,237,.4);
+    background:rgba(15,10,35,.9);
+    font-size:.82rem;
+  }
+
+  .filtro-pill{
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
     padding:2px 8px;
     border-radius:999px;
-    font-size:0.78rem;
-    font-weight:600;
-    white-space:nowrap;
-  }
-
-  .status-pill i{
-    font-size:0.8rem;
-  }
-
-  /* Cores básicas */
-  .status-pill--ok{
-    background:rgba(46, 125, 50, .12);
-    color:#2e7d32;
-  }
-
-  .status-pill--warn{
-    background:rgba(255, 193, 7, .14);
-    color:#ff8f00;
-  }
-
-  .status-pill--danger{
-    background:rgba(244, 67, 54, .14);
-    color:#d32f2f;
-  }
-
-  .status-pill--neutral{
-    background:rgba(120, 144, 156, .14);
-    color:#455a64;
-  }
-
-  /* container geral continua igual */
-  .trk--compras{
-    position: relative;
-    overflow: hidden;
-  }
-
-  .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg{
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    border-radius: inherit;
-    background: transparent;
-  }
-
-  /* Triângulo de luz no fundo (já existia) */
-  .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
-    position: absolute;
-    inset: 0;
-    background:
-      linear-gradient(
-        135deg,
-        rgba(255,255,255,0) 0%,
-        rgba(255,255,255,.22) 55%,
-        rgba(255,255,255,.6) 100%
-      );
-    clip-path: polygon(100% 0, 100% 100%, 40% 100%);
-    opacity: .85;
-  }
-
-  /* O SVG do sparkline por cima do triângulo */
-  .trk-sparkline-chart{
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Linha e preenchimento do gráfico */
-  .trk-sparkline-line {
-      fill: none;
-      stroke: rgb(124 58 237 / 32%);
-      stroke-width: 0.4px;
-      stroke-linejoin: round;
-      stroke-linecap: round;
-  }
-
-
-
-  /* Responsivo: triângulo um pouco mais estreito no mobile */
-  @media (max-width: 768px){
-    .trk-sparkline.trk-sparkline--kpi.trk-sparkline--compras-bg .trk-sparkline-bg{
-      clip-path: polygon(100% 0, 100% 100%, 55% 100%);
-    }
-  }
-
-  /* === MODAL GENERICO === */
-  .modal-backdrop{
-    position: fixed;
-    inset: 0;
-    background: rgba(5,4,10,.72);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .22s ease-out;
-  }
-
-  .modal-backdrop.is-open{
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .modal-dialog {
-      width: min(520px, 92vw);
-      background: radial-gradient(circle at top left, #673AB7, transparent 55%), rgb(59 32 107);
-      border-radius: 18px;
-      box-shadow: 0 22px 50px rgba(0, 0, 0, .7);
-      border: 1px solid #673AB7;
-      padding: 18px 20px 16px;
-      transform: translateY(10px) scale(.98);
-      transition: transform .22s
-  ease-out, opacity .22s
-  ease-out;
-  }
-
-  .modal-backdrop.is-open .modal-dialog{
-    transform: translateY(0) scale(1);
-  }
-
-  .modal-header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    margin-bottom:10px;
-  }
-
-  .modal-header h2{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    font-size:1rem;
-    color: white;
-  }
-
-  .modal-header h2 i{
-    color:#f44336;
-  }
-
-  .modal-close{
-    background:transparent;
-    border:none;
-    color:#fff;
-    font-size:1.1rem;
-    cursor:pointer;
-    opacity:.7;
-  }
-
-  .modal-close:hover{
-    opacity:1;
-  }
-
-  .modal-body{
-    margin-bottom: 10px;
-  }
-
-  .modal-warning{
-    font-size:.9rem;
-    margin-bottom:12px;
-    color: white !important;
-  }
-
-  .modal-warning strong{
-    color:#ff8f00;
-  }
-
-  .confirm-dl {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 10px 20px;
-      font-size: .86rem;
-      color: white;
-  }
-
-  .confirm-dl dt{
+    background:rgba(15,10,35,.95);
+    border:1px solid rgba(124,58,237,.35);
     font-size:.72rem;
-    text-transform:uppercase;
-    letter-spacing:.08em;
-    opacity:.7;
+    color:#A9A4BD;
   }
-
-  .confirm-dl dd{
-    margin:2px 0 0;
-    font-weight:600;
-  }
-
-  .modal-footer{
-    display:flex;
-    justify-content:flex-end;
-    gap:10px;
-    margin-top:8px;
-  }
-
-  .btn-danger{
-    background:#d32f2f;
-    border:none;
-    color:#fff;
-  }
-
-  .btn-danger:hover{
-    background:#b71c1c;
-  }
-
-  body.modal-open{
-    overflow:hidden;
-  }
-
-  .trk-legend .trk-leg{
-  cursor: pointer;
-  transition: background .16s ease-out, transform .12s ease-out;
-}
-
-.trk-legend .trk-leg:hover{
-  transform: translateY(-1px);
-  background: rgba(124, 58, 237, 0.10);
-  border-radius: 10px;
-}
-
-.trk-legend .trk-leg.is-active{
-  background: rgba(124, 58, 237, 0.18);
-  border-radius: 10px;
-}
-
-.filtro-label{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 12px;
-  border-radius:999px;
-  border:1px solid rgba(124,58,237,.4);
-  background:rgba(15,10,35,.9);
-  font-size:.82rem;
-}
-
-.filtro-pill{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  padding:2px 8px;
-  border-radius:999px;
-  background:rgba(15,10,35,.95);
-  border:1px solid rgba(124,58,237,.35);
-  font-size:.72rem;
-  color:#A9A4BD;
-}
-
 </style>

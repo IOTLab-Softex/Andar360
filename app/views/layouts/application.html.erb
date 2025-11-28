@@ -148,15 +148,14 @@
       </nav>
 
       <!-- 🔹 Aqui começa o “container” com margem lateral -->
-<% if controller_path == "devise/sessions" && action_name == "new" %>
-  <%# Login do Devise: sem page-shell, sem margem %>
+<% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) %>
   <%= yield %>
 <% else %>
-  <%# Demais telas: usam o container com margem %>
   <div class="page-shell">
     <%= yield %>
   </div>
 <% end %>
+
 
     </main>
 

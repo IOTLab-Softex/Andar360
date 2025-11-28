@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_11_25_145135) do
+ActiveRecord::Schema[8.0].define(version: 2025_11_28_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -435,6 +435,8 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_145135) do
     t.text "smtp_password"
     t.string "smtp_authentication"
     t.boolean "smtp_enable_starttls_auto"
+    t.boolean "require_rules_before_reservation", default: false, null: false
+    t.string "reservation_rules_title"
     t.boolean "require_room_rules_ack"
   end
 
@@ -466,6 +468,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_11_25_145135) do
     t.integer "status_autorizacao", default: 0, null: false
     t.text "motivo_rejeicao"
     t.integer "status_compra", default: 0, null: false
+    t.text "motivo_cancelamento_compra"
   end
 
   create_table "solicitacao_participantes", force: :cascade do |t|
