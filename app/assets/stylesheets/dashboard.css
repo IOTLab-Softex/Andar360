@@ -548,6 +548,7 @@ width: 12% !important;
   --color-btn--text:#ffffff;
    --color-btn-edit-houver:#4476ff;
    --color-modal-bg: #e5e5e5;
+      --color-borde-tabela: #7014f1;
     --bg-color: #dce1e5;
   --color-bg-green: #44ff44;
   --color-bg-green-20: #2da32d;
@@ -581,7 +582,7 @@ width: 12% !important;
  --color-btn--text:#000000;
  --color-btn-edit-houver:#4476ff;
  --color-modal-bg: #555;
-
+--color-borde-tabela: #555;
   --bg-color: #1c1c1c;
   --color-text: #f4f4f4;
   --color-bg-green: #2fb32f;
@@ -1700,7 +1701,7 @@ left: 0;
 
 
 .sidebar {
-    width: 220px;
+    width: 252px;
     background-color: var(--color-bg-sidebar);
     color: #fff;
     padding: 0px 15px;
@@ -2294,7 +2295,7 @@ width: 19px;
     overflow: hidden;
     font-size: 0.9rem;
     margin-top: 1rem;
-    border: solid 3px var(--color-modal-bg);
+    border: solid 3px var(--color-borde-tabela);
 }
 
 .table-salas thead {
@@ -2314,7 +2315,7 @@ background-color: var(--color-bg-table-salas-thead);
 
 .table-salas tbody tr:hover {
   background-color: var(--color-accent-hover);
-  color: var(--color-btn--text);
+  color: white;
 }
 
 .table-salas .btn {
@@ -2472,7 +2473,7 @@ background-color: var(--color-bg-table-salas-thead);
 }
 @keyframes pulse {
   0% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.4); opacity: 0.6; }
+  50% { transform: scale(3); opacity: 0.6; }
   100% { transform: scale(1); opacity: 1; }
 }
 .linha-atualizada {

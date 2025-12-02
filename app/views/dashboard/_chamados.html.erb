@@ -43,7 +43,13 @@
             </td>
             <td class="hide-sm"><%= chamado.solicitante&.grupo_empresa&.nome || "-" %></td>
             <td class="hide-sm"><%= chamado.room&.name || "Sem unidade" %></td>
-            <td><%= chamado.titulo %></td>
+            <td>
+  <% if chamado.atualizada_recentemente? && !visualizado_pelo_usuario?("chamado", chamado) %>
+    <span class="dot-ativo" title="Atualização não visualizada"></span>
+  <% end %>
+  <%= chamado.titulo %>
+</td>
+
             <td>
               <%= link_to chamado_path(chamado), class: 'btn-dash btn btn-sm btn-success', onclick: 'event.stopPropagation();' do %>
                 <i class="fa-solid fa-eye"></i>
