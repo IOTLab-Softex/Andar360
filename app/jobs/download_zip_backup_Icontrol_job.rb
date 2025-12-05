@@ -4,7 +4,9 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
   queue_as :default
 
   def perform
-    dir = "C:/Temp"
+    base_dir = Setting.first&.diretorio_backup_icontrol.presence || "C:/Temp"
+dir = base_dir
+
     pattern = /^arquivo_download.*\.zip$/
 
     # 🕒 Filtra e ordena os arquivos .zip por data de modificação

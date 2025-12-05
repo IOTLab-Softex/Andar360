@@ -149,7 +149,8 @@
       </ul>
     </nav>
     <!-- 🔹 Aqui começa o “container” com margem lateral -->
-    <% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) %>
+    <% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) ||
+     controller_path == "users/registrations" && %w[new edit].include?(action_name) %>
       <%= yield %>
     <% else %>
       <div class="page-shell">
