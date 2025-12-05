@@ -6,14 +6,12 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
   def perform
     setting = Setting.first
 
-    # usa a coluna correta do banco: backup_dir
+    # diretório onde o Incontrol salva os ZIPs
     raw_dir = setting&.backup_dir.presence || "C:/Temp"
-
-    # normaliza as barras para o Ruby (de C:\\Program Files... pra C:/Program Files/...)
     base_dir = raw_dir.tr('\\', '/')
     dir = base_dir
 
-    pattern = /^arquivo_download.*\.zip$/  # mantém seu padrão atual
+    pattern = /^usuarios_fotos_e_csv.*\.zip$/
 
     unless Dir.exist?(dir)
       Rails.logger.warn "[⚠️] Diretório de backup não existe: #{dir}"
@@ -25,7 +23,6 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
       return
     end
 
-    # 🕒 Filtra e ordena os arquivos .zip por data de modificação
     zip_files = Dir.entries(dir)
                    .select { |f| f.match?(pattern) }
                    .map    { |f| File.join(dir, f) }
@@ -42,8 +39,9 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
       return
     end
 
-    zip_path    = zip_files.last # ← ZIP mais recente
-    extract_dir = File.join(dir, "importDados")
+    zip_path    = zip_files.last
+    # 🔹 AGORA extraímos SEMPRE em C:\Temp\importDados
+    extract_dir = File.join("C:/Temp", "importDados")
 
     Rails.logger.info "[🧩] ZIP mais recente encontrado: #{File.basename(zip_path)}"
     FileUtils.mkdir_p(extract_dir)
@@ -69,7 +67,7 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
           destination = File.join(extract_dir, entry.name)
 
           begin
-            entry.extract(destination) { true } # sobrescreve
+            entry.extract(destination) { true }
           rescue => e
             Rails.logger.error "[❌] Erro ao extrair #{entry.name}: #{e.message}"
             Rails.cache.write(
@@ -88,7 +86,7 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
           message: "Atualizando banco: atualização descompactada com sucesso!" }
       )
 
-      # 🚀 Dispara o próximo job de importação
+      # 🚀 Próximo job
       ImportDadosIcontrolJob.perform_now
     rescue => e
       Rails.logger.error "[❌] Erro ao abrir ZIP #{File.basename(zip_path)}: #{e.message}"

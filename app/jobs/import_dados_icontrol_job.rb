@@ -37,45 +37,40 @@ class ImportDadosIcontrolJob < ApplicationJob
   end
 
   def perform
-    setting = Setting.first
+    base_dir   = "C:/Temp"
+  import_dir = File.join(base_dir, "importDados")
+  csv_path   = File.join(import_dir, "usuarios.csv")
+  dir_fotos  = import_dir
 
-    # mesmo diretório base do DownloadZipBackupIcontrolJob
-    raw_dir  = setting&.backup_dir.presence || "C:/Temp"
-    base_dir = raw_dir.tr('\\', '/')
+  unless File.exist?(csv_path)
+    msg = "Arquivo CSV não encontrado em #{csv_path}"
+    Rails.logger.error "[❌] #{msg}"
+    log_import("Sistema", "-", "erro", msg)
+    Rails.cache.write(
+      "backup_status",
+      { status: "erro", message: "Importando Atualização: CSV não encontrado em #{csv_path}" }
+    )
+    return
+  end
 
-    import_dir = File.join(base_dir, "importDados")
-    csv_path   = File.join(import_dir, "usuarios.csv")
-    dir_fotos  = import_dir
+  # Renomeia arquivos blob_* sem extensão dentro do mesmo import_dir
+  Dir.glob(File.join(dir_fotos, "blob_*")).each do |path|
+    next if File.extname(path).present?
 
-    unless File.exist?(csv_path)
-      msg = "Arquivo CSV não encontrado em #{csv_path}"
-      Rails.logger.error "[❌] #{msg}"
-      log_import("Sistema", "-", "erro", msg)
-      Rails.cache.write(
-        "backup_status",
-        { status: "erro", message: "Importando Atualização: CSV não encontrado em #{csv_path}" }
-      )
-      return
-    end
+    begin
+      sig = File.open(path, 'rb') { |f| f.read(8) }
 
-    # Renomeia arquivos blob_* sem extensão dentro do mesmo import_dir
-    Dir.glob(File.join(dir_fotos, "blob_*")).each do |path|
-      next if File.extname(path).present?
-
-      begin
-        sig = File.open(path, 'rb') { |f| f.read(8) }
-
-        if sig.start_with?("\xFF\xD8".b)
-          File.rename(path, "#{path}.jpg")
-        elsif sig.start_with?("\x89PNG\r\n\x1A\n".b)
-          File.rename(path, "#{path}.png")
-        else
-          Rails.logger.warn "[⚠️] Arquivo desconhecido, não renomeado: #{path}"
-        end
-      rescue => e
-        Rails.logger.error "[❌] Erro ao tentar renomear #{path}: #{e.message}"
+      if sig.start_with?("\xFF\xD8".b)
+        File.rename(path, "#{path}.jpg")
+      elsif sig.start_with?("\x89PNG\r\n\x1A\n".b)
+        File.rename(path, "#{path}.png")
+      else
+        Rails.logger.warn "[⚠️] Arquivo desconhecido, não renomeado: #{path}"
       end
+    rescue => e
+      Rails.logger.error "[❌] Erro ao tentar renomear #{path}: #{e.message}"
     end
+  end
 
     begin
       csv_raw = File.read(csv_path, mode: "rb")
