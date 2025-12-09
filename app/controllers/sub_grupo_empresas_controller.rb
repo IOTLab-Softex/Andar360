@@ -51,7 +51,8 @@ class SubGrupoEmpresasController < ApplicationController
         :grupo_empresa_id,
         :can_request_purchase,
         :can_approve_purchase,
-        :can_buy
+        :can_buy,
+        :can_view_monitoring
       )
     else
       # 👤 Cliente comum: só pode mudar nome (e empresa, se fizer sentido)

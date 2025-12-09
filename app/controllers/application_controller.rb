@@ -6,6 +6,23 @@ class ApplicationController < ActionController::Base
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
 
+ helper_method :can_view_monitoring?
+
+  def can_view_monitoring?
+    return false unless current_user
+
+    # Admin / operador sempre podem ver
+    return true if current_user.respond_to?(:admin?)    && current_user.admin?
+    return true if current_user.respond_to?(:operador?) && current_user.operador?
+
+    participant = current_user.participant
+    return false unless participant
+
+    sub = participant.sub_grupo_empresa
+    sub&.can_view_monitoring? || false
+  end
+
+
   def after_sign_in_path_for(resource)
   dashboard_path
   end

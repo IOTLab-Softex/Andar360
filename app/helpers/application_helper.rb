@@ -3,6 +3,7 @@ module ApplicationHelper
     request.fullpath == "/users"
   end
 
+
 def svg_icon(path, options = {})
   logical = path.to_s.strip.sub(/\A[\/\\]+/, "").tr("\\", "/")
   roots = [

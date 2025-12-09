@@ -133,6 +133,7 @@ devise_for :users, controllers: {
   registrations: 'users/registrations'
 }
 
+  get "/dashboard/refresh", to: "dashboard#refresh", as: :refresh_dashboard
 
   get "import_logs/status", to: "import_logs#status"
 

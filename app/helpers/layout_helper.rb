@@ -149,6 +149,7 @@ module LayoutHelper
           link_to(settings_path, class: "hide-on-mobile menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-gear") + " CONFIGURAÇÃO"
         end : nil,
+        
       ])
     when "reservations#index"
       safe_join([

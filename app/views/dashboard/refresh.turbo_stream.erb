@@ -1,0 +1,43 @@
+<%= turbo_stream.replace "kpi-grid" do %>
+  <%= render "dashboard/kpis" %>
+<% end %>
+
+<%= turbo_stream.replace "card-manutencoes" do %>
+  <section id="card-manutencoes" class="board-card col-12 col-6">
+    <%= render "dashboard/manutencoes",
+          manutencoes: @manutencao_programadas,
+          ack_ns: @ack_ns,
+          avisos_tokens: @avisos_tokens,
+          avisos: @avisos_manutencao %>
+  </section>
+<% end %>
+
+<%= turbo_stream.replace "card-chamados" do %>
+  <section id="card-chamados" class="board-card col-12 col-6">
+    <%= render "dashboard/chamados", chamados: @chamados %>
+  </section>
+<% end %>
+
+<% if current_user.admin? || current_user.role == "operador" %>
+  <%= turbo_stream.replace "card-salas" do %>
+    <section id="card-salas" class="board-card col-12 col-6">
+      <%= render "dashboard/salas", rooms: @rooms %>
+    </section>
+  <% end %>
+<% end %>
+
+<%= turbo_stream.replace "card-espacos" do %>
+  <section id="card-espacos" class="board-card col-12 col-6">
+    <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
+  </section>
+<% end %>
+
+<% manut_last = @manutencao_programadas.map(&:updated_at).compact.max&.to_i || 0 %>
+<% cham_last  = @chamados.map(&:updated_at).compact.max&.to_i || 0 %>
+<% rooms_last = @rooms.map(&:updated_at).compact.max&.to_i || 0 %>
+<% total_chamados = (@chamados_counts || {}).values.sum rescue 0 %>
+
+<%= turbo_stream.replace "dashboard-snapshot" do %>
+  <div id="dashboard-snapshot"
+       data-hash="<%= [manut_last, cham_last, rooms_last, total_chamados].join('-') %>"></div>
+<% end %>

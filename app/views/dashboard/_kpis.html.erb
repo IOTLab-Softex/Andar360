@@ -1,0 +1,50 @@
+<div id="kpi-grid" class="kpi-grid">
+  <% if current_user.admin? || current_user.role == "operador" %>
+    <%= kpi_card("fa-solid fa-helmet-safety", "Próximas Manutenções",
+                 @kpis[:manutencoes_pendentes], "Próximas a partir de hoje") %>
+  <% end %>
+
+  <%= kpi_card("fa-solid fa-calendar-check", "Reservas hoje",
+               @kpis[:reservas_hoje],
+               (@kpis[:reservas_series_label] || nil),
+               sparkline: @kpis[:reservas_series]) %>
+
+  <%= kpi_card("fa-solid fa-chart-line", "Ocupação (estimativa)",
+               "#{@kpis[:ocupacao_hoje]}%", "Sobre total de unidades") %>
+
+  <%= kpi_card("fa-solid fa-ticket", "Chamados abertos",
+               @chamados_counts[:total_abertos],
+               "Críticos abertos: #{@chamados_counts[:criticos_abertos]}") %>
+
+  <% if current_user.admin? %>
+    <%= kpi_card(
+          "fa-solid fa-comments",
+          "Feedbacks pendentes",
+          (@kpis[:feedbacks_pendentes] || 0),
+          "Total: #{@kpis[:feedbacks_total] || 0} • 7d: #{@kpis[:feedbacks_7d] || 0}",
+          url: feedbacks_path
+        ) %>
+  <% end %>
+
+  <% if current_user.admin? || current_user.client? %>
+    <%= kpi_card(
+          "fa-solid fa-user-pen",
+          (current_user.client? ? "Cadastros pendentes (Aguardando...)" : "Cadastros pendentes"),
+          (@kpis[:fc_pendentes] || 0),
+          "Aguardando aprovação",
+          sparkline: @kpis[:fc_series]
+        ) %>
+  <% end %>
+
+  <% if @kpis.key?(:encomendas_pendentes) %>
+    <% titulo_encomendas =
+        (@kpis[:encomendas_label] == "todas" ?
+          "Encomendas na Portaria" :
+          "Encomendas para você (Portaria)") %>
+
+    <%= kpi_card("fa-solid fa-box",
+                 titulo_encomendas,
+                 @kpis[:encomendas_pendentes],
+                 "Últimos 7d: #{@kpis[:encomendas_7d] || 0}") %>
+  <% end %>
+</div>

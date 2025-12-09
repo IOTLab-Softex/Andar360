@@ -20,94 +20,46 @@
   .rooms.hidden {
     display: none !important;
   }
-
-
 </style>
 
-<%# --- CARDS (DASHBOARD) --- %>
-<div class="kpi-grid">
-<% if current_user.admin? || current_user.role == "operador" %>
-  <%= kpi_card("fa-solid fa-helmet-safety", "Próximas Manutenções",
-               @kpis[:manutencoes_pendentes], "Próximas a partir de hoje") %>
-<% end %>
-<%= kpi_card("fa-solid fa-calendar-check", "Reservas hoje",
-             @kpis[:reservas_hoje],
-             (@kpis[:reservas_series_label] || nil),
-             sparkline: @kpis[:reservas_series]) %>
+<div id="dashboard-page-marker"></div>
+
+<% manut_last = @manutencao_programadas.map(&:updated_at).compact.max&.to_i || 0 %>
+<% cham_last  = @chamados.map(&:updated_at).compact.max&.to_i || 0 %>
+<% rooms_last = @rooms.map(&:updated_at).compact.max&.to_i || 0 %>
+<% total_chamados = (@chamados_counts || {}).values.sum rescue 0 %>
+
+<div id="dashboard-snapshot"
+     data-hash="<%= [manut_last, cham_last, rooms_last, total_chamados].join('-') %>"></div>
+
+<%= audio_tag "notify_new.mp3",
+      id: "notify-new",
+      preload: "auto",
+      style: "display:none;" %>
 
 
-  <%= kpi_card("fa-solid fa-chart-line", "Ocupação (estimativa)",
-               "#{@kpis[:ocupacao_hoje]}%", "Sobre total de unidades") %>
 
-<%= kpi_card("fa-solid fa-ticket", "Chamados abertos",
-             @chamados_counts[:total_abertos],
-             "Críticos abertos: #{@chamados_counts[:criticos_abertos]}") %>
-
-
-  <%# ---- Card de Feedbacks: só para admin ---- %>
-<% if current_user.admin? %>
-  <%= kpi_card(
-        "fa-solid fa-comments",
-        "Feedbacks pendentes",
-        (@kpis[:feedbacks_pendentes] || 0),
-        "Total: #{@kpis[:feedbacks_total] || 0} • 7d: #{@kpis[:feedbacks_7d] || 0}",
-        url: feedbacks_path
-      ) %>
-<% end %>
-
-
-<% if current_user.admin? || current_user.client? %>
-  <%= kpi_card(
-        "fa-solid fa-user-pen",
-        (current_user.client? ? "Cadastros pendentes (Aguardando...)" : "Cadastros pendentes"),
-        (@kpis[:fc_pendentes] || 0),
-        "Aguardando aprovação",
-        sparkline: @kpis[:fc_series]
-      ) %>
-<% end %>
-
-
-  <%# ---- Card de Encomendas: para qualquer usuário que tenha grupo_empresa ---- %>
- <% if @kpis.key?(:encomendas_pendentes) %>
-  <% titulo_encomendas =
-      (@kpis[:encomendas_label] == "todas" ?
-        "Encomendas na Portaria" :
-        "Encomendas para você (Portaria)") %>
-
-  <%= kpi_card("fa-solid fa-box",
-               titulo_encomendas,
-               @kpis[:encomendas_pendentes],
-               "Últimos 7d: #{@kpis[:encomendas_7d] || 0}") %>
-<% end %>
-
-</div>
+<%= render "dashboard/kpis" %>
 
 <div class="board-grid">
+  
+  <section id="card-chamados" class="board-card col-12 col-6">
+    <%= render "dashboard/chamados", chamados: @chamados %>
+  </section>
   <section id="card-manutencoes" class="board-card col-12 col-6">
     <%= render "dashboard/manutencoes",
           manutencoes: @manutencao_programadas,
           ack_ns: @ack_ns, avisos_tokens: @avisos_tokens, avisos: @avisos_manutencao %>
   </section>
-
-  <section id="card-chamados" class="board-card col-12 col-6">
-    <%= render "dashboard/chamados", chamados: @chamados %>
-  </section>
-
   <% if current_user.admin? || current_user.role == "operador" %>
     <section id="card-salas" class="board-card col-12 col-6">
       <%= render "dashboard/salas", rooms: @rooms %>
     </section>
   <% end %>
-
   <section id="card-espacos" class="board-card col-12 col-6">
     <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
   </section>
 </div>
-
-
-
-
-
 
 <% if @avisos_manutencao.present? %>
   <div id="modalAvisos"
@@ -152,9 +104,9 @@ data-ns="<%= @ack_ns %>">
   }
 
   /* cola no final do seu CSS para garantir prioridade */
-#modalAvisos.modal-custom .modal-header h5 {
+  #modalAvisos.modal-custom .modal-header h5 {
   color: #000 !important;
-}
+  }
 
     #modalAvisos.modal-custom {
       position: fixed;
@@ -165,7 +117,7 @@ data-ns="<%= @ack_ns %>">
     height: -webkit-fill-available;
     background: rgba(0, 0, 0, 0.7);
     display: flex
-;
+  ;
     align-items: center;
     justify-content: center;
 
@@ -233,7 +185,7 @@ data-ns="<%= @ack_ns %>">
     overflow: hidden;
   }
   /* Faz o h2 do partial parecer cabeçalho do card */
-.board-card .subtitle {
+  .board-card .subtitle {
     display: flex;
     align-items: center;
     /* gap: .6rem; */
@@ -244,65 +196,65 @@ data-ns="<%= @ack_ns %>">
     border-bottom: 1px solid rgba(255, 255, 255, .06);
     cursor: pointer;
     font-size: inherit;
-}
+  }
   .board-card .rooms{ padding: 12px; }
 
   /* Não esticar os itens do grid: cada card fica só com a própria altura */
-.board-grid { align-items: start; }
+  .board-grid { align-items: start; }
 
-/* (opcional) garante que um card específico não estique */
-.board-card { align-self: start; }
+  /* (opcional) garante que um card específico não estique */
+  .board-card { align-self: start; }
 
-/* (opcional) zera espaço interno quando estiver colapsado/hidden */
-.rooms.collapsed,
-.rooms.hidden {
+  /* (opcional) zera espaço interno quando estiver colapsado/hidden */
+  .rooms.collapsed,
+  .rooms.hidden {
   height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
-}
+  }
 
-/* 1) Trilhas do grid encolhíveis (mantém 50/50 sempre) */
-.board-grid{
+  /* 1) Trilhas do grid encolhíveis (mantém 50/50 sempre) */
+  .board-grid{
   display: grid;
   gap: 16px;
   grid-template-columns: repeat(12, minmax(0, 1fr)); /* <- antes era 1fr puro */
   align-items: start;
-}
+  }
 
-/* 2) Cada card pode encolher sem empurrar a coluna vizinha */
-.board-card{ align-self: start; min-width: 0; }
+  /* 2) Cada card pode encolher sem empurrar a coluna vizinha */
+  .board-card{ align-self: start; min-width: 0; }
 
-/* 3) Quando colapsado, o conteúdo não participa do layout */
-.rooms{ overflow: hidden; contain: layout paint; }
-.rooms.collapsed,
-.rooms.hidden{
+  /* 3) Quando colapsado, o conteúdo não participa do layout */
+  .rooms{ overflow: hidden; contain: layout paint; }
+  .rooms.collapsed,
+  .rooms.hidden{
   height: 0 !important;
   padding: 0 !important;
   margin: 0 !important;
   content-visibility: hidden;   /* não mede conteúdo fechado */
   contain: size layout;         /* isola do cálculo de tamanho */
-}
+  }
 
-/* 4) Tabelas largas: rolagem interna ao card (não estoura a coluna) */
-.board-card .rooms:not(.collapsed){ overflow-x: auto; }
-.board-card .rooms table{ width: 100%; table-layout: fixed; }
-.board-card .rooms th,
-.board-card .rooms td{ white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
+  /* 4) Tabelas largas: rolagem interna ao card (não estoura a coluna) */
+  .board-card .rooms:not(.collapsed){ overflow-x: auto; }
+  .board-card .rooms table{ width: 100%; table-layout: fixed; }
+  .board-card .rooms th,
+  .board-card .rooms td{ white-space: nowrap; text-overflow: ellipsis; overflow: hidden; }
 
-/* ocultar tabelas para mibile */
+  /* ocultar tabelas para mibile */
 
-@media (max-width: 992px) {
+  @media (max-width: 992px) {
   .table-salas .hide-md { display: none; }
-}
+  }
 
-/* até 768px (celular): esconda o que marcar com .hide-sm */
-@media (max-width: 768px) {
+  /* até 768px (celular): esconda o que marcar com .hide-sm */
+  @media (max-width: 768px) {
   .table-salas .hide-sm { display: none; }
-}
+  }
 
 
 
-/*********/
+  /*********/
 </style>
 <script>
   function toggleSection(id, headerElement) {
@@ -341,81 +293,59 @@ data-ns="<%= @ack_ns %>">
     }
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll(".rooms").forEach((section) => {
-      const id = section.id;
-      const savedState = localStorage.getItem(`section-${id}`);
-      const header = document.querySelector(`h2[onclick*="${id}"]`);
+    // função global para (re)inicializar o estado das .rooms
+  // função global para (re)inicializar o estado das .rooms
+window.initDashboardRooms = function() {
+  const firstRun = !document.body.dataset.roomsInitialized; // true só na 1ª vez
 
-      if (savedState === 'collapsed') {
-        section.classList.add("collapsed", "hidden");
-        if (header) header.classList.add("collapsed");
-      } else {
-        // estado padrão é expandido
-        section.classList.remove("collapsed", "hidden");
-        if (header) header.classList.remove("collapsed");
-        section.style.height = section.scrollHeight + "px";
-        setTimeout(() => section.style.height = "auto", 400);
-      }
-    });
-  });
+  document.querySelectorAll(".rooms").forEach((section) => {
+    const id = section.id;
+    if (!id) return;
 
-  document.addEventListener("DOMContentLoaded", () => {
-  const modal = document.getElementById('modalAvisos');
-  if (!modal) return;
+    const savedState = localStorage.getItem(`section-${id}`);
+    const header = document.querySelector(`h2[onclick*="${id}"]`);
 
-  // Limpa chaves legadas globais (compatibilidade)
-  localStorage.removeItem('modalAvisosOculto');
-  localStorage.removeItem('modalAvisosOcultoKey');
+    // na primeira passada, desliga a animação
+    if (firstRun) {
+      section.classList.add("no-anim");
+    }
 
-  // Namespace por usuário (ex.: "u12")
-  const ns = modal.dataset.ns || '';
+    const wantCollapsed = (savedState === 'collapsed');
 
-  // Utilitário de chave namespaced
-  const k = (tok) => `${ns}:manutAck:${tok}`;
+    if (wantCollapsed) {
+      // manter fechado
+      section.classList.add("collapsed", "hidden");
+      if (header) header.classList.add("collapsed");
+      section.style.height = "0px";
+    } else {
+      // manter aberto
+      section.classList.remove("collapsed", "hidden");
+      if (header) header.classList.remove("collapsed");
 
-  // Lê tokens passados pelo backend
-  let tokens = [];
-  try { tokens = JSON.parse(modal.dataset.items || "[]"); } catch(e) { tokens = []; }
-  if (!tokens.length) return;
+      // se for primeiro load: sem animação → direto auto
+      // se for chamado depois (refresh live), aí pode animar se quiser
+      section.style.height = "auto";
+    }
 
-  // Compat: se existir ACK antigo sem namespace, migra p/ namespaced
-  tokens.forEach((t) => {
-    const oldKey = `manutAck:${t}`;
-    if (localStorage.getItem(oldKey) === '1' && localStorage.getItem(k(t)) !== '1') {
-      localStorage.setItem(k(t), '1');
-      localStorage.removeItem(oldKey);
+    // depois de aplicar o estado no primeiro load, reativa animação
+    if (firstRun) {
+      requestAnimationFrame(() => {
+        section.classList.remove("no-anim");
+      });
     }
   });
 
-  // Verifica se há pelo menos um token ainda não reconhecido p/ ESTE usuário
-  const isAcked = (t) => localStorage.getItem(k(t)) === '1';
-  const algumPendente = tokens.some((t) => !isAcked(t));
-
-  if (algumPendente) {
-    modal.style.display = 'flex';
-    setTimeout(() => modal.classList.add('active'), 50);
-  }
-
-  // Botão "OK, Entendi" → marca ACK para TODOS os tokens atuais (apenas p/ ESTE usuário)
-  modal.querySelector('.btn.btn-secondary')?.addEventListener('click', () => {
-    modal.classList.remove('active');
-    setTimeout(() => {
-      modal.style.display = 'none';
-      tokens.forEach((t) => localStorage.setItem(k(t), '1'));
-    }, 300);
-  });
-
-  // Botão fechar (X) → fecha sem ACK (volta em próximo load se ainda houver pendente)
-  modal.querySelector('.close-modal')?.addEventListener('click', () => {
-    modal.classList.remove('active');
-    setTimeout(() => { modal.style.display = 'none'; }, 300);
-  });
-  });
+  // marca que já inicializou uma vez
+  document.body.dataset.roomsInitialized = "1";
+};
 
 
+  // roda ao carregar a página normalmente e com Turbo
+  document.addEventListener("DOMContentLoaded", window.initDashboardRooms);
+  document.addEventListener("turbo:load", window.initDashboardRooms);
 
-  document.addEventListener("DOMContentLoaded", () => {
+
+  // helper global de cookie
   function setCookie(name, value, days) {
     let expires = "";
     if (days) {
@@ -426,61 +356,81 @@ data-ns="<%= @ack_ns %>">
     document.cookie = name + "=" + (value || "") + expires + "; path=/";
   }
 
-  document.querySelectorAll(".marcar-todos-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
+  // função global para ligar os botões "Marcar todas como vistas"
+  window.initMarkAllButtons = function() {
+    document.querySelectorAll(".marcar-todos-btn").forEach((btn) => {
+      // evita duplicar listener quando a função é chamada várias vezes
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
 
-      const tipo = btn.dataset.tipo; // "chamado" ou "manutencao"
-      const linhas = document.querySelectorAll(`tr[id^="${tipo}-"]`);
-      const ids = [];
-      const timestampSeconds = Math.floor(Date.now() / 1000);
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
 
-      linhas.forEach((linha) => {
-        const idMatch = linha.id.match(/(\d+)$/);
-        if (!idMatch) return;
+        const tipo = btn.dataset.tipo; // "chamado" ou "manutencao"
+        const linhas = document.querySelectorAll(`tr[id^="${tipo}-"]`);
+        const ids = [];
+        const timestampSeconds = Math.floor(Date.now() / 1000);
 
-        const id = idMatch[1];
-        ids.push(id);
+        linhas.forEach((linha) => {
+          const idMatch = linha.id.match(/(\d+)$/);
+          if (!idMatch) return;
 
-        // 1. Salva o cookie (bate com o helper visualizado_pelo_usuario?)
-        setCookie(`${tipo}-${id}`, timestampSeconds, 365);
+          const id = idMatch[1];
+          ids.push(id);
 
-        // 2. Remove classes de destaque da linha
-        linha.classList.remove("linha-atualizada", "table-success", "table-warning", "bg-success-subtle");
+          // 1. Salva o cookie (bate com o helper visualizado_pelo_usuario?)
+          setCookie(`${tipo}-${id}`, timestampSeconds, 365);
 
-        // 3. Remove o pontinho, se tiver
-        const dot = linha.querySelector(".dot-ativo");
-        if (dot) dot.remove();
+          // 2. Remove classes de destaque da linha
+          linha.classList.remove(
+            "linha-atualizada",
+            "table-success",
+            "table-warning",
+            "bg-success-subtle"
+          );
+
+          // 3. Remove o pontinho, se tiver
+          const dot = linha.querySelector(".dot-ativo");
+          if (dot) dot.remove();
+        });
+
+        // 4. Backend opcional (log/audit)
+        if (ids.length > 0) {
+          fetch("/marcar_todos_como_visualizados", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
+            },
+            body: JSON.stringify({ tipo, ids })
+          }).catch((e) => console.error("Erro no backend:", e));
+        }
+
+        // 5. Atualiza botão e remove dot do título
+        const icon = btn.querySelector("i");
+        if (icon) {
+          icon.classList.remove("fa-eye");
+          icon.classList.add("fa-check");
+        }
+        btn.innerText = "Vistas!";
+        btn.disabled = true;
+        setTimeout(() => btn.remove(), 800);
+
+        const header = btn.closest("h2");
+        const dotHeader = header?.querySelector(".dot-ativo");
+        if (dotHeader) dotHeader.remove();
       });
-
-      // 4. Backend opcional (log/audit)
-      if (ids.length > 0) {
-        fetch("/marcar_todos_como_visualizados", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "X-CSRF-Token": document.querySelector("meta[name='csrf-token']").content
-          },
-          body: JSON.stringify({ tipo, ids })
-        }).catch((e) => console.error("Erro no backend:", e));
-      }
-
-      // 5. Atualiza botão e remove dot do título
-      const icon = btn.querySelector("i");
-      if (icon) {
-        icon.classList.remove("fa-eye");
-        icon.classList.add("fa-check");
-      }
-      btn.innerText = "Vistas!";
-      btn.disabled = true;
-      setTimeout(() => btn.remove(), 800);
-
-      const header = btn.closest("h2");
-      const dotHeader = header?.querySelector(".dot-ativo");
-      if (dotHeader) dotHeader.remove();
     });
-  });
-});
+  };
+
+  // roda no load normal / navegação Turbo
+  document.addEventListener("DOMContentLoaded", window.initMarkAllButtons);
+  document.addEventListener("turbo:load", window.initMarkAllButtons);
+
+
+
+
+
 
 
   document.addEventListener('DOMContentLoaded', () => {
@@ -551,6 +501,276 @@ data-ns="<%= @ack_ns %>">
       card.style.transform = '';
     });
   }, 50);
-});
+  });
+
+
+    (function() {
+    function onReady(fn) {
+      if (document.readyState === "complete" || document.readyState === "interactive") {
+        fn();
+      } else {
+        document.addEventListener("DOMContentLoaded", fn);
+      }
+      document.addEventListener("turbo:load", fn);
+    }
+
+    // chave de persistência (pode trocar o nome se quiser)
+    const LIVE_KEY = "dashboard-live-enabled";
+
+    // ---------- SOM E SNAPSHOT ----------
+    let lastSnapshot = null;
+
+    function getCurrentSnapshot() {
+      const el = document.getElementById("dashboard-snapshot");
+      if (!el) return "";
+      return el.dataset.hash || "";
+    }
+
+    function playNotifySound() {
+      const audio = document.getElementById("notify-new");
+      if (!audio) return;
+      try {
+        audio.currentTime = 0;
+        audio.play().catch(() => {});
+      } catch (e) {
+        console.warn("[dashboard-live] erro ao tocar som:", e);
+      }
+    }
+
+    function checkSnapshotChange() {
+      const current = getCurrentSnapshot();
+      if (!current) return;
+
+      if (lastSnapshot && current !== lastSnapshot) {
+        // houve mudança → toca som
+        playNotifySound();
+      }
+      lastSnapshot = current;
+    }
+    // -------------------------------------
+
+    // -------------------------------------
+
+    // Fallback simples para processar <turbo-stream> mesmo sem Turbo
+    function applyTurboStreamManualmente(html) {
+      const template = document.createElement('template');
+      template.innerHTML = html.trim();
+
+      const streams = template.content.querySelectorAll('turbo-stream');
+      if (!streams.length) {
+        console.warn("[dashboard-live] nenhum <turbo-stream> encontrado na resposta");
+        return;
+      }
+
+      streams.forEach((stream) => {
+        const action = stream.getAttribute('action') || 'replace';
+        const targetId = stream.getAttribute('target');
+        if (!targetId) return;
+
+        const target = document.getElementById(targetId);
+        if (!target) {
+          console.warn("[dashboard-live] target não encontrado:", targetId);
+          return;
+        }
+
+        const tmpl = stream.querySelector('template');
+        if (!tmpl) return;
+
+        const newHTML = tmpl.innerHTML.trim();
+
+        if (action === 'replace') {
+          // substitui o elemento inteiro
+          target.outerHTML = newHTML;
+        } else if (action === 'update') {
+          // só atualiza o conteúdo interno
+          target.innerHTML = newHTML;
+        } else if (action === 'remove') {
+          target.remove();
+        } else if (action === 'append') {
+          target.insertAdjacentHTML('beforeend', newHTML);
+        } else if (action === 'prepend') {
+          target.insertAdjacentHTML('afterbegin', newHTML);
+        } else {
+          console.warn("[dashboard-live] ação turbo-stream não tratada:", action);
+        }
+      });
+          // depois de aplicar os turbo-streams, re-inicializa as rooms
+    if (window.initDashboardRooms) {
+      window.initDashboardRooms();
+    }
+
+    // re-liga os botões "marcar todas"
+    if (window.initMarkAllButtons) {
+      window.initMarkAllButtons();
+    }
+    }
+
+    onReady(function() {
+            const marker = document.getElementById("dashboard-page-marker");
+      if (!marker) {
+        console.log("[dashboard-live] marker não encontrado, não é a página de dashboard");
+        return;
+      }
+
+      // todos os botões que controlam o monitoramento
+      const toggleButtons = Array.from(
+        document.querySelectorAll('[data-monitor-toggle="dashboard"]')
+      );
+
+      if (toggleButtons.length === 0) {
+        console.log("[dashboard-live] nenhum botão de monitoramento encontrado");
+        return;
+      }
+
+      console.log("[dashboard-live] inicializado");
+
+      const REFRESH_MS = 15000;
+      let liveEnabled = false;
+      let timer = null;
+      const body = document.body;
+
+      // atualiza texto/ícone de TODOS os botões
+      function updateButtonsUI() {
+        toggleButtons.forEach((btn) => {
+          const variant = btn.dataset.monitorVariant || "full"; // "full" ou "fab"
+
+          if (liveEnabled) {
+            // MODO LIGADO → ícone pause
+            if (variant === "fab") {
+              btn.innerHTML = '<i class="fa-solid fa-pause"></i>';
+            } else {
+              btn.innerHTML =
+                '<i class="fa-solid fa-pause"></i> Desativar monitoramento em tempo real';
+            }
+            btn.classList.remove("btn-secondary");
+            btn.classList.add("btn-success");
+          } else {
+            // MODO DESLIGADO → ícone play
+            if (variant === "fab") {
+              btn.innerHTML = '<i class="fa-solid fa-play"></i>';
+            } else {
+              btn.innerHTML =
+                '<i class="fa-solid fa-play"></i> Ativar monitoramento em tempo real';
+            }
+            btn.classList.remove("btn-success");
+            btn.classList.add("btn-secondary");
+          }
+        });
+      }
+
+      // ao carregar a página, restaura o estado salvo
+      const savedLive = localStorage.getItem(LIVE_KEY);
+      if (savedLive === "1") {
+        liveEnabled = true;
+        startLive(); // vai chamar updateButtonsUI por dentro
+      } else {
+        liveEnabled = false;
+        updateButtonsUI();
+      }
+
+
+      function doRefresh() {
+        console.log("[dashboard-live] fazendo refresh…");
+        fetch("<%= refresh_dashboard_path %>", {
+          headers: { "Accept": "text/vnd.turbo-stream.html" }
+        })
+          .then(resp => {
+            console.log("[dashboard-live] status response:", resp.status);
+            return resp.text();
+          })
+                    .then(html => {
+            console.log("[dashboard-live] tamanho do turbo-stream:", html.length);
+            if (!html.trim()) {
+              console.warn("[dashboard-live] resposta vazia do refresh");
+              return;
+            }
+
+            if (window.Turbo && Turbo.renderStreamMessage) {
+              console.log("[dashboard-live] usando Turbo.renderStreamMessage");
+              Turbo.renderStreamMessage(html);
+
+              // depois do Turbo aplicar os streams, re-inicializa
+              if (window.initDashboardRooms) {
+                window.initDashboardRooms();
+              }
+              if (window.initMarkAllButtons) {
+                window.initMarkAllButtons();
+              }
+            } else {
+              console.warn("[dashboard-live] Turbo não disponível, aplicando fallback manual");
+              applyTurboStreamManualmente(html);
+            }
+
+            // depois de atualizar o DOM, verifica se mudou o snapshot
+            checkSnapshotChange();
+          })
+
+          .catch(err => console.error("[dashboard-live] erro no refresh:", err));
+      }
+
+                       function startLive() {
+        if (timer) return;
+
+        console.log("[dashboard-live] startLive");
+
+        // guarda snapshot atual como "antes da atualização"
+        lastSnapshot = getCurrentSnapshot();
+
+        liveEnabled = true;
+        updateButtonsUI();
+
+        // 🔹 marca o body para esconder banner/menu com animação
+        if (body) body.classList.add("monitoring-on-dashboard");
+
+        // persiste estado ligado
+        localStorage.setItem(LIVE_KEY, "1");
+
+        doRefresh(); // primeira atualização imediata
+        timer = setInterval(doRefresh, REFRESH_MS);
+      }
+
+      function stopLive() {
+        console.log("[dashboard-live] stopLive");
+        if (timer) {
+          clearInterval(timer);
+          timer = null;
+        }
+
+        liveEnabled = false;
+        updateButtonsUI();
+
+        // 🔹 tira a classe pra trazer o banner/menu de volta
+        if (body) body.classList.remove("monitoring-on-dashboard");
+
+        // persiste estado desligado
+        localStorage.setItem(LIVE_KEY, "0");
+      }
+
+
+
+
+      // todos os botões (inline + FAB) passam a ligar/desligar
+      toggleButtons.forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          e.preventDefault();
+          console.log("[dashboard-live] botão clicado; liveEnabled =", liveEnabled);
+          if (liveEnabled) {
+            stopLive();
+          } else {
+            startLive();
+          }
+        });
+      });
+
+
+      document.addEventListener("turbo:before-cache", function() {
+        if (timer) clearInterval(timer);
+        timer = null;
+      }, { once: true });
+    });
+  })();
+
 
 </script>
+
+

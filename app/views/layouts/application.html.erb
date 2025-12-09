@@ -279,6 +279,23 @@
 </div>
 <%= render "shared/feedback_fab" %>
 <%= render "shared/feedback_modal" %>
+
+<% if controller_name == "dashboard" &&
+      action_name == "index" &&
+      user_signed_in? &&
+      can_view_monitoring? %>
+  <button
+    id="monitoring-fab"
+    type="button"
+    class="monitor-fab btn btn-sm btn-secondary"
+    data-monitor-toggle="dashboard"
+    data-monitor-variant="fab"
+    title="Ativar/desativar monitoramento em tempo real">
+    <i class="fa-solid fa-play"></i>
+  </button>
+<% end %>
+
+
 <%= javascript_include_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" %>
 <script>
   function toggleNotificacoesSidebar() {
@@ -1095,10 +1112,62 @@
     position: absolute;
   }
 
+/* Banner com transição suave */
+.banner, .user-info {
+  transition:
+    transform 0.45s ease,
+    opacity 0.45s ease,
+    margin-bottom 0.45s ease;
+  will-change: transform, opacity, margin-bottom;
+}
+
+/* Quando o monitoramento estiver ativo, some o banner com estilo */
+.monitoring-on-dashboard .banner,
+.monitoring-on-dashboard .user-info,
+.monitoring-on-dashboard .marcar-todos-btn
+ {
+  transform: translateY(-120%);
+  opacity: 0;
+  margin-bottom: -4rem; /* puxa o conteúdo pra cima */
+  pointer-events: none;
+}
+
+
+/* Ajusta o conteúdo pra ocupar o espaço do banner que sumiu */
+.monitoring-on-dashboard .page-shell {
+  margin-top: 0rem;      /* antes era ~9rem */
+  transition: margin-top 0.45s ease;
+}
+
+
   /* em telas bem pequenas, um pouco menos de padding pra caber tudo */
   @media (max-width: 768px){
   .page-shell{
     padding: 0 1rem 2rem;
   }
   }
+
+  /* Botão flutuante de monitoramento (fica perto do feedback-fab) */
+#monitoring-fab {
+  position: fixed;
+  bottom: 110px;      /* um pouco acima do feedback-fab */
+  right: 24px;
+  z-index: 9998;
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+}
+
+@media (max-width: 768px) {
+  #monitoring-fab {
+    bottom: 90px;
+    right: 18px;
+  }
+}
+
 </style>
