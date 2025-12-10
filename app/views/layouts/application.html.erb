@@ -46,34 +46,35 @@
         <img src="/loading.gif" alt="Carregando…" />
       </div>
     </div>%>
-    <% unless tela_de_alteracao_de_senha? %>
+        <% unless tela_de_alteracao_de_senha? %>
       <% unless controller_path == "users/registrations" && action_name == "edit" %>
         <div class="user-info">
           <% if user_signed_in? %>
-            <% participant = current_user.participant %>
+            <% participant   = current_user.participant %>
+            <% notificacoes  = current_user.notifications.nao_lidas.order(created_at: :desc).limit(50) %>
+
             <% if participant&.photo&.attached? %>
               <%= image_tag url_for(participant.photo), class: "user-avatar", id: "user-avatar-trigger" %>
             <% else %>
               <div class="user-avatar" id="user-avatar-trigger"><i class="fa-solid fa-circle-user"></i></div>
             <% end %>
+
             <div class="hide-on-mobile user-name">
               Bem-vindo, <%= participant&.name || current_user.email %>
             </div>
-            <% notificacoes = current_user.notifications.nao_lidas.order(created_at: :desc).limit(50) %>
 
             <div class="notification-icon-wrapper">
-              <% notificacoes = current_user.notifications.nao_lidas.order(created_at: :desc).limit(50) %>
-
               <% latest = notificacoes.first %>
               <button class="notification-btn"
-        onclick="toggleNotificacoesSidebar()"
-        data-notif-count="<%= notificacoes.count %>"
-        data-latest-notif-id="<%= latest&.id %>">
+                      onclick="toggleNotificacoesSidebar()"
+                      data-notif-count="<%= notificacoes.count %>"
+                      data-latest-notif-id="<%= latest&.id %>">
                 <i class="fa-solid fa-bell"></i>
                 <% if notificacoes.any? %>
                   <span class="badge"><%= notificacoes.count %></span>
                 <% end %>
               </button>
+
               <% if notificacoes.any? %>
                 <div id="notifNudge" class="notif-nudge" role="status" aria-live="polite">
                   <i class="fa-solid fa-hand-point-right"></i>
@@ -81,49 +82,59 @@
                   <button type="button" class="notif-nudge-close" aria-label="Fechar dica">&times;</button>
                 </div>
               <% end %>
-              <div id="notificacoes-overlay" class="notificacoes-overlay" onclick="fecharSidebarNotificacoes(event)"></div>
-              <div id="notificacoes-sidebar" class="notificacoes-sidebar">
-                <div class="sidebar-header">
-                  <h3>Notificações</h3>
-                  <%= button_to "Limpar todas", marcar_todas_como_lidas_notifications_path, method: :post, class: "limpar-todas-btn", remote: true %>
-                </div>
-                <div class="sidebar-conteudo">
-                  <% if notificacoes.any? %>
-                    <ul class="notificacoes-lista">
-                      <% notificacoes.each do |n| %>
-                        <li id="notificacao-<%= n.id %>" class="notificacao-item">
-                          <div class="notificacao-conteudo">
-                            <button type="button" class="abrir-detalhe-notificacao"
-            data-titulo="<%= n.titulo %>"
-            data-mensagem="<%= n.corpo %>"
-            data-data="<%= l(n.created_at, format: :short) %>">
-                              <i class="fa-solid fa-circle-exclamation"></i>
-                              <span><%= n.titulo %></span>
-                            </button>
-                            <%= button_to marcar_como_lida_notification_path(n),
-          method: :post,
-          class: "btn-fechar-notificacao" do %>
-                              <i class="fa-solid fa-xmark notificacoes-lista-close"></i>
-                            <% end %>
-                          </div>
-                          <br>
-                          <small class="notificacao-data">
-                            <%= l(n.created_at, format: "%d/%m/%Y %H:%M") %>
-                          </small>
-                        </li>
-                      <% end %>
-                    </ul>
-                  <% else %>
-                    <div class="sem-notificacoes">Nenhuma notificação nova</div>
-                  <% end %>
-                </div>
-              </div>
             </div>
           <% end %>  <!-- fim do if user_signed_in? -->
-        </div>
-       <!-- fim da div.user-info -->
-      <% end %>      <!-- fim do unless controller_path == "users/registrations" && action_name == "edit" -->
-    <% end %>        <!-- fim do unless tela_de_alteracao_de_senha? -->
+        </div>       <!-- fim da div.user-info -->
+
+        <% if user_signed_in? %>
+          <div id="notificacoes-overlay" class="notificacoes-overlay" onclick="fecharSidebarNotificacoes(event)"></div>
+          <div id="notificacoes-sidebar" class="notificacoes-sidebar">
+            <div class="sidebar-header">
+              <h3>Notificações</h3>
+              <%= button_to "Limpar todas",
+                            marcar_todas_como_lidas_notifications_path,
+                            method: :post,
+                            class: "limpar-todas-btn",
+                            remote: true %>
+            </div>
+
+            <div class="sidebar-conteudo">
+              <% if notificacoes.any? %>
+                <ul class="notificacoes-lista">
+                  <% notificacoes.each do |n| %>
+                    <li id="notificacao-<%= n.id %>" class="notificacao-item">
+                      <div class="notificacao-conteudo">
+                        <button type="button"
+                                class="abrir-detalhe-notificacao"
+                                data-titulo="<%= n.titulo %>"
+                                data-mensagem="<%= n.corpo %>"
+                                data-data="<%= l(n.created_at, format: :short) %>">
+                          <i class="fa-solid fa-circle-exclamation"></i>
+                          <span><%= n.titulo %></span>
+                        </button>
+
+                        <%= button_to marcar_como_lida_notification_path(n),
+                                      method: :post,
+                                      class: "btn-fechar-notificacao" do %>
+                          <i class="fa-solid fa-xmark notificacoes-lista-close"></i>
+                        <% end %>
+                      </div>
+                      <br>
+                      <small class="notificacao-data">
+                        <%= l(n.created_at, format: "%d/%m/%Y %H:%M") %>
+                      </small>
+                    </li>
+                  <% end %>
+                </ul>
+              <% else %>
+                <div class="sem-notificacoes">Nenhuma notificação nova</div>
+              <% end %>
+            </div>
+          </div>
+        <% end %>
+      <% end %>  <!-- fim do unless controller_path == "users/registrations" && action_name == "edit" -->
+    <% end %>    <!-- fim do unless tela_de_alteracao_de_senha? -->
+
     <main>
       <div class="banner">
         <% unless (controller_path == "users/registrations" && action_name == "edit") || 
@@ -1149,18 +1160,30 @@
 
   /* Botão flutuante de monitoramento (fica perto do feedback-fab) */
 #monitoring-fab {
-  position: fixed;
-  bottom: 110px;      /* um pouco acima do feedback-fab */
-  right: 24px;
-  z-index: 9998;
-  border-radius: 999px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.35);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  padding: 0;
+    display: grid;
+    place-items: center;
+    width: 75px;
+    height: 75px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    color: #fff;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
+    position: fixed;
+    bottom: 110px;
+    right: 20px;
+    border: none;
+    transform: translateY(0) scale(1);
+    transform-origin: center;
+    transition: transform .18s cubic-bezier(.2, .8, .2, 1), box-shadow .18s cubic-bezier(.2, .8, .2, 1);
+    will-change: transform;
+    backface-visibility: hidden;
+    z-index: 10;
+}
+
+#monitoring-fab:hover {
+  /* leve subida + scale suave */
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 14px 32px rgba(0,0,0,.30);
 }
 
 @media (max-width: 768px) {

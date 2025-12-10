@@ -11,15 +11,14 @@ class ApplicationController < ActionController::Base
   def can_view_monitoring?
     return false unless current_user
 
-    # Admin / operador sempre podem ver
-    return true if current_user.respond_to?(:admin?)    && current_user.admin?
-    return true if current_user.respond_to?(:operador?) && current_user.operador?
-
     participant = current_user.participant
     return false unless participant
 
     sub = participant.sub_grupo_empresa
-    sub&.can_view_monitoring? || false
+    return false unless sub
+
+    # Se você tiver a coluna booleana `can_view_monitoring` no subgrupo:
+    sub.respond_to?(:can_view_monitoring) ? !!sub.can_view_monitoring : false
   end
 
 
