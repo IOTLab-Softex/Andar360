@@ -1,27 +1,23 @@
 module Releases
   class CreateReleaseFromFeedbacks
+    def initialize(version:, stage:, feedback_ids:)
+      @version      = version
+      @stage        = stage
+      @feedback_ids = feedback_ids
+    end
+
     def call
-      old_release = Release.current
+      ActiveRecord::Base.transaction do
+        release = Release.create!(
+          version: @version,
+          stage: @stage,
+          released_at: Time.current
+        )
 
-      feedbacks = old_release.feedbacks.where(status: :resolvido)
+        Feedback.where(id: @feedback_ids).update_all(release_id: release.id)
 
-      current_version = Release.file_version
-      next_version = VersionBumper.new(current_version, feedbacks).next_version
-
-      # fechar release atual
-      old_release.update!(released_at: Time.current)
-
-      # criar nova release
-      new_release = Release.create!(
-        version: next_version,
-        stage: "alpha",
-        released_at: nil
-      )
-
-      # atualizar arquivo VERSION
-      Release.update_file_version(next_version)
-
-      new_release
+        release
+      end
     end
   end
 end
