@@ -42,11 +42,12 @@
       <div class="fx-actions-bar">
         <%= submit_tag "Filtrar", class: "btn btn-primary btn-soft" %>
         <%= link_to "Limpar", feedbacks_path, class: "btn btn-secondary btn-soft" %>
-          <% if (last_release = Release.order(released_at: :desc).first) %>
-    <%= link_to release_path(last_release), class: "btn btn-success btn-soft" do %>
-      <i class="fa-solid fa-code-branch"></i> Ver Última Release
-    <% end %>
+          <% if (last_released = Release.where.not(released_at: nil).order(released_at: :desc).first) %>
+  <%= link_to release_path(last_released), class: "btn btn-success btn-soft" do %>
+    <i class="fa-solid fa-code-branch"></i> Último CHANGELOG
   <% end %>
+<% end %>
+
 
       </div>
     <% end %>
