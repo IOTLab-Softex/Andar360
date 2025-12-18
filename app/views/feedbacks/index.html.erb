@@ -42,8 +42,15 @@
       <div class="fx-actions-bar">
         <%= submit_tag "Filtrar", class: "btn btn-primary btn-soft" %>
         <%= link_to "Limpar", feedbacks_path, class: "btn btn-secondary btn-soft" %>
+          <% if (last_release = Release.order(released_at: :desc).first) %>
+    <%= link_to release_path(last_release), class: "btn btn-success btn-soft" do %>
+      <i class="fa-solid fa-code-branch"></i> Ver Última Release
+    <% end %>
+  <% end %>
+
       </div>
     <% end %>
+    
   </div>
 
   <% if @feedbacks.blank? %>
@@ -71,6 +78,7 @@
 
         <tbody>
           <% @feedbacks.each do |fb| %>
+          
             <% row_class =
       { "aberto"=>"row--open", "em_andamento"=>"row--progress",
         "resolvido"=>"row--done", "ignorado"=>"row--muted" }[fb.status] %>
@@ -131,6 +139,14 @@
                 <%= button_to feedback_path(fb), method: :delete, data: { confirm: "Remover este feedback?" }, class: "btn-icon danger", form: { class: "inline" }, title: "Excluir" do %>
                   <i class="fa-regular fa-trash-can"></i>
                 <% end %>
+                <% if fb.release.present? %>
+  <%= link_to release_path(fb.release),
+      class: "btn-icon",
+      title: "Ver Release" do %>
+    <i class="fa-solid fa-code-branch"></i>
+  <% end %>
+<% end %>
+
               </td>
             </tr>
           <% end %>

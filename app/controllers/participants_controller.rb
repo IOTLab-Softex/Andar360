@@ -242,15 +242,24 @@ end
     redirect_to participants_path(tab: "ativos"), notice: "Participante resgatado com sucesso."
   end
 
-  def solicitar_exclusao
-    @participant = Participant.find(params[:id])
-    SolicitacaoParticipante.create!(
-      participant: @participant,
-      motivo: params[:motivo], # pode ser nil ou coletado em modal/form
-      status: :pendente,
-    )
+def solicitar_exclusao
+  @participant = Participant.find(params[:id])
+
+  SolicitacaoParticipante.create!(
+    participant: @participant,
+    motivo: params[:motivo],
+    status: :pendente,
+  )
+
+  # se o próprio usuário solicitou, derruba ele agora
+  if current_user.participant_id == @participant.id
+    sign_out(current_user)
+    redirect_to new_user_session_path, notice: "Solicitação criada. Seu acesso foi suspenso até aprovação."
+  else
     redirect_to participants_path, notice: "Solicitação de exclusão criada. Aguarde aprovação."
   end
+end
+
 
   # app/controllers/participants_controller.rb
   def por_empresa
@@ -302,6 +311,17 @@ end
       redirect_to participants_path(tab: "pendentes"), alert: "Solicitação não encontrada."
     end
   end
+
+  before_action :kick_blocked_user
+
+def kick_blocked_user
+  return unless user_signed_in?
+
+  if current_user.blocked_access?
+    sign_out(current_user)
+    redirect_to new_user_session_path, alert: "Seu acesso foi desativado."
+  end
+end
 
   private
 

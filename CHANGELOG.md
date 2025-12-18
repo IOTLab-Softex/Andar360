@@ -1,15 +1,55 @@
 # Histórico de Versões
-1 → MAJOR
+Primeiro digito → MAJOR
 Quebra de compatibilidade. Só muda para 2.x.x quando você fizer mudanças incompatíveis com versões anteriores (APIs removidas/alteradas de forma que quem usa quebre).
 
-0 → MINOR
+Segundo digito → MINOR
 Funcionalidades novas, mas compatíveis com a versão anterior. Não devem quebrar quem já usa (APIs só adicionadas, comportamentos preservados).
 
-7 → PATCH
+Terceiro digito → PATCH
 Correções de bugs e ajustes internos compatíveis, sem mudar comportamento público (refactors, fixes, otimizações).
 
+## [1.0.20] pre-alpha - 2025-12-16 | 90 % Responsivo a Mobile
+* **Bugs**
+    * [/formulario_cadastros/new]-[Status:]
+      *Formulário não esta reposivo, e precisa ser separado por função no setor para notificar responsável de cadastramento por email*
+      
+    * [/dashboard]-[Status:]
+      *O orverley do modal de perfil precisa sobrepor o togle de opção sidebar*
+      
+    * [/settings/1/edit]-[Status:]
+      *Verificar o sistema de importação dos arquivos do incontrol*
+      
+    * [/dashboard]-[Status:]
+      *Tabela esta mostrando o Head quando não tem conteúdo e esta mostrando quebrado a versão mobile*
+      
+    * [/prestador_servicos/new]-[Status:Corrigido]
+      *A ferramenta de feedback não esta conseguindo upar imagem Apresenta esse erro ERR_UPLOAD_FILE_CHANGED*
+      
+    * [/prestador_servicos/new]-[Status:]
+      *Ao criar a encomenda esta apresentando erro 500*
+    
+    * [/feedbacks]-[Status:]
+      *sistema não esta conseguindo excluir os feedback*
+* **Melhoria**
+    * [/reservations/new]-[Status:]
+      *No solicitante seria interessante deixa o usuário logado pre selecionado com opções de desmarcar-lo*
+      
+    * [/solicitacao_compras/new]-[Status:]
+      *A barra de salvar e cancelar esta sobrepondo os campos na versão mobile*
+      
+    * [/prestador_servicos/new]-[Status:]
+      *Prestador de serviço esta sem validação de dados*
+      
+    * [/participants]-[Status:Resolvido]
+      *Usuário na tabela de excluido ou aguardando aprovação de exclusão tem que perder o acesso ao sistema a nao ser que ele estaja na tebela usuário*
+         
+    * [/feedbacks]-[Status:]
+      *Colocar opção para gerar CHANGELOG com feedback resolvidos e ja imcluir na versão do path*
 
-## [1.0.58] pre-alpha - 2025-07-11 | 90 % Responsivo a Mobile
+    * [/dashboard]-[Status:]
+      *colocar atualização no monitoramento para os kpi*
+
+## [1.0.7] pre-alpha - 2025-07-11 | 90 % Responsivo a Mobile
 
 *Ciclo de desenvolvimento: ~3 meses*
 

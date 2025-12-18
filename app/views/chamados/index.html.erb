@@ -1,5 +1,93 @@
+<style>
+/* ===== filtro com label no topo do campo ===== */
+.filtro-row{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+.filtro-field{
+  position: relative;
+  min-width: 180px;
+  flex: 1;
+}
+
+.filtro-field .filtro-field-label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    letter-spacing: .02em;
+    border-radius: 999px;
+    color: #bdbdbd;
+    /* background: #1f1f1f; */
+    /* border: 1px solid #3a3a3a; */
+    z-index: 2;
+}
+
+.filtro-field .form-control{
+  width: 100%;
+  height: 42px;
+  padding-top: 10px; /* espaço p/ não bater no label */
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #262626;
+  color: #e6e6e6;
+}
+
+.filtro-field .form-control:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+  border-color: #5a5a5a;
+}
+
+/* campo "a" entre datas */
+.filtro-sep{
+  padding: 0 4px 10px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+@media (max-width: 700px){
+  .filtro-field{ min-width: 100%; }
+}
+
+.filtro-actions{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+.btn-limpar{
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #1f1f1f;
+  color: #e6e6e6;
+  padding: 0 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .08s ease, background .12s ease, border-color .12s ease;
+}
+
+.btn-limpar:hover{
+  background: #242424;
+  border-color: #5a5a5a;
+}
+
+.btn-limpar:active{
+  transform: translateY(1px);
+}
 
 
+</style>
 <div class="table-responsive">
 <%# ==== Stats de Chamados (Pendente / Em andamento / Concluído) ==== %>
 <% ordem_status = ["Pendente", "Em andamento", "Concluído"] %>
@@ -89,64 +177,76 @@
   Filtro
   <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
 </button>
-<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form tab-panel", id: "filtros-salas" do %>
-  <div style="margin-bottom: 20px;display: flex;">
-    
-    <% scope = @chamados || Chamado.all %>
-
-<%= select_tag :local,
-      options_for_select(
-        ["Todos os locais"] + scope.distinct.pluck(:local),
-        params[:local]
-      ),
-      class: "form-control" %>
-
-<%= select_tag :unidade,
-      options_for_select(
-        ["Todas as unidades"] + scope.distinct.pluck(:unidade),
-        params[:unidade]
-      ),
-      class: "form-control" %>
-
-<%= select_tag :status,
-  options_for_select(
-    ["Todos os status", "Pendente", "Em andamento", "Concluído"],
-    params[:status]
-  ),
-  class: "form-control"
+<%
+  filtros_keys = [:local, :unidade, :status, :prioridade, :responsavel, :data_inicio, :data_fim]
+  has_filtros  = filtros_keys.any? { |k| params[k].present? }
 %>
 
-<%= select_tag :prioridade,
-      options_for_select(
-        ["Todas as prioridades"] + scope.distinct.pluck(:prioridade),
-        params[:prioridade]
-      ),
-      class: "form-control" %>
+<%= form_with url: chamados_path, method: :get, local: true, class: "filtros-form tab-panel", id: "filtros-salas" do %>
+  <div class="filtro-row">
+    <% scope = @chamados || Chamado.all %>
 
-<%= select_tag :responsavel,
-      options_for_select(
-        ["Todos os responsáveis"] + scope.distinct.pluck(:responsavel),
-        params[:responsavel]
-      ),
-      class: "form-control" %>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Local</span>
+      <%= select_tag :local,
+            options_for_select(["Todos os locais"] + scope.distinct.pluck(:local), params[:local]),
+            class: "form-control" %>
+    </div>
 
+    <div class="filtro-field">
+      <span class="filtro-field-label">Unidade</span>
+      <%= select_tag :unidade,
+            options_for_select(["Todas as unidades"] + scope.distinct.pluck(:unidade), params[:unidade]),
+            class: "form-control" %>
+    </div>
 
+    <div class="filtro-field">
+      <span class="filtro-field-label">Status</span>
+      <%= select_tag :status,
+            options_for_select(["Todos os status", "Pendente", "Em andamento", "Concluído"], params[:status]),
+            class: "form-control" %>
+    </div>
 
+    <div class="filtro-field">
+      <span class="filtro-field-label">Prioridade</span>
+      <%= select_tag :prioridade,
+            options_for_select(["Todas as prioridades"] + scope.distinct.pluck(:prioridade), params[:prioridade]),
+            class: "form-control" %>
+    </div>
 
-    <%= select_tag :prioridade, options_for_select(["Todas as prioridades"] + Chamado.distinct.pluck(:prioridade), params[:prioridade]), class: "form-control" %>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Responsável</span>
+      <%= select_tag :responsavel,
+            options_for_select(["Todos os responsáveis"] + scope.distinct.pluck(:responsavel), params[:responsavel]),
+            class: "form-control" %>
+    </div>
 
-    <%= select_tag :responsavel, options_for_select(["Todos os responsáveis"] + Chamado.distinct.pluck(:responsavel), params[:responsavel]), class: "form-control" %>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Data início</span>
+      <%= text_field_tag :data_inicio, params[:data_inicio], class: "form-control", placeholder: "" %>
+    </div>
 
-    <!-- Data (opcional) -->
-    <%= text_field_tag :data_inicio, params[:data_inicio], class: "form-control", placeholder: "Data início" %>
-    <%= text_field_tag :data_fim, params[:data_fim], class: "form-control", placeholder: "Data fim" %>
+    <div class="filtro-sep">a</div>
 
-    <%= button_tag type: "submit", class: "btn btn-success" do %>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Data fim</span>
+      <%= text_field_tag :data_fim, params[:data_fim], class: "form-control", placeholder: "" %>
+    </div>
+
+<div class="filtro-actions">
+  <%= button_tag type: "submit", class: "btn btn-success" do %>
     <i class="fa fa-search"></i>
   <% end %>
 
+  <% if has_filtros %>
+    <%= link_to chamados_path, class: "btn btn-success", title: "Limpar filtros" do %>
+      <i class="fa-solid fa-rotate-left"></i>
+    <% end %>
+  <% end %>
+</div>
   </div>
 <% end %>
+
 
   <table class="table-salas">
     <thead>

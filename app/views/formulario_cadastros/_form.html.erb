@@ -8,8 +8,9 @@
       </div>
     <% end %>
 
-<div class="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6" style="margin: 0px 23rem;">
-  <div id="softex-banner" class="flex justify-center mb-4" style="background: white;">
+<div class="form-shell max-w-2xl mx-auto bg-white rounded-xl shadow-md p-6 mt-6">
+
+  <div id="softex-banner" class="flex justify-center mb-4" style="background: #6518ea;">
     <%= image_tag 'softex.png', class: "h-20", id: "softex-logo" %>
   </div>
   <div class="form-group">
@@ -108,7 +109,8 @@ Ao prosseguir com o cadastro, o usuário compreende e concorda com o tratamento 
 <!-- Modal/overlay da câmera -->
 <div id="camera-overlay" style="display:none; position:fixed; inset:0; background:#000000cc; z-index:9999; justify-content:center; align-items:center; padding: 42px 12px;">
   <div style="position:relative; max-width: 96vw;">
-    <iframe id="camera-frame" src="/camera" width="510" height="520" style="border: 3px solid #3f3; border-radius: 12px; max-width: 96vw;"></iframe>
+    <iframe id="camera-frame" src="/camera" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
+
     <button type="button" onclick="closeCamera()" style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">X</button>
   </div>
 </div>
@@ -136,80 +138,138 @@ Ao prosseguir com o cadastro, o usuário compreende e concorda com o tratamento 
   <% end %>
 </div>
 <style>
-.alert{
-      text-align: center;
-    background-color: #d57474;
-    height: 62px;
-    display: flex
-;
-    flex-wrap: nowrap;
-    align-items: center;
-    justify-content: space-around;
+/* ===== Container do formulário ===== */
+.form-shell{
+  width: min(100%, 720px);
+  margin: 24px auto;
+  padding: 20px;
 }
-  .form-check{
-  display: flex
-  ;
-      flex-wrap: wrap;
-  ;
-  }
-  .checkbox-class{
-      padding: 18px;
-  }
 
-  #softex-banner {
-    width: 100%;
-    
-    margin: 32px auto 0 auto;
-    background: white;
-    border-radius: 16px;
-    transition:
-      box-shadow .4s cubic-bezier(.7,.2,.3,1),
-      max-width .4s cubic-bezier(.7,.2,.3,1),
-      margin .4s cubic-bezier(.7,.2,.3,1),
-      border-radius .4s cubic-bezier(.7,.2,.3,1);
-    box-shadow: 0 4px 32px rgba(0,0,0,0.08);
-    z-index: 3;
-    position: relative;
-    text-align: center;
+/* em telas grandes dá um “respiro” */
+@media (min-width: 1024px){
+  .form-shell{
+    margin: 32px auto;
+    padding: 24px;
   }
+}
 
-  #softex-banner.shrink {
-   position: fixed;
-    top: 94px;
-    /* left: 50%; */
-    transform: translateX(-18.2%);
-    /* width: 100vw !important; */
-    max-width: 100vw !important;
-    margin: 0 !important;
-    border-radius: 0 0 16px 16px;
-    box-shadow: 0 2px 18px rgba(0, 0, 0, .15);
-    z-index: 3;
-    text-align: center;
-    transition: box-shadow .4s cubic-bezier(.7,.2,.3,1), max-width .4s cubic-bezier(.7,.2,.3,1), margin .4s cubic-bezier(.7,.2,.3,1), border-radius .4s cubic-bezier(.7,.2,.3,1), left .4s cubic-bezier(.7,.2,.3,1), transform .4s cubic-bezier(.7,.2,.3,1);
-    padding-top: 18px;
-  }
+/* ===== Alert responsivo ===== */
+.alert{
+  text-align: center;
+  background-color: #d57474;
+  min-height: 62px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+.alert ul{
+  margin: 0;
+  padding-left: 18px;
+  text-align: left;
+}
 
+/* ===== Checkboxes em grid responsivo ===== */
+.form-check{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 14px;
+}
+@media (min-width: 520px){
+  .form-check{ grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 900px){
+  .form-check{ grid-template-columns: 1fr 1fr 1fr; }
+}
+.checkbox-class{
+  padding: 8px 10px;
+  border-radius: 10px;
+}
 
-  #softex-logo {
-    height: 182px;
-    width: auto;
-    transition: height .4s cubic-bezier(.7,.2,.3,1);
-  }
-  #softex-banner.shrink #softex-logo {
-    height: 44px !important;
-    max-height: 44px !important;
-  }
-  #banner-spacer {
-    height: 0px;
-    transition: height .4s cubic-bezier(.7,.2,.3,1);
-  }
-  #softex-banner.shrink + #banner-spacer {
-    height: 70px !important;
-  }
+/* ===== Banner/topo responsivo ===== */
+#softex-banner{
+  width: 100%;
+  margin: 0 auto 14px auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.08);
+  position: relative;
+  text-align: center;
+  padding: 10px 12px;
+}
 
-  .h-20{
-  height: 267px;width: -webkit-fill-available;
-  }
+#softex-logo{
+  width: 100%;
+  max-width: 520px;
+  height: auto;
+  max-height: 180px;
+  object-fit: contain;
+  transition: max-height .4s cubic-bezier(.7,.2,.3,1);
+}
+
+/* shrink: fica centralizado SEM translateX fixo */
+#softex-banner.shrink{
+  position: fixed;
+  top: 12px;              /* melhor em qualquer tela */
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100vw, 900px);
+  margin: 0;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 18px rgba(0, 0, 0, .15);
+  z-index: 999;
+  padding: 10px 12px;
+}
+
+#softex-banner.shrink #softex-logo{
+  max-height: 52px;
+}
+
+/* espaço para não “pular” o conteúdo quando shrink ativa */
+#banner-spacer{
+  height: 0px;
+}
+#softex-banner.shrink + #banner-spacer{
+  height: 78px;
+}
+
+/* ===== Preview de foto responsivo ===== */
+#foto-preview-existente{
+  width: 100%;
+  max-width: 520px;
+  max-height: 420px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+/* preview capturada */
+#foto-preview-capturada{
+  width: min(100%, 320px) !important;
+  height: auto !important;
+  max-height: 320px !important;
+  display: none;
+}
+
+/* ===== Modal câmera responsivo ===== */
+#camera-overlay{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#000000cc;
+  z-index:9999;
+  justify-content:center;
+  align-items:center;
+  padding: 18px 12px;
+}
+
+#camera-frame{
+  width: min(96vw, 560px);
+  height: min(80vh, 560px);
+  max-width: 96vw;
+  border-radius: 12px;
+}
+
 </style>
 <script>
   // ===== Estado global =====

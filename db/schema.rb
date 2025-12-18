@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_09_165422) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_18_125306) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -178,8 +178,11 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_09_165422) do
     t.datetime "resolved_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "release_id"
     t.index ["category"], name: "index_feedbacks_on_category"
     t.index ["page_path"], name: "index_feedbacks_on_page_path"
+    t.index ["release_id", "status"], name: "index_feedbacks_on_release_id_and_status"
+    t.index ["release_id"], name: "index_feedbacks_on_release_id"
     t.index ["resolved_by_id"], name: "index_feedbacks_on_resolved_by_id"
     t.index ["severity"], name: "index_feedbacks_on_severity"
     t.index ["status"], name: "index_feedbacks_on_status"
@@ -339,6 +342,15 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_09_165422) do
     t.string "cnpj"
     t.text "servicos"
     t.text "observacao"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "releases", force: :cascade do |t|
+    t.string "version"
+    t.string "stage"
+    t.datetime "released_at"
+    t.text "notes"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
   end
@@ -526,6 +538,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_09_165422) do
   add_foreign_key "checklist_ocorrencia", "ocorrencia", column: "ocorrencia_id"
   add_foreign_key "devices", "rooms"
   add_foreign_key "encomendas", "participants", column: "destinatario_id"
+  add_foreign_key "feedbacks", "releases"
   add_foreign_key "feedbacks", "users"
   add_foreign_key "formulario_cadastros", "users", column: "aprovado_por_id"
   add_foreign_key "formulario_cadastros", "users", column: "reprovado_por_id"

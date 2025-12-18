@@ -1,0 +1,80 @@
+<style>
+.fx-card{
+  background: var(--fx-surface);
+  border:1px solid var(--fx-border);
+  border-radius:14px;
+  padding:16px;
+}
+
+.fx-changelog{
+  background: #0f172a;
+  color: #e5e7eb;
+  padding:14px;
+  border-radius:10px;
+  overflow:auto;
+  font-size:.9rem;
+}
+
+</style>
+<section class="fx-page">
+  <header class="fx-head">
+    <div>
+      <h1 class="fx-title">
+        <i class="fa-solid fa-code-branch"></i>
+        Release <%= @release.version %>
+      </h1>
+      <p class="fx-sub">
+        <strong>Stage:</strong> <%= @release.stage %> •
+        <strong>Data:</strong>
+<%= @release.released_at.present? ? l(@release.released_at, format: :long) : "Em desenvolvimento" %>
+
+      </p>
+    </div>
+
+    <div class="fx-actions-bar">
+      <%= link_to export_changelog_release_path(@release),
+          class: "btn btn-primary btn-soft" do %>
+        <i class="fa-solid fa-download"></i> Exportar CHANGELOG
+      <% end %>
+    </div>
+  </header>
+
+<% if @next_version.present? %>
+  <div class="alert alert-info" style="margin-bottom: 16px;">
+    Próxima versão sugerida:
+    <strong><%= @next_version %></strong>
+  </div>
+<% end %>
+
+  <!-- PREVIEW DO CHANGELOG -->
+  <div class="fx-card">
+    <h3><i class="fa-solid fa-file-lines"></i> CHANGELOG</h3>
+    <pre class="fx-changelog"><%= @changelog %></pre>
+  </div>
+
+  <!-- LISTA DETALHADA -->
+  <div class="fx-card">
+    <h3><i class="fa-regular fa-comments"></i> Feedbacks incluídos</h3>
+
+    <table class="fx-table">
+      <thead>
+        <tr>
+          <th>Categoria</th>
+          <th>Página</th>
+          <th>Mensagem</th>
+          <th>Resolvido por</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @feedbacks.each do |fb| %>
+          <tr>
+            <td><span class="tag"><%= fb.category.humanize %></span></td>
+            <td><code><%= fb.page_path || "-" %></code></td>
+            <td><%= fb.message %></td>
+            <td><%= fb.resolved_by&.email || "-" %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</section>

@@ -168,6 +168,12 @@ devise_for :users, controllers: {
   end
   end
 
+# config/routes.rb
+resources :releases, only: [:index, :show, :create] do
+  member do
+    get :export_changelog
+  end
+end
 
   resources :participants
 resources :participants do

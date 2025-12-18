@@ -45,14 +45,23 @@
           </div>
 
           <div class="fm-field">
-            <label>Anexos (prints, logs)</label>
-            <label for="feedback_attachments" class="fm-drop" id="fm-drop">
-              <span class="fm-drop-icon">⬆</span>
-              <span class="fm-drop-text">Arraste aqui ou <u>clique para escolher</u></span>
-            </label>
-            <%= f.file_field :attachments, multiple: true, class: "form-control d-none", id: "feedback_attachments", accept: "image/*,.txt,.log,.pdf" %>
-            <ul class="fm-files" id="fm-files"></ul>
-          </div>
+  <label>Anexos (prints, logs)</label>
+
+  <div class="fm-drop" id="fm-drop" role="button" tabindex="0">
+    <span class="fm-drop-icon">⬆</span>
+    <span class="fm-drop-text">Arraste aqui ou <u>clique para escolher</u></span>
+  </div>
+
+  <%= f.file_field :attachments,
+        multiple: true,
+        class: "form-control d-none",
+        id: "feedback_attachments",
+        accept: "image/*,.txt,.log,.pdf" %>
+
+  <ul class="fm-files" id="fm-files"></ul>
+</div>
+
+
         </div>
       </details>
 
@@ -273,69 +282,57 @@ html:not([data-theme="dark"]) .fm-control.form-select optgroup {
 </style>
 
 <script>
+(function () {
+  function bindFeedbackDrop() {
+    const drop = document.getElementById("fm-drop");
+    const fileInput = document.getElementById("feedback_attachments");
+    const fileList = document.getElementById("fm-files");
+    if (!drop || !fileInput || !fileList) return;
 
-// Esc fecha o modal
-document.addEventListener("keydown", (e)=>{
-  if (e.key === "Escape" && overlay.style.display === "block") {
-    overlay.style.display = "none";
-    document.body.style.overflow = "";
-  }
-});
+    // evita duplicar listeners
+    if (drop.dataset.bound === "1") return;
+    drop.dataset.bound = "1";
 
-// Dropzone: clique/arraste para anexar + lista de arquivos
-const drop = document.getElementById("fm-drop");
-const fileInput = document.getElementById("feedback_attachments");
-const fileList = document.getElementById("fm-files");
-if (drop && fileInput && fileList){
-  const showFiles = () => {
-    fileList.innerHTML = "";
-    Array.from(fileInput.files || []).forEach(f => {
-      const li = document.createElement("li");
-      li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
-      fileList.appendChild(li);
+    const showFiles = () => {
+      fileList.innerHTML = "";
+      Array.from(fileInput.files || []).forEach(f => {
+        const li = document.createElement("li");
+        li.textContent = `${f.name} (${Math.round(f.size/1024)} KB)`;
+        fileList.appendChild(li);
+      });
+    };
+
+    const openPicker = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fileInput.click();
+    };
+
+    drop.addEventListener("click", openPicker);
+    drop.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") openPicker(e);
     });
-  };
-  drop.addEventListener("click", () => fileInput.click());
-  fileInput.addEventListener("change", showFiles);
 
-  ["dragenter","dragover"].forEach(ev =>
-    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); })
-  );
-  ["dragleave","drop"].forEach(ev =>
-    drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); })
-  );
-  drop.addEventListener("drop", e => {
-    e.preventDefault();
-    if (e.dataTransfer?.files?.length){
-      // Nem todos browsers permitem set direto; na maioria funciona em desktop
-      fileInput.files = e.dataTransfer.files;
-      showFiles();
-    }
-  });
-}
+    fileInput.addEventListener("change", showFiles);
 
-// Auto-grow na textarea
-// Auto-grow na textarea (altura inicial fixa em data-minheight ou 10px)
-document.querySelectorAll(".js-autogrow").forEach(el=>{
-  const min = parseInt(el.dataset.minheight || "10", 10);       // px
-  const max = Math.round(window.innerHeight * 0.5);             // limite (50% da viewport)
+    ["dragenter","dragover"].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add("drag"); })
+    );
+    ["dragleave","drop"].forEach(ev =>
+      drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove("drag"); })
+    );
+    drop.addEventListener("drop", e => {
+      e.preventDefault();
+      if (e.dataTransfer?.files?.length){
+        fileInput.files = e.dataTransfer.files;
+        showFiles();
+      }
+    });
+  }
 
-  // começa exatamente com 10px
-  el.style.height = min + "px";
-
-  const grow = () => {
-    // volta ao mínimo e mede o conteúdo
-    el.style.height = min + "px";
-    const next = Math.min(el.scrollHeight, max);
-    el.style.height = Math.max(min, next) + "px";
-  };
-
-  // só cresce quando o usuário interage
-  el.addEventListener("input", grow);
-  el.addEventListener("change", grow);
-  el.addEventListener("focus", grow); // se colar texto, cresce ao focar
-});
-
-
-
+  // funciona com e sem Turbo
+  document.addEventListener("DOMContentLoaded", bindFeedbackDrop);
+  document.addEventListener("turbo:load", bindFeedbackDrop);
+})();
 </script>
+

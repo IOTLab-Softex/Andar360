@@ -20,26 +20,30 @@ class FeedbacksController < ApplicationController
   end
 
   # Criação (pode ser anônimo; se tiver usuário logado, associa)
-  def create
-    @feedback = Feedback.new(feedback_params)
-    @feedback.user = current_user if user_signed_in?
-    @feedback.user_agent ||= request.user_agent
+ def create
+  @feedback = Feedback.new(feedback_params)
+  @feedback.user = current_user if user_signed_in?
+  @feedback.user_agent ||= request.user_agent
 
-    if @feedback.save
-      notificar_admins!(@feedback)
-      respond_to do |format|
-        format.html { redirect_back fallback_location: root_path, notice: "Feedback enviado! Valeu pela ajuda 🙌" }
-        format.turbo_stream
-        format.json { render json: { ok: true, id: @feedback.id } }
-      end
-    else
-      respond_to do |format|
-        format.html { redirect_back fallback_location: root_path, alert: @feedback.errors.full_messages.to_sentence }
-        format.turbo_stream
-        format.json { render json: { ok: false, errors: @feedback.errors.full_messages }, status: :unprocessable_entity }
-      end
+  # 👉 Associar automaticamente à release atual
+  @feedback.release = Release.current
+
+  if @feedback.save
+    notificar_admins!(@feedback)
+    respond_to do |format|
+      format.html { redirect_back fallback_location: root_path, notice: "Feedback enviado! Valeu pela ajuda 🙌" }
+      format.turbo_stream
+      format.json { render json: { ok: true, id: @feedback.id } }
+    end
+  else
+    respond_to do |format|
+      format.html { redirect_back fallback_location: root_path, alert: @feedback.errors.full_messages.to_sentence }
+      format.turbo_stream
+      format.json { render json: { ok: false, errors: @feedback.errors.full_messages }, status: :unprocessable_entity }
     end
   end
+end
+
 
   # Update geral (admin)
   def update

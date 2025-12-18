@@ -28,4 +28,25 @@ def self.find_for_database_authentication(warden_conditions)
   where(conditions).where("REPLACE(REPLACE(REPLACE(cpf, '.', ''), '-', ''), ' ', '') = ?", cpf).first
 end
 
+# app/models/user.rb
+def blocked_access?
+  p = participant
+  return false if p.nil?
+
+  # bloqueia se já foi excluído
+  return true if p.excluido?
+
+  # bloqueia se tem solicitação pendente (seu método já faz isso)
+  p.solicitacao_exclusao_pendente.present?
+end
+
+def active_for_authentication?
+  super && !blocked_access?
+end
+
+def inactive_message
+  :inactive
+end
+
+
 end
