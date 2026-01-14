@@ -1,4 +1,6 @@
 class ParticipantsController < ApplicationController
+  before_action :require_admin_or_operador!, only: [:block_access, :unblock_access]
+
   def new
     @participant = Participant.new
   end
@@ -129,68 +131,115 @@ end
   # app/controllers/participants_controller.rb
   # app/controllers/participants_controller.rb
   def index
-    tab = params[:tab] || "ativos"
+  tab = params[:tab].presence || "ativos"
 
-    case tab
-    when "aprovacoes"
-      scope = FormularioCadastro.where(status: "pendente")
-      if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
-        scope = scope.where(grupo_empresa_id: params[:grupo_empresa_id])
-      elsif current_user.client? && current_user.participant&.grupo_empresa_id.present?
-        scope = scope.where(grupo_empresa_id: current_user.participant.grupo_empresa_id)
+  # --- Empresa padrão + persistência em sessão ---
+  if current_user.admin? || current_user.operador?
+    if params.key?(:grupo_empresa_id)
+      # salva inclusive "" (TODOS)
+      session[:participants_grupo_empresa_id] = params[:grupo_empresa_id]
+    end
+
+    # pega do params (mesmo que seja "") ou da sessão
+    @selected_grupo_empresa_id =
+      if params.key?(:grupo_empresa_id)
+        params[:grupo_empresa_id]
       else
-        scope = scope.none if current_user.client?
+        session[:participants_grupo_empresa_id]
       end
 
-      @formularios_pendentes = scope.order(created_at: :desc)
-      @participants = Participant.none
-    when "reprovados"
-      scope = FormularioCadastro.where(status: "reprovado")
-      if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
-        scope = scope.where(grupo_empresa_id: params[:grupo_empresa_id])
-      elsif current_user.client? && current_user.participant&.grupo_empresa_id.present?
-        scope = scope.where(grupo_empresa_id: current_user.participant.grupo_empresa_id)
-      else
-        scope = scope.none if current_user.client?
-      end
+    # se não tem nada (nil), aplica padrão (segunda empresa)
+    if @selected_grupo_empresa_id.nil?
+      @selected_grupo_empresa_id = GrupoEmpresa.order(:nome).second&.id
+      session[:participants_grupo_empresa_id] = @selected_grupo_empresa_id
+    end
+  else
+    @selected_grupo_empresa_id = current_user.participant&.grupo_empresa_id
+  end
 
-      @formularios_reprovados = scope.order(created_at: :desc)
-      @participants = Participant.none
-    else
-      # 🔒 SEMPRE parte do escopo centralizado
-      @participants = scoped_participants
+  # "" => TODOS (não filtra). Qualquer valor => filtra
+  empresa_filtro = @selected_grupo_empresa_id.presence
 
-      # abas
-      case tab
-      when "ativos"
-        @participants = @participants.where("excluido = ? OR excluido IS NULL", false)
-      when "excluidos"
-        @participants = @participants.where(excluido: true)
-      when "pendentes"
-        ids = SolicitacaoParticipante.where(status: "pendente").pluck(:participant_id)
-        @participants = @participants.where(id: ids)
-      end
+  # base SEMPRE já vem com filtro de empresa aplicado (quando houver)
+  base = scoped_participants
+  base = base.where(grupo_empresa_id: empresa_filtro) if empresa_filtro
 
-      # filtros extras (sempre em cima do escopo)
-      if params[:solicitacao_status].present?
-        ids = SolicitacaoParticipante.where(status: params[:solicitacao_status]).pluck(:participant_id)
-        @participants = @participants.where(id: ids)
-      end
+  # --- Contagens (respeitando empresa) ---
+  @count_ativos    = base.where("excluido = ? OR excluido IS NULL", false).count
+  @count_excluidos = current_user.admin? ? base.where(excluido: true).count : 0
 
-      if params[:grupo_empresa_id].present? && (current_user.admin? || current_user.operador?)
-        @participants = @participants.where(grupo_empresa_id: params[:grupo_empresa_id])
-      end
+  ids_pend = SolicitacaoParticipante.where(status: "pendente").pluck(:participant_id)
+  @count_pendentes = base.where(id: ids_pend).count
 
-      if params[:sub_grupo_empresa_id].present?
-        @participants = @participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id])
-      end
+  aprov_scope  = FormularioCadastro.where(status: "pendente")
+  reprov_scope = FormularioCadastro.where(status: "reprovado")
+  if empresa_filtro
+    aprov_scope  = aprov_scope.where(grupo_empresa_id: empresa_filtro)
+    reprov_scope = reprov_scope.where(grupo_empresa_id: empresa_filtro)
+  end
+  @count_aprovacoes = aprov_scope.count
+  @count_reprovados = reprov_scope.count
 
-      if params[:search].present?
-        q = "%#{params[:search]}%"
-        @participants = @participants.where("name ILIKE :q OR cpf ILIKE :q", q: q)
+  # --- Tabs ---
+  case tab
+  when "aprovacoes"
+    scope = FormularioCadastro.where(status: "pendente")
+    scope = scope.where(grupo_empresa_id: empresa_filtro) if empresa_filtro
+    @formularios_pendentes = scope.order(created_at: :desc)
+    @participants = Participant.none
+
+  when "reprovados"
+    scope = FormularioCadastro.where(status: "reprovado")
+    scope = scope.where(grupo_empresa_id: empresa_filtro) if empresa_filtro
+    @formularios_reprovados = scope.order(created_at: :desc)
+    @participants = Participant.none
+
+  else
+    # ✅ aqui estava o seu bug: @participants estava nil
+    @participants = base.includes(:user)
+
+    # --- filtros acesso/bloqueio ---
+    if params[:user_access].present?
+      case params[:user_access]
+      when "with_user"
+        @participants = @participants.joins(:user)
+      when "without_user"
+        @participants = @participants.left_outer_joins(:user).where(users: { id: nil })
       end
     end
+
+    if params[:user_block].present? && ActiveRecord::Base.connection.column_exists?(:users, :blocked)
+      case params[:user_block]
+      when "blocked"
+        @participants = @participants.joins(:user).where(users: { blocked: true })
+      when "unblocked"
+        @participants = @participants.joins(:user).where(users: { blocked: false })
+      end
+    end
+
+    # --- sub-abas ---
+    case tab
+    when "ativos"
+      @participants = @participants.where("excluido = ? OR excluido IS NULL", false)
+    when "excluidos"
+      @participants = @participants.where(excluido: true)
+    when "pendentes"
+      ids = SolicitacaoParticipante.where(status: "pendente").pluck(:participant_id)
+      @participants = @participants.where(id: ids)
+    end
+
+    # --- filtros extras ---
+    if params[:sub_grupo_empresa_id].present?
+      @participants = @participants.where(sub_grupo_empresa_id: params[:sub_grupo_empresa_id])
+    end
+
+    if params[:search].present?
+      q = "%#{params[:search]}%"
+      @participants = @participants.where("name ILIKE :q OR cpf ILIKE :q", q: q)
+    end
   end
+end
+
 
   def delete_all
     unless current_user.admin?
@@ -323,7 +372,44 @@ def kick_blocked_user
   end
 end
 
+def block_access
+  participant = Participant.find(params[:id])
+  user = participant.user
+
+  if user.nil?
+    redirect_back fallback_location: participants_path, alert: "Este participante não possui usuário."
+    return
+  end
+
+  if user.id == current_user.id
+    redirect_back fallback_location: participants_path, alert: "Você não pode bloquear a si mesmo."
+    return
+  end
+
+  user.update!(blocked: true)
+  redirect_back fallback_location: participants_path, notice: "Acesso bloqueado com sucesso."
+end
+
+def unblock_access
+  participant = Participant.find(params[:id])
+  user = participant.user
+
+  if user.nil?
+    redirect_back fallback_location: participants_path, alert: "Este participante não possui usuário."
+    return
+  end
+
+  user.update!(blocked: false)
+  redirect_back fallback_location: participants_path, notice: "Acesso desbloqueado com sucesso."
+end
+
   private
+
+  def require_admin_or_operador!
+  unless current_user.admin? || current_user.operador?
+    redirect_back fallback_location: participants_path, alert: "Sem permissão."
+  end
+end
 
   def scoped_participants
     super # ← chama o scoped_participants do ApplicationController

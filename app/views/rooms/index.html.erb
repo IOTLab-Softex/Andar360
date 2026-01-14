@@ -22,29 +22,55 @@
 </button>
 <br>
 <div class="mb-3 tab-panel" id="filtros-salas">
-  <input type="text" id="filtro-nome" class="form-control" placeholder="Filtrar por nome...">
-  <input type="text" id="filtro-empresa" class="form-control" placeholder="Empresa proprietária...">
-  <input type="text" id="filtro-inquilino" class="form-control" placeholder="Inquilino...">
-  <select id="filtro-ativo" class="form-control" >
-    <option value="">Ativo?</option>
-    <option value="Sim">Sim</option>
-    <option value="Não">Não</option>
-  </select>
-  <select id="filtro-virtual" class="form-control">
-    <option value="">Virtual?</option>
-    <option value="Sim">Sim</option>
-    <option value="Não">Não</option>
-  </select>
-  <select id="filtro-alugado" class="form-control">
-    <option value="">Alugado?</option>
-    <option value="Sim">Sim</option>
-    <option value="Não">Não</option>
-  </select>
-  <select id="filtro-comum" class="form-control">
-  <option value="">Espaço comum?</option>
-  <option value="Sim">Sim</option>
-  <option value="Não">Não</option>
-</select>
+  <div class="filtro-field">
+    <span class="filtro-field-label">nome</span>
+    <input type="text" id="filtro-nome" class="form-control" placeholder="Filtrar por nome...">
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">Empresa</span>
+    <input type="text" id="filtro-empresa" class="form-control" placeholder="Empresa proprietária...">
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">inquilino</span>
+    <input type="text" id="filtro-inquilino" class="form-control" placeholder="Inquilino...">
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">Ativo?</span>
+    <select id="filtro-ativo" class="form-control" >
+      <option value="">Ativo?</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">Virtual?</span>
+    <select id="filtro-virtual" class="form-control">
+      <option value="">Virtual?</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">Alugado?</span>
+    <select id="filtro-alugado" class="form-control">
+      <option value="">Alugado?</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </div>
+  <div class="filtro-field">
+    <span class="filtro-field-label">Espaço comum?</span>
+    <select id="filtro-comum" class="form-control">
+      <option value="">Espaço comum?</option>
+      <option value="Sim">Sim</option>
+      <option value="Não">Não</option>
+    </select>
+  </div>
+  <div class="filtro-actions" style="display:flex; gap:.5rem; align-items:center; margin-top:.6rem;">
+    <button type="button" class="btn btn-success" id="rooms-clear-filters" title="Limpar filtros" hidden>
+      <i class="fa-solid fa-rotate-left"></i>
+    </button>
+  </div>
 </div>
 <div id="salas-section" class="rooms expanded">
   <%= form_with url: bulk_destroy_rooms_path, method: :delete, local: true, id: "rooms-bulk-form" do %>
@@ -67,7 +93,6 @@
         <!-- outros botões em massa aqui -->
       </div>
     </div>
-    
     <table class="table table-salas selection-table" id="rooms-table">
       <thead class="table-secondary text-dark">
         <tr>
@@ -103,56 +128,58 @@
           </th>
         </tr>
       </thead>
-<tbody>
-  <% @rooms.each do |room| %>
-    <tr data-comum="<%= room.espaco_comun? ? 'Sim' : 'Não' %>">
-      <!-- checkbox por linha (oculto fora do modo seleção) -->
-      <td class="sel-cell" style="display:none; text-align:center;">
-        <input type="checkbox" class="rooms-row-check" name="ids[]" value="<%= room.id %>">
-      </td>
-      <td>
-        <strong><%= room.name %></strong>
-        <% if room.espaco_comun? %>
-          <span class="badge bg-secondary" style="margin-left:.4rem;">Espaço comum</span>
-        <% end %>
-      </td>
-      <td><%= room.empresa_proprietaria.presence || "-" %></td>
-      <td><%= room.dados_do_inquilino.presence || "-" %></td>
-      <td>
-        <% cnpj = room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] rescue nil %>
-        <%= cnpj || "-" %>
-      </td>
-      <td><%= room.grupo.presence || "-" %></td>
-      <td><%= room.ativo? ? "Sim" : "Não" %></td>
-      <td><%= room.virtual? ? "Sim" : "Não" %></td>
-      <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
-      <td><%= room.alugado? ? "Sim" : "Não" %></td>
-      <td>
-        <%= link_to room_path(room), class: "btn btn-sm btn-outline-primary btn-success" do %>
-          <i class="fa-solid fa-eye"></i> <div class="hide-sm"> Ver </div>
-        <% end %>
-        <% if operador_ou_admin? %>
-          <%= link_to edit_room_path(room), class: 'btn btn-sm edit' do %>
-            <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Edite </div>
-          <% end %>
-          <%= link_to room_path(room),
+      <tbody>
+        <% @rooms.each do |room| %>
+          <tr data-comum="<%= room.espaco_comun? ? 'Sim' : 'Não' %>">
+            <!-- checkbox por linha (oculto fora do modo seleção) -->
+            <td class="sel-cell" style="display:none; text-align:center;">
+              <input type="checkbox" class="rooms-row-check" name="ids[]" value="<%= room.id %>">
+            </td>
+            <td>
+              <strong><%= room.name %></strong>
+              <% if room.espaco_comun? %>
+                <span class="badge bg-secondary" style="margin-left:.4rem;">Espaço comum</span>
+              <% end %>
+            </td>
+            <td><%= room.empresa_proprietaria.presence || "-" %></td>
+            <td><%= room.dados_do_inquilino.presence || "-" %></td>
+            <td>
+              <% cnpj = room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] rescue nil %>
+              <%= cnpj || "-" %>
+            </td>
+            <td><%= room.grupo.presence || "-" %></td>
+            <td><%= room.ativo? ? "Sim" : "Não" %></td>
+            <td><%= room.virtual? ? "Sim" : "Não" %></td>
+            <td><%= room.unidade_vazia? ? "Sim" : "Não" %></td>
+            <td><%= room.alugado? ? "Sim" : "Não" %></td>
+            <td>
+              <%= link_to room_path(room), class: "btn btn-sm btn-outline-primary btn-success" do %>
+                <i class="fa-solid fa-eye"></i>
+                <div class="hide-sm"> Ver </div>
+              <% end %>
+              <% if operador_ou_admin? %>
+                <%= link_to edit_room_path(room), class: 'btn btn-sm edit' do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                  <div class="hide-sm"> Edite </div>
+                <% end %>
+                <%= link_to room_path(room),
               class: "btn btn-sm btn-warning btn-excluir-sala",
               data: { turbo_method: :delete, room_name: room.name } do %>
-            <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir </div>
-          <% end %>
+                  <i class="fa-solid fa-trash"></i>
+                  <div class="hide-sm"> Excluir </div>
+                <% end %>
+              <% end %>
+            </td>
+          </tr>
         <% end %>
-      </td>
-    </tr>
-  <% end %>
-    <!-- linha de "nenhum resultado" -->
-  <tr id="rooms-empty" style="display:none;" class="text-center">
-    <!-- colspan deve cobrir todas as colunas visíveis (ajuste se adicionar/remover colunas) -->
-    <td colspan="11" style="padding:1.2rem; color:var(--color-muted);">
-      Nenhuma sala encontrada.
-    </td>
-  </tr>
-</tbody>
-
+        <!-- linha de "nenhum resultado" -->
+        <tr id="rooms-empty" style="display:none;" class="text-center">
+          <!-- colspan deve cobrir todas as colunas visíveis (ajuste se adicionar/remover colunas) -->
+          <td colspan="11" style="padding:1.2rem; color:var(--color-muted);">
+            Nenhuma sala encontrada.
+          </td>
+        </tr>
+      </tbody>
     </table>
   <% end %>
 </div>
@@ -209,64 +236,94 @@
 <% end %>
 <script>
   document.addEventListener("DOMContentLoaded", function() {
-    const rows = document.querySelectorAll("#salas-section tbody tr");
+  // pega só as linhas reais (não pega a linha "Nenhuma sala encontrada")
+  const rows = document.querySelectorAll("#salas-section tbody tr:not(#rooms-empty)");
 
-    function filtrar() {
-  const nome = document.getElementById('filtro-nome').value.trim().toLowerCase();
-  const empresa = document.getElementById('filtro-empresa').value.trim().toLowerCase();
-  const inquilino = document.getElementById('filtro-inquilino').value.trim().toLowerCase();
-  const ativo = document.getElementById('filtro-ativo').value;
-  const virtual = document.getElementById('filtro-virtual').value;
-  const alugado = document.getElementById('filtro-alugado').value;
-  const comum = document.getElementById('filtro-comum').value;
+  const btnClear = document.getElementById('rooms-clear-filters');
 
-  const emptyRow = document.getElementById('rooms-empty');
+  function anyFiltersActive() {
+    const nome     = document.getElementById('filtro-nome')?.value.trim();
+    const empresa  = document.getElementById('filtro-empresa')?.value.trim();
+    const inquilino= document.getElementById('filtro-inquilino')?.value.trim();
 
-  let visibleCount = 0;
+    const ativo    = document.getElementById('filtro-ativo')?.value;
+    const virtual  = document.getElementById('filtro-virtual')?.value;
+    const alugado  = document.getElementById('filtro-alugado')?.value;
+    const comum    = document.getElementById('filtro-comum')?.value;
 
-  rows.forEach(row => {
-    // Seleciona as colunas pelo índice real na tabela (1-based)
-    // td:nth-child(1) é a sel-cell (checkbox) -> por isso o nome está em nth-child(2)
-    const tdNome = row.querySelector('td:nth-child(2)');
-    const tdEmpresa = row.querySelector('td:nth-child(3)');
-    const tdInquilino = row.querySelector('td:nth-child(4)');
-    const tdAtivo = row.querySelector('td:nth-child(7)');
-    const tdVirtual = row.querySelector('td:nth-child(8)');
-    const tdAlugado = row.querySelector('td:nth-child(10)');
-
-    // Textos seguros (null-check)
-    const txtNome = tdNome ? tdNome.textContent.trim().toLowerCase() : '';
-    const txtEmpresa = tdEmpresa ? tdEmpresa.textContent.trim().toLowerCase() : '';
-    const txtInquilino = tdInquilino ? tdInquilino.textContent.trim().toLowerCase() : '';
-    const txtAtivo = tdAtivo ? tdAtivo.textContent.trim() : '';
-    const txtVirtual = tdVirtual ? tdVirtual.textContent.trim() : '';
-    const txtAlugado = tdAlugado ? tdAlugado.textContent.trim() : '';
-
-    let show = true;
-    if (nome && !txtNome.includes(nome)) show = false;
-    if (empresa && !txtEmpresa.includes(empresa)) show = false;
-    if (inquilino && !txtInquilino.includes(inquilino)) show = false;
-    if (ativo && txtAtivo !== ativo) show = false;
-    if (virtual && txtVirtual !== virtual) show = false;
-    if (alugado && txtAlugado !== alugado) show = false;
-    if (comum && (row.dataset.comum !== comum)) show = false;
-
-    row.style.display = show ? "" : "none";
-    if (show) visibleCount++;
-  });
-
-  // mostra/oculta mensagem de "nenhuma sala"
-  if (emptyRow) {
-    emptyRow.style.display = (visibleCount === 0) ? "" : "none";
+    return !!(nome || empresa || inquilino || ativo || virtual || alugado || comum);
   }
-}
 
+  function filtrar() {
+    const nome = document.getElementById('filtro-nome').value.trim().toLowerCase();
+    const empresa = document.getElementById('filtro-empresa').value.trim().toLowerCase();
+    const inquilino = document.getElementById('filtro-inquilino').value.trim().toLowerCase();
+    const ativo = document.getElementById('filtro-ativo').value;
+    const virtual = document.getElementById('filtro-virtual').value;
+    const alugado = document.getElementById('filtro-alugado').value;
+    const comum = document.getElementById('filtro-comum').value;
 
-    document.querySelectorAll('#filtros-salas input, #filtros-salas select').forEach(el => {
-      el.addEventListener('input', filtrar);
-      el.addEventListener('change', filtrar);
+    const emptyRow = document.getElementById('rooms-empty');
+
+    let visibleCount = 0;
+
+    rows.forEach(row => {
+      const tdNome = row.querySelector('td:nth-child(2)');
+      const tdEmpresa = row.querySelector('td:nth-child(3)');
+      const tdInquilino = row.querySelector('td:nth-child(4)');
+      const tdAtivo = row.querySelector('td:nth-child(7)');
+      const tdVirtual = row.querySelector('td:nth-child(8)');
+      const tdAlugado = row.querySelector('td:nth-child(10)');
+
+      const txtNome = tdNome ? tdNome.textContent.trim().toLowerCase() : '';
+      const txtEmpresa = tdEmpresa ? tdEmpresa.textContent.trim().toLowerCase() : '';
+      const txtInquilino = tdInquilino ? tdInquilino.textContent.trim().toLowerCase() : '';
+      const txtAtivo = tdAtivo ? tdAtivo.textContent.trim() : '';
+      const txtVirtual = tdVirtual ? tdVirtual.textContent.trim() : '';
+      const txtAlugado = tdAlugado ? tdAlugado.textContent.trim() : '';
+
+      let show = true;
+      if (nome && !txtNome.includes(nome)) show = false;
+      if (empresa && !txtEmpresa.includes(empresa)) show = false;
+      if (inquilino && !txtInquilino.includes(inquilino)) show = false;
+      if (ativo && txtAtivo !== ativo) show = false;
+      if (virtual && txtVirtual !== virtual) show = false;
+      if (alugado && txtAlugado !== alugado) show = false;
+      if (comum && (row.dataset.comum !== comum)) show = false;
+
+      row.style.display = show ? "" : "none";
+      if (show) visibleCount++;
     });
+
+    if (emptyRow) emptyRow.style.display = (visibleCount === 0) ? "" : "none";
+
+    // mostra/oculta botão limpar
+    if (btnClear) btnClear.hidden = !anyFiltersActive();
+  }
+
+  // listeners
+  document.querySelectorAll('#filtros-salas input, #filtros-salas select').forEach(el => {
+    el.addEventListener('input', filtrar);
+    el.addEventListener('change', filtrar);
   });
+
+  // limpar filtros (zera tudo e reaplica)
+  btnClear?.addEventListener('click', () => {
+    document.getElementById('filtro-nome').value = '';
+    document.getElementById('filtro-empresa').value = '';
+    document.getElementById('filtro-inquilino').value = '';
+    document.getElementById('filtro-ativo').value = '';
+    document.getElementById('filtro-virtual').value = '';
+    document.getElementById('filtro-alugado').value = '';
+    document.getElementById('filtro-comum').value = '';
+
+    filtrar();
+  });
+
+  // primeira render: garante botão certo e tabela filtrada (se tiver valores pré-setados)
+  filtrar();
+});
+
 
   document.addEventListener("click", async (e) => {
     const link = e.target.closest(".btn-excluir-sala");
@@ -568,204 +625,197 @@
   document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach((el) => {
     el.addEventListener('focus', () => setCollapsed(false, false));
   });
-});
-
+  });
 </script>
 <style>
-
-
-/* <= 992px: esconder CNPJ e Grupo */
-@media (max-width: 992px){
-  #rooms-table th:nth-child(5), #rooms-table td:nth-child(5), /* CNPJ */
-  #rooms-table th:nth-child(6), #rooms-table td:nth-child(6)  /* Grupo */
-  { display: none; }
-}
-
-/* <= 768px: esconder Empresa Proprietária e Unidade Vazia */
-@media (max-width: 768px){
-  #rooms-table th:nth-child(3), #rooms-table td:nth-child(3), /* Empresa Proprietária */
-  #rooms-table th:nth-child(9), #rooms-table td:nth-child(9)  /* Unidade Vazia */
-  { display: none; }
-}
-
-/* <= 576px: esconder Inquilino e Virtual */
-@media (max-width: 576px){
-  #rooms-table th:nth-child(4), #rooms-table td:nth-child(4), /* Inquilino */
-  #rooms-table th:nth-child(8), #rooms-table td:nth-child(8)  /* Virtual */
-  { display: none; }
-}
-
-
-  .menu-item{
-    color: var(--color-btn--text);
-  }
-  .v-modal__header{
-        display: flex}
-
-  .v-modal__title i,
-  .v-modal__footer .btn i,
-  .form-label i {
-    margin-right: .5rem;
-    width: 1.1rem;        /* alinhamento visual */
-    text-align: center;
-  }
-  .v-modal__close i { font-size: 1.2rem; }
-
-
-  /* Quando ativar o modo selecionar (table--select), pinta as bordas de laranja */
-  .selection-table.table--select{
-    /* borda arredondada para casar com a toolbar */
-    border-radius: 0 0 10px 10px;
-
-    /* “borda” laranja com cantos arredondados */
-    box-shadow: 0 0 0 2px #7014f1 inset;
-    /* fallback caso algum navegador ignore o box-shadow no <table> */
-    outline: 2px solid #7014f1;
-    outline-offset: -2px;
-
-    /* garante que os cantos arredondados apareçam bem */
-    border-collapse: separate;
-    border-spacing: 0;
-    overflow: hidden;
+  /* <= 992px: esconder CNPJ e Grupo */
+  @media (max-width: 992px){
+    #rooms-table th:nth-child(5), #rooms-table td:nth-child(5), /* CNPJ */
+    #rooms-table th:nth-child(6), #rooms-table td:nth-child(6)  /* Grupo */
+    { display: none; }
   }
 
-  /* Deixa as linhas/grades com tom laranja suave enquanto selecionável */
-  .selection-table.table--select thead th{
-    border-bottom-color: #7014f1 !important;
-  }
-  .selection-table.table--select tbody td,
-  .selection-table.table--select tbody th{
-    border-bottom-color: #7014f1 !important;
+  /* <= 768px: esconder Empresa Proprietária e Unidade Vazia */
+  @media (max-width: 768px){
+    #rooms-table th:nth-child(3), #rooms-table td:nth-child(3), /* Empresa Proprietária */
+    #rooms-table th:nth-child(9), #rooms-table td:nth-child(9)  /* Unidade Vazia */
+    { display: none; }
   }
 
-  /* Opcional: realce leve ao passar o mouse nas linhas no modo seleção */
-  .selection-table.table--select tbody tr:hover{
-    background-color: #7014f1;
+  /* <= 576px: esconder Inquilino e Virtual */
+  @media (max-width: 576px){
+    #rooms-table th:nth-child(4), #rooms-table td:nth-child(4), /* Inquilino */
+    #rooms-table th:nth-child(8), #rooms-table td:nth-child(8)  /* Virtual */
+    { display: none; }
   }
 
 
-  .Mais-opções{
-  background: transparent;
-
-  }
-  .th-actions{
-      display: flex
-  ;
-      align-items: center;
-      justify-content: space-between;
-
-  }
-  #filtros-salas .form-control {
-    min-width: 160px;
-    font-size: 0.95rem;
-  }
-  @media (max-width: 700px) {
-    #filtros-salas {
-      flex-direction: column;
-      gap: 0.5rem;
+    .menu-item{
+      color: var(--color-btn--text);
     }
-  }
+    .v-modal__header{
+          display: flex}
 
-  #filtros-salas{
-  display: flex;
-      gap: 1rem;
-      flex-wrap: nowrap;
-  }
+    .v-modal__title i,
+    .v-modal__footer .btn i,
+    .form-label i {
+      margin-right: .5rem;
+      width: 1.1rem;        /* alinhamento visual */
+      text-align: center;
+    }
+    .v-modal__close i { font-size: 1.2rem; }
 
-  /* ===== Modal Vanilla ===== */
-  .v-modal {
-    position: fixed;
-    inset: 0;
-    display: none;               /* oculto por padrão */
-    z-index: 20000;              /* acima de tudo */
-  }
-  .v-modal.is-open { display: block; }
 
-  .v-modal__backdrop {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.45);
-    backdrop-filter: blur(1px);
-  }
+    /* Quando ativar o modo selecionar (table--select), pinta as bordas de laranja */
+    .selection-table.table--select{
+      /* borda arredondada para casar com a toolbar */
+      border-radius: 0 0 10px 10px;
 
-  .v-modal__dialog {
-    position: absolute; left: 50%; top: 50%;
-    transform: translate(-50%, -50%) scale(.98);
-    width: min(92vw, 640px);
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.25);
-    overflow: hidden;
-    opacity: 0;
-    transition: transform .15s ease, opacity .15s ease;
-  }
-  .is-open .v-modal__dialog { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+      /* “borda” laranja com cantos arredondados */
+      box-shadow: 0 0 0 2px #7014f1 inset;
+      /* fallback caso algum navegador ignore o box-shadow no <table> */
+      outline: 2px solid #7014f1;
+      outline-offset: -2px;
 
-  .v-modal__header, .v-modal__footer {
-    padding: 16px 18px;
-    background: #f7f7f9;
-  }
-  .v-modal__title { margin: 0; font-size: 1.1rem; }
-  .v-modal__body  { padding: 18px; background: #fff; }
+      /* garante que os cantos arredondados apareçam bem */
+      border-collapse: separate;
+      border-spacing: 0;
+      overflow: hidden;
+    }
 
-  .v-modal__close {
-    border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
-    cursor: pointer; margin-left: auto;
-  }
+    /* Deixa as linhas/grades com tom laranja suave enquanto selecionável */
+    .selection-table.table--select thead th{
+      border-bottom-color: #7014f1 !important;
+    }
+    .selection-table.table--select tbody td,
+    .selection-table.table--select tbody th{
+      border-bottom-color: #7014f1 !important;
+    }
 
-  /* Evita rolagem do body quando modal aberto */
-  body.v-no-scroll { overflow: hidden; }
+    /* Opcional: realce leve ao passar o mouse nas linhas no modo seleção */
+    .selection-table.table--select tbody tr:hover{
+      background-color: #7014f1;
+    }
 
-  /* Spinner minimalista */
-  .v-spinner {
-    display: inline-block;
-    width: 1rem; height: 1rem;
-    border: 2px solid currentColor;
-    border-right-color: transparent;
-    border-radius: 50%;
-    vertical-align: -2px;
-    margin-right: .5rem;
-    animation: vspin .6s linear infinite;
-  }
-  @keyframes vspin { to { transform: rotate(360deg); } }
 
-  .d-none { display: none !important; }
-  .text-muted{
-        color: var(--color-btn--text);
-  }
-  .form-label{
-    color: var(--color-btn--text);
-  }
-  .v-modal__header{
+    .Mais-opções{
+    background: transparent;
 
-        color: var(--color-btn--text);
-  }
-
-  .form-control{
-
-        color: var(--color-muted)
-  }
-  .v-modal__footer{
-
+    }
+    .th-actions{
         display: flex
-  ;
-  }
+    ;
+        align-items: center;
+        justify-content: space-between;
 
-  /*modo select*/
+    }
+    #filtros-salas .form-control {
+      min-width: 160px;
+      font-size: 0.95rem;
+    }
+    @media (max-width: 700px) {
+      #filtros-salas {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+    }
 
-  .hidden { display: none !important; }
 
-  .kebab-wrapper { position: relative; z-index: 20; }
-  .kebab-menu[hidden]{ display:none !important; }
-  .kebab-menu{
-    position: absolute; right: 30px; top: -11px;
-    background: var(--color-btn); color: var(--color-btn);
-    border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
-    overflow: hidden; z-index: 9999;
-  }
-  .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
-  .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
 
-  /* Seleção em massa */
-  .selection-table .sel-cell{ display:none; }
-  .selection-table.table--select .sel-cell{ display:table-cell !important; }
+    /* ===== Modal Vanilla ===== */
+    .v-modal {
+      position: fixed;
+      inset: 0;
+      display: none;               /* oculto por padrão */
+      z-index: 20000;              /* acima de tudo */
+    }
+    .v-modal.is-open { display: block; }
+
+    .v-modal__backdrop {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.45);
+      backdrop-filter: blur(1px);
+    }
+
+    .v-modal__dialog {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%) scale(.98);
+      width: min(92vw, 640px);
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      overflow: hidden;
+      opacity: 0;
+      transition: transform .15s ease, opacity .15s ease;
+    }
+    .is-open .v-modal__dialog { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+
+    .v-modal__header, .v-modal__footer {
+      padding: 16px 18px;
+      background: #f7f7f9;
+    }
+    .v-modal__title { margin: 0; font-size: 1.1rem; }
+    .v-modal__body  { padding: 18px; background: #fff; }
+
+    .v-modal__close {
+      border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
+      cursor: pointer; margin-left: auto;
+    }
+
+    /* Evita rolagem do body quando modal aberto */
+    body.v-no-scroll { overflow: hidden; }
+
+    /* Spinner minimalista */
+    .v-spinner {
+      display: inline-block;
+      width: 1rem; height: 1rem;
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      vertical-align: -2px;
+      margin-right: .5rem;
+      animation: vspin .6s linear infinite;
+    }
+    @keyframes vspin { to { transform: rotate(360deg); } }
+
+    .d-none { display: none !important; }
+    .text-muted{
+          color: var(--color-btn--text);
+    }
+    .form-label{
+      color: var(--color-btn--text);
+    }
+    .v-modal__header{
+
+          color: var(--color-btn--text);
+    }
+
+    .form-control{
+
+          color: var(--color-muted)
+    }
+    .v-modal__footer{
+
+          display: flex
+    ;
+    }
+
+    /*modo select*/
+
+    .hidden { display: none !important; }
+
+    .kebab-wrapper { position: relative; z-index: 20; }
+    .kebab-menu[hidden]{ display:none !important; }
+    .kebab-menu{
+      position: absolute; right: 30px; top: -11px;
+      background: var(--color-btn); color: var(--color-btn);
+      border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
+      overflow: hidden; z-index: 9999;
+    }
+    .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
+    .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
+
+    /* Seleção em massa */
+    .selection-table .sel-cell{ display:none; }
+    .selection-table.table--select .sel-cell{ display:table-cell !important; }
 </style>

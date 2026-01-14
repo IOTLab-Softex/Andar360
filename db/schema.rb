@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_18_125306) do
+ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -181,7 +181,6 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_125306) do
     t.bigint "release_id"
     t.index ["category"], name: "index_feedbacks_on_category"
     t.index ["page_path"], name: "index_feedbacks_on_page_path"
-    t.index ["release_id", "status"], name: "index_feedbacks_on_release_id_and_status"
     t.index ["release_id"], name: "index_feedbacks_on_release_id"
     t.index ["resolved_by_id"], name: "index_feedbacks_on_resolved_by_id"
     t.index ["severity"], name: "index_feedbacks_on_severity"

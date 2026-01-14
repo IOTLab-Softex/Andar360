@@ -1,93 +1,4 @@
-<style>
-/* ===== filtro com label no topo do campo ===== */
-.filtro-row{
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  margin-bottom: 14px;
-}
 
-.filtro-field{
-  position: relative;
-  min-width: 180px;
-  flex: 1;
-}
-
-.filtro-field .filtro-field-label {
-    position: absolute;
-    top: -9px;
-    left: 12px;
-    padding: 2px 8px;
-    font-size: 11px;
-    letter-spacing: .02em;
-    border-radius: 999px;
-    color: #bdbdbd;
-    /* background: #1f1f1f; */
-    /* border: 1px solid #3a3a3a; */
-    z-index: 2;
-}
-
-.filtro-field .form-control{
-  width: 100%;
-  height: 42px;
-  padding-top: 10px; /* espaço p/ não bater no label */
-  border-radius: 12px;
-  border: 1px solid #3a3a3a;
-  background: #262626;
-  color: #e6e6e6;
-}
-
-.filtro-field .form-control:focus{
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(255,255,255,.06);
-  border-color: #5a5a5a;
-}
-
-/* campo "a" entre datas */
-.filtro-sep{
-  padding: 0 4px 10px;
-  color: #aaa;
-  font-size: 13px;
-}
-
-@media (max-width: 700px){
-  .filtro-field{ min-width: 100%; }
-}
-
-.filtro-actions{
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  padding-bottom: 2px;
-}
-
-.btn-limpar{
-  height: 42px;
-  border-radius: 12px;
-  border: 1px solid #3a3a3a;
-  background: #1f1f1f;
-  color: #e6e6e6;
-  padding: 0 14px;
-  cursor: pointer;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  transition: transform .08s ease, background .12s ease, border-color .12s ease;
-}
-
-.btn-limpar:hover{
-  background: #242424;
-  border-color: #5a5a5a;
-}
-
-.btn-limpar:active{
-  transform: translateY(1px);
-}
-
-
-</style>
 <div class="table-responsive">
 <%# ==== Stats de Chamados (Pendente / Em andamento / Concluído) ==== %>
 <% ordem_status = ["Pendente", "Em andamento", "Concluído"] %>
@@ -344,66 +255,60 @@ document.addEventListener("turbo:load", mountTrkBars);
 // Se usar Turbo Frames, ajuda também:
 document.addEventListener("turbo:frame-load", mountTrkBars);
 
-// ======= JS do colapso suave (auto-expande medindo altura) =======
+
+// ======= JS do colapso suave + fecha ao perder foco =======
 document.addEventListener('DOMContentLoaded', () => {
-  const toggle = document.getElementById('filtro-toggle');
+  const toggle  = document.getElementById('filtro-toggle');
   const filtros = document.getElementById('filtros-salas');
   if (!toggle || !filtros) return;
 
-  const STORAGE_KEY = 'ui:filtros-salas-collapsed';
+  const STORAGE_KEY = 'ui:filtros-chamados-collapsed'; // use uma key diferente
 
-  // Inicializa aria e estado conforme localStorage (ou atributo atual)
-  const saved = localStorage.getItem(STORAGE_KEY);
-  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+  function isOpen() {
+    return !filtros.classList.contains('collapsed');
+  }
 
-  // Função para animar usando max-height calculado (mais suave que só toggle de class)
   function setCollapsed(collapsed, save = true) {
-    // se preferir reduzir movimento, aplica sem transição
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (collapsed) {
-      // animação de fechar: define max-height para altura atual -> 0
       const curH = filtros.scrollHeight;
-      filtros.style.maxHeight = curH + 'px';       // garante ponto de partida
-      // force reflow
-      // eslint-disable-next-line no-unused-expressions
+      filtros.style.maxHeight = curH + 'px';
       filtros.offsetHeight;
-      if (prefersReduced) {
-        filtros.classList.add('collapsed');
-        filtros.style.maxHeight = '';
-      } else {
-        filtros.classList.add('collapsed');
-        filtros.style.maxHeight = '0px';
-      }
+
+      filtros.classList.add('collapsed');
+      filtros.style.maxHeight = prefersReduced ? '' : '0px';
+
       toggle.setAttribute('aria-expanded', 'false');
       filtros.setAttribute('aria-hidden', 'true');
       if (save) localStorage.setItem(STORAGE_KEY, '1');
     } else {
-      // abre: definir max-height do 0 para scrollHeight
       filtros.classList.remove('collapsed');
       filtros.setAttribute('aria-hidden', 'false');
       toggle.setAttribute('aria-expanded', 'true');
-      const targetH = filtros.scrollHeight;
-      if (prefersReduced) {
-        filtros.style.maxHeight = '';
-      } else {
+
+      if (!prefersReduced) {
         filtros.style.maxHeight = '0px';
-        // força reflow
-        // eslint-disable-next-line no-unused-expressions
         filtros.offsetHeight;
-        filtros.style.maxHeight = targetH + 'px';
-      }
-      // depois da animação remove max-height inline para ficar fluido quando o conteúdo muda
-      const cleanup = () => {
+        filtros.style.maxHeight = filtros.scrollHeight + 'px';
+
+        const cleanup = () => {
+          filtros.style.maxHeight = '';
+          filtros.removeEventListener('transitionend', cleanup);
+        };
+        filtros.addEventListener('transitionend', cleanup);
+      } else {
         filtros.style.maxHeight = '';
-        filtros.removeEventListener('transitionend', cleanup);
-      };
-      filtros.addEventListener('transitionend', cleanup);
+      }
+
       if (save) localStorage.removeItem(STORAGE_KEY);
     }
   }
 
-  // aplica estado inicial sem animação chata
+  // ===== estado inicial =====
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
   if (startCollapsed) {
     filtros.classList.add('collapsed');
     filtros.setAttribute('aria-hidden', 'true');
@@ -416,25 +321,42 @@ document.addEventListener('DOMContentLoaded', () => {
     filtros.style.maxHeight = '';
   }
 
-  // clique no toggle
+  // ===== toggle manual =====
   toggle.addEventListener('click', (ev) => {
     ev.preventDefault();
-    const isCollapsed = filtros.classList.contains('collapsed');
-    setCollapsed(!isCollapsed, true);
+    setCollapsed(isOpen(), true); // se aberto fecha, se fechado abre
   });
 
-  // abrir painel se foco em qualquer input/select dentro
-  document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
-    el.addEventListener('focus', () => setCollapsed(false, false));
+  // ===== abre quando focar dentro =====
+  filtros.addEventListener('focusin', () => {
+    if (!isOpen()) setCollapsed(false, false);
   });
 
-  // opcional: fecha ao clicar fora (descomente se quiser)
-  // document.addEventListener('click', (ev) => {
-  //   if (filtros.classList.contains('collapsed')) return;
-  //   if (!ev.target.closest('#filtros-salas') && !ev.target.closest('#filtro-toggle')) {
-  //     setCollapsed(true, true);
-  //   }
-  // });
+  // ===== fecha quando sair do foco do painel =====
+  filtros.addEventListener('focusout', (ev) => {
+    const next = ev.relatedTarget;
+
+    // Se o próximo foco ainda está dentro do painel, não fecha
+    if (next && filtros.contains(next)) return;
+
+    // Se foi pro botão do toggle, não fecha (vai ser controlado pelo clique)
+    if (next && toggle.contains(next)) return;
+
+    // fecha e salva
+    setCollapsed(true, true);
+  });
+
+  // ===== fecha ao clicar fora =====
+  document.addEventListener('pointerdown', (ev) => {
+    if (!isOpen()) return;
+
+    const insideToggle = ev.target.closest('#filtro-toggle');
+    const insidePanel  = ev.target.closest('#filtros-salas');
+    if (!insideToggle && !insidePanel) {
+      setCollapsed(true, true);
+    }
+  });
 });
+
 
 </script>

@@ -1,77 +1,357 @@
 <!-- app/views/participants/index.html.erb -->
-<%= form_with url: participants_path, method: :get, local: true, class: "filter-form" do %>
+<style>
+  /* Esconde a coluna quando a viewport for menor que o breakpoint */
+  @media (max-width: 1200px){ .hide-xl { display:none !important; } } /* desktops menores */
+  @media (max-width: 992px) { .hide-lg { display:none !important; } }  /* laptop/tablet landscape */
+  @media (max-width: 768px) { .hide-md { display:none !important; } }  /* tablet/phone */
+  @media (max-width: 576px) { .hide-sm { display:none !important; } }  /* phone pequeno */
+  @media (max-width: 420px) { .hide-xs { display:none !important; } }  /* muito pequeno */
+  @media (max-width: 576px){
+    table.rtable th:not(.keep-sm),
+    table.rtable td:not(.keep-sm){
+      display: none !important;
+    }
+  }
+
+    .hidden { display: none !important; }
+
+    .kebab-wrapper { position: relative; z-index: 20; }
+    .kebab-menu[hidden]{ display:none !important; }
+    .kebab-menu{
+      position: absolute; right: 30px; top: -11px;
+      background: var(--color-btn); color: var(--color-btn);
+      border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
+      overflow: hidden; z-index: 9999;
+    }
+    .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
+    .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
+
+    /* Seleção em massa */
+    .selection-table .sel-cell{ display:none; }                     /* escondida por padrão */
+    .selection-table.table--select .sel-cell{ display:table-cell !important; } /* aparece no modo seleção */
+
+    .th-actions{
+
+    display: flex
+    ;
+        justify-content: space-between;
+        align-items: center;
+
+    }
+      /* ---------- Tabs responsivos (desktop centraliza, mobile rola) ---------- */
+  .tabs {
+    position: sticky;                 /* opcional: fica sempre visível no topo */
+    top: 0;                           /* ajuste conforme seu header */
+    z-index: 0;
+    display: flex;
+    gap: .8rem;
+    padding: .5rem 1rem;
+    margin: 12px auto -8px auto;
+    border-radius: 16px 16px 0 0;
+
+    /* rolagem horizontal quando precisar */
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+
+    /* desktop: centralizado quando couber */
+    justify-content: center;
+
+    /* esconder scrollbars (sem quebrar acessibilidade) */
+    scrollbar-width: none;            /* Firefox */
+  }
+  .tabs::-webkit-scrollbar { display: none; } /* WebKit */
+
+  .tabs a {
+    flex: 0 0 auto;                   /* não quebrar linha; cada aba tem largura mínima do conteúdo */
+    min-width: max-content;           /* evita quebra estranha de texto */
+    scroll-snap-align: start;
+
+    /* tipografia/padding fluidos para caber melhor em telas pequenas */
+    font-size: clamp(.9rem, 2.5vw, 1.15rem);
+    padding: clamp(6px, 1.4vw, 10px) clamp(12px, 3vw, 28px) 8px clamp(12px, 3vw, 28px);
+
+    border-radius: 18px 18px 0 0;
+    background: var(--color-btn--text);
+    color: var(--color-btn);
+    font-weight: 600;
+    text-decoration: none;
+    transition: background .2s, color .2s, box-shadow .2s, transform .15s;
+
+  }
+
+  .tabs a.active {
+    background: #ff8c42;
+    color: #222;
+    font-weight: 800;
+    z-index: 2;
+  }
+
+  .tab-badge{
+  margin-left: .15rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: .78em;
+  font-weight: 800;
+  line-height: 1.2;
+  background: var(--color-accent);
+  color: inherit;
+  }
+
+  .tabs a.active .tab-badge{
+  background: rgba(0,0,0,.18);
+  }
+  .tabs a:not(.active):hover {
+    background: #3c2c47;
+    color: #ff944d;
+  }
+
+  /* em telas pequenas, alinhar à esquerda para a faixa rolável começar do início */
+  @media (max-width: 700px) {
+    .tabs { justify-content: flex-start; padding: .5rem .75rem; gap: .5rem; }
+  }
+
+  /* (opcional) sombras nas bordas para indicar que dá pra rolar */
+  .tabs {
+    mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
+  }
+  @supports not (mask-image: linear-gradient(black, black)) {
+    /* fallback simples: sem máscara */
+  }
+
+
+
+
+      /* modal da foto */
+
+      .photo-modal[hidden] { display: none !important; }
+
+  .photo-modal {
+    position: fixed; inset: 0; z-index: 2000;
+    display: grid; place-items: center;
+  }
+  .photo-modal__backdrop {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,.6);
+    backdrop-filter: blur(2px);
+  }
+  .photo-modal__dialog {
+    position: relative;
+    max-width: 90vw; max-height: 90vh;
+    background: #111; border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(0,0,0,.5);
+    padding: 10px 10px 14px;
+    display: grid; gap: 8px; justify-items: center;
+  }
+  .photo-modal__close {
+    position: absolute; top: 4px; right: 8px;
+    border: none; background: transparent; color: #fff;
+    font-size: 26px; cursor: pointer; line-height: 1;
+    padding: 2px 6px;
+  }
+  #photo-modal-img {
+    max-width: 95vw;
+      max-height: 77vh;
+      object-fit: contain;
+      border-radius: 10px;
+      width: 29rem;
+  }
+  .photo-modal__caption {
+    color: #ddd; font-size: .95rem; text-align: center;
+    max-width: 80vw;
+    overflow-wrap: anywhere;
+  }
+
+  .p-name { display: inline-flex; align-items: center; gap: .45rem; }
+
+  .access-icon { font-size: .95rem; opacity: .95; }
+  .access-icon--on { color: #22c55e; }       /* verde */
+  .access-icon--blocked { color: #ef4444; }  /* vermelho */
+  .access-icon--pending { color: #f59e0b; }  /* amarelo */
+
+  /* ====== Collapsible filtro (igual Chamados) ====== */
+.filtro-label{
+ 
+  display:flex;
+  justify-content: space-between;
+  align-items:center;
+  gap:.75rem;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(22,18,33,.55);
+  color: var(--color-text, #f1f1ff);
+  padding: .75rem 1rem;
+  border-radius: 14px;
+  cursor:pointer;
+  transition: transform .15s ease, background .2s ease, border-color .2s ease;
+  user-select:none;
+}
+
+.filtro-label:hover{
+  background: rgba(22,18,33,.72);
+  border-color: rgba(124,58,237,.35);
+}
+
+.filtro-chevron{
+  transition: transform .2s ease;
+}
+
+/* gira quando colapsado */
+.filtro-label[aria-expanded="false"] .filtro-chevron{
+  transform: rotate(180deg);
+}
+
+/* painel do filtro (form) */
+.filtros-form {
+    margin-top: 1px;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, .10);
+    background: var(--color-bg-table-salas);
+    transition: max-height .25s ease;
+}
+
+/* fechado */
+.filtros-form.collapsed{
+  border-color: rgba(255,255,255,.06);
+}
+
+/* seu grid/linha interna (você já tem) */
+.filtro-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 1rem;
+  padding: 1rem;
+  justify-content:center;
+}
+
+.filtro-field{
+  min-width: 190px;
+  flex: 1 1 190px;
+}
+
+.filtro-field-label{
+  display:block;
+  font-size: .82rem;
+  opacity: .85;
+  margin-bottom: .35rem;
+}
+
+.filtro-actions{
+  display:flex;
+  gap: .5rem;
+  align-items:flex-end;
+  padding-top: .15rem;
+}
+
+/* quando o painel estiver "fechado de verdade", some com o conteúdo */
+/* quando o FORM estiver "fechado de verdade", some com o conteúdo */
+.filtros-form.is-collapsed-done{
+  border: 0 !important;
+  padding: 0 !important;
+  margin-top: 0 !important;
+  max-height: 0 !important;
+  overflow: hidden !important;
+}
+
+.filtros-form.is-collapsed-done .filtro-row{
+  display: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+
+</style>
+<button type="button"
+        id="filtro-toggle"
+        class="filtro-label"
+        aria-expanded="true"
+        aria-controls="filtros-participants">
+  <span style="display:flex; align-items:center; gap:.6rem;">
+    <i class="fa-solid fa-filter"></i>
+    Filtro
+  </span>
+  <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
+</button>
+<%
+  filtros_keys = [:grupo_empresa_id, :sub_grupo_empresa_id, :user_access, :user_block, :search]
+  has_filtros  = filtros_keys.any? { |k| params[k].present? }
+%>
+<%= form_with url: participants_path, method: :get, local: true,
+              class: "filtros-form", id: "filtros-participants" do %>
   <%= hidden_field_tag :tab, params[:tab] %>
-  <div style="    display: flex
-;
-    flex-wrap: wrap;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-    justify-content: center;">
-    <div>
-  <i class="fa-solid fa-filter"></i>
-  <%= label_tag :grupo_empresa_id, "Grupo Empresa" %><br>
-
-  <% if current_user.admin? || current_user.operador? %>
-    <% empresas = GrupoEmpresa.all.order(:nome) %>
-
-    <% selected_empresa_id =
-         if params[:grupo_empresa_id].present?
-           params[:grupo_empresa_id]
-         elsif current_user.participant&.grupo_empresa_id.present?
-           current_user.participant.grupo_empresa_id
-         elsif empresas.size >= 2
-           empresas.second.id          # 👉 segunda empresa da lista
-         else
-           ""                          # cai em "TODOS"
-         end
-    %>
-
-    <%= select_tag :grupo_empresa_id,
-          options_for_select(
-            [["TODOS", ""]] + empresas.map { |g| [g.nome, g.id] },
-            selected_empresa_id
-          ),
-          class: "form-control" %>
-
-  <% else %>
-    <% empresa = current_user.participant&.grupo_empresa %>
-    <% if empresa.present? %>
+  <div class="filtro-row">
+    <div class="filtro-field">
+      <span class="filtro-field-label">Grupo Empresa</span>
       <%= select_tag :grupo_empresa_id,
-            options_for_select([[empresa.nome, empresa.id]], empresa.id),
-            class: "form-control",
-            disabled: true %>
-    <% else %>
-      <%= select_tag :grupo_empresa_id,
-            options_for_select([["Nenhuma empresa", ""]], ""),
-            class: "form-control",
-            disabled: true %>
-    <% end %>
-  <% end %>
-</div>
-
-    <div>
-      <%= label_tag :sub_grupo_empresa_id, "Setor (Sub Grupos Empresa)" %><br>
-      <%= select_tag :sub_grupo_empresa_id, 
-    options_for_select([["TODOS", ""]], params[:sub_grupo_empresa_id]),
-    class: "form-control", id: "subgrupo_filter" %>
+            options_for_select([["TODOS", ""]] + GrupoEmpresa.all.order(:nome).map { |g| [g.nome, g.id] }, @selected_grupo_empresa_id),
+            class: "form-control" %>
     </div>
-    <div>
-      <%= label_tag :search, "Buscar por nome ou CPF" %><br>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Setor (Sub Grupos)</span>
+      <%= select_tag :sub_grupo_empresa_id,
+            options_for_select([["TODOS", ""]], params[:sub_grupo_empresa_id]),
+            class: "form-control", id: "subgrupo_filter" %>
+    </div>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Acesso ao sistema</span>
+      <%= select_tag :user_access,
+            options_for_select([["TODOS", ""], ["Somente com acesso", "with_user"], ["Somente sem acesso", "without_user"]], params[:user_access]),
+            class: "form-control" %>
+    </div>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Status do acesso</span>
+      <%= select_tag :user_block,
+            options_for_select([["TODOS", ""], ["Bloqueados", "blocked"], ["Desbloqueados", "unblocked"]], params[:user_block]),
+            class: "form-control" %>
+    </div>
+    <div class="filtro-field">
+      <span class="filtro-field-label">Buscar por nome/CPF</span>
       <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Digite nome ou CPF" %>
     </div>
-    <div style="align-self: flex-end;">
-      <%= submit_tag "Filtrar", class: "btn btn-filter" %>
+    <div class="filtro-actions">
+      <%= button_tag type: "submit", class: "btn btn-success", title: "Filtrar" do %>
+        <i class="fa fa-search"></i>
+      <% end %>
+      <% if has_filtros %>
+        <%= link_to participants_path(tab: params[:tab]), class: "btn btn-success", title: "Limpar filtros" do %>
+          <i class="fa-solid fa-rotate-left"></i>
+        <% end %>
+      <% end %>
     </div>
   </div>
 <% end %>
-
+<%
+  tab_params = {
+    grupo_empresa_id: @selected_grupo_empresa_id,
+    sub_grupo_empresa_id: params[:sub_grupo_empresa_id],
+    search: params[:search],
+    user_access: params[:user_access],
+    user_block: params[:user_block]
+  }.compact
+%>
 <div class="tabs">
-  <%= link_to "Usuários", participants_path(tab: 'ativos'), class: params[:tab] == 'ativos' ? 'active' : '' %>
-  <%= link_to "Pendentes", participants_path(tab: 'pendentes'), class: params[:tab] == 'pendentes' ? 'active' : '' %>
-  <%= link_to "Aguardando aprovação", participants_path(tab: 'aprovacoes'), class: params[:tab] == 'aprovacoes' ? 'active' : '' %>
-  <%= link_to "Reprovados", participants_path(tab: 'reprovados'), class: params[:tab] == 'reprovados' ? 'active' : '' %>
+  <%= link_to participants_path(tab_params.merge(tab: 'ativos')), class: params[:tab] == 'ativos' ? 'active' : '' do %>
+    <i class="fa-solid fa-users"></i> Usuários
+    <span class="tab-badge"><%= @count_ativos.to_i %></span>
+  <% end %>
+  <%= link_to participants_path(tab_params.merge(tab: 'pendentes')), class: params[:tab] == 'pendentes' ? 'active' : '' do %>
+    <i class="fa-solid fa-clock"></i> Pendentes
+    <span class="tab-badge"><%= @count_pendentes.to_i %></span>
+  <% end %>
+  <%= link_to participants_path(tab_params.merge(tab: 'aprovacoes')), class: params[:tab] == 'aprovacoes' ? 'active' : '' do %>
+    <i class="fa-solid fa-hourglass-half"></i> Aguardando aprovação
+    <span class="tab-badge"><%= @count_aprovacoes.to_i %></span>
+  <% end %>
+  <%= link_to participants_path(tab_params.merge(tab: 'reprovados')), class: params[:tab] == 'reprovados' ? 'active' : '' do %>
+    <i class="fa-solid fa-circle-xmark"></i> Reprovados
+    <span class="tab-badge"><%= @count_reprovados.to_i %></span>
+  <% end %>
   <% if current_user.admin? %>
-    <%= link_to "Excluídos", participants_path(tab: 'excluidos'), class: params[:tab] == 'excluidos' ? 'active' : '' %>
+    <%= link_to participants_path(tab_params.merge(tab: 'excluidos')), class: params[:tab] == 'excluidos' ? 'active' : '' do %>
+      <i class="fa-solid fa-trash"></i> Excluídos
+      <span class="tab-badge"><%= @count_excluidos.to_i %></span>
+    <% end %>
   <% end %>
 </div>
 <% if params[:tab] == 'aprovacoes' %>
@@ -276,7 +556,44 @@
               Sem Foto
             <% end %>
           </td>
-          <td><%= participant.name %></td>
+          <td>
+            <% u = participant.user %>
+            <div class="p-name-wrap">
+              <span class="p-name">
+                <%= participant.name %>
+                <% if u.present? %>
+                  <% if u.respond_to?(:blocked?) && u.blocked? %>
+                    <i class="fa-solid fa-lock access-icon access-icon--blocked" title="Acesso bloqueado"></i>
+                  <% else %>
+                    <i class="fa-solid fa-circle-check access-icon access-icon--on" title="Tem acesso ao sistema"></i>
+                  <% end %>
+                <% end %>
+              </span>
+              <% if u.present? %>
+                <% last_login =
+     if u.respond_to?(:current_sign_in_at)
+       u.current_sign_in_at || u.last_sign_in_at
+     end
+%>
+                <% if u.respond_to?(:sign_in_count) && u.sign_in_count.to_i > 0 && last_login.present? %>
+                  <div style="color: var(--color-muted);" class="login-meta">
+                    <i class="fa-regular fa-clock"></i>
+                    Último login:
+                    <strong><%= l(last_login, format: :short) %></strong>
+                    <span class="muted">(<%= time_ago_in_words(last_login) %> atrás)</span>
+                  </div>
+                <% else %>
+                  <div class="login-meta login-meta--pending">
+                    <i class="fa-regular fa-circle-question"></i>
+                    Ainda não entrou no sistema
+                  </div>
+                <% end %>
+              <% else %>
+                <div class="login-meta login-meta--noaccess">
+                </div>
+              <% end %>
+            </div>
+          </td>
           <td><%= participant.cpf %></td>
           <td><%= participant.telefone %></td>
           <td><%= participant.email.presence || "-" %></td>
@@ -305,6 +622,17 @@
                         style: "width: -webkit-fill-available; text-align: center;",
                         form: { style: "display: contents;" } do %>
                     <i class="fa-solid fa-user-xmark"></i> Excluir
+                  <% end %>
+                <% end %>
+              <% end %>
+              <% if (current_user.admin? || current_user.operador?) && participant.user.present? %>
+                <% if participant.user.respond_to?(:blocked?) && participant.user.blocked? %>
+                  <%= button_to unblock_access_participant_path(participant), method: :patch, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;" do %>
+                    <i class="fa-solid fa-unlock"></i> Desbloquear
+                  <% end %>
+                <% else %>
+                  <%= button_to block_access_participant_path(participant), method: :patch, class: "btn btn-warning", style: "width: -webkit-fill-available; text-align: center;" do %>
+                    <i class="fa-solid fa-lock"></i> Bloquear
                   <% end %>
                 <% end %>
               <% end %>
@@ -430,8 +758,8 @@
 
 
   document.addEventListener("DOMContentLoaded", function () {
-  const empresaSelect = document.querySelector("select[name='grupo_empresa_id']");
-  if (empresaSelect && window.Choices) {           // ✅ só usa se existir
+  const empresaSelect = document.getElementById("grupo_empresa_select");
+  if (empresaSelect && window.Choices && !empresaSelect.dataset.noChoices) {
     const choices = new Choices(empresaSelect, {
       searchEnabled: true,
       itemSelectText: '',
@@ -853,153 +1181,128 @@
   document.addEventListener('DOMContentLoaded', init);
   document.addEventListener('turbo:load', init);
   })();
+
+
+  function initFiltroParticipantsCollapse(){
+  const toggle = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-participants');
+  if (!toggle || !filtros) return;
+
+  const STORAGE_KEY = 'ui:filtros-participants-collapsed';
+
+  // evita bind duplicado (Turbo)
+  if (toggle.dataset.bound === "1") return;
+  toggle.dataset.bound = "1";
+
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1';
+
+  function setCollapsed(collapsed, save = true) {
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function markDone(e){
+    if (e && e.propertyName && e.propertyName !== 'max-height') return;
+    filtros.classList.add('is-collapsed-done');
+    filtros.removeEventListener('transitionend', markDone);
+  }
+
+  if (collapsed) {
+    // antes de animar, garante que o conteúdo existe
+    filtros.classList.remove('is-collapsed-done');
+
+    const curH = filtros.scrollHeight;
+    filtros.style.maxHeight = curH + 'px';
+    filtros.offsetHeight;
+
+    filtros.classList.add('collapsed');
+
+    if (prefersReduced) {
+      filtros.style.maxHeight = '0px';
+      filtros.classList.add('is-collapsed-done');
+    } else {
+      filtros.style.maxHeight = '0px';
+      filtros.addEventListener('transitionend', markDone);
+    }
+
+    toggle.setAttribute('aria-expanded', 'false');
+    filtros.setAttribute('aria-hidden', 'true');
+    if (save) localStorage.setItem(STORAGE_KEY, '1');
+
+  } else {
+    // abrindo: precisa remover o done pra voltar padding/border e mostrar row
+    filtros.classList.remove('collapsed');
+    filtros.classList.remove('is-collapsed-done');
+
+    filtros.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+
+    const targetH = filtros.scrollHeight;
+
+    if (prefersReduced) {
+      filtros.style.maxHeight = '';
+    } else {
+      filtros.style.maxHeight = '0px';
+      filtros.offsetHeight;
+      filtros.style.maxHeight = targetH + 'px';
+
+      const cleanup = (e) => {
+        if (e && e.propertyName && e.propertyName !== 'max-height') return;
+        filtros.style.maxHeight = '';
+        filtros.removeEventListener('transitionend', cleanup);
+      };
+      filtros.addEventListener('transitionend', cleanup);
+    }
+
+    if (save) localStorage.removeItem(STORAGE_KEY);
+  }
+}
+
+
+
+  // estado inicial
+if (startCollapsed) {
+  filtros.classList.add('collapsed');
+  filtros.classList.add('is-collapsed-done'); // ✅ sem ponto
+  filtros.setAttribute('aria-hidden', 'true');
+  toggle.setAttribute('aria-expanded', 'false');
+  filtros.style.maxHeight = '0px';
+} else {
+  filtros.classList.remove('collapsed');
+  filtros.classList.remove('is-collapsed-done');
+  filtros.setAttribute('aria-hidden', 'false');
+  toggle.setAttribute('aria-expanded', 'true');
+  filtros.style.maxHeight = '';
+}
+
+
+  toggle.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    setCollapsed(!filtros.classList.contains('collapsed'), true);
+  });
+
+  function isOpen() {
+  return toggle.getAttribute('aria-expanded') === 'true';
+}
+
+function openIfClosed() {
+  if (!filtros.classList.contains('collapsed')) return; // já aberto, não mexe
+  setCollapsed(false, false);
+}
+
+// abre só quando clicar/focar DENTRO do filtro (sem ser o botão)
+filtros.addEventListener('focusin', (e) => {
+  // se o foco veio de um clique no botão toggle, ignora
+  if (e.target.closest('#filtro-toggle')) return;
+  openIfClosed();
+});
+
+}
+
+document.addEventListener('DOMContentLoaded', initFiltroParticipantsCollapse);
+document.addEventListener('turbo:load', initFiltroParticipantsCollapse);
+document.addEventListener('turbo:before-cache', () => {
+  const toggle = document.getElementById('filtro-toggle');
+  if (toggle) toggle.dataset.bound = "";
+});
+
 </script>
-<style>
-  /* Esconde a coluna quando a viewport for menor que o breakpoint */
-  @media (max-width: 1200px){ .hide-xl { display:none !important; } } /* desktops menores */
-  @media (max-width: 992px) { .hide-lg { display:none !important; } }  /* laptop/tablet landscape */
-  @media (max-width: 768px) { .hide-md { display:none !important; } }  /* tablet/phone */
-  @media (max-width: 576px) { .hide-sm { display:none !important; } }  /* phone pequeno */
-  @media (max-width: 420px) { .hide-xs { display:none !important; } }  /* muito pequeno */
-  @media (max-width: 576px){
-    table.rtable th:not(.keep-sm),
-    table.rtable td:not(.keep-sm){
-      display: none !important;
-    }
-  }
-
-    .hidden { display: none !important; }
-
-    .kebab-wrapper { position: relative; z-index: 20; }
-    .kebab-menu[hidden]{ display:none !important; }
-    .kebab-menu{
-      position: absolute; right: 30px; top: -11px;
-      background: var(--color-btn); color: var(--color-btn);
-      border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
-      overflow: hidden; z-index: 9999;
-    }
-    .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
-    .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
-
-    /* Seleção em massa */
-    .selection-table .sel-cell{ display:none; }                     /* escondida por padrão */
-    .selection-table.table--select .sel-cell{ display:table-cell !important; } /* aparece no modo seleção */
-
-    .th-actions{
-
-    display: flex
-    ;
-        justify-content: space-between;
-        align-items: center;
-
-    }
-      /* ---------- Tabs responsivos (desktop centraliza, mobile rola) ---------- */
-  .tabs {
-    position: sticky;                 /* opcional: fica sempre visível no topo */
-    top: 0;                           /* ajuste conforme seu header */
-    z-index: 0;
-    display: flex;
-    gap: .8rem;
-    padding: .5rem 1rem;
-    margin: 12px auto -8px auto;
-    border-radius: 16px 16px 0 0;
-
-    /* rolagem horizontal quando precisar */
-    overflow-x: auto;
-    overscroll-behavior-x: contain;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x proximity;
-
-    /* desktop: centralizado quando couber */
-    justify-content: center;
-
-    /* esconder scrollbars (sem quebrar acessibilidade) */
-    scrollbar-width: none;            /* Firefox */
-  }
-  .tabs::-webkit-scrollbar { display: none; } /* WebKit */
-
-  .tabs a {
-    flex: 0 0 auto;                   /* não quebrar linha; cada aba tem largura mínima do conteúdo */
-    min-width: max-content;           /* evita quebra estranha de texto */
-    scroll-snap-align: start;
-
-    /* tipografia/padding fluidos para caber melhor em telas pequenas */
-    font-size: clamp(.9rem, 2.5vw, 1.15rem);
-    padding: clamp(6px, 1.4vw, 10px) clamp(12px, 3vw, 28px) 8px clamp(12px, 3vw, 28px);
-
-    border-radius: 18px 18px 0 0;
-    background: var(--color-btn--text);
-    color: var(--color-btn);
-    font-weight: 600;
-    text-decoration: none;
-    transition: background .2s, color .2s, box-shadow .2s, transform .15s;
-  }
-
-  .tabs a.active {
-    background: #ff8c42;
-    color: #222;
-    font-weight: 800;
-    z-index: 2;
-  }
-
-  .tabs a:not(.active):hover {
-    background: #3c2c47;
-    color: #ff944d;
-  }
-
-  /* em telas pequenas, alinhar à esquerda para a faixa rolável começar do início */
-  @media (max-width: 700px) {
-    .tabs { justify-content: flex-start; padding: .5rem .75rem; gap: .5rem; }
-  }
-
-  /* (opcional) sombras nas bordas para indicar que dá pra rolar */
-  .tabs {
-    mask-image: linear-gradient(to right, transparent 0, black 12px, black calc(100% - 12px), transparent 100%);
-  }
-  @supports not (mask-image: linear-gradient(black, black)) {
-    /* fallback simples: sem máscara */
-  }
-
-
-
-
-      /* modal da foto */
-
-      .photo-modal[hidden] { display: none !important; }
-
-  .photo-modal {
-    position: fixed; inset: 0; z-index: 2000;
-    display: grid; place-items: center;
-  }
-  .photo-modal__backdrop {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,.6);
-    backdrop-filter: blur(2px);
-  }
-  .photo-modal__dialog {
-    position: relative;
-    max-width: 90vw; max-height: 90vh;
-    background: #111; border-radius: 14px;
-    box-shadow: 0 20px 60px rgba(0,0,0,.5);
-    padding: 10px 10px 14px;
-    display: grid; gap: 8px; justify-items: center;
-  }
-  .photo-modal__close {
-    position: absolute; top: 4px; right: 8px;
-    border: none; background: transparent; color: #fff;
-    font-size: 26px; cursor: pointer; line-height: 1;
-    padding: 2px 6px;
-  }
-  #photo-modal-img {
-    max-width: 95vw;
-      max-height: 77vh;
-      object-fit: contain;
-      border-radius: 10px;
-      width: 29rem;
-  }
-  .photo-modal__caption {
-    color: #ddd; font-size: .95rem; text-align: center;
-    max-width: 80vw;
-    overflow-wrap: anywhere;
-  }
-</style>

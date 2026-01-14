@@ -29,24 +29,43 @@ class SolicitacaoComprasController < ApplicationController
     end
   end
 
-  # Filtro por status de autorização
+# ✅ Status autorização (enum integer)
 if params[:status_autorizacao].present? && params[:status_autorizacao] != "todos"
-  if params[:status_autorizacao] == "pendente"
-    # inclui registros que ainda estão nil (legado) como pendentes
-    scope = scope.where("status_autorizacao IS NULL OR status_autorizacao = ?", "pendente")
+  key = params[:status_autorizacao].to_s
+
+  if SolicitacaoCompra.status_autorizacaos.key?(key)
+    enum_val = SolicitacaoCompra.status_autorizacaos[key]
+
+    scope =
+      if key == "pendente"
+        scope.where(status_autorizacao: [nil, enum_val]) # inclui legado nil
+      else
+        scope.where(status_autorizacao: enum_val)
+      end
   else
-    scope = scope.where(status_autorizacao: params[:status_autorizacao])
+    Rails.logger.warn "[SC] status_autorizacao inválido: #{key} | válidos: #{SolicitacaoCompra.status_autorizacaos.keys}"
   end
 end
 
-# Filtro por status da compra
+# ✅ Status compra (enum integer)
 if params[:status_compra].present? && params[:status_compra] != "todos"
-  if params[:status_compra] == "aguardando"
-    scope = scope.where("status_compra IS NULL OR status_compra = ?", "aguardando")
+  key = params[:status_compra].to_s
+
+  if SolicitacaoCompra.status_compras.key?(key)
+    enum_val = SolicitacaoCompra.status_compras[key]
+
+    scope =
+      if key == "aguardando"
+        scope.where(status_compra: [nil, enum_val]) # inclui legado nil
+      else
+        scope.where(status_compra: enum_val)
+      end
   else
-    scope = scope.where(status_compra: params[:status_compra])
+    Rails.logger.warn "[SC] status_compra inválido: #{key} | válidos: #{SolicitacaoCompra.status_compras.keys}"
   end
 end
+
+
 
 # Filtro por forma de pagamento
 if params[:forma_pagamento].present? && params[:forma_pagamento] != "todas"

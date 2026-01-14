@@ -4,7 +4,7 @@ has_many :notifications, dependent: :destroy
 
   # ⚠️ Altere aqui para usar CPF como login
   devise :database_authenticatable, :registerable,
-         :recoverable, :rememberable, :validatable,
+         :recoverable, :rememberable, :validatable, :trackable,
          authentication_keys: [:cpf]
 
  enum :role, { client: "client", operador: "operador", admin: "admin" }
@@ -30,15 +30,17 @@ end
 
 # app/models/user.rb
 def blocked_access?
+  # ✅ bloqueio manual (só se a coluna existir)
+  return true if respond_to?(:blocked?) && blocked?
+
   p = participant
   return false if p.nil?
 
-  # bloqueia se já foi excluído
   return true if p.excluido?
-
-  # bloqueia se tem solicitação pendente (seu método já faz isso)
   p.solicitacao_exclusao_pendente.present?
 end
+
+
 
 def active_for_authentication?
   super && !blocked_access?

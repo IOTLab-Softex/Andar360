@@ -177,10 +177,16 @@ end
 
   resources :participants
 resources :participants do
-  post :resgatar, on: :member
-  post :solicitar_exclusao, on: :member
-  
+  member do
+    post  :resgatar
+    post  :solicitar_exclusao
+    post  :aprovar_exclusao
+    post  :reprovar_exclusao
+    patch :block_access
+    patch :unblock_access
+  end
 end
+
 
 resources :participants do
   # ações de membro (precisam do :id)

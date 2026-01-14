@@ -281,6 +281,7 @@
     <% base_scope = SolicitacaoCompra.all %>
 
     <!-- Setor -->
+      <div class="filtro-field">
     <div>
       <label for="setor">Setor</label>
       <%= select_tag :setor,
@@ -298,8 +299,9 @@
           include_blank: false,
           id: "setor" %>
     </div>
-
+    </div>
     <!-- Colaborador -->
+      <div class="filtro-field">
     <div>
       <label for="colaborador">Colaborador(a)</label>
       <%= select_tag :colaborador,
@@ -317,28 +319,34 @@
           include_blank: false,
           id: "colaborador" %>
     </div>
+    </div>
 
     <!-- Forma de pagamento -->
+      <div class="filtro-field">
     <div>
       <label for="forma_pagamento">Forma de pagamento</label>
-      <%= select_tag :forma_pagamento,
-          options_for_select(
-            ["Todas as formas"] +
-              base_scope.
-                select(:forma_pagamento).
-                where.not(forma_pagamento: [nil, ""]).
-                distinct.
-                order(:forma_pagamento).
-                pluck(:forma_pagamento),
-            params[:forma_pagamento]
-          ),
-          class: "form-control",
-          id: "forma_pagamento" %>
+<%= select_tag :forma_pagamento,
+  options_for_select(
+    [["Todas as formas", "todas"]] +
+      base_scope
+        .select(:forma_pagamento)
+        .where.not(forma_pagamento: [nil, ""])
+        .distinct
+        .order(:forma_pagamento)
+        .pluck(:forma_pagamento)
+        .map { |v| [v, v] },
+    params[:forma_pagamento].presence || "todas"
+  ),
+  class: "form-control",
+  id: "forma_pagamento" %>
+
+    </div>
     </div>
 
     <!-- Status de autorização / Status de compra -->
-    <div class="status-filter">
-      <div class="status-field">
+      <div class="filtro-field">
+    
+      
         <label for="status_autorizacao">Autorização</label>
         <%= select_tag :status_autorizacao,
             options_for_select(
@@ -352,8 +360,11 @@
             ),
             class: "form-control",
             id: "status_autorizacao" %>
+      
       </div>
-      <div class="status-field">
+
+        <div class="filtro-field">
+      
         <label for="status_compra">Compra</label>
         <%= select_tag :status_compra,
             options_for_select(
@@ -367,10 +378,12 @@
             ),
             class: "form-control",
             id: "status_compra" %>
+      
       </div>
-    </div>
+   
 
     <!-- Ordem -->
+      <div class="filtro-field">
     <div>
       <label for="ordem">Ordem</label>
       <%= select_tag :ordem,
@@ -384,8 +397,10 @@
           class: "form-control",
           id: "ordem" %>
     </div>
+    </div>
 
     <!-- Período -->
+      <div class="filtro-field">
     <div class="date-range-filter">
       <div class="date-field">
         <label for="data_inicio">De</label>
@@ -402,14 +417,15 @@
             id: "data_fim" %>
       </div>
     </div>
-
+    </div>
+    <br>
     <!-- Botões -->
     <div style="display:flex;align-items: stretch;gap:8px;padding: 15px;">
       <%= button_tag type: "submit", class: "btn btn-success" do %>
         <i class="fa fa-search"></i> <span class="hide-sm">Filtrar</span>
       <% end %>
       <%= link_to solicitacao_compras_path, class: "btn btn-success" do %>
-        <i class="fa-solid fa-rotate-left"></i> Limpar
+        <i class="fa-solid fa-rotate-left"></i> <span class="hide-sm">Limpar</span>
       <% end %>
     </div>
   </div>
@@ -797,75 +813,104 @@
 
     // ======= JS do colapso suave do filtro =======
     document.addEventListener('DOMContentLoaded', () => {
-      const toggle = document.getElementById('filtro-toggle');
-      const filtros = document.getElementById('filtros-salas');
-      if (!toggle || !filtros) return;
+  const toggle  = document.getElementById('filtro-toggle');
+  const filtros = document.getElementById('filtros-salas');
+  if (!toggle || !filtros) return;
 
-      const STORAGE_KEY = 'ui:filtros-solicitacao-compra-collapsed';
+  const STORAGE_KEY = 'ui:filtros-solicitacao-compra-collapsed';
 
-      const saved = localStorage.getItem(STORAGE_KEY);
-      const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+  // ===== helpers =====
+  function setCollapsed(collapsed, save = true) {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      function setCollapsed(collapsed, save = true) {
-        const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (collapsed) {
+      const curH = filtros.scrollHeight;
+      filtros.style.maxHeight = curH + 'px';
+      filtros.offsetHeight;
 
-        if (collapsed) {
-          const curH = filtros.scrollHeight;
-          filtros.style.maxHeight = curH + 'px';
-          filtros.offsetHeight;
-          if (prefersReduced) {
-            filtros.classList.add('collapsed');
-            filtros.style.maxHeight = '';
-          } else {
-            filtros.classList.add('collapsed');
-            filtros.style.maxHeight = '0px';
-          }
-          toggle.setAttribute('aria-expanded', 'false');
-          filtros.setAttribute('aria-hidden', 'true');
-          if (save) localStorage.setItem(STORAGE_KEY, '1');
-        } else {
-          filtros.classList.remove('collapsed');
-          filtros.setAttribute('aria-hidden', 'false');
-          toggle.setAttribute('aria-expanded', 'true');
-          const targetH = filtros.scrollHeight;
-          if (prefersReduced) {
-            filtros.style.maxHeight = '';
-          } else {
-            filtros.style.maxHeight = '0px';
-            filtros.offsetHeight;
-            filtros.style.maxHeight = targetH + 'px';
-          }
-          const cleanup = () => {
-            filtros.style.maxHeight = '';
-            filtros.removeEventListener('transitionend', cleanup);
-          };
-          filtros.addEventListener('transitionend', cleanup);
-          if (save) localStorage.removeItem(STORAGE_KEY);
-        }
-      }
+      filtros.classList.add('collapsed');
+      filtros.style.maxHeight = prefersReduced ? '' : '0px';
 
-      if (startCollapsed) {
-        filtros.classList.add('collapsed');
-        filtros.setAttribute('aria-hidden', 'true');
-        toggle.setAttribute('aria-expanded', 'false');
+      toggle.setAttribute('aria-expanded', 'false');
+      filtros.setAttribute('aria-hidden', 'true');
+      if (save) localStorage.setItem(STORAGE_KEY, '1');
+    } else {
+      filtros.classList.remove('collapsed');
+      filtros.setAttribute('aria-hidden', 'false');
+      toggle.setAttribute('aria-expanded', 'true');
+
+      if (!prefersReduced) {
         filtros.style.maxHeight = '0px';
+        filtros.offsetHeight;
+        filtros.style.maxHeight = filtros.scrollHeight + 'px';
+        const cleanup = () => {
+          filtros.style.maxHeight = '';
+          filtros.removeEventListener('transitionend', cleanup);
+        };
+        filtros.addEventListener('transitionend', cleanup);
       } else {
-        filtros.classList.remove('collapsed');
-        filtros.setAttribute('aria-hidden', 'false');
-        toggle.setAttribute('aria-expanded', 'true');
         filtros.style.maxHeight = '';
       }
 
-      toggle.addEventListener('click', (ev) => {
-        ev.preventDefault();
-        const isCollapsed = filtros.classList.contains('collapsed');
-        setCollapsed(!isCollapsed, true);
-      });
+      if (save) localStorage.removeItem(STORAGE_KEY);
+    }
+  }
 
-      document.querySelectorAll('#filtros-salas input, #filtros-salas select, #filtros-salas textarea').forEach(el => {
-        el.addEventListener('focus', () => setCollapsed(false, false));
-      });
-    });
+  function isOpen() {
+    return !filtros.classList.contains('collapsed');
+  }
+
+  // ===== estado inicial =====
+  const saved = localStorage.getItem(STORAGE_KEY);
+  const startCollapsed = saved === '1' || toggle.getAttribute('aria-expanded') === 'false';
+
+  if (startCollapsed) {
+    filtros.classList.add('collapsed');
+    filtros.setAttribute('aria-hidden', 'true');
+    toggle.setAttribute('aria-expanded', 'false');
+    filtros.style.maxHeight = '0px';
+  } else {
+    filtros.classList.remove('collapsed');
+    filtros.setAttribute('aria-hidden', 'false');
+    toggle.setAttribute('aria-expanded', 'true');
+    filtros.style.maxHeight = '';
+  }
+
+  // ===== toggle manual =====
+  toggle.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    setCollapsed(isOpen(), true); // se está aberto, fecha. se está fechado, abre.
+  });
+
+  // ===== abre quando focar dentro =====
+  filtros.addEventListener('focusin', () => {
+    // abre sem alterar o "salvo" (para não bagunçar preferências)
+    if (!isOpen()) setCollapsed(false, false);
+  });
+
+  // ===== fecha quando sair do foco do painel inteiro =====
+  filtros.addEventListener('focusout', (ev) => {
+    // se o novo foco (relatedTarget) ainda está dentro do painel, não fecha
+    const next = ev.relatedTarget;
+    if (next && filtros.contains(next)) return;
+
+    // se o foco foi para o botão toggle, também não fecha (vai fechar/abrir via click)
+    if (next && toggle.contains(next)) return;
+
+    // fecha (e salva como colapsado)
+    setCollapsed(true, true);
+  });
+
+  // ===== fecha ao clicar fora (igual no das salas) =====
+  document.addEventListener('pointerdown', (ev) => {
+    if (!isOpen()) return;
+    const insideToggle = ev.target.closest('#filtro-toggle');
+    const insidePanel  = ev.target.closest('#filtros-salas');
+    if (!insideToggle && !insidePanel) {
+      setCollapsed(true, true);
+    }
+  });
+});
 
     //modal de cancelar compra
 

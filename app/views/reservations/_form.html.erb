@@ -17,8 +17,8 @@
     <div class="form-group">
       <label>Escolha a Sala</label>
       <div class="room-scroll-container" style="position: relative;">
-        <div class="fade-left-mobile fade-left"></div>
-        <div class="fade-right-mobile fade-right"></div>
+        
+        
         <button type="button" class="scroll-button left" onclick="scrollRooms('left')">&lt;</button>
         <div class="room-scroll-wrapper" id="room-scroll-wrapper">
           <% Room.where(espaco_comun: true).each do |room| %>

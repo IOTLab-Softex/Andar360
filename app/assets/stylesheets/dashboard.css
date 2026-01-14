@@ -16,12 +16,7 @@ main {
 .room-card-scroll{
       width: 100% !important;
 }
-.fade-left{
-  left: 37px !important;
-}
-.fade-right{
-  right: 37px !important;
-}
+
 .room-info {
   margin-top: 5.5rem !important;
   font-size: 12px !important;
@@ -114,12 +109,7 @@ main {
     box-sizing: border-box;  /* garante que padding conte no tamanho total */
 }
 
-.fade-left{
- left: 33px !important;
-}
-.fade-right{
-  right: 33px !important;
-}
+
 }
 
  .logo-mobile {
@@ -141,6 +131,7 @@ display: none;
     color: var(--color-btn--text);
     font-weight: 600;
     border-radius: 6px;
+    
 }
 
 #filtro-toggle .filtro-chevron {
@@ -150,13 +141,7 @@ display: none;
 }
 
 /* corpo do filtro: controlar via max-height para animação */
-#filtros-salas {
-  overflow: hidden;
-  transition: max-height .32s cubic-bezier(.2,.9,.2,1), opacity .24s ease, padding .24s ease;
-  max-height: 999px; /* valor grande suficiente para conter o conteúdo */
-  opacity: 1;
-  padding: 0.6rem 0 0 0; /* ajuste conforme seu layout */
-}
+
 
 /* estado colapsado */
 #filtros-salas.collapsed {
@@ -194,7 +179,7 @@ display: none;
 @media (max-width: 768px) {
 
   .form-control {
-    margin: 2px !important;
+    margin: 11px !important;
 }
 
 .solicitacao-itens .table-salas tbody td {
@@ -273,6 +258,9 @@ display: none;
   scroll-behavior: smooth; /* rolagem suave por padrão */
 }
 
+.kpi-grid{
+  mask-image: linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+}
 
 /* comportamento mobile: fila rolável a partir do breakpoint 800px */
 @media (max-width: 800px) {
@@ -442,15 +430,7 @@ width: -webkit-fill-available !important;
   .hide-on-mobile {
     display: none !important;
   }
- .fade-left-mobile {
-  left: 33px !important;
-width: 12% !important;
-}
 
-.fade-right-mobile {
-  right: 33px !important;
- width: 12% !important;
-}
 }
 
 .fade-border {
@@ -539,8 +519,7 @@ width: 12% !important;
   --color-span: #666;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
---fade-left: linear-gradient(to right, rgb(249 249 249), rgb(255 255 255 / 0%));
-    --fade-right: linear-gradient(to left, rgb(249 249 249), rgba(255, 255, 255, 0));
+
   --header-color:  rgb(255 255 255 / 51%);
   --foto-user-avatar: #ddd;
   --color-form-group: #ffffff;
@@ -572,8 +551,7 @@ width: 12% !important;
   --color-span: #b1b1b1;
   --color-success: #44ff44;
   --color-error: #ff4b5c;
---fade-left: linear-gradient(to right, rgb(43 43 43), rgb(255 255 255 / 0%));
-    --fade-right: linear-gradient(to left, rgb(43 43 43), rgba(255, 255, 255, 0));
+
  --header-color: rgb(0 0 0 / 51%);
  --foto-user-avatar: #606060;
  --color-muted: #555;
@@ -1487,6 +1465,10 @@ left: 0;
   display: none; /* Chrome/Safari */
 }
 
+.room-scroll-wrapper{
+  mask-image: linear-gradient(to right, transparent 0, black 80px, black calc(100% - 80px), transparent 100%);
+}
+
 .room-card-scroll {
   position: relative;
   background: var(--color-card);
@@ -1595,24 +1577,9 @@ left: 0;
   justify-content: center;
 }
 
-.fade-left, .fade-right {
-  position: absolute;
-  top: 0;
-  width: 80px;
-  height: 100%;
-  z-index: 5;
-  pointer-events: none; /* deixa clicar nos botões normalmente */
-}
 
-.fade-left {
-  left: 50px;
-  background: var(--fade-left)
-}
 
-.fade-right {
-  right: 51px;
-  background: var(--fade-right)
-}
+
 
 .btn.delete-room {
     background-color: var(--color-btn);
@@ -2057,8 +2024,12 @@ text-align: center;
 
 #participantsTable tbody tr:hover {
   background-color: var(--color-accent-hover);
-  color: var(--color-btn--text);
+  color: var(--color-btn);
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#participantsTable tbody tr:hover .login-meta{
+  color: var(--color-btn) !important;
 }
 
 #participantsTable img {
@@ -2979,7 +2950,7 @@ body.noscroll { overflow:hidden; }
   max-height: 9999px;        /* estado expandido padrão */
   transition: max-height 320ms cubic-bezier(.2,.9,.2,1), opacity 220ms ease, padding 220ms ease;
   opacity: 1;
-  padding: .6rem 0;          /* ajuste visual */
+  padding: 1.6rem 16;          /* ajuste visual */
   will-change: max-height, opacity;
   
 }
@@ -3005,6 +2976,7 @@ body.noscroll { overflow:hidden; }
     font-weight: 600;
     border-radius: 6px 6px 6px 6px;
     margin: 10px 10px 0px 10px;
+    color: white;
 }
 
 #filtro-toggle:hover {
@@ -3269,4 +3241,92 @@ background: var(--color-accent);
 
 .anexo-remover i {
   color: #f88;
+}
+
+/* filtro */
+
+.filtro-row{
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 14px;
+}
+
+.filtro-field{
+  position: relative;
+  min-width: 180px;
+  flex: 1;
+}
+
+.filtro-field .filtro-field-label {
+    position: absolute;
+    top: -9px;
+    left: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    letter-spacing: .02em;
+    border-radius: 999px;
+    color: var(--color-btn);
+    /* background: #1f1f1f; */
+    /* border: 1px solid #3a3a3a; */
+    z-index: 2;
+}
+
+.filtro-field .form-control {
+
+    height: 42px !important;
+    padding-top: 10px !important;
+    border-radius: 12px !important;
+    border: 1px solid #3a3a3a !important;
+    background: var(--color-bg) !important;
+    color: var(--color-btn) !important;
+}
+
+.filtro-field .form-control:focus{
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+  border-color: #5a5a5a;
+}
+
+/* campo "a" entre datas */
+.filtro-sep{
+  padding: 0 4px 10px;
+  color: #aaa;
+  font-size: 13px;
+}
+
+@media (max-width: 700px){
+  .filtro-field{ min-width: 100%; }
+}
+
+.filtro-actions{
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-bottom: 2px;
+}
+
+.btn-limpar{
+  height: 42px;
+  border-radius: 12px;
+  border: 1px solid #3a3a3a;
+  background: #1f1f1f;
+  color: #e6e6e6;
+  padding: 0 14px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform .08s ease, background .12s ease, border-color .12s ease;
+}
+
+.btn-limpar:hover{
+  background: #242424;
+  border-color: #5a5a5a;
+}
+
+.btn-limpar:active{
+  transform: translateY(1px);
 }
