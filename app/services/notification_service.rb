@@ -33,6 +33,33 @@ class NotificationService
       notif.corpo  = corpo
       notif.lida   = false
       notif.save!
+      WebPushService.send_to_user(user,
+  title: notif.titulo,
+  body: notif.corpo,
+  url: "/notifications" # ou link direto pro item
+)
+
+    end
+  end
+
+  def self.notify_chamado_updated(chamado)
+    # Envia notificação para todos os administradores e operadores
+    User.where(role: [:admin, :operador]).find_each do |user|
+      notif = Notification.create!(
+        user: user,
+        notificavel: chamado,
+        titulo: "Chamado atualizado: #{chamado.titulo}",
+        corpo: "Status: #{chamado.status} • Prioridade: #{chamado.prioridade}",
+        lida: false
+      )
+
+      # Envia o push para o usuário
+      WebPushService.send_to_user(
+        user,
+        title: notif.titulo,
+        body: notif.corpo,
+        url: "/chamados/#{chamado.id}"  # Link para o chamado
+      )
     end
   end
 end

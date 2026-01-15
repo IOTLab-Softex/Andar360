@@ -15,6 +15,7 @@ gem 'inline_svg'
 gem "ckeditor"
 gem 'roo'
 gem 'roo-xls'
+gem "webpush"
 
 
 

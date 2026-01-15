@@ -2,10 +2,11 @@ require "active_support/core_ext/integer/time"
 
 Rails.application.configure do
   # Settings specified here will take precedence over those in config/application.rb.
-
+  config.hosts << "localhost"
+  config.hosts << "127.0.0.1"
   # Code is not reloaded between requests.
   config.enable_reloading = false
-
+  
   # Eager load code on boot for better performance and memory savings (ignored by Rake tasks).
   config.eager_load = true
 

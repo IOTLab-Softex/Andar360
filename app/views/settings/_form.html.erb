@@ -13,6 +13,10 @@
       <button class="tab-link"        data-tab="tab-turnos"    role="tab" aria-selected="false">
         <i class="fa-solid fa-clock"></i> Limites por turno
       </button>
+      <button class="tab-link" data-tab="tab-push" role="tab" aria-selected="false">
+  <i class="fa-solid fa-bell"></i> Push
+</button>
+
       <button class="tab-link"        data-tab="tab-email"     role="tab" aria-selected="false">
         <i class="fa-solid fa-envelope"></i> E-mail (SMTP)
       </button>
@@ -187,16 +191,69 @@
           </ul>
         </details>
       </section>
+
+      <!-- ===== 🔔 PUSH NOTIFICATIONS ===== -->
+<section id="tab-push" class="tab-panel" role="tabpanel" hidden>
+  <h2 class="subtitle mt-4 mb-3">
+    <i class="fa-solid fa-bell me-2"></i> Notificação Push (Web Push)
+  </h2>
+
+  <div class="form-group">
+    <label><i class="fa-solid fa-at me-2"></i> VAPID Subject</label>
+    <%= f.text_field :vapid_subject,
+          class: "form-control",
+          placeholder: "mailto:suporte@seu-dominio.com",
+          value: (@setting.vapid_subject.presence || "mailto:suporte@seu-dominio.com") %>
+    <small class="form-text text-muted">
+      Recomendado: <code>mailto:...</code> ou a URL do seu site.
+    </small>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="form-group">
+        <label><i class="fa-solid fa-key me-2"></i> VAPID Public Key</label>
+        <%= f.text_area :vapid_public_key, class: "form-control", rows: 3, readonly: true %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="form-group">
+        <label><i class="fa-solid fa-lock me-2"></i> VAPID Private Key</label>
+        <%= f.text_area :vapid_private_key, class: "form-control", rows: 3, readonly: true %>
+        <small class="form-text text-muted">
+          ⚠️ Chave privada: mantenha restrita (apenas admin).
+        </small>
+      </div>
+    </div>
+  </div>
+
+
+
+
+  <small class="form-text text-muted d-block mt-2">
+    Depois de gerar, seus navegadores vão usar a <strong>Public Key</strong> para registrar o Push.
+    O servidor usa a <strong>Private Key</strong> para enviar notificações.
+  </small>
+</section>
+
     </div>
 
     <!-- AÇÕES -->
     <div class="settings-actions text-end mt-4">
-     <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
-  <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
-<% end %>
-
-    </div>
+  <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
+    <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
   <% end %>
+</div>
+
+<% end %>  <%# <-- FECHA O FORM PRINCIPAL AQUI %>
+<div class="settings-actions text-end mt-2">
+  <%= button_to "Gerar chaves VAPID",
+        generate_vapid_setting_path(@setting),
+        method: :patch,
+        params: { setting: { vapid_subject: (@setting.vapid_subject.presence || "mailto:suporte@seu-dominio.com") } },
+        class: "btn btn-outline-secondary" %>
+</div>
+
 
   <!-- E-mail de teste (fora do form principal) -->
   <!-- E-mail de teste (aparece só na aba E-mail) -->

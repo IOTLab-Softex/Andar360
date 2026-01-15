@@ -123,6 +123,7 @@ def create
 def update
   if @chamado.update(chamado_params.except(:fotos))
     @chamado.fotos.attach(params[:chamado][:fotos]) if params.dig(:chamado, :fotos)
+     NotificationService.notify_chamado_updated(@chamado)
     redirect_to root_path, status: :see_other, notice: "Chamado atualizado com sucesso."
   else
     flash.now[:alert] = @chamado.errors.full_messages.to_sentence.presence || "Não foi possível atualizar."

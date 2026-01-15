@@ -3,8 +3,14 @@ Rails.application.routes.draw do
 
 # config/routes.rb
 resources :settings, only: [:index, :edit, :update] do
-  post :test_mail, on: :member
+  member do
+    post  :test_mail
+    patch :generate_vapid
+  end
 end
+
+
+
 # /settings -> index -> redireciona para /settings/:id/edit
  resources :feedbacks, only: [:index, :show, :create, :update, :destroy] do
     member do
@@ -138,7 +144,7 @@ devise_for :users, controllers: {
   get "import_logs/status", to: "import_logs#status"
 
   get "import_logs/index"
-  resources :settings
+ 
   resources :devices
   resources :room_groups, except: [:show]
 
@@ -167,6 +173,10 @@ devise_for :users, controllers: {
     get  :template # baixa planilha-modelo
   end
   end
+
+resource :push_subscriptions, only: [:create, :destroy]
+get "/push/vapid_public_key", to: "push_subscriptions#vapid_public_key"
+
 
 # config/routes.rb
 resources :releases, only: [:index, :show, :create] do

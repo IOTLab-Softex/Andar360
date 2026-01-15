@@ -1,0 +1,76 @@
+<div id="push-permission-modal" class="push-modal" hidden aria-hidden="true" role="dialog" aria-modal="true">
+  <div class="push-modal__backdrop" data-push-backdrop></div>
+  <div class="push-modal__dialog" role="document" aria-labelledby="push-modal-title">
+    <div class="push-modal__header">
+      <h3 id="push-modal-title" style="margin:0;">
+        <i class="fa-solid fa-bell"></i> Ativar notificações
+      </h3>
+     
+    </div>
+    <div class="push-modal__body">
+      <p style="margin:0 0 .6rem 0;">
+        Para você receber alertas e notificações de reservas, chamados e avisos mesmo com o sistema fechado, ative as notificações do navegador.
+      </p>
+      <div id="push-modal-status" class="push-status">
+        Clique em <strong>Ativar</strong> e permita quando o navegador perguntar.
+      </div>
+      <details style="margin-top:.6rem;">
+        <summary style="cursor:pointer;">Se estiver bloqueado</summary>
+        <div style="margin-top:.4rem; font-size:.9rem; opacity:.9;">
+          Clique no <strong>cadeado</strong> ao lado da URL → <strong>Notificações</strong> → <strong>Permitir</strong>.
+          Depois recarregue a página.
+        </div>
+      </details>
+    </div>
+    <div class="push-modal__footer">
+      <button type="button" class="btn btn-success" id="btn-enable-push">
+        <i class="fa-solid fa-bell"></i> Ativar
+      </button>
+      <button type="button" class="btn btn-light" id="btn-push-not-now">
+        Agora não
+      </button>
+    </div>
+  </div>
+</div>
+<style>
+  .push-modal{ position:fixed; inset:0; z-index:10050; display:grid; place-items:center; }
+  .push-modal[hidden]{ display:none !important; }
+  .push-modal__backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.55); }
+  .push-modal__dialog{
+    position:relative;
+    width:min(520px, 92vw);
+    background: var(--color-card, #1e2a38);
+    color: var(--color-text, #fff);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    box-shadow: 0 18px 55px rgba(0,0,0,.45);
+    overflow:hidden;
+    transform: translateY(8px) scale(.98);
+    opacity: 0;
+    transition: transform .18s ease, opacity .18s ease;
+  }
+  .push-modal.is-open .push-modal__dialog{ transform: translateY(0) scale(1); opacity:1; }
+  .push-modal__header{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 16px; border-bottom: 1px solid rgba(255,255,255,.06);
+    background: rgba(0,0,0,.12);
+  }
+  .push-modal__header i{ margin-right:.5rem; }
+  .push-modal__close{ background:transparent; border:0; color:inherit; font-size:18px; cursor:pointer; opacity:.75; }
+  .push-modal__close:hover{ opacity:1; }
+  .push-modal__body{ padding: 14px 16px; }
+  .push-status{
+    margin-top:.6rem;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: rgba(124,58,237,.14);
+    border: 1px solid rgba(124,58,237,.25);
+    font-size: .92rem;
+  }
+  .push-modal__footer{
+    padding: 14px 16px;
+    display:flex; gap:10px; justify-content:flex-end; flex-wrap:wrap;
+    border-top: 1px solid rgba(255,255,255,.06);
+    background: rgba(0,0,0,.08);
+  }
+</style>

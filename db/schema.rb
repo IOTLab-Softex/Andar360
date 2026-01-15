@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_14_155729) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -181,6 +181,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
     t.bigint "release_id"
     t.index ["category"], name: "index_feedbacks_on_category"
     t.index ["page_path"], name: "index_feedbacks_on_page_path"
+    t.index ["release_id", "status"], name: "index_feedbacks_on_release_id_and_status"
     t.index ["release_id"], name: "index_feedbacks_on_release_id"
     t.index ["resolved_by_id"], name: "index_feedbacks_on_resolved_by_id"
     t.index ["severity"], name: "index_feedbacks_on_severity"
@@ -345,6 +346,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
     t.datetime "updated_at", null: false
   end
 
+  create_table "push_subscriptions", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.text "endpoint"
+    t.string "p256dh"
+    t.string "auth"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id"], name: "index_push_subscriptions_on_user_id"
+  end
+
   create_table "releases", force: :cascade do |t|
     t.string "version"
     t.string "stage"
@@ -449,6 +460,9 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
     t.boolean "require_rules_before_reservation", default: false, null: false
     t.string "reservation_rules_title"
     t.boolean "require_room_rules_ack"
+    t.string "vapid_public_key"
+    t.string "vapid_private_key"
+    t.string "vapid_subject"
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|
@@ -518,8 +532,16 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
     t.integer "participant_id"
     t.string "cpf"
     t.boolean "force_password_change"
+    t.integer "sign_in_count", default: 0, null: false
+    t.datetime "current_sign_in_at"
+    t.datetime "last_sign_in_at"
+    t.string "current_sign_in_ip"
+    t.string "last_sign_in_ip"
+    t.boolean "blocked", default: false, null: false
+    t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["last_sign_in_at"], name: "index_users_on_last_sign_in_at"
     t.index ["participant_id"], name: "index_users_on_participant_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
   end
@@ -545,6 +567,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_12_18_124027) do
   add_foreign_key "notifications", "users"
   add_foreign_key "participants", "grupo_empresas"
   add_foreign_key "participants", "sub_grupo_empresas"
+  add_foreign_key "push_subscriptions", "users"
   add_foreign_key "reservations", "grupo_empresas"
   add_foreign_key "reservations", "participants", column: "responsavel_id"
   add_foreign_key "reservations", "participants", column: "solicitante_id"

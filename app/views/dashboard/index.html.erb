@@ -21,28 +21,19 @@
     display: none !important;
   }
 </style>
-
 <div id="dashboard-page-marker"></div>
-
 <% manut_last = @manutencao_programadas.map(&:updated_at).compact.max&.to_i || 0 %>
 <% cham_last  = @chamados.map(&:updated_at).compact.max&.to_i || 0 %>
 <% rooms_last = @rooms.map(&:updated_at).compact.max&.to_i || 0 %>
 <% total_chamados = (@chamados_counts || {}).values.sum rescue 0 %>
-
 <div id="dashboard-snapshot"
      data-hash="<%= [manut_last, cham_last, rooms_last, total_chamados].join('-') %>"></div>
-
 <%= audio_tag "notify_new.mp3",
       id: "notify-new",
       preload: "auto",
       style: "display:none;" %>
-
-
-
 <%= render "dashboard/kpis" %>
-
 <div class="board-grid">
-  
   <section id="card-chamados" class="board-card col-12 col-6">
     <%= render "dashboard/chamados", chamados: @chamados %>
   </section>
@@ -60,7 +51,6 @@
     <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
   </section>
 </div>
-
 <% if @avisos_manutencao.present? %>
   <div id="modalAvisos"
        class="modal-custom"
@@ -95,6 +85,7 @@ data-ns="<%= @ack_ns %>">
     </div>
   </div>
 <% end %>
+<%= render "shared/push_permission_modal" %>
 <style>
   .strong {
     color: black;
@@ -295,7 +286,7 @@ data-ns="<%= @ack_ns %>">
 
     // função global para (re)inicializar o estado das .rooms
   // função global para (re)inicializar o estado das .rooms
-window.initDashboardRooms = function() {
+  window.initDashboardRooms = function() {
   const firstRun = !document.body.dataset.roomsInitialized; // true só na 1ª vez
 
   document.querySelectorAll(".rooms").forEach((section) => {
@@ -337,7 +328,7 @@ window.initDashboardRooms = function() {
 
   // marca que já inicializou uma vez
   document.body.dataset.roomsInitialized = "1";
-};
+  };
 
 
   // roda ao carregar a página normalmente e com Turbo
@@ -769,8 +760,210 @@ window.initDashboardRooms = function() {
       }, { once: true });
     });
   })();
+</script>
+<script>
+  (function(){
+  const MODAL_KEY = "pushModalDismissed";
+  const DURATION_DAYS = 7;
+  const REOPEN_MS = 1200; // tempo pra reabrir se tentarem fechar sem "Agora não"
 
+  function now() { return Date.now(); }
+
+  function setDismiss(days){
+    try{ localStorage.setItem(MODAL_KEY, String(now() + days*24*60*60*1000)); }catch(e){}
+  }
+
+  function isDismissed(){
+    try{
+      const v = parseInt(localStorage.getItem(MODAL_KEY) || "0", 10);
+      return v && now() < v;
+    }catch(e){ return false; }
+  }
+
+  function openModal(modal){
+    modal.hidden = false;
+    modal.classList.add("is-open");
+    modal.setAttribute("aria-hidden","false");
+    document.body.classList.add("modal-open");
+  }
+
+  function closeModal(modal){
+    modal.classList.remove("is-open");
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden","true");
+    document.body.classList.remove("modal-open");
+  }
+
+  async function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = atob(base64);
+    return Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+  }
+
+  async function isPushActive() {
+    if (!("Notification" in window)) return false;
+    if (Notification.permission !== "granted") return false;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+
+    try{
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.getSubscription();
+      return !!sub;
+    }catch(e){ return false; }
+  }
+
+  async function enablePush(statusEl){
+    if (!("Notification" in window)) {
+      statusEl.textContent = "Seu navegador não suporta notificações.";
+      return false;
+    }
+    if (Notification.permission === "denied") {
+      statusEl.textContent = "Notificações BLOQUEADAS. Clique no cadeado do site e permita Notificações.";
+      return false;
+    }
+
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") {
+      statusEl.textContent = "Permissão não concedida.";
+      return false;
+    }
+
+    await navigator.serviceWorker.register("/service-worker.js");
+    const readyReg = await navigator.serviceWorker.ready;
+
+    const keyRes = await fetch("/push/vapid_public_key");
+    if (!keyRes.ok) {
+  const txt = await keyRes.text().catch(()=> "");
+  statusEl.textContent = `Falha ao obter VAPID Public Key (${keyRes.status}).`;
+  console.warn("[push] /push/vapid_public_key erro:", keyRes.status, txt);
+  return false;
+}
+const { publicKey } = await keyRes.json();
+
+
+    let sub = await readyReg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await readyReg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: await urlBase64ToUint8Array(publicKey)
+      });
+    }
+
+    const resp = await fetch("/push_subscriptions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: JSON.stringify({ subscription: sub })
+    });
+
+    if (!resp.ok) {
+  const txt = await resp.text().catch(()=> "");
+  statusEl.textContent = `Permissão OK, mas o servidor recusou (${resp.status}).`;
+  console.warn("[push] /push_subscriptions erro:", resp.status, txt);
+  return false;
+}
+
+
+    const confirmSub = await readyReg.pushManager.getSubscription();
+    if (!confirmSub) {
+      statusEl.textContent = "Permissão ok, mas assinatura Push não ficou ativa.";
+      return false;
+    }
+
+    statusEl.textContent = "Notificações ativadas ✅";
+    return true;
+  }
+
+  async function init(){
+    const marker = document.getElementById("dashboard-page-marker");
+    if (!marker) return;
+
+    const modal = document.getElementById("push-permission-modal");
+    if (!modal) return;
+
+    const statusEl  = document.getElementById("push-modal-status");
+    const enableBtn = document.getElementById("btn-enable-push");
+    const notNowBtn = document.getElementById("btn-push-not-now");
+    const backdrop  = modal.querySelector("[data-push-backdrop]");
+
+    // já ativou? não abre
+    if (await isPushActive()) return;
+
+    // clicou "Agora não"? respeita
+    if (isDismissed()) return;
+
+    // abre sempre
+    openModal(modal);
+
+    // função "insistir": se tentar fechar, reabre
+    function insist(msg){
+      statusEl.textContent = msg || "Para fechar, ative as notificações ou clique em “Agora não”.";
+      // se por algum motivo fechou, reabre
+      setTimeout(() => {
+        if (modal.hidden) openModal(modal);
+      }, REOPEN_MS);
+    }
+
+    // Clicar fora => NÃO fecha, só insiste
+    backdrop?.addEventListener("click", (e)=>{
+      e.preventDefault();
+      insist();
+    });
+
+    // X => NÃO fecha
+    modal.querySelectorAll("[data-push-close]").forEach(btn=>{
+      btn.addEventListener("click", (e)=>{
+        e.preventDefault();
+        insist();
+      });
+    });
+
+    // ESC => NÃO fecha
+    document.addEventListener("keydown", (e)=>{
+      if (e.key === "Escape" && !modal.hidden) {
+        e.preventDefault();
+        insist();
+      }
+    });
+
+    // "Agora não" => fecha e salva
+    notNowBtn?.addEventListener("click", ()=>{
+      setDismiss(DURATION_DAYS);
+      closeModal(modal);
+    });
+
+    // "Ativar" => ativa, se ok fecha e não pergunta mais
+    enableBtn?.addEventListener("click", async ()=>{
+  enableBtn.disabled = true;
+  enableBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Ativando...';
+
+  try{
+    const ok = await enablePush(statusEl);
+
+    if (ok) {
+      setDismiss(3650);
+      closeModal(modal);
+      return;
+    }
+
+    // ❗ NÃO chama insist aqui — deixa o enablePush mostrar o erro real
+    enableBtn.disabled = false;
+    enableBtn.innerHTML = '<i class="fa-solid fa-bell"></i> Ativar';
+  } catch(err){
+    statusEl.textContent = "Falha ao ativar push. Veja o Console (F12) para detalhes.";
+    enableBtn.disabled = false;
+    enableBtn.innerHTML = '<i class="fa-solid fa-bell"></i> Ativar';
+    console.error("[push] erro:", err);
+  }
+});
+
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("turbo:load", init);
+})();
 
 </script>
-
-
