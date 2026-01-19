@@ -8,14 +8,20 @@ gem 'ffi'
 gem 'rubyzip', '~> 2.3'
 gem 'chunky_png'
 gem 'devise'
-gem "image_processing", "~> 1.2"
+
 gem 'delayed_job_active_record'
 gem 'daemons' # para rodar o worker em segundo plano se desejar
 gem 'inline_svg'
 gem "ckeditor"
 gem 'roo'
 gem 'roo-xls'
-gem "webpush"
+gem "webpush", "1.1.0"
+
+
+
+
+
+
 
 
 

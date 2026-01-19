@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_14_155729) do
+ActiveRecord::Schema[8.0].define(version: 2026_01_19_160922) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -283,6 +283,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_14_155729) do
     t.bigint "notificavel_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "url"
     t.index ["notificavel_type", "notificavel_id"], name: "index_notifications_on_notificavel"
     t.index ["user_id"], name: "index_notifications_on_user_id"
   end

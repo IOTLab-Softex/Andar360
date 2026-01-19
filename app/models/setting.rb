@@ -1,5 +1,10 @@
 class Setting < ApplicationRecord
   has_rich_text :room_rules
+
+  def self.instance
+  first_or_create!
+end
+
     def self.get(key)
   find_by(key: key)&.value
 end

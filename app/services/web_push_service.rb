@@ -1,35 +1,57 @@
+# app/services/web_push_service.rb
+require "open3"
+
 class WebPushService
+  NODE_PUSH_SCRIPT = Rails.root.join("node_scripts", "send_push.js")
+
   def self.send_to_user(user, title:, body:, url: "/")
     s = Setting.first
-    return if s.blank? || s.vapid_public_key.blank? || s.vapid_private_key.blank?
+    unless s&.vapid_public_key.present? && s&.vapid_private_key.present?
+      Rails.logger.error "[WebPushService] VAPID não configurado em Settings."
+      return 0
+    end
+
+    subject = s.vapid_subject.presence || "mailto:admin@srs.local"
+    sent = 0
 
     user.push_subscriptions.find_each do |sub|
+      Rails.logger.info "[WebPushService] Enviando push (NODE) para sub #{sub.id} (user_id=#{user.id})"
+
       payload = {
         title: title,
-        body: body,
-        url: url,
-        icon: "/icon.png",
-        badge: "/icon.png"
-      }.to_json
+        body:  body,
+        url:   url
+      }
 
-      begin
-        Webpush.payload_send(
-          message: payload,
-          endpoint: sub.endpoint,
-          p256dh: sub.p256dh,
-          auth: sub.auth,
-          vapid: {
-            subject: (s.vapid_subject.presence || "mailto:suporte@seu-dominio.com"),
-            public_key: s.vapid_public_key,
-            private_key: s.vapid_private_key
-          }
-        )
-      rescue Webpush::InvalidSubscription, Webpush::ExpiredSubscription
-        sub.destroy
-      rescue => e
-        Rails.logger.error("[WebPushService] erro enviando push: #{e.class} - #{e.message}")
-        Rails.logger.error(e.backtrace.join("\n")) # Log completo do erro
+      cmd = [
+        "node",
+        NODE_PUSH_SCRIPT.to_s,
+        sub.endpoint.to_s,
+        sub.p256dh.to_s,
+        sub.auth.to_s,
+        s.vapid_public_key.to_s,
+        s.vapid_private_key.to_s,
+        subject.to_s,
+        payload.to_json
+      ]
+
+      stdout, stderr, status = Open3.capture3(*cmd)
+
+      if status.success?
+        Rails.logger.info "[WebPushService] OK sub #{sub.id}: #{stdout.strip}"
+        sent += 1
+      else
+        msg = stderr.to_s.strip.presence || stdout.to_s.strip
+        Rails.logger.error "[WebPushService] ERRO sub #{sub.id}: exit=#{status.exitstatus} msg=#{msg}"
+
+        # 👇 Se retorno indicar 410 (subscription expirada), removemos do banco
+        if msg.include?("410") || msg.include?("unsubscribed or expired")
+          Rails.logger.warn "[WebPushService] Removendo push subscription expirada #{sub.id} (410 Gone)"
+          sub.destroy
+        end
       end
     end
+
+    sent
   end
 end
