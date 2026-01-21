@@ -12,40 +12,41 @@ class DashboardQuery
   end
 
   def call
-    rooms = Room.includes(:reservations)
+  rooms = Room.includes(:reservations)
 
-    chamados_scope = if admin_ou_operador?
+  chamados_scope =
+    if admin_ou_operador?
       Chamado.order(created_at: :desc)
     else
-      gid = @user.participant&.grupo_empresa_id
-      Chamado.joins("INNER JOIN participants ON participants.id = chamados.solicitante_id")
-             .where("participants.grupo_empresa_id = ?", gid)
-             .order(created_at: :desc)
+      Chamado
+        .visiveis_para(@user)
+        .order(created_at: :desc)
     end
 
-    # contadores rápidos para os cards
-    # contadores rápidos para os cards
-# contadores rápidos para os cards
-concluidos_sql = "LOWER(BTRIM(chamados.status)) IN (?)"
-abertos_sql    = "NOT (LOWER(BTRIM(chamados.status)) IN (?))"
-concluidos_vals = %w[concluído concluido]  # com e sem acento
-critico_vals     = %w[crítico critico]      # com e sem acento
+  # contadores rápidos para os cards
+  concluidos_sql  = "LOWER(BTRIM(chamados.status)) IN (?)"
+  abertos_sql     = "NOT (LOWER(BTRIM(chamados.status)) IN (?))"
+  concluidos_vals = %w[concluído concluido]
+  critico_vals    = %w[crítico critico]
 
-chamados_counts = {
-  total_abertos: chamados_scope
-    .where("#{abertos_sql}", concluidos_vals)
-    .count,
+  chamados_counts = {
+    total_abertos: chamados_scope
+      .where("#{abertos_sql}", concluidos_vals)
+      .count,
 
-  criticos_abertos: chamados_scope
-    .where("#{abertos_sql}", concluidos_vals)
-    .where("LOWER(BTRIM(chamados.prioridade)) IN (?)", critico_vals)
-    .count,
+    criticos_abertos: chamados_scope
+      .where("#{abertos_sql}", concluidos_vals)
+      .where("LOWER(BTRIM(chamados.prioridade)) IN (?)", critico_vals)
+      .count,
 
-  concluidos_hoje: chamados_scope
-    .where("#{concluidos_sql}", concluidos_vals)
-    .where("DATE(chamados.updated_at) = CURRENT_DATE")
-    .count
-}
+    concluidos_hoje: chamados_scope
+      .where("#{concluidos_sql}", concluidos_vals)
+      .where("DATE(chamados.updated_at) = CURRENT_DATE")
+      .count
+  }
+
+  # ... resto do método continua igual
+
 
 
 

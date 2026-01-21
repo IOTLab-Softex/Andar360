@@ -26,7 +26,8 @@ class Encomenda < ApplicationRecord
     titulo: "Chegou encomenda na recepção!",
     corpo: "Você recebeu uma nova encomenda com o código #{codigo}, Compareça a recepção.",
     notificavel: self,
-    lida: false
+    lida: false,
+    url:         Rails.application.routes.url_helpers.encomenda_path(self)
   )
 end
 

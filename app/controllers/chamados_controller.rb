@@ -6,45 +6,23 @@ class ChamadosController < ApplicationController
   before_action :prepare_collections, only: %i[new edit create update]
   # GET /chamados or /chamados.json
   def index
-    if current_user&.admin? || current_user&.operador?
-  @chamados = Chamado.all
-else
-  grupo_empresa_id = current_user.participant&.grupo_empresa_id
-  @chamados = Chamado.joins(:solicitante).where(participants: { grupo_empresa_id: grupo_empresa_id })
-end
-
-    if params[:status].present? && params[:status] != "Todos os status"
-  case params[:status]
-  when "Pendente"
-    @chamados = @chamados.where(status: ["Pendente", "Solicitada"])
-  when "Concluído"
-    @chamados = @chamados.where(status: ["Concluído", "Concluída", "Concluido", "Finalizada"])
+  if current_user.admin? || current_user.operador?
+    @chamados = Chamado.all
   else
-    @chamados = @chamados.where(status: params[:status])
-  end
-end
-
-
-  if params[:unidade].present? && params[:unidade] != "Todas as unidades"
-    @chamados = @chamados.where(unidade: params[:unidade])
+    @chamados = Chamado.visiveis_para(current_user)
   end
 
-  if params[:status].present? && params[:status] != "Todos os status"
-    @chamados = @chamados.where(status: params[:status])
-  end
-
-  if params[:prioridade].present? && params[:prioridade] != "Todas as prioridades"
-    @chamados = @chamados.where(prioridade: params[:prioridade])
-  end
-
-  if params[:responsavel].present? && params[:responsavel] != "Todos os responsáveis"
-    @chamados = @chamados.where(responsavel: params[:responsavel])
-  end
+  # filtros já existentes...
+  @chamados = @chamados.where(status: params[:status]) if params[:status].present? && params[:status] != "Todos os status"
+  @chamados = @chamados.where(unidade: params[:unidade]) if params[:unidade].present? && params[:unidade] != "Todas as unidades"
+  @chamados = @chamados.where(prioridade: params[:prioridade]) if params[:prioridade].present? && params[:prioridade] != "Todas as prioridades"
+  @chamados = @chamados.where(responsavel: params[:responsavel]) if params[:responsavel].present? && params[:responsavel] != "Todos os responsáveis"
 
   if params[:data_inicio].present? && params[:data_fim].present?
     @chamados = @chamados.where(data_resolucao: params[:data_inicio]..params[:data_fim])
   end
-  end
+end
+
 
   # GET /chamados/1 or /chamados/1.json
   def show

@@ -1,67 +1,115 @@
 class Chamado < ApplicationRecord
-    include Recente
-    has_many_attached :fotos
-    belongs_to :room, optional: true
-    belongs_to :solicitante, class_name: "Participant", optional: true
-     has_many :ocorrencias, as: :ocorrenciavel, dependent: :destroy
-       has_many :arquivos_anexos_chamado, class_name: 'ArquivoAnexo', dependent: :destroy
+  include Recente
 
-        validates :titulo, presence: { message: "não pode ficar em branco" }
-  validates :responsavel, presence: { message: "deve ser informado" }
-  validates :observacao,
-            presence: { message: "não pode ficar em branco" },
-            length: { minimum: 5, message: "está muito curta (mínimo 5 caracteres)" }
-            
-    after_commit :notificar_chamado_criado, on: :create
+  has_many_attached :fotos
+  belongs_to :room, optional: true
+  belongs_to :solicitante, class_name: "Participant", optional: true
+
+  # 🔹 Relações que tinham antes
+  has_many :ocorrencias, as: :ocorrenciavel, dependent: :destroy
+  has_many :arquivos_anexos_chamado,
+           class_name: 'ArquivoAnexo',
+           dependent: :destroy
+
+  validates :titulo,      presence: true
+  validates :responsavel, presence: true
+
+  # --------------------------------------------------------------------
+  # 🔹 SCOPE: Chamados visíveis para o usuário atual
+  # --------------------------------------------------------------------
+  scope :visiveis_para, ->(user) {
+    return none unless user&.participant
+
+    grupo_id  = user.participant.grupo_empresa_id
+    nome_resp = user.participant.name
+
+    left_joins(:solicitante)
+      .where(
+        "participants.grupo_empresa_id = :grupo_id OR chamados.responsavel = :nome_resp",
+        grupo_id: grupo_id,
+        nome_resp: nome_resp
+      )
+  }
+
+  # --------------------------------------------------------------------
+  # 🔹 LOCALIZA O USER DO RESPONSÁVEL (texto → Participant → User)
+  # --------------------------------------------------------------------
+  def usuario_responsavel
+    return if responsavel.blank?
+
+    participant = Participant.find_by(name: responsavel)
+    User.find_by(participant_id: participant&.id)
+  end
+
+  # --------------------------------------------------------------------
+  # 🔹 QUEM DEVE RECEBER A NOTIFICAÇÃO DO CHAMADO?
+  # --------------------------------------------------------------------
+  def usuarios_para_notificar
+    chamado_empresa_id = solicitante&.grupo_empresa_id
+
+    users =
+      User.includes(:participant).find_each.select do |user|
+        if user.admin? || user.operador?
+          true
+        else
+          # Se não há empresa vinculada ao chamado => só admin vê
+          next false if chamado_empresa_id.blank?
+
+          user_empresa_id = user.participant&.grupo_empresa_id
+
+          # Cliente só vê se marcado como "exibir_no_app"
+          if user.client?
+            next false unless respond_to?(:exibir_no_app?) && exibir_no_app?
+          end
+
+          user_empresa_id == chamado_empresa_id
+        end
+      end
+
+    # 🔹 responsável SEMPRE recebe
+    if (r = usuario_responsavel)
+      users << r
+    end
+
+    users.uniq
+  end
+
+  # --------------------------------------------------------------------
+  # 🔹 Criação das notificações
+  # --------------------------------------------------------------------
+  def criar_notificacao_para(user, titulo, corpo)
+    Notification.create!(
+      user:        user,
+      notificavel: self,
+      titulo:      titulo,
+      corpo:       corpo,
+      lida:        false,
+      url:         Rails.application.routes.url_helpers.chamado_path(self)
+    )
+  end
+
+  after_commit :notificar_chamado_criado,     on: :create
   after_commit :notificar_chamado_atualizado, on: :update
 
-  private
-
   def notificar_chamado_criado
-  User.includes(:participant).find_each do |user|
-    next if user.client? && !exibir_no_app?
-
-    if user.client?
-      chamado_grupo_id = self.solicitante&.grupo_empresa_id
-      user_grupo_id    = user.participant&.grupo_empresa_id
-      next if chamado_grupo_id.blank? || user_grupo_id != chamado_grupo_id
+    usuarios_para_notificar.each do |user|
+      criar_notificacao_para(
+        user,
+        "Chamado criado: #{titulo}",
+        "O chamado '#{titulo}' foi criado com status: #{status}."
+      )
     end
-
-    Notification.create!(
-      user:        user,
-      notificavel: self,
-      titulo:      "Chamado criado: #{titulo_formatado}",
-      corpo:       "O chamado '#{titulo_formatado}' foi criado com status: #{status}.",
-      lida:        false,
-      url:         Rails.application.routes.url_helpers.chamado_path(self) # 👈 AQUI
-    )
   end
-end
 
- def notificar_chamado_atualizado
-  return unless previous_changes.key?("status") || previous_changes.key?("responsavel")
+  def notificar_chamado_atualizado
+    return unless previous_changes.key?("status") || previous_changes.key?("responsavel")
 
-  User.includes(:participant).find_each do |user|
-    next if user.client? && !exibir_no_app?
-
-    if user.client?
-      chamado_grupo_id = self.solicitante&.grupo_empresa_id
-      user_grupo_id    = user.participant&.grupo_empresa_id
-      next if chamado_grupo_id.blank? || user_grupo_id != chamado_grupo_id
+    usuarios_para_notificar.each do |user|
+      criar_notificacao_para(
+        user,
+        "Chamado atualizado: #{titulo}",
+        "O chamado '#{titulo}' foi atualizado com status: #{status}."
+      )
     end
-
-    Notification.create!(
-      user:        user,
-      notificavel: self,
-      titulo:      "Chamado atualizado: #{titulo_formatado}",
-      corpo:       "O chamado '#{titulo_formatado}' foi atualizado com status: #{status}.",
-      lida:        false,
-      url:         Rails.application.routes.url_helpers.chamado_path(self) # 👈 AQUI TAMBÉM
-    )
-  end
-end
-
-  def titulo_formatado
-    titulo.presence || "##{id}"
   end
 end
