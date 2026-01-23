@@ -7,8 +7,7 @@
     <thead class="table-secondary text-dark">
       <tr>
         <th>Nome</th>
-        <th>Empresa Proprietária</th>
-        <th class="hide-sm">Inquilino</th>
+        <th>Inquilino</th>
         <th class="hide-sm">CNPJ do Inquilino</th>
         <th class="hide-sm">Grupo</th>
         <th class="hide-sm">Alugado</th>
@@ -28,8 +27,8 @@
   </strong>
 </td>
 
-            <td><%= room.empresa_proprietaria.presence || "-" %></td>
-            <td class="hide-sm"><%= room.dados_do_inquilino.presence || "-" %></td>
+            
+            <td><%= room.dados_do_inquilino.presence || "-" %></td>
             <td class="hide-sm"><%= room.dados_do_inquilino[%r{\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}}] || "-" %></td>
             <td class="hide-sm"><%= room.grupo.presence || "-" %></td>
             <td class="hide-sm"><%= room.alugado? ? "Sim" : "Não" %></td>
@@ -43,8 +42,13 @@
           </tr>
         <% end %>
       <% else %>
-        <tr>
+        <tr class="show-sm">
           <td colspan="3" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma sala cadastrada.
+          </td>
+        </tr>
+         <tr class="hide-sm">
+          <td colspan="6" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
             Nenhuma sala cadastrada.
           </td>
         </tr>

@@ -346,13 +346,27 @@
     }
   }
 
+
+.show-sm {
+  display: none;
+}
+
   @media (max-width: 992px) {
-    .hide-md { display: none; }
+   
+   .hide-sm {
+  display: none !important;
+}
+
   }
 
   /* até 768px (celular): esconda o que marcar com .hide-sm */
   @media (max-width: 768px) {
-    .hide-sm { display: none; }
+.hide-sm {
+  display: none !important;
+}
+.show-sm {
+  display: table-row !important;
+}
   }
 
   .page-shell {
