@@ -2,15 +2,15 @@
   ESPAÇOS COMUNS <i class="fa-solid fa-angle-down"></i>
 </h2>
 
-<div id="comuns-section" class="rooms expanded" style="    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;">
+<div id="comuns-section" class="rooms smart-scroll">
   <% if rooms.blank? %>
-    <div style="text-align:center; padding:1rem; font-style:italic; color:#888;">Nenhum espaço comum cadastrado.</div>
-     
+    <div style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+      Nenhum espaço comum cadastrado.
+    </div>
   <% else %>
     <% rooms.each do |room| %>
       <% background = room.photo.attached? ? "--bg-url: url(#{url_for(room.photo)});" : "background-color: black;" %>
+
       <%= link_to room_reservations_path(room), class: "room-card-link" do %>
         <div class="room-card" style="<%= background %>">
           <div class="room-header">
@@ -21,26 +21,33 @@
               RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
             <% end %>
           </div>
+
           <div class="room-actions">
             <% if current_user&.admin? %>
-              <%= link_to edit_room_path(room), class: 'btn edit_room', onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-pen-to-square"></i> EDITAR
+              <%= button_to edit_room_path(room), method: :get,
+                    class: 'btn edit_room',
+                    form: { data: { turbo: false } },
+                    onclick: 'event.stopPropagation();' do %>
+                <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> EDITAR </div>
               <% end %>
             <% end %>
 
             <% if current_user&.admin? || current_user&.operador? %>
-              <%= button_to open_door_room_path(room), method: :post, class: 'btn open-door',
-                    form: { data: { turbo: false } }, onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-door-open me-2"></i> ABRIR PORTA
+              <%= button_to open_door_room_path(room), method: :post,
+                    class: 'btn open-door',
+                    form: { data: { turbo: false } },
+                    onclick: 'event.stopPropagation();' do %>
+                <i class="fa-solid fa-door-open me-2"></i>  <div class="hide-sm"> ABRIR PORTA</div>
               <% end %>
             <% end %>
 
             <% if current_user&.admin? %>
               <%= button_to room_path(room), method: :delete,
                     data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' },
-                    class: 'btn btn-warning', style: 'font-size: 15px; height: 51px; border: solid 2px;',
+                    class: 'btn btn-warning',
+                    style: 'font-size: 15px; height: 51px; border: solid 2px;',
                     onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-trash"></i> EXCLUIR
+                <i class="fa-solid fa-trash"></i>   <div class="hide-sm"> EXCLUIR</div>
               <% end %>
             <% end %>
           </div>

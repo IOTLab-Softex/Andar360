@@ -967,3 +967,41 @@ const { publicKey } = await keyRes.json();
 })();
 
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.querySelector("#comuns-section.smart-scroll");
+  if (!container) return;
+
+  const cards = Array.from(container.querySelectorAll(".room-card"));
+  if (cards.length === 0) return;
+
+  function updateActiveCard() {
+    const contRect = container.getBoundingClientRect();
+    const centerY = contRect.top + contRect.height / 2;
+
+    let closest = null;
+    let closestDist = Infinity;
+
+    cards.forEach(card => {
+      const rect = card.getBoundingClientRect();
+      const cardCenter = rect.top + rect.height / 2;
+      const dist = Math.abs(cardCenter - centerY);
+
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = card;
+      }
+    });
+
+    cards.forEach(c => c.classList.remove("active"));
+    if (closest) closest.classList.add("active");
+  }
+
+  container.addEventListener("scroll", () => {
+    window.requestAnimationFrame(updateActiveCard);
+  });
+
+  // Inicializa com o primeiro card ativo
+  updateActiveCard();
+});
+</script>
