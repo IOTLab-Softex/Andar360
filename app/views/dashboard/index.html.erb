@@ -968,6 +968,8 @@ const { publicKey } = await keyRes.json();
 
 </script>
 <script>
+/* Marca o card mais central como .active (efeito neon maior)
+   e, quando chegar no final do scroll, força o ÚLTIMO card como active */
 document.addEventListener("DOMContentLoaded", () => {
   const container = document.querySelector("#comuns-section.smart-scroll");
   if (!container) return;
@@ -976,32 +978,79 @@ document.addEventListener("DOMContentLoaded", () => {
   if (cards.length === 0) return;
 
   function updateActiveCard() {
-    const contRect = container.getBoundingClientRect();
-    const centerY = contRect.top + contRect.height / 2;
+    // Detecta se está perto do final da rolagem
+    const scrollBottom = container.scrollTop + container.clientHeight;
+    const maxScroll = container.scrollHeight;
+    const nearBottom = (maxScroll - scrollBottom) < 16; // margem de 16px
 
-    let closest = null;
-    let closestDist = Infinity;
+    let activeCard = null;
 
-    cards.forEach(card => {
-      const rect = card.getBoundingClientRect();
-      const cardCenter = rect.top + rect.height / 2;
-      const dist = Math.abs(cardCenter - centerY);
+    if (nearBottom) {
+      // Se estiver no fim, força o último card como active
+      activeCard = cards[cards.length - 1];
+    } else {
+      // Comportamento normal: escolhe o card mais perto do centro
+      const contRect = container.getBoundingClientRect();
+      const centerY = contRect.top + contRect.height / 2;
 
-      if (dist < closestDist) {
-        closestDist = dist;
-        closest = card;
-      }
-    });
+      let closest = null;
+      let closestDist = Infinity;
 
+      cards.forEach(card => {
+        const rect = card.getBoundingClientRect();
+        const cardCenter = rect.top + rect.height / 2;
+        const dist = Math.abs(cardCenter - centerY);
+
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = card;
+        }
+      });
+
+      activeCard = closest;
+    }
+
+    // Aplica/remover classe .active
     cards.forEach(c => c.classList.remove("active"));
-    if (closest) closest.classList.add("active");
+    if (activeCard) activeCard.classList.add("active");
   }
 
   container.addEventListener("scroll", () => {
     window.requestAnimationFrame(updateActiveCard);
   });
 
-  // Inicializa com o primeiro card ativo
   updateActiveCard();
+})
+
+/* Marca como .stacked os cards que já grudaram no topo (ficam menores) */
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.querySelector("#comuns-section.smart-scroll");
+  if (!container) return;
+
+  const links = Array.from(container.querySelectorAll(".room-card-link"));
+  if (links.length === 0) return;
+
+  const firstTop = parseFloat(window.getComputedStyle(links[0]).top || "0");
+
+  function updateStack() {
+    const contRect = container.getBoundingClientRect();
+    const pinLine = contRect.top + firstTop + 1;
+
+    links.forEach(link => {
+      const rect = link.getBoundingClientRect();
+
+      if (rect.top <= pinLine) {
+        link.classList.add("stacked");
+      } else {
+        link.classList.remove("stacked");
+      }
+    });
+  }
+
+  container.addEventListener("scroll", () => {
+    requestAnimationFrame(updateStack);
+  });
+
+  updateStack();
 });
 </script>
