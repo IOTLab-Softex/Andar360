@@ -1,7 +1,9 @@
 class ChamadosController < ApplicationController
   include VisualizacaoHelper
   before_action :authenticate_user!
-  before_action :set_chamado, only: %i[ show edit update destroy ]
+  before_action :set_chamado, only: %i[ show edit update destroy change_status ]
+  before_action :authorize_chamado_access, only: %i[ show edit update destroy change_status ]
+  before_action :authorize_chamado_edit, only: %i[ edit update destroy ]
   # carregue coleções sempre que vai renderizar formulário
   before_action :prepare_collections, only: %i[new edit create update]
   # GET /chamados or /chamados.json
@@ -119,6 +121,49 @@ end
       format.json { head :no_content }
     end
   end
+
+  def change_status
+    unless usuario_pode_alterar_status?
+      redirect_back fallback_location: chamados_path, alert: "Sem permissão para alterar o status."
+      return
+    end
+
+    novo_status = params[:status].presence
+    novo_status = proximo_status_chamado(@chamado.status) if novo_status.blank?
+
+    unless status_valido?(novo_status)
+      redirect_back fallback_location: chamados_path, alert: "Status inválido."
+      return
+    end
+
+    status_normalizado = normalizar_status_chamado(novo_status)
+    observacao = params[:observacao].to_s.strip
+    proxima_data = params[:proxima_data].presence
+
+    if status_normalizado == "Pendente" && (observacao.blank? || proxima_data.blank?)
+      redirect_back fallback_location: chamados_path, alert: "Observação e próxima data são obrigatórias para Pendente."
+      return
+    end
+
+    begin
+      Chamado.transaction do
+        @chamado.update!(status: status_normalizado)
+
+        if status_normalizado == "Pendente"
+          @chamado.ocorrencias.create!(
+            data_ocorrencia: Time.current,
+            descricao: observacao,
+            proxima_data: proxima_data
+          )
+        end
+      end
+
+      redirect_back fallback_location: chamados_path, notice: "Status atualizado para #{status_normalizado}."
+    rescue ActiveRecord::RecordInvalid => e
+      mensagem = e.record.errors.full_messages.to_sentence.presence || "Não foi possível atualizar o status."
+      redirect_back fallback_location: chamados_path, alert: mensagem
+    end
+  end
   
 def remove_foto
   foto = ActiveStorage::Blob.find_signed(params[:foto_id])
@@ -165,6 +210,70 @@ end
 
  def chamado_params_com_anexo
     params.require(:chamado).permit(:nome, :arquivo) # Certifique-se de permitir os atributos 'nome' e 'arquivo'
+  end
+
+  def usuario_pode_alterar_status?
+    return false unless current_user
+    return true if current_user.admin? || current_user.operador?
+
+    return false unless current_user.client?
+    return false unless current_user.participant
+    eh_solicitante = @chamado.solicitante_id.present? && @chamado.solicitante_id == current_user.participant.id
+    eh_responsavel = @chamado.responsavel.present? && @chamado.responsavel == current_user.participant.name
+
+    if normalizar_status_chamado(@chamado.status) == "Concluído"
+      return eh_solicitante
+    end
+
+    eh_solicitante || eh_responsavel
+  end
+
+  def authorize_chamado_access
+    return if current_user.admin? || current_user.operador?
+    return unless current_user.client?
+    return unless current_user.participant
+
+    eh_solicitante = @chamado.solicitante_id.present? && @chamado.solicitante_id == current_user.participant.id
+    eh_responsavel = @chamado.responsavel.present? && @chamado.responsavel == current_user.participant.name
+
+    return if eh_solicitante || eh_responsavel
+
+    redirect_to root_path, alert: "Você não tem acesso a este chamado."
+  end
+
+  def authorize_chamado_edit
+    return if current_user.admin? || current_user.operador?
+    return unless current_user.client?
+    return unless current_user.participant
+
+    eh_solicitante = @chamado.solicitante_id.present? && @chamado.solicitante_id == current_user.participant.id
+    eh_responsavel = @chamado.responsavel.present? && @chamado.responsavel == current_user.participant.name
+
+    # Client responsável (e não solicitante) só pode mudar status, não editar/excluir
+    if eh_responsavel && !eh_solicitante
+      redirect_to chamado_path(@chamado), alert: "Responsável não pode editar este chamado."
+    end
+  end
+
+  def status_valido?(status)
+    ["Pendente", "Em andamento", "Concluído"].include?(normalizar_status_chamado(status.to_s))
+  end
+
+  def normalizar_status_chamado(status)
+    map = {
+      "Solicitada" => "Pendente",
+      "Finalizada" => "Concluído",
+      "Concluida" => "Concluído",
+      "Concluido" => "Concluído"
+    }
+    map[status] || status
+  end
+
+  def proximo_status_chamado(status_atual)
+    ordem = ["Pendente", "Em andamento", "Concluído"]
+    status_atual = normalizar_status_chamado(status_atual.to_s)
+    idx = ordem.index(status_atual) || 0
+    ordem[(idx + 1) % ordem.length]
   end
 
 end

@@ -109,6 +109,7 @@ end
   resources :chamados do
     member do
       patch :anexar_arquivo
+      patch :change_status
     end
     resources :arquivos_anexos_chamado, only: [:destroy]
   end

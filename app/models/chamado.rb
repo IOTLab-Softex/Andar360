@@ -19,16 +19,14 @@ class Chamado < ApplicationRecord
   # --------------------------------------------------------------------
   scope :visiveis_para, ->(user) {
     return none unless user&.participant
+    return none unless user.client?
 
-    grupo_id  = user.participant.grupo_empresa_id
+    participant_id = user.participant.id
     nome_resp = user.participant.name
 
-    left_joins(:solicitante)
-      .where(
-        "participants.grupo_empresa_id = :grupo_id OR chamados.responsavel = :nome_resp",
-        grupo_id: grupo_id,
-        nome_resp: nome_resp
-      )
+    where("chamados.solicitante_id = :pid OR chamados.responsavel = :nome_resp",
+          pid: participant_id,
+          nome_resp: nome_resp)
   }
 
   # --------------------------------------------------------------------

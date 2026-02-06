@@ -34,6 +34,19 @@
         <span class="value badge-status status-<%= @chamado.status.to_s.parameterize %>">
           <%= @chamado.status %>
         </span>
+        <% if pode_alterar_status_chamado?(@chamado, current_user) %>
+          <div class="mt-1">
+            <%= button_to change_status_chamado_path(@chamado),
+                  method: :patch,
+                  class: "btn btn-info btn-sm",
+                  form: {
+                    class: "form-status-chamado",
+                    data:  { status: @chamado.status, record_name: (@chamado.titulo.presence || @chamado.os) }
+                  } do %>
+              <i class="fa-solid fa-rotate"></i> Mudar status
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
       <div class="chamado-field">
@@ -504,4 +517,154 @@
     }
   }
 
+  </script>
+
+  <script>
+  (function () {
+    if (window.__chamadoStatusModalBound) return;
+    window.__chamadoStatusModalBound = true;
+
+    function ensureHiddenInput(form, name, value) {
+      let input = form.querySelector(`input[name="${name}"]`);
+      if (!input) {
+        input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        form.appendChild(input);
+      }
+      input.value = value || "";
+    }
+
+    async function openStatusModal(form) {
+      const statusAtual = (form.dataset.status || "").toString().trim();
+      const titulo = form.dataset.recordName || "este chamado";
+      const statusOptions = ["Pendente", "Em andamento", "Concluído"];
+      const normalized = statusOptions.includes(statusAtual) ? statusAtual : "Pendente";
+
+      if (window.Swal) {
+        const modalHtml = `
+          <style>
+            .swal-status-wrap{display:flex;flex-direction:column;gap:12px;text-align:left;}
+            .swal-status-wrap label{font-size:.9rem;color:#3b3b3b;display:block;margin-bottom:6px;}
+            .swal-status-wrap .swal2-select,
+            .swal-status-wrap .swal2-input,
+            .swal-status-wrap .swal2-textarea{
+              border:1px solid #d0d7de;
+              border-radius:8px;
+              padding:10px 12px;
+              font-size:.95rem;
+              box-sizing:border-box;
+              width:100%;
+              max-width:100%;
+              min-width:0;
+              display:block;
+            }
+            .swal-status-card{
+              background:#f7f9fc;
+              border:1px dashed #c9d4e3;
+              border-radius:10px;
+              padding:12px;
+              display:flex;
+              flex-direction:column;
+              gap:10px;
+              overflow:hidden;
+            }
+            .swal-status-card *{box-sizing:border-box;}
+            .swal-status-card .swal2-input,
+            .swal-status-card .swal2-textarea{margin:0;}
+            .swal2-html-container{overflow:visible;max-width:100%;padding-left:12px;padding-right:12px;box-sizing:border-box;}
+            .swal2-title{padding-left:12px;padding-right:12px;box-sizing:border-box;max-width:100%;}
+          </style>
+          <div class="swal-status-wrap">
+            <label for="swal-status"><strong>Status</strong></label>
+            <select id="swal-status" class="swal2-select" style="width: -webkit-fill-available;">
+              ${statusOptions.map(s => `<option value="${s}">${s}</option>`).join("")}
+            </select>
+            <div id="swal-pendente-fields" class="swal-status-card" style="display:none;">
+              <div>
+                <label for="swal-observacao"><strong>Observação</strong></label>
+                <textarea id="swal-observacao" class="swal2-textarea" rows="3" placeholder="Descreva o motivo"></textarea>
+              </div>
+              <div>
+                <label for="swal-proxima-data"><strong>Próxima data de resolução</strong></label>
+                <input id="swal-proxima-data" type="date" class="swal2-input" />
+              </div>
+            </div>
+          </div>
+        `;
+
+        const res = await Swal.fire({
+          title: "Alterar status",
+          html: `Selecione o novo status de <b>${titulo}</b>${modalHtml}`,
+          width: 520,
+          showCancelButton: true,
+          confirmButtonText: "Salvar",
+          cancelButtonText: "Cancelar",
+          reverseButtons: true,
+          focusCancel: true,
+          didOpen: () => {
+            const select = document.getElementById("swal-status");
+            const pendenteFields = document.getElementById("swal-pendente-fields");
+            select.value = normalized;
+            const toggle = () => {
+              pendenteFields.style.display = select.value === "Pendente" ? "block" : "none";
+            };
+            select.addEventListener("change", toggle);
+            toggle();
+          },
+          preConfirm: () => {
+            const status = document.getElementById("swal-status")?.value;
+            const observacao = document.getElementById("swal-observacao")?.value?.trim();
+            const proximaData = document.getElementById("swal-proxima-data")?.value;
+            if (status === "Pendente" && (!observacao || !proximaData)) {
+              Swal.showValidationMessage("Observação e próxima data são obrigatórias para Pendente.");
+              return false;
+            }
+            return { status, observacao, proximaData };
+          }
+        });
+
+        if (res.isConfirmed && res.value?.status) {
+          const { status, observacao, proximaData } = res.value;
+          ensureHiddenInput(form, "status", status);
+
+          if (status === "Pendente") {
+            ensureHiddenInput(form, "observacao", observacao || "");
+            ensureHiddenInput(form, "proxima_data", proximaData || "");
+          }
+
+          form.submit();
+        }
+      } else {
+        const novo = prompt("Digite o status (Pendente, Em andamento, Concluído):", normalized);
+        if (novo && statusOptions.includes(novo)) {
+          let observacao = "";
+          let proximaData = "";
+          if (novo === "Pendente") {
+            observacao = prompt("Observação (obrigatória):", "") || "";
+            proximaData = prompt("Próxima data de resolução (AAAA-MM-DD):", "") || "";
+            if (!observacao || !proximaData) {
+              alert("Observação e próxima data são obrigatórias para Pendente.");
+              return;
+            }
+          }
+          ensureHiddenInput(form, "status", novo);
+          if (novo === "Pendente") {
+            ensureHiddenInput(form, "observacao", observacao);
+            ensureHiddenInput(form, "proxima_data", proximaData);
+          }
+          form.submit();
+        } else if (novo) {
+          alert("Status inválido.");
+        }
+      }
+    }
+
+    document.addEventListener("submit", function (e) {
+      const form = e.target;
+      if (!form.classList.contains("form-status-chamado")) return;
+      e.preventDefault();
+      openStatusModal(form);
+    });
+  })();
   </script>
