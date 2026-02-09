@@ -1,6 +1,7 @@
 require 'csv'
 require 'base64'
 require 'mini_magick'
+require 'fileutils'
 
 class ImportDadosIcontrolJob < ApplicationJob
   queue_as :default
@@ -37,40 +38,46 @@ class ImportDadosIcontrolJob < ApplicationJob
   end
 
   def perform
-    base_dir   = "C:/Temp"
-  import_dir = File.join(base_dir, "importDados")
-  csv_path   = File.join(import_dir, "usuarios.csv")
-  dir_fotos  = import_dir
-
-  unless File.exist?(csv_path)
-    msg = "Arquivo CSV não encontrado em #{csv_path}"
-    Rails.logger.error "[❌] #{msg}"
-    log_import("Sistema", "-", "erro", msg)
-    Rails.cache.write(
-      "backup_status",
-      { status: "erro", message: "Importando Atualização: CSV não encontrado em #{csv_path}" }
-    )
-    return
-  end
-
-  # Renomeia arquivos blob_* sem extensão dentro do mesmo import_dir
-  Dir.glob(File.join(dir_fotos, "blob_*")).each do |path|
-    next if File.extname(path).present?
-
-    begin
-      sig = File.open(path, 'rb') { |f| f.read(8) }
-
-      if sig.start_with?("\xFF\xD8".b)
-        File.rename(path, "#{path}.jpg")
-      elsif sig.start_with?("\x89PNG\r\n\x1A\n".b)
-        File.rename(path, "#{path}.png")
-      else
-        Rails.logger.warn "[⚠️] Arquivo desconhecido, não renomeado: #{path}"
+    base_dir = "C:/Temp"
+    import_dir = File.join(base_dir, "importDados")
+    csv_path = File.join(import_dir, "usuarios.csv")
+    dir_fotos = import_dir
+    cleanup_import_dir = lambda do
+      next unless Dir.exist?(import_dir)
+      Dir.glob(File.join(import_dir, "*")).each do |path|
+        FileUtils.rm_rf(path)
       end
-    rescue => e
-      Rails.logger.error "[❌] Erro ao tentar renomear #{path}: #{e.message}"
     end
-  end
+
+    unless File.exist?(csv_path)
+      msg = "Arquivo CSV não encontrado em #{csv_path}"
+      Rails.logger.error "[❌] #{msg}"
+      log_import("Sistema", "-", "erro", msg)
+      Rails.cache.write(
+        "backup_status",
+        { status: "erro", message: "Importando Atualização: CSV não encontrado em #{csv_path}" }
+      )
+      return
+    end
+
+    # Renomeia arquivos blob_* sem extensão dentro do mesmo import_dir
+    Dir.glob(File.join(dir_fotos, "blob_*")).each do |path|
+      next if File.extname(path).present?
+
+      begin
+        sig = File.open(path, 'rb') { |f| f.read(8) }
+
+        if sig.start_with?("\xFF\xD8".b)
+          File.rename(path, "#{path}.jpg")
+        elsif sig.start_with?("\x89PNG\r\n\x1A\n".b)
+          File.rename(path, "#{path}.png")
+        else
+          Rails.logger.warn "[⚠️] Arquivo desconhecido, não renomeado: #{path}"
+        end
+      rescue => e
+        Rails.logger.error "[❌] Erro ao tentar renomear #{path}: #{e.message}"
+      end
+    end
 
     begin
       csv_raw = File.read(csv_path, mode: "rb")
@@ -96,7 +103,9 @@ class ImportDadosIcontrolJob < ApplicationJob
         nome_grupo = row["local_especifico"]&.strip
         foto_rel   = row["Foto"]&.strip
 
-        if cpf.blank? || email.blank? || nome.blank? || foto_rel.blank?
+        participant = Participant.find_by(cpf: cpf)
+
+        if cpf.blank? || email.blank? || nome.blank?
           msg = "Dados incompletos na linha #{i + 2}: Nome: #{nome}, Email: #{email}, CPF: #{cpf}, Foto: #{foto_rel}"
           Rails.logger.warn "[⏭️] #{msg}"
           log_import(
@@ -105,15 +114,20 @@ class ImportDadosIcontrolJob < ApplicationJob
             "erro",
             msg,
             dados_incompletos: true,
-            sem_foto: foto_rel.blank?
+            sem_foto: true
           )
+          next
+        end
+        if foto_rel.blank? && participant.nil?
+          msg = "Dados incompletos na linha #{i + 2}: Nome: #{nome}, Email: #{email}, CPF: #{cpf}, Foto: #{foto_rel}"
+          Rails.logger.warn "[⏭️] #{msg}"
+          log_import(nome, cpf, "erro", msg, dados_incompletos: true, sem_foto: true)
           next
         end
 
         if estado&.downcase == "inativo"
-          participante = Participant.find_by(cpf: cpf)
-          if participante
-            participante.destroy
+          if participant
+            participant.destroy
             msg = "Participante inativo removido: #{nome} (#{cpf})"
             Rails.logger.info "[🗑️] #{msg}"
             log_import(nome, cpf, "removido", msg)
@@ -121,32 +135,39 @@ class ImportDadosIcontrolJob < ApplicationJob
           next
         end
 
-        foto_base = File.join(dir_fotos, File.basename(foto_rel.tr('\\', '/')))
+        foto_base = foto_rel.present? ? File.join(dir_fotos, File.basename(foto_rel.tr('\\', '/'))) : nil
         base64    = nil
 
-        begin
-          base64 = resize_image_to_base64(foto_base, 150, 300)
-        rescue => e
-          msg = "Foto ausente ou inválida para #{nome} — #{e.message}"
-          Rails.logger.warn "[⚠️] #{msg}"
-          log_import(nome, cpf, "adicionado_sem_foto", msg, sem_foto: true)
+        if foto_base.present? && (participant.nil? || participant.photo_base64.blank?)
+          begin
+            base64 = resize_image_to_base64(foto_base, 150, 300)
+          rescue => e
+            msg = "Foto ausente ou inválida para #{nome} — #{e.message}"
+            Rails.logger.warn "[⚠️] #{msg}"
+            log_import(nome, cpf, "adicionado_sem_foto", msg, sem_foto: true)
+          end
         end
 
         grupo = GrupoEmpresa.find_or_create_by(nome: nome_grupo.presence || "Grupo Padrão")
 
-        participant = Participant.find_or_initialize_by(cpf: cpf)
-        participant.assign_attributes(
+        participant = participant || Participant.find_or_initialize_by(cpf: cpf)
+        attrs = {
           name:          nome,
           email:         email,
           telefone:      telefone,
-          grupo_empresa: grupo,
-          photo_base64:  base64 ? "data:image/png;base64,#{base64}" : nil
-        )
+          grupo_empresa: grupo
+        }
+        if base64
+          attrs[:photo_base64] = "data:image/png;base64,#{base64}"
+        elsif participant.new_record?
+          attrs[:photo_base64] = nil
+        end
+        participant.assign_attributes(attrs)
 
         if participant.save
           msg = "Participante salvo com sucesso: #{participant.name} (#{participant.cpf})"
           Rails.logger.info "[✅] #{msg}"
-          log_import(nome, cpf, "adicionado", msg, sem_foto: base64.nil?)
+          log_import(nome, cpf, "adicionado", msg, sem_foto: participant.photo_base64.blank?)
 
           percentual = (((i + 1).to_f / total_rows) * 100).round
           Rails.cache.write(
@@ -176,6 +197,8 @@ class ImportDadosIcontrolJob < ApplicationJob
         'backup_status',
         { status: 'finalizado', message: "Importando Atualização: Importação concluída com sucesso!" }
       )
+    ensure
+      cleanup_import_dir.call
     end
   end
 end
