@@ -9,7 +9,12 @@
     </div>
   <% else %>
     <% rooms.each do |room| %>
-      <% background = room.photo.attached? ? "--bg-url: url(#{url_for(room.photo)});" : "background-color: black;" %>
+      <% if room.photo.attached? %>
+        <% bg_url = rails_blob_url(room.photo, only_path: true) %>
+        <% background = "--bg-url: url('#{bg_url}');" %>
+      <% else %>
+        <% background = "--bg-url: none; background-color: black;" %>
+      <% end %>
 
       <%= link_to room_reservations_path(room), class: "room-card-link" do %>
         <div class="room-card" style="<%= background %>">

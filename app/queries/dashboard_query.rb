@@ -12,7 +12,7 @@ class DashboardQuery
   end
 
   def call
-  rooms = Room.includes(:reservations)
+  rooms = Room.with_attached_photo.includes(:reservations)
 
   chamados_scope =
     if admin_ou_operador?

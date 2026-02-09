@@ -17,12 +17,18 @@
 
     .kebab-wrapper { position: relative; z-index: 20; }
     .kebab-menu[hidden]{ display:none !important; }
-    .kebab-menu{
-      position: absolute; right: 30px; top: -11px;
-      background: var(--color-btn); color: var(--color-btn);
-      border-radius: 8px; min-width: 180px; box-shadow: 0 8px 24px #00000040;
-      overflow: hidden; z-index: 9999;
-    }
+.kebab-menu {
+    position: absolute;
+    right: 30px;
+    top: -11px;
+    background: var(--color-btn--text);
+    color: var(--color-btn);
+    border-radius: 8px;
+    min-width: 180px;
+    box-shadow: 0 8px 24px #00000040;
+    overflow: hidden;
+    z-index: 9999;
+}
     .kebab-menu .menu-item { display:block; width:100%; text-align:left; padding:.6rem 1rem; background:transparent; border:none; cursor:pointer; }
     .kebab-menu .menu-item:hover { background:#3c2c47; color:#ff944d; }
 
