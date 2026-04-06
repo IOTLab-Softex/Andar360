@@ -1,83 +1,968 @@
+<% support_contact = Setting.instance.reply_to_or_default || Setting.instance.from_email_or_default || "suporte@seusite.com" %>
+
 <div class="login-container">
-<div class="logo-mobile">
- <img src="/logo.png" alt="Logo do Projeto" style="width: -webkit-fill-available; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));">
-</div>
+  <div class="logo-mobile">
+    <img src="/logo.png" alt="Logo do Projeto" style="width: -webkit-fill-available; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));">
+  </div>
+
   <div class="login-box">
     <div class="login-header">
-      <img src="/logo.png" alt="Logo do Projeto" class="login-logo" >
+      <img src="/logo.png" alt="Logo do Projeto" class="login-logo">
       <h2 class="login-h2">Login</h2>
     </div>
 
     <%= form_with model: resource, as: resource_name, url: session_path(resource_name), data: { turbo: false }, local: true do |f| %>
       <div class="login-field">
         <%= f.label :cpf do %>
-        <i class="fa-solid fa-address-card"></i> CPF
+          <i class="fa-solid fa-address-card"></i> CPF
         <% end %>
-          <%= f.text_field :cpf, autofocus: true, autocomplete: "username" , class: "login-input" %>
-
+        <%= f.text_field :cpf, autofocus: true, autocomplete: "username", class: "login-input js-cpf-mask" %>
       </div>
 
       <div class="login-field">
         <%= f.label :password do %>
-        <i class="fa-solid fa-key"></i> Senha
+          <i class="fa-solid fa-key"></i> Senha
         <% end %>
-          <%= f.password_field :password, autocomplete: "current-password" , class: "login-input" %>
+        <%= f.password_field :password, autocomplete: "current-password", class: "login-input" %>
       </div>
 
       <% if devise_mapping.rememberable? %>
         <div class="login-remember">
           <%= f.check_box :remember_me %>
-            <%= f.label :remember_me do %>
+          <%= f.label :remember_me do %>
             <i class="fa-solid fa-star"></i> Lembrar-me
-            <% end %>
-        </div>
-        <% end %>
-
-          <div class="login-actions">
-            <%= button_tag type: 'submit' , class: 'login-button' do %>
-              <i class="fa-solid fa-right-to-bracket"></i> Entrar
-
-
-              <% end %>
-          </div>
-
           <% end %>
+        </div>
+      <% end %>
 
+      <div class="login-actions">
+        <%= button_tag type: "submit", class: "login-button" do %>
+          <i class="fa-solid fa-right-to-bracket"></i> Entrar
+        <% end %>
+      </div>
+    <% end %>
 
+    <div class="login-recovery">
+      <button type="button" id="open-recovery-modal" class="login-recovery__link">Esqueci a senha</button>
+    </div>
   </div>
+
   <div class="wallpaper">
-    <div>
+    <div></div>
+  </div>
+
+  <small style="bottom: 0; position: fixed; right: 6px; color: white;">Versão 1.0.7</small>
+</div>
+
+<div id="password-recovery-modal" class="password-recovery-modal" hidden>
+  <div class="password-recovery-modal__backdrop"></div>
+  <div class="password-recovery-modal__dialog" role="dialog" aria-modal="true" aria-label="Recuperação de senha">
+    <button type="button" id="close-recovery-modal" class="password-recovery-modal__close">&times;</button>
+
+    <div id="recovery-step-chooser" class="password-recovery-step is-active">
+      <h3>Recuperar acesso</h3>
+      <p>Escolha o método mais seguro para recuperar sua senha.</p>
+
+      <div class="password-recovery-choice-grid">
+        <button type="button" class="password-recovery-choice" data-recovery-step="support">
+          <span class="password-recovery-choice__title">Falar com suporte</span>
+          <span class="password-recovery-choice__text">Receba orientação do time responsável pelo sistema.</span>
+        </button>
+
+        <button type="button" class="password-recovery-choice" data-recovery-step="facial">
+          <span class="password-recovery-choice__title">Liberar por reconhecimento facial</span>
+          <span class="password-recovery-choice__text">Valide seu rosto e depois envie um link seguro para o e-mail cadastrado.</span>
+        </button>
+      </div>
     </div>
 
-    <small style="bottom: 0;position: fixed;right: 6px; color: white;">Versão 1.0.7</small>
+    <div id="recovery-step-support" class="password-recovery-step">
+      <h3>Falar com suporte</h3>
+      <p>Entre em contato com o suporte para validar sua identidade e receber ajuda com a recuperação da senha.</p>
+      <div class="password-recovery-support-card">
+        <strong>Canal sugerido</strong>
+        <a href="mailto:<%= support_contact %>"><%= support_contact %></a>
+      </div>
+      <div class="password-recovery-actions">
+        <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
+      </div>
+    </div>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const cpfInput = document.querySelector("input[name='user[cpf]']"); // nome correto do campo
+    <div id="recovery-step-facial" class="password-recovery-step">
+      <h3>Liberação por reconhecimento facial</h3>
+      <p class="password-recovery-note">
+        Fluxo seguro: digite o CPF, aguarde o carregamento do perfil, faça a validação facial e então envie o link de redefinição.
+      </p>
 
-        cpfInput?.addEventListener("input", function (e) {
-          let value = e.target.value.replace(/\D/g, "");
-          if (value.length > 11) value = value.slice(0, 11);
+      <div class="password-recovery-steps-bar">
+        <div class="password-recovery-step-chip is-active" data-flow-chip="cpf">1. CPF</div>
+        <div class="password-recovery-step-chip" data-flow-chip="loading">2. Carregar</div>
+        <div class="password-recovery-step-chip" data-flow-chip="camera">3. Reconhecimento</div>
+        <div class="password-recovery-step-chip" data-flow-chip="send">4. Enviar link</div>
+      </div>
 
-          if (value.length > 9) {
-            value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
-          } else if (value.length > 6) {
-            value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
-          } else if (value.length > 3) {
-            value = `${value.slice(0, 3)}.${value.slice(3)}`;
-          }
+      <div id="recovery-facial-stage-cpf" class="password-recovery-flow-stage is-active">
+        <div class="password-recovery-form">
+          <label for="recovery-cpf-input">Informe seu CPF</label>
+          <div class="password-recovery-form__row">
+            <input id="recovery-cpf-input" class="login-input js-cpf-mask" type="text" inputmode="numeric" placeholder="000.000.000-00">
+          </div>
+        </div>
+      </div>
 
-          e.target.value = value;
-        });
+      <div id="recovery-facial-stage-loading" class="password-recovery-flow-stage">
+        <div id="recovery-facial-feedback" class="password-recovery-feedback is-pending">
+          <span>Informe seu CPF para iniciar a validação.</span>
+        </div>
+      </div>
+
+      <div id="recovery-facial-stage-camera" class="password-recovery-flow-stage">
+        <div id="recovery-camera-feedback" class="password-recovery-feedback is-pending">
+          <span>Posicione o rosto para iniciar a validação facial.</span>
+        </div>
+        <div id="recovery-camera-wrapper" class="password-recovery-camera">
+          <iframe id="recovery-camera-frame" src="/camera?recovery=1"></iframe>
+        </div>
+      </div>
+
+
+      <div id="recovery-facial-stage-send" class="password-recovery-flow-stage">
+        <div id="recovery-send-feedback" class="password-recovery-feedback is-success">
+          <span>Validação facial concluída. Agora envie o link seguro de redefinição.</span>
+        </div>
+      </div>
+
+      <div class="password-recovery-actions">
+        <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
+        <button type="button" id="recovery-primary-action" class="password-recovery-primary">Avançar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    function applyCpfMask(input) {
+      if (!input) return;
+      input.addEventListener("input", (event) => {
+        let value = event.target.value.replace(/\D/g, "");
+        if (value.length > 11) value = value.slice(0, 11);
+        if (value.length > 9) value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6, 9)}-${value.slice(9)}`;
+        else if (value.length > 6) value = `${value.slice(0, 3)}.${value.slice(3, 6)}.${value.slice(6)}`;
+        else if (value.length > 3) value = `${value.slice(0, 3)}.${value.slice(3)}`;
+        event.target.value = value;
       });
-    </script>
+    }
 
+    document.querySelectorAll(".js-cpf-mask").forEach(applyCpfMask);
+
+    const modal = document.getElementById("password-recovery-modal");
+    const openBtn = document.getElementById("open-recovery-modal");
+    const closeBtn = document.getElementById("close-recovery-modal");
+    const chooserStep = document.getElementById("recovery-step-chooser");
+    const supportStep = document.getElementById("recovery-step-support");
+    const facialStep = document.getElementById("recovery-step-facial");
+    const primaryActionBtn = document.getElementById("recovery-primary-action");
+    const cpfInput = document.getElementById("recovery-cpf-input");
+    const loadingFeedback = document.getElementById("recovery-facial-feedback");
+    const cameraFeedback = document.getElementById("recovery-camera-feedback");
+    const sendFeedback = document.getElementById("recovery-send-feedback");
+    const cameraFrame = document.getElementById("recovery-camera-frame");
+    const chips = Array.from(document.querySelectorAll("[data-flow-chip]"));
+    const stages = {
+      cpf: document.getElementById("recovery-facial-stage-cpf"),
+      loading: document.getElementById("recovery-facial-stage-loading"),
+      camera: document.getElementById("recovery-facial-stage-camera"),
+      send: document.getElementById("recovery-facial-stage-send")
+    };
+
+    let recoveryPayload = null;
+    let frameReady = false;
+    let facialValidated = false;
+    let verificationInFlight = false;
+    let recoveryStageLocked = false;
+    let lastRecoveryPhotoBase64 = null;
+    let lastRecoveryCaptureMeta = null;
+    let recoveryVerifyAttempts = 0;
+    let serviceReady = false;
+    const MAX_RECOVERY_VERIFY_ATTEMPTS = 3;
+    const MAX_SERVICE_STATUS_ATTEMPTS = 20;
+
+    function normalizedCpf(value) {
+      return (value || "").replace(/\D/g, "");
+    }
+
+    function setStage(step) {
+      Object.entries(stages).forEach(([key, element]) => {
+        element.classList.toggle("is-active", key === step);
+      });
+      chips.forEach((chip) => {
+        const isCurrent = chip.dataset.flowChip === step;
+        const order = ["cpf", "loading", "camera", "send"];
+        chip.classList.toggle("is-active", isCurrent);
+        chip.classList.toggle("is-done", order.indexOf(chip.dataset.flowChip) < order.indexOf(step));
+      });
+      syncPrimaryAction();
+    }
+
+    function setFeedback(element, message, type = "pending", loading = false) {
+      if (!element) return;
+      element.innerHTML = `${loading ? '<span class="password-recovery-spinner" aria-hidden="true"></span>' : ""}<span>${message}</span>`;
+      element.classList.remove("is-error", "is-success", "is-pending", "is-loading");
+      element.classList.add(`is-${type}`);
+      element.classList.toggle("is-loading", !!loading);
+    }
+
+    function syncPrimaryAction() {
+      if (!primaryActionBtn) return;
+
+      if (facialValidated) {
+        primaryActionBtn.hidden = false;
+        primaryActionBtn.disabled = false;
+        primaryActionBtn.textContent = "Enviar link de redefinição";
+        return;
+      }
+
+      const currentStage =
+        Object.entries(stages).find(([, element]) => element?.classList.contains("is-active"))?.[0] || "cpf";
+
+      if (currentStage === "cpf") {
+        primaryActionBtn.hidden = false;
+        primaryActionBtn.disabled = false;
+        primaryActionBtn.textContent = "Avançar";
+        return;
+      }
+
+      primaryActionBtn.hidden = true;
+    }
+
+    let securityResult = null;
+    let securityBadge = null;
+    let securityConfidence = null;
+    let securityScore = null;
+    let securityDistance = null;
+    let securitySummary = null;
+
+    function ensureSecurityResult() {
+      if (securityResult || !stages.send) return;
+
+      securityResult = document.createElement("div");
+      securityResult.id = "recovery-security-result";
+      securityResult.className = "password-recovery-security";
+      securityResult.hidden = true;
+      securityResult.innerHTML = `
+        <div class="password-recovery-security__header">
+          <strong>Resultado da validacao</strong>
+          <span id="recovery-security-badge" class="password-recovery-security__badge">Em analise</span>
+        </div>
+        <div class="password-recovery-security__grid">
+          <div class="password-recovery-security__item">
+            <span>Confianca</span>
+            <strong id="recovery-security-confidence">-</strong>
+          </div>
+          <div class="password-recovery-security__item">
+            <span>Score facial</span>
+            <strong id="recovery-security-score">-</strong>
+          </div>
+          <div class="password-recovery-security__item">
+            <span>Distancia</span>
+            <strong id="recovery-security-distance">-</strong>
+          </div>
+        </div>
+        <p id="recovery-security-summary" class="password-recovery-security__summary">Aguardando resultado da comparacao.</p>
+      `;
+
+      stages.send.appendChild(securityResult);
+      securityBadge = document.getElementById("recovery-security-badge");
+      securityConfidence = document.getElementById("recovery-security-confidence");
+      securityScore = document.getElementById("recovery-security-score");
+      securityDistance = document.getElementById("recovery-security-distance");
+      securitySummary = document.getElementById("recovery-security-summary");
+    }
+
+    function resetSecurityResult() {
+      ensureSecurityResult();
+      if (securityResult) securityResult.hidden = true;
+      if (securityBadge) {
+        securityBadge.textContent = "Em analise";
+        securityBadge.className = "password-recovery-security__badge";
+      }
+      if (securityConfidence) securityConfidence.textContent = "-";
+      if (securityScore) securityScore.textContent = "-";
+      if (securityDistance) securityDistance.textContent = "-";
+      if (securitySummary) securitySummary.textContent = "Aguardando resultado da comparacao.";
+    }
+
+    function renderSecurityResult(payload) {
+      ensureSecurityResult();
+
+      const confidence = Number(payload?.confidence ?? 0);
+      const score = Number(payload?.score ?? 0);
+      const distance = Number(payload?.distance ?? 0);
+      let label = "Limitrofe";
+      let tone = "is-low";
+      let summary = "A validacao passou, mas ficou perto do limite minimo de seguranca.";
+
+      if (confidence >= 0.85 && score >= 0.55 && distance <= 0.9) {
+        label = "Alta seguranca";
+        tone = "is-high";
+        summary = "A comparacao facial foi validada com boa margem de seguranca.";
+      } else if (confidence >= 0.65 && score >= 0.46 && distance <= 1.0) {
+        label = "Seguranca moderada";
+        tone = "is-medium";
+        summary = "A comparacao facial foi validada com seguranca aceitavel, mas sem muita folga.";
+      }
+
+      if (securityResult) securityResult.hidden = false;
+      if (securityBadge) {
+        securityBadge.textContent = label;
+        securityBadge.className = `password-recovery-security__badge ${tone}`;
+      }
+      if (securityConfidence) securityConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
+      if (securityScore) securityScore.textContent = score.toFixed(4);
+      if (securityDistance) securityDistance.textContent = distance.toFixed(4);
+      if (securitySummary) securitySummary.textContent = summary;
+    }
+
+    function openModal() {
+      ensureSecurityResult();
+      modal.hidden = false;
+      document.body.classList.add("v-no-scroll");
+    }
+
+    function resetFacialFlow() {
+      recoveryPayload = null;
+      facialValidated = false;
+      frameReady = false;
+      verificationInFlight = false;
+      recoveryStageLocked = false;
+      lastRecoveryPhotoBase64 = null;
+      lastRecoveryCaptureMeta = null;
+      recoveryVerifyAttempts = 0;
+      serviceReady = false;
+      cpfInput.value = "";
+      setStage("cpf");
+      setFeedback(loadingFeedback, "Informe seu CPF para iniciar a validação.", "pending");
+      setFeedback(cameraFeedback, "Posicione o rosto e capture uma foto para validação facial.", "pending");
+      setFeedback(sendFeedback, "Validação facial concluída. Agora envie o link seguro de redefinição.", "success");
+      resetSecurityResult();
+      if (cameraFrame) cameraFrame.src = "/camera?recovery=1";
+    }
+
+    function closeModal() {
+      modal.hidden = true;
+      document.body.classList.remove("v-no-scroll");
+      chooserStep.classList.add("is-active");
+      supportStep.classList.remove("is-active");
+      facialStep.classList.remove("is-active");
+      resetFacialFlow();
+    }
+
+    function goToMainStep(step) {
+      chooserStep.classList.toggle("is-active", step === "chooser");
+      supportStep.classList.toggle("is-active", step === "support");
+      facialStep.classList.toggle("is-active", step === "facial");
+      if (step !== "facial") resetFacialFlow();
+    }
+
+    function startRecoveryValidation() {
+      if (!frameReady || !recoveryPayload || !serviceReady) return;
+      cameraFrame.contentWindow?.postMessage({
+        type: "start-recovery-match",
+        captureConfig: {
+          width: recoveryPayload.photo_width || 300,
+          height: recoveryPayload.photo_height || 600
+        }
+      }, "*");
+    }
+
+    async function waitForRecognitionService() {
+      setStage("loading");
+
+      for (let attempt = 1; attempt <= MAX_SERVICE_STATUS_ATTEMPTS; attempt += 1) {
+        setFeedback(
+          loadingFeedback,
+          attempt === 1 ? "Iniciando servico de reconhecimento facial..." : `Aguardando o servico de reconhecimento facial ficar online (${attempt}/${MAX_SERVICE_STATUS_ATTEMPTS})...`,
+          "pending",
+          true
+        );
+
+        try {
+          const response = await fetch("<%= facial_status_password_recovery_path %>", {
+            method: "GET",
+            headers: {
+              "Accept": "application/json",
+              "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+            }
+          });
+
+          const payload = await response.json();
+          if (response.ok && payload.ok && payload.online) {
+            serviceReady = true;
+            return true;
+          }
+        } catch (_error) {
+        }
+
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+      }
+
+      serviceReady = false;
+      setFeedback(loadingFeedback, "O servico de reconhecimento facial nao ficou online a tempo. Tente novamente em instantes.", "error");
+      return false;
+    }
+
+    openBtn?.addEventListener("click", openModal);
+    closeBtn?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", (event) => {
+      if (event.target.classList.contains("password-recovery-modal__backdrop")) closeModal();
+    });
+
+    document.querySelectorAll("[data-recovery-step]").forEach((button) => {
+      button.addEventListener("click", () => goToMainStep(button.dataset.recoveryStep));
+    });
+
+    document.querySelectorAll("[data-recovery-back]").forEach((button) => {
+      button.addEventListener("click", () => goToMainStep("chooser"));
+    });
+
+    cameraFrame?.addEventListener("load", () => {
+      frameReady = true;
+      startRecoveryValidation();
+    });
+
+    async function lookupRecoveryCpf() {
+      const cpf = normalizedCpf(cpfInput.value);
+      if (cpf.length !== 11) {
+        setStage("loading");
+        setFeedback(loadingFeedback, "Informe um CPF válido para continuar.", "error");
+        return;
+      }
+
+      if (primaryActionBtn) primaryActionBtn.disabled = true;
+      facialValidated = false;
+      recoveryStageLocked = false;
+      serviceReady = false;
+      recoveryPayload = null;
+      lastRecoveryPhotoBase64 = null;
+      lastRecoveryCaptureMeta = null;
+      setStage("loading");
+      setFeedback(loadingFeedback, "Carregando perfil para validação...", "pending", true);
+
+      try {
+        const response = await fetch("<%= facial_lookup_password_recovery_path %>", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+          },
+          body: JSON.stringify({ cpf: cpf })
+        });
+
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          setFeedback(loadingFeedback, payload.message || "Não foi possível validar este CPF.", "error");
+          return;
+        }
+
+        recoveryPayload = payload;
+        const serviceOnline = await waitForRecognitionService();
+        if (!serviceOnline) return;
+
+        setStage("camera");
+        setFeedback(cameraFeedback, "Perfil carregado. Posicione o rosto e aguarde a captura automatica para validar.", "pending");
+        startRecoveryValidation();
+      } catch (_error) {
+        setFeedback(loadingFeedback, "Falha ao consultar o perfil para recuperação.", "error");
+      } finally {
+        syncPrimaryAction();
+      }
+    }
+
+    async function sendRecoveryResetLink() {
+      if (!recoveryPayload || !facialValidated) return;
+
+      if (primaryActionBtn) primaryActionBtn.disabled = true;
+      setStage("send");
+      setFeedback(sendFeedback, "Enviando link seguro de redefinição...", "pending", true);
+
+      try {
+        const response = await fetch("<%= facial_send_reset_password_recovery_path %>", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+          },
+          body: JSON.stringify({ cpf: recoveryPayload.cpf })
+        });
+
+        const payload = await response.json();
+        setFeedback(sendFeedback, payload.message || "Operação concluída.", response.ok ? "success" : "error");
+      } catch (_error) {
+        setFeedback(sendFeedback, "Falha ao enviar o link seguro. Tente novamente.", "error");
+      } finally {
+        syncPrimaryAction();
+      }
+    }
+
+    primaryActionBtn?.addEventListener("click", async () => {
+      if (facialValidated) {
+        await sendRecoveryResetLink();
+      } else {
+        await lookupRecoveryCpf();
+      }
+    });
+
+    function verifyRecoveryPhoto(photoBase64) {
+      verificationInFlight = true;
+      recoveryStageLocked = true;
+      recoveryVerifyAttempts += 1;
+      setStage("loading");
+
+      const retrying = recoveryVerifyAttempts > 1;
+      setFeedback(
+        loadingFeedback,
+        retrying ? `Tentando novamente a validacao facial (${recoveryVerifyAttempts}/${MAX_RECOVERY_VERIFY_ATTEMPTS})...` : "Processando a validacao facial no servidor...",
+        "pending",
+        true
+      );
+
+      fetch("<%= facial_verify_password_recovery_path %>", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+        },
+        body: JSON.stringify({ cpf: recoveryPayload.cpf, photo_base64: photoBase64 })
+      }).then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw { ...payload, status: response.status };
+
+        facialValidated = true;
+        setStage("send");
+        setFeedback(sendFeedback, payload.message || "Validacao facial concluida. Agora envie o link seguro de redefinicao.", "success");
+        renderSecurityResult(payload);
+      }).catch((payload) => {
+        facialValidated = false;
+
+        if (payload?.retryable && recoveryVerifyAttempts < MAX_RECOVERY_VERIFY_ATTEMPTS && lastRecoveryPhotoBase64) {
+          setFeedback(loadingFeedback, "Servico facial indisponivel no momento. Tentando novamente...", "pending", true);
+          setTimeout(() => verifyRecoveryPhoto(lastRecoveryPhotoBase64), 1500);
+          return;
+        }
+
+        if (payload?.retryable) {
+          setStage("loading");
+          setFeedback(loadingFeedback, payload?.message || "Servico facial temporariamente indisponivel. Tente novamente em instantes.", "error");
+          recoveryStageLocked = true;
+          return;
+        }
+
+        recoveryStageLocked = false;
+        setStage("camera");
+        setFeedback(cameraFeedback, payload?.message || "Nao foi possivel validar o rosto com seguranca. Posicione o rosto e tente novamente.", "error");
+        startRecoveryValidation();
+      }).finally(() => {
+        verificationInFlight = false;
+        syncPrimaryAction();
+      });
+    }
+
+    window.addEventListener("message", (event) => {
+      if (event.source !== cameraFrame?.contentWindow || !event.data) return;
+
+      if (event.data.type === "recovery-capture") {
+        if (!recoveryPayload || verificationInFlight) return;
+
+        lastRecoveryPhotoBase64 = event.data.photoBase64;
+        lastRecoveryCaptureMeta = event.data.meta || null;
+        recoveryVerifyAttempts = 0;
+        verifyRecoveryPhoto(event.data.photoBase64);
+      }
+
+      if (event.data.type === "recovery-match-status" && (verificationInFlight || recoveryStageLocked)) {
+        return;
+      }
+
+      if (event.data.type === "recovery-match-status") {
+        setStage("camera");
+        setFeedback(cameraFeedback, event.data.message || "Preparando validação facial...", event.data.matched ? "success" : "pending");
+      }
+
+    });
+  });
+</script>
 
 <style>
-.feedback-fab {
+  .login-recovery {
+    margin-top: 12px;
+    text-align: center;
+  }
 
+  .login-recovery__link {
+    border: 0;
+    background: transparent;
+    color: #dbeafe;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .password-recovery-modal[hidden] {
+    display: none !important;
+  }
+
+  .password-recovery-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10060;
+  }
+
+  .password-recovery-modal__backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(8, 8, 10, 0.78);
+    backdrop-filter: blur(4px);
+  }
+
+  .password-recovery-modal__dialog {
+    position: relative;
+    width: min(92vw, 880px);
+    max-height: calc(100vh - 32px);
+    margin: 16px auto;
+    padding: 24px;
+    border-radius: 20px;
+    background:
+      linear-gradient(180deg, rgba(54, 54, 58, 0.98), rgba(34, 34, 36, 0.99));
+    border: 1px solid rgba(255,255,255,.12);
+    box-shadow: 0 24px 70px rgba(0,0,0,.45);
+    color: #f8fafc;
+    overflow: auto;
+  }
+
+  .password-recovery-modal__dialog::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #6d28d9, transparent);
+    opacity: .95;
+  }
+
+  .password-recovery-modal__close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 42px;
+    height: 42px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.14);
+    background: rgba(15, 23, 42, 0.88);
+    color: #fff;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .password-recovery-step,
+  .password-recovery-flow-stage {
+    display: none;
+  }
+
+  .password-recovery-step.is-active,
+  .password-recovery-flow-stage.is-active {
+    display: block;
+  }
+
+  .password-recovery-step h3 {
+    margin: 0 0 8px;
+    font-size: 1.35rem;
+  }
+
+  .password-recovery-step p {
+    margin: 0 0 16px;
+    color: rgba(226,232,240,.82);
+  }
+
+  .password-recovery-choice-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .password-recovery-choice {
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, rgba(24, 24, 27, 0.94), rgba(39, 39, 42, 0.96));
+    color: #fff;
+    text-align: left;
+    cursor: pointer;
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+  }
+
+  .password-recovery-choice:hover {
+    transform: translateY(-1px);
+    border-color: rgba(109, 40, 217, .42);
+    box-shadow: 0 16px 32px rgba(0,0,0,.24);
+  }
+
+  .password-recovery-choice__title {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .password-recovery-choice__text {
+    display: block;
+    color: rgba(226,232,240,.78);
+    line-height: 1.5;
+  }
+
+  .password-recovery-steps-bar {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .password-recovery-step-chip {
+    padding: 10px 12px;
+    border-radius: 999px;
+    text-align: center;
+    font-size: .88rem;
+    font-weight: 700;
+    color: rgba(226,232,240,.72);
+    background: rgba(18, 18, 20, 0.74);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  .password-recovery-step-chip.is-active {
+    color: #fff;
+    background: rgba(109, 40, 217, 0.24);
+    border-color: rgba(139, 92, 246, 0.42);
+  }
+
+  .password-recovery-step-chip.is-done {
+    color: #dcfce7;
+    background: rgba(34, 197, 94, 0.14);
+    border-color: rgba(34, 197, 94, 0.28);
+  }
+
+  .password-recovery-support-card,
+  .password-recovery-feedback,
+  .password-recovery-camera {
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(24, 24, 27, 0.9);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  .password-recovery-support-card a {
+    display: inline-block;
+    margin-top: 8px;
+    color: #93c5fd;
+    font-weight: 700;
+  }
+
+  .password-recovery-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 700;
+  }
+
+  .password-recovery-form__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 14px;
+  }
+
+  .password-recovery-feedback {
+    margin-bottom: 14px;
+    color: #e5e7eb;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 62px;
+  }
+
+  .password-recovery-feedback.is-loading {
+    min-height: 54px;
+  }
+
+  .password-recovery-spinner {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,.16);
+    border-top-color: #8b5cf6;
+    flex: 0 0 auto;
+    animation: recoverySpin .8s linear infinite;
+  }
+
+  .password-recovery-feedback.is-success {
+    color: #dcfce7;
+    border-color: rgba(34,197,94,.30);
+    background: rgba(20, 83, 45, 0.28);
+  }
+
+  .password-recovery-feedback.is-error {
+    color: #fee2e2;
+    border-color: rgba(239,68,68,.30);
+    background: rgba(127, 29, 29, 0.24);
+  }
+
+  .password-recovery-camera {
+    margin-bottom: 14px;
+    overflow: hidden;
+  }
+
+  .password-recovery-security {
+    margin-bottom: 14px;
+    padding: 14px;
+    border-radius: 16px;
+    background: rgba(24, 24, 27, 0.9);
+    border: 1px solid rgba(255,255,255,.08);
+  }
+
+  .password-recovery-security__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .password-recovery-security__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+    color: #e2e8f0;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    font-size: .84rem;
+    font-weight: 700;
+  }
+
+  .password-recovery-security__badge.is-high {
+    background: rgba(34, 197, 94, 0.16);
+    border-color: rgba(34, 197, 94, 0.32);
+    color: #86efac;
+  }
+
+  .password-recovery-security__badge.is-medium {
+    background: rgba(250, 204, 21, 0.16);
+    border-color: rgba(250, 204, 21, 0.32);
+    color: #fde68a;
+  }
+
+  .password-recovery-security__badge.is-low {
+    background: rgba(248, 113, 113, 0.16);
+    border-color: rgba(248, 113, 113, 0.32);
+    color: #fca5a5;
+  }
+
+  .password-recovery-security__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .password-recovery-security__item {
+    padding: 12px;
+    border-radius: 14px;
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.06);
+  }
+
+  .password-recovery-security__item span {
+    display: block;
+    margin-bottom: 6px;
+    color: rgba(226,232,240,.74);
+    font-size: .82rem;
+  }
+
+  .password-recovery-security__item strong {
+    font-size: 1.05rem;
+    color: #f8fafc;
+  }
+
+  .password-recovery-security__summary {
+    margin: 12px 0 0;
+    color: rgba(226,232,240,.82);
+    line-height: 1.5;
+  }
+
+  .password-recovery-camera iframe {
+    display: block;
+    width: 100%;
+    height: min(66vh, 640px);
+    border: 0;
+    border-radius: 16px;
+    background: #05070b;
+  }
+
+  .password-recovery-actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .password-recovery-primary,
+  .password-recovery-secondary {
+    min-height: 44px;
+    padding: 10px 18px;
+    border-radius: 12px;
+    font-weight: 700;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+  }
+
+  .password-recovery-primary {
+    background: linear-gradient(135deg, #6d28d9, #4c1d95);
+    color: #fff;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .password-recovery-primary:disabled {
+    opacity: .55;
+    cursor: not-allowed;
+  }
+
+  .password-recovery-secondary {
+    background: rgba(24, 24, 27, 0.96);
+    color: #fff;
+    border-color: rgba(255,255,255,.10);
+  }
+
+  .password-recovery-note {
+    color: rgba(212,212,216,.86) !important;
+  }
+
+  @keyframes recoverySpin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 720px) {
+    .password-recovery-choice-grid,
+    .password-recovery-steps-bar,
+    .password-recovery-actions {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .feedback-fab {
     width: 55px !important;
     height: 55px !important;
-
-}
+  }
 </style>

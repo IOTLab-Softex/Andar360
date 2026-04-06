@@ -16,6 +16,9 @@
       <button class="tab-link" data-tab="tab-push" role="tab" aria-selected="false">
   <i class="fa-solid fa-bell"></i> Push
 </button>
+      <button class="tab-link" data-tab="tab-camera" role="tab" aria-selected="false">
+        <i class="fa-solid fa-camera"></i> Camera
+      </button>
 
       <button class="tab-link"        data-tab="tab-email"     role="tab" aria-selected="false">
         <i class="fa-solid fa-envelope"></i> E-mail (SMTP)
@@ -236,6 +239,21 @@
   </small>
 </section>
 
+      <section id="tab-camera" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-4 mb-3"><i class="fa-solid fa-camera me-2"></i> Ajuste da Camera Facial</h2>
+        <p class="form-text text-muted mb-3">
+          Os ajustes finos da camera ficam dentro do modal de preview, para voce calibrar vendo o resultado em tempo real.
+        </p>
+        <div class="settings-actions mt-3">
+          <button type="button" id="open-camera-tuning-preview" class="btn btn-outline-secondary">
+            <i class="fa-solid fa-camera me-2"></i> Abrir Preview da Camera
+          </button>
+        </div>
+        <small class="form-text text-muted d-block mt-2">
+          Quando houver valores salvos aqui, a camera do participante usara essas configuracoes no lugar do padrao interno.
+        </small>
+      </section>
+
     </div>
 
     <!-- AÇÕES -->
@@ -243,6 +261,114 @@
   <%= button_tag type: "submit", class: "btn btn-primary px-4" do %>
     <i class="fa-solid fa-floppy-disk me-2"></i> Salvar Configurações
   <% end %>
+</div>
+
+<div id="settings-camera-preview-overlay" hidden style="position:fixed; inset:0; z-index:10050; background:rgba(5,10,20,.78); backdrop-filter:blur(6px); padding:16px; transition:background-color .18s ease, backdrop-filter .18s ease;">
+  <div class="settings-camera-preview-layout" style="display:grid; grid-template-columns:minmax(0, 860px) minmax(280px, 320px); gap:16px; width:min(96vw,1220px); max-height:calc(100vh - 32px); margin:0 auto;">
+    <div style="position:relative; width:100%; height:min(calc(100vh - 32px), 760px); padding:14px; border-radius:22px; background:linear-gradient(180deg, rgba(27, 35, 48, 0.96), rgba(14, 19, 28, 0.98)); box-shadow:0 30px 80px rgba(0,0,0,.45); border:1px solid rgba(255,255,255,.12); overflow:hidden;">
+      <iframe id="settings-camera-preview-frame" src="/camera" style="display:block; width:100%; height:100%; border:1px solid rgba(148,163,184,.28); border-radius:18px; background:#05070b;"></iframe>
+      <button type="button" id="close-camera-tuning-preview" style="position:absolute; top:10px; right:10px; width:42px; height:42px; border-radius:999px; border:1px solid rgba(255,255,255,.16); background:rgba(15,23,42,.82); color:#fff; font-size:26px; line-height:1; cursor:pointer;">&times;</button>
+    </div>
+    <div class="settings-camera-panel">
+      <p class="settings-camera-panel-title">Ajustes da camera</p>
+      <p id="settings-camera-preview-summary" class="settings-camera-summary"></p>
+      <div class="settings-camera-control mt-3">
+        <label>Distancia minima de deteccao</label>
+        <%= f.range_field :camera_min_ratio, class: "form-range", min: 0.15, max: 0.60, step: 0.01, value: (@setting.camera_min_ratio || 0.30), data: { camera_value_target: "setting_camera_min_ratio_value", camera_precision: 2 } %>
+        <div id="setting_camera_min_ratio_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_min_ratio || 0.30), precision: 2) %></div>
+      </div>
+      <div class="settings-camera-control">
+        <label>Distancia maxima de deteccao</label>
+        <%= f.range_field :camera_max_ratio, class: "form-range", min: 0.45, max: 0.95, step: 0.01, value: (@setting.camera_max_ratio || 0.70), data: { camera_value_target: "setting_camera_max_ratio_value", camera_precision: 2 } %>
+        <div id="setting_camera_max_ratio_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_max_ratio || 0.70), precision: 2) %></div>
+      </div>
+      <div class="settings-camera-control">
+        <label>Score do detector</label>
+        <%= f.range_field :camera_score_threshold, class: "form-range", min: 0.20, max: 0.90, step: 0.01, value: (@setting.camera_score_threshold || 0.50), data: { camera_value_target: "setting_camera_score_threshold_value", camera_precision: 2 } %>
+        <div id="setting_camera_score_threshold_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_score_threshold || 0.50), precision: 2) %></div>
+      </div>
+      <div class="settings-camera-control">
+        <label>Score minimo para zoom</label>
+        <%= f.range_field :camera_good_score, class: "form-range", min: 0.20, max: 0.95, step: 0.01, value: (@setting.camera_good_score || 0.60), data: { camera_value_target: "setting_camera_good_score_value", camera_precision: 2 } %>
+        <div id="setting_camera_good_score_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_good_score || 0.60), precision: 2) %></div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Zoom minimo</label>
+            <%= f.range_field :camera_min_zoom, class: "form-range", min: 1.00, max: 1.60, step: 0.01, value: (@setting.camera_min_zoom || 1.12), data: { camera_value_target: "setting_camera_min_zoom_value", camera_precision: 2 } %>
+            <div id="setting_camera_min_zoom_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_min_zoom || 1.12), precision: 2) %></div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Zoom maximo</label>
+            <%= f.range_field :camera_max_zoom, class: "form-range", min: 1.00, max: 2.40, step: 0.01, value: (@setting.camera_max_zoom || 1.82), data: { camera_value_target: "setting_camera_max_zoom_value", camera_precision: 2 } %>
+            <div id="setting_camera_max_zoom_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_max_zoom || 1.82), precision: 2) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Meta de largura da silhueta</label>
+            <%= f.range_field :camera_zoom_width_factor, class: "form-range", min: 0.40, max: 1.20, step: 0.01, value: (@setting.camera_zoom_width_factor || 1.02), data: { camera_value_target: "setting_camera_zoom_width_factor_value", camera_precision: 2 } %>
+            <div id="setting_camera_zoom_width_factor_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_zoom_width_factor || 1.02), precision: 2) %></div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Meta de altura da silhueta</label>
+            <%= f.range_field :camera_zoom_height_factor, class: "form-range", min: 0.50, max: 1.30, step: 0.01, value: (@setting.camera_zoom_height_factor || 0.94), data: { camera_value_target: "setting_camera_zoom_height_factor_value", camera_precision: 2 } %>
+            <div id="setting_camera_zoom_height_factor_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_zoom_height_factor || 0.94), precision: 2) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Blur de fundo</label>
+            <%= f.range_field :camera_blur_strength, class: "form-range", min: 0, max: 24, step: 1, value: (@setting.camera_blur_strength || 3), data: { camera_value_target: "setting_camera_blur_strength_value", camera_precision: 0 } %>
+            <div id="setting_camera_blur_strength_value" class="settings-camera-value"><%= (@setting.camera_blur_strength || 3).to_i %></div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Saturacao do foco</label>
+            <%= f.range_field :camera_blur_saturation, class: "form-range", min: 0.40, max: 1.40, step: 0.01, value: (@setting.camera_blur_saturation || 1.00), data: { camera_value_target: "setting_camera_blur_saturation_value", camera_precision: 2 } %>
+            <div id="setting_camera_blur_saturation_value" class="settings-camera-value"><%= number_with_precision((@setting.camera_blur_saturation || 1.00), precision: 2) %></div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Tamanho da area nitida</label>
+            <%= f.range_field :camera_focus_inner_radius, class: "form-range", min: 40, max: 78, step: 1, value: (@setting.camera_focus_inner_radius || 67), data: { camera_value_target: "setting_camera_focus_inner_radius_value", camera_precision: 0 } %>
+            <div id="setting_camera_focus_inner_radius_value" class="settings-camera-value"><%= (@setting.camera_focus_inner_radius || 67).to_i %></div>
+          </div>
+        </div>
+        <div class="col-6">
+          <div class="settings-camera-control">
+            <label>Suavidade da borda</label>
+            <%= f.range_field :camera_focus_outer_radius, class: "form-range", min: 50, max: 92, step: 1, value: (@setting.camera_focus_outer_radius || 92), data: { camera_value_target: "setting_camera_focus_outer_radius_value", camera_precision: 0 } %>
+            <div id="setting_camera_focus_outer_radius_value" class="settings-camera-value"><%= (@setting.camera_focus_outer_radius || 92).to_i %></div>
+          </div>
+        </div>
+      </div>
+      <div class="settings-camera-toggle mt-2">
+        <%= f.check_box :camera_auto_capture_enabled, class: "form-check-input", checked: (@setting.camera_auto_capture_enabled.nil? ? true : @setting.camera_auto_capture_enabled) %>
+        <label class="form-check-label" for="setting_camera_auto_capture_enabled">Captura automatica</label>
+      </div>
+      <div class="settings-camera-control mt-3">
+        <label>Estilo da malha</label>
+        <%= f.select :camera_mesh_style,
+              [["Biometria", "biometric"], ["Landmarks", "landmarks"], ["Wireframe clean", "wireframe"], ["Triangulada", "triangles"], ["HUD scanner", "scanner"]],
+              { selected: (@setting.camera_mesh_style.presence || "biometric") },
+              class: "form-control settings-camera-select" %>
+      </div>
+    </div>
+  </div>
 </div>
 
 <% end %>  <%# <-- FECHA O FORM PRINCIPAL AQUI %>
@@ -274,6 +400,174 @@
 
 
 <!-- ===== JS tabs (com persistência no localStorage) ===== -->
+<style>
+  .settings-camera-panel {
+    height: min(calc(100vh - 32px), 760px);
+    max-height: calc(100vh - 32px);
+    padding: 14px;
+    border-radius: 22px;
+    background: linear-gradient(180deg, rgba(13, 18, 31, 0.98), rgba(8, 12, 22, 0.96));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.32);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(148, 163, 184, 0.55) rgba(15, 23, 42, 0.32);
+  }
+
+  .settings-camera-panel-title {
+    margin: 0 0 10px;
+    font-size: 1.02rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+  }
+
+  .settings-camera-summary {
+    margin: 0 0 10px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(15, 23, 42, 0.88);
+    border: 1px solid rgba(59, 130, 246, 0.18);
+    font-size: 0.72rem;
+    line-height: 1.45;
+    color: #ffffff;
+    word-break: break-word;
+  }
+
+  .settings-camera-control {
+    margin-bottom: 10px;
+    padding: 10px 12px 9px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.94), rgba(12, 18, 30, 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+  }
+
+  .settings-camera-control label,
+  .settings-camera-toggle label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 0.93rem;
+    font-weight: 700;
+    color: #ffffff;
+  }
+
+  .settings-camera-value {
+    margin-top: 6px;
+    font-size: 0.96rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .settings-camera-toggle {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: linear-gradient(180deg, rgba(17, 24, 39, 0.94), rgba(12, 18, 30, 0.92));
+    border: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .settings-camera-toggle .form-check-input {
+    margin-right: 8px;
+    background-color: rgba(15, 23, 42, 0.95);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+
+  .settings-camera-toggle .form-check-input:checked {
+    background-color: #22c55e;
+    border-color: #22c55e;
+  }
+
+  .settings-camera-select {
+    background: rgba(15, 23, 42, 0.92);
+    color: #ffffff;
+    border-color: rgba(148, 163, 184, 0.28);
+  }
+
+  .settings-camera-panel::-webkit-scrollbar {
+    width: 10px;
+  }
+
+  .settings-camera-panel::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.35);
+    border-radius: 999px;
+  }
+
+  .settings-camera-panel::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.55);
+    border-radius: 999px;
+    border: 2px solid rgba(15, 23, 42, 0.35);
+  }
+
+  .settings-camera-panel .form-range {
+    width: 100%;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  .settings-camera-panel .form-range::-webkit-slider-runnable-track {
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, rgba(34, 197, 94, 0.95), rgba(34, 197, 94, 0.95)) left / var(--range-fill, 50%) 100% no-repeat,
+      rgba(148, 163, 184, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+
+  .settings-camera-panel .form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    margin-top: -4.5px;
+    background: #22c55e;
+    border: 0;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+  }
+
+  .settings-camera-panel .form-range::-moz-range-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.10);
+  }
+
+  .settings-camera-panel .form-range::-moz-range-progress {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.95);
+  }
+
+  .settings-camera-panel .form-range::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    border: 0;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.16);
+  }
+
+  @media (max-width: 1080px) {
+    .settings-camera-preview-layout {
+      grid-template-columns: minmax(0, 1fr) !important;
+    }
+
+    .settings-camera-panel {
+      height: min(46vh, 420px);
+      max-height: min(46vh, 420px);
+    }
+  }
+
+  #settings-camera-preview-overlay.flash-mode {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+  }
+</style>
+
 <script>
   (function(){
     const KEY = "settingsActiveTab";
@@ -321,5 +615,113 @@
         prev.focus(); activate(prev.dataset.tab);
       }
     });
+  })();
+
+  (function(){
+    const overlay = document.getElementById('settings-camera-preview-overlay');
+    const openBtn = document.getElementById('open-camera-tuning-preview');
+    const closeBtn = document.getElementById('close-camera-tuning-preview');
+    const frame = document.getElementById('settings-camera-preview-frame');
+    const summary = document.getElementById('settings-camera-preview-summary');
+    if (!overlay || !openBtn || !closeBtn || !frame) return;
+
+    const selectors = {
+      minRatio: '#setting_camera_min_ratio',
+      maxRatio: '#setting_camera_max_ratio',
+      scoreThreshold: '#setting_camera_score_threshold',
+      goodScore: '#setting_camera_good_score',
+      minZoom: '#setting_camera_min_zoom',
+      maxZoom: '#setting_camera_max_zoom',
+      zoomWidthFactor: '#setting_camera_zoom_width_factor',
+      zoomHeightFactor: '#setting_camera_zoom_height_factor',
+      blurStrength: '#setting_camera_blur_strength',
+      blurSaturation: '#setting_camera_blur_saturation',
+      focusInnerRadius: '#setting_camera_focus_inner_radius',
+      focusOuterRadius: '#setting_camera_focus_outer_radius',
+      autoCaptureEnabled: '#setting_camera_auto_capture_enabled',
+      meshStyle: '#setting_camera_mesh_style'
+    };
+
+    function payloadFromForm() {
+      const payload = {};
+      Object.entries(selectors).forEach(([key, selector]) => {
+        const el = document.querySelector(selector);
+        if (!el) return;
+        if (el.type === 'checkbox') payload[key] = el.checked;
+        else if (el.tagName === 'SELECT') payload[key] = el.value;
+        else payload[key] = Number(el.value);
+      });
+      return payload;
+    }
+
+    function syncSliderValues() {
+      document.querySelectorAll('[data-camera-value-target]').forEach((el) => {
+        const target = document.getElementById(el.dataset.cameraValueTarget);
+        if (!target) return;
+        const precision = Number(el.dataset.cameraPrecision || 0);
+        const numericValue = Number(el.value);
+        const min = Number(el.min || 0);
+        const max = Number(el.max || 100);
+        const percent = max > min ? ((numericValue - min) / (max - min)) * 100 : 0;
+        el.style.setProperty('--range-fill', `${Math.min(100, Math.max(0, percent))}%`);
+        target.textContent = Number.isFinite(numericValue) ? numericValue.toFixed(precision) : el.value;
+      });
+    }
+
+    function syncPreview() {
+      syncSliderValues();
+      const payload = payloadFromForm();
+      frame.contentWindow?.postMessage({ type: 'camera-tuning', payload: payload }, '*');
+      if (summary) {
+        summary.textContent =
+          `minRatio=${payload.minRatio?.toFixed(2)} | maxRatio=${payload.maxRatio?.toFixed(2)} | ` +
+          `scoreThreshold=${payload.scoreThreshold?.toFixed(2)} | goodScore=${payload.goodScore?.toFixed(2)} | ` +
+          `minZoom=${payload.minZoom?.toFixed(2)} | maxZoom=${payload.maxZoom?.toFixed(2)} | ` +
+          `zoomWidthFactor=${payload.zoomWidthFactor?.toFixed(2)} | zoomHeightFactor=${payload.zoomHeightFactor?.toFixed(2)} | ` +
+          `blurStrength=${payload.blurStrength} | blurSaturation=${payload.blurSaturation?.toFixed(2)} | ` +
+          `focusInnerRadius=${payload.focusInnerRadius} | focusOuterRadius=${payload.focusOuterRadius} | ` +
+          `autoCaptureEnabled=${payload.autoCaptureEnabled} | meshStyle=${payload.meshStyle}`;
+      }
+    }
+
+    openBtn.addEventListener('click', () => {
+      overlay.hidden = false;
+      document.body.classList.add('v-no-scroll');
+      syncPreview();
+    });
+
+    closeBtn.addEventListener('click', () => {
+      overlay.hidden = true;
+      overlay.classList.remove('flash-mode');
+      document.body.classList.remove('v-no-scroll');
+    });
+
+    overlay.addEventListener('click', (event) => {
+      if (event.target === overlay) {
+        overlay.hidden = true;
+        overlay.classList.remove('flash-mode');
+        document.body.classList.remove('v-no-scroll');
+      }
+    });
+
+    window.addEventListener('message', (event) => {
+      if (!event.data || event.source !== frame.contentWindow) return;
+      if (event.data.type === 'camera-light-state') {
+        overlay.classList.toggle('flash-mode', !!event.data.lowLight);
+      }
+    });
+
+    Object.values(selectors).forEach((selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return;
+      el.addEventListener('input', syncPreview);
+      el.addEventListener('change', syncPreview);
+    });
+
+    frame.addEventListener('load', () => {
+      overlay.classList.remove('flash-mode');
+      syncPreview();
+    });
+    syncSliderValues();
   })();
 </script>

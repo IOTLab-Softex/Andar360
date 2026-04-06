@@ -89,7 +89,11 @@ end
       :smtp_address, :smtp_port, :smtp_domain,
       :smtp_username, :smtp_password,
       :smtp_authentication, :smtp_enable_starttls_auto,:require_room_rules_ack, :room_rules,
-      :vapid_public_key, :vapid_private_key, :vapid_subject
+      :vapid_public_key, :vapid_private_key, :vapid_subject,
+      :camera_min_ratio, :camera_max_ratio, :camera_score_threshold, :camera_good_score,
+      :camera_min_zoom, :camera_max_zoom, :camera_zoom_width_factor, :camera_zoom_height_factor,
+      :camera_blur_strength, :camera_blur_saturation, :camera_focus_inner_radius, :camera_focus_outer_radius,
+      :camera_auto_capture_enabled, :camera_mesh_style
     )
   end
 end

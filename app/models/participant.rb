@@ -33,16 +33,17 @@ scope :excluidos, -> { where(excluido: true) }
   end
 
   def attach_photo_from_base64
-    return unless photo_base64.present? && !photo.attached?
+    return unless photo_base64.present?
   
-    decoded_image = Base64.decode64(photo_base64.sub(/^data:image\/(png|jpeg);base64,/, ''))
+    content_type = photo_base64[%r{\Adata:(image/(?:png|jpeg|jpg));base64,}i, 1] || "image/jpeg"
+    decoded_image = Base64.decode64(photo_base64.sub(%r{\Adata:image/(?:png|jpeg|jpg);base64,}i, ""))
     io = StringIO.new(decoded_image)
   
     # Attach sem trigger automático de análise
     self.photo.attach(
       io: io,
-      filename: "photo_#{SecureRandom.hex(4)}.jpg",
-      content_type: "image/jpeg"
+      filename: "photo_#{SecureRandom.hex(4)}.#{content_type.split('/').last}",
+      content_type: content_type
     )
   
     # Marca manualmente como "analisado"

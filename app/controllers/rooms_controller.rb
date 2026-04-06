@@ -158,7 +158,10 @@ def bulk_destroy
   end
 
   Room.transaction do
-    Room.where(id: ids).find_each(&:destroy!)
+    Room.where(id: ids).find_each do |room|
+      detach_room_devices!(room)
+      room.destroy!
+    end
   end
 
   redirect_to rooms_path, notice: "#{ids.size} sala(s) removida(s) com sucesso."
@@ -185,7 +188,10 @@ end
 
   # DELETE /rooms/1 or /rooms/1.json
   def destroy
-    @room.destroy!
+    Room.transaction do
+      detach_room_devices!(@room)
+      @room.destroy!
+    end
 
     respond_to do |format|
       format.html { redirect_to rooms_path, status: :see_other, notice: "Sala excluida com sucesso!" }
@@ -307,6 +313,10 @@ end
     :photo,:room_group_id,
     room_items_attributes: [:id, :name, :quantity, :_destroy, :catalog_item_id]
   )
+end
+
+def detach_room_devices!(room)
+  Device.where(room_id: room.id).update_all(room_id: nil)
 end
 
 

@@ -140,6 +140,13 @@ devise_for :users, controllers: {
   registrations: 'users/registrations'
 }
 
+resource :password_recovery, only: [] do
+  get  :facial_status
+  post :facial_lookup
+  post :facial_verify
+  post :facial_send_reset
+end
+
   get "/dashboard/refresh", to: "dashboard#refresh", as: :refresh_dashboard
 
   get "import_logs/status", to: "import_logs#status"

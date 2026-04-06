@@ -29,6 +29,8 @@
 !/tmp/storage/.keep
 
 /public/assets
+/.face_backend_venv/
+/face_backend/__pycache__/
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_01_19_160922) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -464,6 +464,20 @@ ActiveRecord::Schema[8.0].define(version: 2026_01_19_160922) do
     t.string "vapid_public_key"
     t.string "vapid_private_key"
     t.string "vapid_subject"
+    t.float "camera_min_ratio"
+    t.float "camera_max_ratio"
+    t.float "camera_score_threshold"
+    t.float "camera_good_score"
+    t.float "camera_min_zoom"
+    t.float "camera_max_zoom"
+    t.float "camera_zoom_width_factor"
+    t.float "camera_zoom_height_factor"
+    t.integer "camera_blur_strength"
+    t.float "camera_blur_saturation"
+    t.integer "camera_focus_inner_radius"
+    t.integer "camera_focus_outer_radius"
+    t.boolean "camera_auto_capture_enabled"
+    t.string "camera_mesh_style"
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|

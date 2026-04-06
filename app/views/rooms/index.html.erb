@@ -193,7 +193,7 @@
           Importar unidades (XLS/XLSX/CSV)
         </h5>
         <button type="button" class="v-modal__close" aria-label="Fechar" data-close="true" title="Fechar">
-          <i class="fa-solid fa-xmark"></i>
+          <span aria-hidden="true">&times;</span>
         </button>
       </div>
       <%= form_with url: import_rooms_path,
@@ -219,14 +219,10 @@
             <i class="fa-solid fa-file-import me-1"></i>
             Importar
           </button>
-          <button type="button" class="btn btn-light" data-close="true">
-            <i class="fa-solid fa-ban me-1"></i>
-            Cancelar
-          </button>
           <%= link_to template_rooms_path, class: "btn btn-outline-secondary", title: "Baixar modelo" do %>
             <i class="fa-solid fa-download me-1"></i> Modelo
-          <% end %><br>
-          <small class="text-muted">
+          <% end %>
+          <small class="text-muted v-modal__footer-note">
             Baixe a planilha de exemplo para importar.
           </small>
         </div>
@@ -415,9 +411,9 @@
 
       openBtn.addEventListener('click', openModal);
 
-      // fechar por [x], "Cancelar" ou clicar no backdrop
+      // fechar por [x] ou clicar no backdrop
       modal.addEventListener('click', (e) => {
-        if (e.target.matches('[data-close="true"]')) closeModal();
+        if (e.target.closest('[data-close="true"]')) closeModal();
         if (e.target === qs('.v-modal__backdrop', modal)) closeModal();
       });
 
@@ -741,7 +737,9 @@
       position: absolute; left: 50%; top: 50%;
       transform: translate(-50%, -50%) scale(.98);
       width: min(92vw, 640px);
-      background: #fff;
+      background: var(--color-header);
+      color: var(--color-text);
+      border: 1px solid rgba(127, 127, 127, 0.28);
       border-radius: 12px;
       box-shadow: 0 20px 60px rgba(0,0,0,.25);
       overflow: hidden;
@@ -752,15 +750,28 @@
 
     .v-modal__header, .v-modal__footer {
       padding: 16px 18px;
-      background: #f7f7f9;
+      background: var(--color-card);
+      color: var(--color-text);
     }
     .v-modal__title { margin: 0; font-size: 1.1rem; }
-    .v-modal__body  { padding: 18px; background: #fff; }
+    .v-modal__body  {
+      padding: 18px;
+      background: var(--color-header);
+      color: var(--color-text);
+    }
 
     .v-modal__close {
-      border: 0; background: transparent; font-size: 1.6rem; line-height: 1;
+      border: 0;
+      background: transparent;
+      color: var(--color-text);
+      font-size: 1.6rem;
+      line-height: 1;
       cursor: pointer; margin-left: auto;
+      border-radius: 8px;
+      padding: .15rem .35rem;
+      transition: background-color .2s ease, color .2s ease;
     }
+    .v-modal__close:hover { background: rgba(127, 127, 127, 0.16); }
 
     /* Evita rolagem do body quando modal aberto */
     body.v-no-scroll { overflow: hidden; }
@@ -779,25 +790,58 @@
     @keyframes vspin { to { transform: rotate(360deg); } }
 
     .d-none { display: none !important; }
-    .text-muted{
-          color: var(--color-btn--text);
+    .v-modal .text-muted { color: var(--color-muted) !important; }
+    .v-modal .form-label { color: var(--color-text); }
+    .v-modal .form-control {
+      background: var(--color-bg);
+      color: var(--color-text);
+      border: 1px solid rgba(127, 127, 127, 0.35);
     }
-    .form-label{
-      color: var(--color-btn--text);
+    .v-modal .form-control::file-selector-button {
+      background: var(--color-card);
+      color: var(--color-text);
+      border: 1px solid rgba(127, 127, 127, 0.35);
     }
-    .v-modal__header{
-
-          color: var(--color-btn--text);
+    .v-modal .form-control:focus {
+      background: var(--color-bg);
+      color: var(--color-text);
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 .2rem rgba(112, 20, 241, .18);
     }
-
-    .form-control{
-
-          color: var(--color-muted)
+    .v-modal .btn-light {
+      background: var(--color-bg);
+      color: var(--color-text);
+      border-color: rgba(127, 127, 127, 0.35);
+    }
+    .v-modal .btn-light:hover {
+      background: var(--color-card);
+      color: var(--color-text);
+      border-color: rgba(127, 127, 127, 0.45);
+    }
+    .v-modal .btn-outline-secondary {
+      color: var(--color-text);
+      border-color: rgba(127, 127, 127, 0.4);
+    }
+    .v-modal .btn-outline-secondary:hover {
+      background: var(--color-card);
+      color: var(--color-text);
+      border-color: rgba(127, 127, 127, 0.5);
+    }
+    .v-modal code,
+    .v-modal em {
+      color: inherit;
     }
     .v-modal__footer{
-
-          display: flex
-    ;
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+      align-items: center;
+      border-top: 1px solid rgba(127, 127, 127, 0.2);
+    }
+    .v-modal__footer-note {
+      display: block;
+      flex-basis: 100%;
+      margin: 0;
     }
 
     /*modo select*/

@@ -879,11 +879,22 @@
 
 
   document.addEventListener("DOMContentLoaded", function() {
+    const userSignedIn = <%= user_signed_in? ? "true" : "false" %>;
+    if (!userSignedIn) return;
+
     function checkImportStatus() {
-      fetch("/import_logs/status")
-        .then(response => response.json())
+      fetch("/import_logs/status", {
+        headers: { "Accept": "application/json" }
+      })
+        .then(response => {
+          if (!response.ok) return null;
+          return response.json();
+        })
         .then(data => {
+          if (!data) return;
+
           const progressDiv = document.getElementById("backup-progress");
+          if (!progressDiv) return;
 
           if (data.status === "executando") {
             progressDiv.style.display = "block";
@@ -897,7 +908,8 @@
           } else {
             progressDiv.style.display = "none";
           }
-        });
+        })
+        .catch(() => {});
     }
 
     setInterval(checkImportStatus, 5000);

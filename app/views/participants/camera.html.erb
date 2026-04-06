@@ -4,27 +4,94 @@
   <meta charset="UTF-8">
   <title>Captura de Foto</title>
   <style>
-    body {
-      margin: 0;
-      background: #111;
-      color: white;
-      text-align: center;
-      font-family: Arial, sans-serif;
-    }
-
-    #videoContainer {
-      position: relative;
-      display: inline-block;
-      border: 2px solid #fff;
-      border-radius: 10px;
+    html, body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
     }
 
-    #video, #canvas {
-      width: 500px;
-      height: 400px;
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at top, rgba(36, 77, 135, 0.28), transparent 34%),
+        linear-gradient(180deg, #111827 0%, #030712 100%);
+      color: white;
+      text-align: center;
+      font-family: "Poppins", Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      box-sizing: border-box;
+    }
+
+    .camera-shell {
+      --flash-level: 0;
+      width: 100%;
+      max-height: calc(100dvh - 36px);
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      gap: 16px;
+      justify-items: center;
+      padding: clamp(14px, 3vw, 24px);
+      border-radius: 24px;
+      background:
+        linear-gradient(rgba(255,255,255, var(--flash-level)), rgba(255,255,255, var(--flash-level))),
+        rgba(15, 23, 42, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 28px 80px rgba(0, 0, 0, calc(0.45 - (var(--flash-level) * 0.34))),
+        0 0 calc(72px * var(--flash-level)) rgba(255,255,255, calc(var(--flash-level) * 0.74));
+      backdrop-filter: blur(8px);
+      box-sizing: border-box;
+      overflow: hidden;
+      transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
+    }
+
+    .camera-shell.flash-mode {
+      --flash-level: 1;
+      background: #ffffff;
+      border-color: rgba(255, 255, 255, 0.95);
+      box-shadow:
+        0 28px 80px rgba(255, 255, 255, 0.42),
+        0 0 96px rgba(255, 255, 255, 0.82);
+    }
+
+    #videoContainer {
+      --camera-zoom: 1;
+      --pan-x: 0px;
+      --pan-y: 0px;
+      --ring-x: 50%;
+      --ring-y: 50%;
+      --ring-w: clamp(180px, 32vw, 240px);
+      --ring-h: clamp(230px, 42vw, 310px);
+      --blur-strength: 3px;
+      --blur-saturation: .40;
+      --focus-inner-radius: 67%;
+      --focus-outer-radius: 92%;
+      position: relative;
+      width: min(100%, 680px);
+      height: min(100%, 52dvh);
       display: block;
-      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 22px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(15,23,42,.1), rgba(15,23,42,.28)),
+        #020617;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+    }
+
+    #video, #canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      border-radius: 22px;
+      object-fit: cover;
+      transform: translate(var(--pan-x), var(--pan-y)) scaleX(-1) scale(var(--camera-zoom));
+      transform-origin: center center;
+      transition: transform .48s cubic-bezier(.22,.8,.28,1);
     }
 
     #canvas {
@@ -32,228 +99,965 @@
       top: 0;
       left: 0;
       z-index: 2;
+      pointer-events: none;
     }
 
-    #video {
-      z-index: 1;
-    }
+    #video { z-index: 1; }
 
     h2 {
-      margin: 20px;
-      font-weight: normal;
-      color: #f0f0f0;
+      margin: 0;
+      font-weight: 600;
+      color: #f8fafc;
+      font-size: clamp(1rem, 2.6vw, 1.4rem);
+    }
+
+    .camera-subtitle {
+      margin: 0;
+      max-width: 48ch;
+      color: rgba(226, 232, 240, 0.82);
+      font-size: .96rem;
+      line-height: 1.5;
+      transition: color .18s ease;
+    }
+
+    .camera-shell.flash-mode h2,
+    .camera-shell.flash-mode .camera-subtitle,
+    .camera-shell.soft-flash h2,
+    .camera-shell.soft-flash .camera-subtitle {
+      color: #0f172a;
     }
 
     #captureBtn {
-      margin-top: 15px;
       padding: 12px 25px;
-      background-color: #28a745;
+      min-width: min(100%, 280px);
+      background: linear-gradient(135deg, #22c55e, #16a34a);
       border: none;
-      border-radius: 8px;
+      border-radius: 999px;
       font-size: 16px;
       font-weight: bold;
       color: white;
       cursor: pointer;
-      transition: background-color 0.3s ease;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      transition: transform .18s ease, filter .18s ease, background-color 0.3s ease;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.28);
     }
 
     #captureBtn:hover:enabled {
-      background-color: #218838;
+      filter: brightness(1.05);
+      transform: translateY(-1px);
     }
 
     #captureBtn:disabled {
-      background-color: #555;
+      background: rgba(100, 116, 139, 0.65);
       cursor: not-allowed;
       opacity: 0.6;
+      box-shadow: none;
     }
 
+    @keyframes pulseHint {
+      0% { transform: translateX(-50%) scale(1); }
+      50% { transform: translateX(-50%) scale(1.05); }
+      100% { transform: translateX(-50%) scale(1); }
+    }
 
-@keyframes pulseHint { 0%{transform:translateX(-50%) scale(1)}
-  50%{transform:translateX(-50%) scale(1.05)} 100%{transform:translateX(-50%) scale(1)} }
-#lookHint{ animation:pulseHint 1.2s ease-in-out infinite; }
+    #lookHint { animation: pulseHint 1.2s ease-in-out infinite; }
 
+    .camera-top-actions {
+      position: absolute;
+      right: 22px;
+      top: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 4;
+    }
+
+    #flashToggle {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.24);
+      background: rgba(0,0,0,.55);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: transform .18s ease, background-color .18s ease, border-color .18s ease;
+      position: relative;
+    }
+
+    #flashToggle:hover {
+      transform: translateY(-1px);
+    }
+
+    #flashToggle.is-active {
+      background: rgba(250, 204, 21, 0.9);
+      border-color: rgba(250, 204, 21, 1);
+      color: #111827;
+    }
+
+    #flashToggle::after {
+      content: "A";
+      position: absolute;
+      top: -4px;
+      right: -3px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.92);
+      border: 1px solid rgba(255,255,255,.18);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      line-height: 14px;
+      text-align: center;
+      box-shadow: 0 4px 10px rgba(0,0,0,.24);
+    }
+
+    #flashToggle.is-active::after {
+      display: none;
+    }
+
+    .face-focus-ring {
+      position: absolute;
+      left: var(--ring-x);
+      top: var(--ring-y);
+      width: var(--ring-w);
+      height: var(--ring-h);
+      border-radius: 46% 46% 42% 42% / 38% 38% 56% 56%;
+      transform: translate(-50%, -50%);
+      border: 2px solid rgba(255, 255, 255, 0.28);
+      box-shadow:
+        0 0 0 999px rgba(2, 6, 23, 0.16),
+        0 0 0 8px rgba(255, 255, 255, 0.04),
+        0 0 28px rgba(59, 130, 246, 0.14);
+      z-index: 3;
+      pointer-events: none;
+      transition: border-color .25s ease, box-shadow .25s ease, transform .25s ease, opacity .25s ease;
+    }
+
+    .face-focus-ring::before,
+    .face-focus-ring::after {
+      content: "";
+      position: absolute;
+      inset: 10px;
+      border-radius: 46% 46% 42% 42% / 38% 38% 56% 56%;
+      border: 1px dashed rgba(255,255,255,.12);
+    }
+
+    .face-focus-ring::after {
+      inset: -12px;
+      border-style: solid;
+      border-color: transparent;
+    }
+
+    .face-focus-ring .face-guide {
+      position: absolute;
+      inset: 16% 20% 18%;
+      border-radius: 48% 48% 44% 44% / 38% 38% 58% 58%;
+      border: 1px solid rgba(255,255,255,.14);
+      opacity: .9;
+    }
+
+    .face-focus-ring .face-guide::before,
+    .face-focus-ring .face-guide::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+    }
+
+    .face-focus-ring .face-guide::before {
+      top: 26%;
+      width: 38%;
+      height: 1px;
+    }
+
+    .face-focus-ring .face-guide::after {
+      top: 28%;
+      width: 1px;
+      height: 42%;
+    }
+
+    #videoContainer.is-detected .face-focus-ring {
+      border-color: rgba(34, 197, 94, 0.92);
+      box-shadow:
+        0 0 0 999px rgba(2, 6, 23, 0.08),
+        0 0 0 10px rgba(34, 197, 94, 0.10),
+        0 0 36px rgba(34, 197, 94, 0.30);
+      animation: facePulse 1.3s ease-in-out infinite;
+    }
+
+    .focus-blur-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .25s ease;
+      backdrop-filter: blur(var(--blur-strength)) saturate(var(--blur-saturation));
+      -webkit-backdrop-filter: blur(var(--blur-strength)) saturate(var(--blur-saturation));
+      mask:
+        radial-gradient(ellipse 22% 34% at 50% 50%, transparent 0 var(--focus-inner-radius), rgba(0,0,0,.92) var(--focus-outer-radius));
+      -webkit-mask:
+        radial-gradient(ellipse 22% 34% at 50% 50%, transparent 0 var(--focus-inner-radius), rgba(0,0,0,.92) var(--focus-outer-radius));
+    }
+
+    #videoContainer.focus-mode .focus-blur-layer {
+      opacity: 1;
+    }
+
+    .face-mesh {
+      display: none;
+    }
+
+    .face-mesh svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .face-mesh line,
+    .face-mesh polyline,
+    .face-mesh path {
+      stroke: rgba(255,255,255,.82);
+      stroke-width: 1.4;
+      fill: none;
+    }
+
+    .face-mesh circle {
+      fill: rgba(255,255,255,.92);
+    }
+
+    #videoContainer.mesh-active .face-mesh {
+      opacity: 1;
+    }
+
+    @keyframes facePulse {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.03); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @media (max-width: 640px) {
+      body { padding: 0; }
+
+      .camera-shell {
+        min-height: 100dvh;
+        width: 100%;
+        border-radius: 0;
+        max-height: 100dvh;
+        padding: 12px 12px 16px;
+      }
+
+      #videoContainer {
+        width: 100%;
+        height: min(100%, 58dvh);
+        border-radius: 18px;
+        --ring-w: min(54vw, 220px);
+        --ring-h: min(70vw, 290px);
+      }
+
+      #video, #canvas { border-radius: 18px; }
+
+      #countdown {
+        right: 12px !important;
+        top: 12px !important;
+      }
+
+      #lookHint {
+        top: auto !important;
+        bottom: 12px !important;
+        width: calc(100% - 24px);
+        max-width: none;
+        padding: 10px 12px !important;
+        font-size: .92rem;
+      }
+
+      #captureBtn { width: 100%; }
+    }
   </style>
 </head>
 <body>
-  <h2 id="faceStatus">Detectando rosto...</h2>
+  <div class="camera-shell">
+    <h2 id="faceStatus">Detectando rosto...</h2>
+    <p class="camera-subtitle">Mantenha o rosto centralizado e bem iluminado para uma captura mais natural e sem distorção.</p>
 
-  <div id="videoContainer">
-    <video id="video" autoplay muted playsinline></video>
-    <canvas id="canvas"></canvas>
-    <div id="countdown"
-     style="position:absolute; right:22px; top:10px; width:52px; height:52px; border-radius:50%;
-            background:rgba(0,0,0,.55); display:none; color:#fff; font-weight:700;
-            line-height:52px; text-align:center; font-size:20px; z-index:3;">
-  8
-</div>
-<div id="lookHint"
-     style="position:absolute; left:50%; top:10px; transform:translateX(-50%);
-            background:rgba(0,0,0,.6); color:#fff; padding:8px 12px; border-radius:10px;
-            font-weight:900; display:none; z-index:3; letter-spacing:.2px;">
-  Olhe para a câmera 👀
-</div>
+    <div id="videoContainer">
+      <video id="video" autoplay muted playsinline></video>
+      <canvas id="canvas"></canvas>
+      <div class="face-focus-ring" aria-hidden="true">
+        <div class="face-guide"></div>
+        <div class="face-mesh">
+          <svg viewBox="0 0 100 140" aria-hidden="true">
+            <path d="M50 10 C32 10, 18 28, 18 52 C18 86, 32 118, 50 132 C68 118, 82 86, 82 52 C82 28, 68 10, 50 10" />
+            <polyline points="28,48 40,42 50,40 60,42 72,48" />
+            <polyline points="34,84 42,92 50,96 58,92 66,84" />
+            <polyline points="50,40 48,58 50,74 52,58 50,40" />
+            <line x1="24" y1="60" x2="40" y2="42" />
+            <line x1="76" y1="60" x2="60" y2="42" />
+            <line x1="24" y1="60" x2="34" y2="84" />
+            <line x1="76" y1="60" x2="66" y2="84" />
+            <line x1="34" y1="84" x2="50" y2="96" />
+            <line x1="66" y1="84" x2="50" y2="96" />
+            <line x1="40" y1="42" x2="50" y2="58" />
+            <line x1="60" y1="42" x2="50" y2="58" />
+            <line x1="42" y1="92" x2="50" y2="74" />
+            <line x1="58" y1="92" x2="50" y2="74" />
+            <circle cx="18" cy="52" r="1.8" />
+            <circle cx="24" cy="60" r="1.8" />
+            <circle cx="28" cy="48" r="1.8" />
+            <circle cx="40" cy="42" r="1.8" />
+            <circle cx="50" cy="40" r="1.8" />
+            <circle cx="60" cy="42" r="1.8" />
+            <circle cx="72" cy="48" r="1.8" />
+            <circle cx="76" cy="60" r="1.8" />
+            <circle cx="82" cy="52" r="1.8" />
+            <circle cx="34" cy="84" r="1.8" />
+            <circle cx="42" cy="92" r="1.8" />
+            <circle cx="50" cy="96" r="1.8" />
+            <circle cx="58" cy="92" r="1.8" />
+            <circle cx="66" cy="84" r="1.8" />
+            <circle cx="48" cy="58" r="1.8" />
+            <circle cx="52" cy="58" r="1.8" />
+            <circle cx="50" cy="74" r="1.8" />
+          </svg>
+        </div>
+      </div>
+      <div class="focus-blur-layer" aria-hidden="true"></div>
+      <div class="camera-top-actions">
+        <button id="flashToggle" type="button" aria-label="Ativar flash manual" title="Ativar flash manual">
+          <span aria-hidden="true">⚡</span>
+        </button>
+        <div id="countdown" style="position:static; width:52px; height:52px; border-radius:50%; background:rgba(0,0,0,.55); display:none; color:#fff; font-weight:700; line-height:52px; text-align:center; font-size:20px; z-index:3;">8</div>
+      </div>
+      <div id="lookHint" style="position:absolute; left:50%; top:10px; transform:translateX(-50%); background:rgba(0,0,0,.6); color:#fff; padding:8px 12px; border-radius:10px; font-weight:900; display:none; z-index:3; letter-spacing:.2px;">Olhe para a camera</div>
+    </div>
 
+    <button id="captureBtn" onclick="capturePhoto()" disabled>Sem rosto...</button>
   </div>
 
-  <br>
-  <button id="captureBtn" onclick="capturePhoto()" disabled>Sem rosto...</button>
-
   <script defer src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
   <script>
     const video = document.getElementById("video");
     const canvas = document.getElementById("canvas");
+    const videoContainer = document.getElementById("videoContainer");
+    const cameraShell = document.querySelector(".camera-shell");
+    const ring = document.querySelector(".face-focus-ring");
     const captureBtn = document.getElementById("captureBtn");
     const faceStatus = document.getElementById("faceStatus");
-    let lastDetection = null;
-let countdownStart = null;   // quando a contagem começou
-let autoShotTimeout = null;  // timeout da captura automática
-const COUNTDOWN_SECONDS = 8; // ⏱️ ajuste aqui
-const lookHint = document.getElementById('lookHint');
+    const lookHint = document.getElementById("lookHint");
+    const flashToggle = document.getElementById("flashToggle");
+    let countdownStart = null;
+    let autoShotTimeout = null;
+    let targetZoom = 1;
+    let targetPanX = 0;
+    let targetPanY = 0;
+    let currentZoom = 1;
+    let currentPanX = 0;
+    let currentPanY = 0;
+    let trackingStarted = false;
+    let meshTimeout = null;
+    let meshPoints = null;
+    let lowLightActive = false;
+    let manualFlashEnabled = false;
+    let ambientFlashLevel = 0;
+    let recoveryCaptureLocked = false;
+    let latestDetectionBox = null;
+    let recoveryCaptureTarget = { width: 300, height: 600 };
+    const recoveryMode = <%= @camera_recovery_mode ? "true" : "false" %>;
+    const COUNTDOWN_SECONDS = 8;
+    const tuning = <%= raw((@camera_tuning || Setting::CAMERA_TUNING_DEFAULTS).to_json) %>;
+
+    window.addEventListener("message", (event) => {
+      if (!event.data || event.data.type !== "camera-tuning") return;
+      Object.assign(tuning, event.data.payload || {});
+      videoContainer.style.setProperty("--blur-strength", `${tuning.blurStrength}px`);
+      videoContainer.style.setProperty("--blur-saturation", tuning.blurSaturation);
+      videoContainer.style.setProperty("--focus-inner-radius", `${tuning.focusInnerRadius}%`);
+      videoContainer.style.setProperty("--focus-outer-radius", `${tuning.focusOuterRadius}%`);
+    });
+
+    videoContainer.style.setProperty("--blur-strength", `${tuning.blurStrength}px`);
+    videoContainer.style.setProperty("--blur-saturation", tuning.blurSaturation);
+    videoContainer.style.setProperty("--focus-inner-radius", `${tuning.focusInnerRadius}%`);
+    videoContainer.style.setProperty("--focus-outer-radius", `${tuning.focusOuterRadius}%`);
+
+    if (recoveryMode) {
+      faceStatus.textContent = "Validação facial segura";
+      if (lookHint) lookHint.textContent = "Alinhe o rosto para capturar";
+      captureBtn.disabled = true;
+      captureBtn.textContent = "Preparando camera...";
+    }
+
+    flashToggle?.addEventListener("click", () => {
+      manualFlashEnabled = !manualFlashEnabled;
+      applyFlashState();
+    });
+
+    window.addEventListener("message", async (event) => {
+      if (!recoveryMode || !event.data || event.data.type !== "start-recovery-match") return;
+      const captureConfig = event.data.captureConfig || {};
+      recoveryCaptureTarget = {
+        width: Math.max(240, parseInt(captureConfig.width || 300, 10)),
+        height: Math.max(360, parseInt(captureConfig.height || 600, 10))
+      };
+      recoveryCaptureLocked = false;
+      captureBtn.disabled = true;
+      captureBtn.textContent = "Alinhe o rosto";
+      parent.postMessage({
+        type: "recovery-match-status",
+        ready: true,
+        matched: false,
+        message: "Camera pronta. Posicione o rosto dentro da silhueta e capture a foto."
+      }, "*");
+    });
 
     async function startVideo() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "user",
+            width: { ideal: 1280 },
+            height: { ideal: 960 }
+          }
+        });
         video.srcObject = stream;
       } catch (err) {
-        alert("Erro ao acessar a câmera: " + err.message);
+        alert("Erro ao acessar a camera: " + err.message);
       }
     }
 
-      function resetCountdown() {
-    if (autoShotTimeout) {
-      clearTimeout(autoShotTimeout);
-      autoShotTimeout = null;
+    function estimateFaceBrightness(box) {
+      if (!video.videoWidth || !video.videoHeight) return 255;
+
+      const sampleCanvas = document.createElement("canvas");
+      sampleCanvas.width = 40;
+      sampleCanvas.height = 40;
+      const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+      if (!sampleCtx) return 255;
+
+      const padX = box.width * 0.14;
+      const padY = box.height * 0.14;
+      const sx = Math.max(0, Math.floor(box.x + padX));
+      const sy = Math.max(0, Math.floor(box.y + padY));
+      const sw = Math.max(1, Math.min(video.videoWidth - sx, Math.floor(box.width - padX * 2)));
+      const sh = Math.max(1, Math.min(video.videoHeight - sy, Math.floor(box.height - padY * 2)));
+
+      sampleCtx.drawImage(video, sx, sy, sw, sh, 0, 0, sampleCanvas.width, sampleCanvas.height);
+      const pixels = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+      let total = 0;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        total += (pixels[i] * 0.299) + (pixels[i + 1] * 0.587) + (pixels[i + 2] * 0.114);
+      }
+
+      return total / (pixels.length / 4);
     }
-    countdownStart = null;
-    const cd = document.getElementById('countdown');
-    if (cd) cd.style.display = 'none';
-    // volta o texto do botão, mas mantém habilitado/desabilitado pelo loop
-    captureBtn.textContent = "📸 Capturar";
-     if (lookHint) lookHint.style.display = 'none';   // 👈 esconde o aviso
-  }
+
+    function estimateSceneBrightness() {
+      if (!video.videoWidth || !video.videoHeight) return 255;
+
+      const sampleCanvas = document.createElement("canvas");
+      sampleCanvas.width = 32;
+      sampleCanvas.height = 24;
+      const sampleCtx = sampleCanvas.getContext("2d", { willReadFrequently: true });
+      if (!sampleCtx) return 255;
+
+      sampleCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, sampleCanvas.width, sampleCanvas.height);
+      const pixels = sampleCtx.getImageData(0, 0, sampleCanvas.width, sampleCanvas.height).data;
+      let total = 0;
+
+      for (let i = 0; i < pixels.length; i += 4) {
+        total += (pixels[i] * 0.299) + (pixels[i + 1] * 0.587) + (pixels[i + 2] * 0.114);
+      }
+
+      return total / (pixels.length / 4);
+    }
+
+    function setAmbientFlashLevel(level) {
+      const nextLevel = Math.max(0, Math.min(1, level));
+      ambientFlashLevel += (nextLevel - ambientFlashLevel) * 0.58;
+      cameraShell?.style.setProperty("--flash-level", ambientFlashLevel.toFixed(3));
+      cameraShell?.classList.toggle("soft-flash", ambientFlashLevel > 0.08 && !manualFlashEnabled && !lowLightActive);
+    }
+
+    function applyFlashState() {
+      const flashOn = manualFlashEnabled || lowLightActive;
+      const appliedLevel = flashOn ? 1 : ambientFlashLevel;
+      cameraShell?.style.setProperty("--flash-level", appliedLevel.toFixed(3));
+      cameraShell?.classList.toggle("flash-mode", flashOn);
+      cameraShell?.classList.toggle("soft-flash", !flashOn && ambientFlashLevel > 0.08);
+      flashToggle?.classList.toggle("is-active", manualFlashEnabled);
+      parent.postMessage({ type: "camera-light-state", lowLight: flashOn }, "*");
+    }
+
+    function syncLowLightState(isLowLight) {
+      if (lowLightActive === isLowLight) return;
+      lowLightActive = isLowLight;
+      applyFlashState();
+    }
+
+    function resetCountdown() {
+      if (autoShotTimeout) {
+        clearTimeout(autoShotTimeout);
+        autoShotTimeout = null;
+      }
+      countdownStart = null;
+      const cd = document.getElementById("countdown");
+      if (cd) cd.style.display = "none";
+      captureBtn.textContent = recoveryMode ? "Alinhe o rosto" : "Capturar";
+      if (lookHint) lookHint.style.display = "none";
+      videoContainer.classList.remove("is-detected");
+      videoContainer.classList.remove("mesh-active");
+      videoContainer.classList.remove("focus-mode");
+      syncLowLightState(false);
+      if (meshTimeout) {
+        clearTimeout(meshTimeout);
+        meshTimeout = null;
+      }
+      targetZoom = 1;
+      targetPanX = 0;
+      targetPanY = 0;
+      meshPoints = null;
+      latestDetectionBox = null;
+      videoContainer.style.setProperty("--ring-x", "50%");
+      videoContainer.style.setProperty("--ring-y", "50%");
+    }
+
+    function animateTracking() {
+      currentZoom += (targetZoom - currentZoom) * 0.16;
+      currentPanX += (targetPanX - currentPanX) * 0.26;
+      currentPanY += (targetPanY - currentPanY) * 0.26;
+
+      videoContainer.style.setProperty("--camera-zoom", currentZoom.toFixed(3));
+      videoContainer.style.setProperty("--pan-x", `${currentPanX.toFixed(1)}px`);
+      videoContainer.style.setProperty("--pan-y", `${currentPanY.toFixed(1)}px`);
+
+      requestAnimationFrame(animateTracking);
+    }
+
+    function triggerFaceMesh() {
+      if (meshTimeout) clearTimeout(meshTimeout);
+      videoContainer.classList.add("mesh-active");
+      meshTimeout = setTimeout(() => {
+        videoContainer.classList.remove("mesh-active");
+        meshPoints = null;
+        meshTimeout = null;
+      }, 1000);
+    }
+
+    function drawFaceMesh(ctx, points) {
+      if (!points || points.length < 68) return;
+
+      const drawPath = (indices, close = false) => {
+        ctx.beginPath();
+        indices.forEach((index, i) => {
+          const point = points[index];
+          if (!point) return;
+          if (i === 0) ctx.moveTo(point.x, point.y);
+          else ctx.lineTo(point.x, point.y);
+        });
+        if (close) ctx.closePath();
+        ctx.stroke();
+      };
+
+      ctx.save();
+
+      if (tuning.meshStyle === "wireframe") {
+        ctx.strokeStyle = "rgba(140, 226, 255, 0.95)";
+        ctx.lineWidth = 1.6;
+        ctx.shadowColor = "rgba(34,211,238,0.35)";
+        ctx.shadowBlur = 10;
+        drawPath([0,2,4,6,8,10,12,14,16]);
+        drawPath([17,19,21]);
+        drawPath([22,24,26]);
+        drawPath([27,30,33]);
+        drawPath([36,39,42,45]);
+        drawPath([48,51,54,57,48], true);
+      } else if (tuning.meshStyle === "triangles") {
+        ctx.strokeStyle = "rgba(255,255,255,0.88)";
+        ctx.lineWidth = 1.1;
+        ctx.shadowColor = "rgba(96,165,250,0.35)";
+        ctx.shadowBlur = 8;
+        [[0,3,27],[3,8,30],[8,13,30],[13,16,27],[36,30,39],[42,30,45],[31,48,33],[33,54,35],[48,57,54],[21,27,22],[39,33,42]].forEach(([a,b,c]) => {
+          drawPath([a,b,c], true);
+        });
+      } else if (tuning.meshStyle === "scanner") {
+        ctx.strokeStyle = "rgba(34,197,94,0.92)";
+        ctx.lineWidth = 1.0;
+        ctx.shadowColor = "rgba(34,197,94,0.28)";
+        ctx.shadowBlur = 12;
+        drawPath([17,18,19,20,21]);
+        drawPath([22,23,24,25,26]);
+        drawPath([36,37,38,39,40,41], true);
+        drawPath([42,43,44,45,46,47], true);
+        drawPath([31,32,33,34,35]);
+        drawPath([48,49,50,51,52,53,54,55,56,57,58,59], true);
+        [27,30,33,51,57].forEach((idx) => {
+          const p = points[idx];
+          ctx.beginPath();
+          ctx.moveTo(p.x - 18, p.y);
+          ctx.lineTo(p.x + 18, p.y);
+          ctx.stroke();
+        });
+      } else if (tuning.meshStyle === "biometric") {
+        ctx.fillStyle = "rgba(255,255,255,0.98)";
+        ctx.shadowColor = "rgba(255,255,255,0.35)";
+        ctx.shadowBlur = 8;
+        [17,19,21,22,24,26,27,30,31,33,35,36,39,42,45,48,51,54,57,8].forEach((idx) => {
+          const p = points[idx];
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      } else {
+        ctx.strokeStyle = "rgba(255,255,255,0.92)";
+        ctx.lineWidth = 1.2;
+        ctx.shadowColor = "rgba(96,165,250,0.35)";
+        ctx.shadowBlur = 8;
+        drawPath([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]);
+        drawPath([17,18,19,20,21]);
+        drawPath([22,23,24,25,26]);
+        drawPath([27,28,29,30]);
+        drawPath([31,32,33,34,35]);
+        drawPath([36,37,38,39,40,41], true);
+        drawPath([42,43,44,45,46,47], true);
+        drawPath([48,49,50,51,52,53,54,55,56,57,58,59], true);
+        drawPath([60,61,62,63,64,65,66,67], true);
+        drawPath([36,39,30,42,45]);
+        drawPath([31,48,33,54,35]);
+        drawPath([21,27,22]);
+
+        ctx.fillStyle = "rgba(255,255,255,0.96)";
+        points.forEach((point) => {
+          ctx.beginPath();
+          ctx.arc(point.x, point.y, 1.5, 0, Math.PI * 2);
+          ctx.fill();
+        });
+      }
+
+      ctx.restore();
+    }
 
     async function loadModels() {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('/models/tiny_face_detector');
-      checkFaceLoop();
+      try {
+        await faceapi.nets.tinyFaceDetector.loadFromUri("/models/tiny_face_detector");
+        await faceapi.nets.faceLandmark68TinyNet.loadFromUri("/models/face_landmark_68_tiny");
+        checkFaceLoop();
+      } catch (_error) {
+        checkFaceLoop();
+      }
     }
 
     function checkFaceLoop() {
-      video.addEventListener('play', () => {
+      video.addEventListener("play", () => {
+        if (!trackingStarted) {
+          trackingStarted = true;
+          requestAnimationFrame(animateTracking);
+        }
+
         const displaySize = { width: video.videoWidth, height: video.videoHeight };
         faceapi.matchDimensions(canvas, displaySize);
 
         setInterval(async () => {
-          // onde você chama detectSingleFace:
-const detection = await faceapi.detectSingleFace(
-  video,
-  new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: 0.5 })
-);
+          const sceneBrightness = estimateSceneBrightness();
+          const softFlashLevel = sceneBrightness < 220 ? Math.min(1, ((220 - sceneBrightness) / 220) * 1.9) : 0;
+
+          const result = await faceapi.detectSingleFace(
+            video,
+            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: tuning.scoreThreshold })
+          ).withFaceLandmarks(true);
 
           const ctx = canvas.getContext("2d");
-ctx.clearRect(0, 0, canvas.width, canvas.height);
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          const cd = document.getElementById("countdown");
 
-const cd = document.getElementById('countdown');
+          if (result && result.detection && result.detection.box) {
+            if (!manualFlashEnabled) {
+              setAmbientFlashLevel(0);
+            }
+            const detection = result.detection;
+            latestDetectionBox = {
+              x: detection.box.x,
+              y: detection.box.y,
+              width: detection.box.width,
+              height: detection.box.height
+            };
+            const currentDisplaySize = { width: video.videoWidth, height: video.videoHeight };
+            const { width, height } = detection.box;
+            const faceWidthRatio = width / currentDisplaySize.width;
+            const faceHeightRatio = height / currentDisplaySize.height;
+            const ratio = Math.max(faceWidthRatio, faceHeightRatio);
+            const goodScore = (detection.score ?? 1) >= tuning.goodScore;
+            const faceBrightness = estimateFaceBrightness(detection.box);
+            const lowLightDetected = sceneBrightness < 120 || faceBrightness < 105;
+            syncLowLightState(lowLightDetected);
 
-if (detection && detection.box) {
-  lastDetection = detection.box;
+            if (ratio > tuning.maxRatio) {
+              resetCountdown();
+              captureBtn.disabled = true;
+              captureBtn.textContent = "Muito perto!";
+              faceStatus.textContent = "Rosto muito proximo, afaste-se levemente.";
+            } else if (ratio >= tuning.minRatio && goodScore) {
+              captureBtn.disabled = false;
+              videoContainer.classList.add("is-detected");
 
-  const displaySize = { width: video.videoWidth, height: video.videoHeight };
-  const { width, height } = detection.box;
-  const faceWidthRatio  = width  / displaySize.width;
-  const faceHeightRatio = height / displaySize.height;
+              const faceCenterX = detection.box.x + (detection.box.width / 2);
+              const faceCenterY = detection.box.y + (detection.box.height / 2);
+              const nosePoints = result.landmarks?.positions || [];
+              const noseBridge = nosePoints[30];
+              const noseTip = nosePoints[33];
+              const noseX = noseTip?.x ?? noseBridge?.x ?? faceCenterX;
+              const noseY = noseTip?.y ?? noseBridge?.y ?? faceCenterY;
+              const ringRect = ring.getBoundingClientRect();
+              const containerRect = videoContainer.getBoundingClientRect();
+              const ringCenterX = ringRect.left - containerRect.left + (ringRect.width / 2);
+              const ringCenterY = ringRect.top - containerRect.top + (ringRect.height / 2);
+              const scaleX = containerRect.width / currentDisplaySize.width;
+              const scaleY = containerRect.height / currentDisplaySize.height;
+              const faceCenterPxX = (currentDisplaySize.width - faceCenterX) * scaleX;
+              const faceCenterPxY = faceCenterY * scaleY;
+              const noseCenterPxX = (currentDisplaySize.width - noseX) * scaleX;
+              const noseCenterPxY = noseY * scaleY;
+              const faceWidthPx = detection.box.width * scaleX;
+              const faceHeightPx = detection.box.height * scaleY;
+              const boxDistanceX = ringCenterX - faceCenterPxX;
+              const boxDistanceY = ringCenterY - faceCenterPxY;
+              const noseDistanceX = ringCenterX - noseCenterPxX;
+              const noseDistanceY = ringCenterY - noseCenterPxY;
+              const absBoxDistanceX = Math.abs(boxDistanceX);
+              const absBoxDistanceY = Math.abs(boxDistanceY);
+              const absNoseDistanceX = Math.abs(noseDistanceX);
+              const absNoseDistanceY = Math.abs(noseDistanceY);
+              const engageThresholdX = ringRect.width * 0.40;
+              const engageThresholdY = ringRect.height * 0.36;
+              const lockThresholdX = ringRect.width * 0.16;
+              const lockThresholdY = ringRect.height * 0.16;
+              const nearSilhouette =
+                absNoseDistanceX <= lockThresholdX &&
+                absNoseDistanceY <= lockThresholdY;
+              const shouldTrack =
+                absBoxDistanceX <= engageThresholdX &&
+                absBoxDistanceY <= engageThresholdY;
+              const desiredZoomX = (ringRect.width * tuning.zoomWidthFactor) / Math.max(faceWidthPx, 1);
+              const desiredZoomY = (ringRect.height * tuning.zoomHeightFactor) / Math.max(faceHeightPx, 1);
+              const zoomTarget = Math.min(desiredZoomX, desiredZoomY);
+              const zoomBoost =
+                shouldTrack && !nearSilhouette
+                  ? 1 + Math.min(0.12, ((absBoxDistanceX / engageThresholdX) + (absBoxDistanceY / engageThresholdY)) * 0.04)
+                  : 1;
+              const zoomLevel = Math.min(
+                tuning.maxZoom,
+                Math.max(tuning.minZoom, zoomTarget * zoomBoost)
+              );
+              const noseGuidance = (() => {
+                if (absNoseDistanceY > lockThresholdY * 1.15) {
+                  return noseDistanceY > 0 ? "Abaixe a cabeça." : "Levante a cabeça.";
+                }
+                if (absNoseDistanceX > lockThresholdX * 1.15) {
+                  return noseDistanceX > 0 ? "Mova o rosto um pouco para a direita." : "Mova o rosto um pouco para a esquerda.";
+                }
+                if (absBoxDistanceY > engageThresholdY * 0.75) {
+                  return boxDistanceY > 0 ? "Aproxime o rosto mais para cima da silhueta." : "Desça um pouco o rosto.";
+                }
+                if (absBoxDistanceX > engageThresholdX * 0.75) {
+                  return boxDistanceX > 0 ? "Ajuste o rosto levemente para a direita." : "Ajuste o rosto levemente para a esquerda.";
+                }
+                return "Centralize o nariz na silhueta.";
+              })();
 
-  // limites de enquadramento (ajuste se quiser)
-  const MIN_RATIO = 0.40; // muito distante abaixo disso
-  const MAX_RATIO = 0.70; // muito perto acima disso
-  const ratio = Math.max(faceWidthRatio, faceHeightRatio);
+              targetZoom = zoomLevel;
+              if (shouldTrack) {
+                const normalizedX = Math.max(-1, Math.min(1, noseDistanceX / engageThresholdX));
+                const normalizedY = Math.max(-1, Math.min(1, noseDistanceY / engageThresholdY));
+                const easingX = Math.sign(normalizedX) * Math.pow(Math.abs(normalizedX), 0.84);
+                const easingY = Math.sign(normalizedY) * Math.pow(Math.abs(normalizedY), 0.84);
+                const panStrength = nearSilhouette ? 0.82 : 1.04;
+                targetPanX = Math.max(-132, Math.min(132, easingX * ringRect.width * 0.36 * panStrength));
+                targetPanY = Math.max(-142, Math.min(142, easingY * ringRect.height * 0.30 * panStrength));
+              } else {
+                targetPanX = 0;
+                targetPanY = 0;
+              }
 
-  // (opcional) exigir "confiança" mínima do detector para chamar de nítido
-  const goodScore = (detection.score ?? 1) >= 0.6;
+              videoContainer.classList.toggle("focus-mode", shouldTrack && zoomLevel > 1.08);
+              const meshReady = ratio >= (tuning.minRatio + 0.06) && goodScore;
+              if (meshReady && !videoContainer.classList.contains("mesh-active")) {
+                const resized = faceapi.resizeResults(result, currentDisplaySize);
+                meshPoints = resized.landmarks?.positions || null;
+                triggerFaceMesh();
+              }
 
-  if (ratio > MAX_RATIO) {
-    // muito perto → zera contagem
-    resetCountdown();
-    captureBtn.disabled = true;
-    captureBtn.textContent = "Muito perto!";
-    faceStatus.textContent = "Rosto muito próximo, afaste-se levemente.";
-     if (lookHint) lookHint.style.display = 'none';   // 👈
-  } else if (ratio >= MIN_RATIO && goodScore) {
-    // enquadramento ok → habilita e inicia/atualiza contagem
-    captureBtn.disabled = false;
+              if (recoveryMode) {
+                parent.postMessage({
+                  type: "recovery-match-status",
+                  ready: true,
+                  matched: nearSilhouette,
+                  message: nearSilhouette ? "Rosto alinhado. A captura automatica vai iniciar." : noseGuidance
+                }, "*");
+              }
 
-    if (!countdownStart) {
-      countdownStart = performance.now();
-      // agenda captura automática
-      autoShotTimeout = setTimeout(() => {
-        capturePhoto();
-        resetCountdown();
-      }, COUNTDOWN_SECONDS * 1000);
-      if (cd) cd.style.display = 'block';
+              if (nearSilhouette) {
+                if (tuning.autoCaptureEnabled && !countdownStart && (!recoveryMode || !recoveryCaptureLocked)) {
+                  countdownStart = performance.now();
+                  autoShotTimeout = setTimeout(() => {
+                    capturePhoto();
+                    if (!recoveryMode) resetCountdown();
+                  }, COUNTDOWN_SECONDS * 1000);
+                }
+              } else if (countdownStart || autoShotTimeout) {
+                if (autoShotTimeout) {
+                  clearTimeout(autoShotTimeout);
+                  autoShotTimeout = null;
+                }
+                countdownStart = null;
+              }
 
-       if (lookHint) {
-      lookHint.style.display = 'block';
-      lookHint.textContent = "Olhe para a câmera 👀";
-    }
-
-    }
-
-    // atualiza UI da contagem
-    const elapsed = (performance.now() - countdownStart) / 1000;
-    const left = Math.max(0, Math.ceil(COUNTDOWN_SECONDS - elapsed));
-    captureBtn.textContent = `📸 Capturar (auto em ${left}s)`;
-    faceStatus.textContent = "Rosto detectado com boa nitidez.";
-    if (cd) cd.textContent = left.toString();
-     if (lookHint) {
-    lookHint.style.display = 'block';
-    lookHint.textContent = "Olhe para a câmera 👀";
-  }
-  } else {
-    // distante ou score baixo → zera contagem
-    resetCountdown();
-    captureBtn.disabled = true;
-    captureBtn.textContent = "Aproxime o rosto...";
-    faceStatus.textContent = goodScore
-      ? "Muito distante, aproxime-se da câmera."
-      : "Iluminação/posição ruim. Ajuste e aproxime-se.";
-       if (lookHint) lookHint.style.display = 'none';
-  }
-
-  // desenha a detecção
-  const resized = faceapi.resizeResults(detection, displaySize);
-  faceapi.draw.drawDetections(canvas, resized);
-
-} else {
-  // sem rosto → zera contagem
-  lastDetection = null;
-  resetCountdown();
-  captureBtn.disabled = true;
-  captureBtn.textContent = "Sem rosto...";
-  faceStatus.textContent = "Nenhum rosto detectado.";
-   if (lookHint) lookHint.style.display = 'none';   // 👈
-}
-
+              const elapsed = countdownStart ? (performance.now() - countdownStart) / 1000 : 0;
+              const left = Math.max(0, Math.ceil(COUNTDOWN_SECONDS - elapsed));
+              if (!nearSilhouette) {
+                captureBtn.textContent = "Alinhe o rosto";
+                faceStatus.textContent = noseGuidance;
+                if (recoveryMode) captureBtn.disabled = true;
+                if (lookHint) {
+                  lookHint.style.display = "block";
+                  lookHint.textContent = noseGuidance;
+                }
+                if (cd) cd.style.display = "none";
+              } else {
+                captureBtn.textContent = recoveryMode ? (tuning.autoCaptureEnabled ? `Captura automatica em ${left}s` : "Capturar foto") : (tuning.autoCaptureEnabled ? `Capturar (auto em ${left}s)` : "Capturar");
+                faceStatus.textContent = recoveryMode ? "Rosto pronto para captura." : "Rosto detectado com boa nitidez.";
+                if (recoveryMode) captureBtn.disabled = recoveryCaptureLocked;
+                if (lookHint) {
+                  lookHint.style.display = "block";
+                  lookHint.textContent = recoveryMode ? (tuning.autoCaptureEnabled ? "Mantenha o rosto parado para capturar" : "Capture quando estiver pronto") : "Olhe para a camera";
+                }
+                if (cd) {
+                  if (tuning.autoCaptureEnabled && (!recoveryMode || !recoveryCaptureLocked)) {
+                    cd.style.display = "block";
+                    cd.textContent = left.toString();
+                  } else {
+                    cd.style.display = "none";
+                  }
+                }
+              }
+              if (videoContainer.classList.contains("mesh-active") && meshPoints) {
+                drawFaceMesh(ctx, meshPoints);
+              }
+            } else {
+              resetCountdown();
+              syncLowLightState(false);
+              if (!manualFlashEnabled) setAmbientFlashLevel(softFlashLevel);
+              captureBtn.disabled = true;
+              captureBtn.textContent = "Aproxime o rosto...";
+              faceStatus.textContent = goodScore ? "Muito distante, aproxime-se da camera." : "Iluminacao ou posicao ruim. Ajuste e aproxime-se.";
+            }
+          } else {
+            resetCountdown();
+            syncLowLightState(false);
+            if (!manualFlashEnabled) setAmbientFlashLevel(softFlashLevel);
+            captureBtn.disabled = true;
+            captureBtn.textContent = "Sem rosto...";
+            faceStatus.textContent = "Nenhum rosto detectado.";
+          }
         }, 700);
       });
     }
 
     function capturePhoto() {
-  if (autoShotTimeout) { clearTimeout(autoShotTimeout); autoShotTimeout = null; }
-  countdownStart = null;
-  const cd = document.getElementById('countdown');
-  if (cd) cd.style.display = 'none';
-  if (lookHint) lookHint.style.display = 'none';   // 👈
+      if (autoShotTimeout) {
+        clearTimeout(autoShotTimeout);
+        autoShotTimeout = null;
+      }
+      countdownStart = null;
+      const cd = document.getElementById("countdown");
+      if (cd) cd.style.display = "none";
+      if (lookHint) lookHint.style.display = "none";
 
-  const ctx = canvas.getContext("2d");
-  const canvasWidth = 150, canvasHeight = 300;
-  canvas.width = canvasWidth; canvas.height = canvasHeight;
-  ctx.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-  const base64 = canvas.toDataURL("image/png");
-  parent.postMessage({ photoBase64: base64 }, "*");
-}
+      const ctx = canvas.getContext("2d");
+      const canvasWidth = recoveryMode ? recoveryCaptureTarget.width : 600;
+      const canvasHeight = recoveryMode ? recoveryCaptureTarget.height : 800;
+      canvas.width = canvasWidth;
+      canvas.height = canvasHeight;
 
-    
+      const sourceWidth = video.videoWidth || 1280;
+      const sourceHeight = video.videoHeight || 720;
+      let sx = 0;
+      let sy = 0;
+      let sw = sourceWidth;
+      let sh = sourceHeight;
+
+      if (recoveryMode && latestDetectionBox) {
+        const targetRatio = canvasWidth / canvasHeight;
+        const face = latestDetectionBox;
+        const faceCenterX = face.x + (face.width / 2);
+        const faceCenterY = face.y + (face.height / 2);
+
+        sw = Math.min(sourceWidth, Math.max(face.width * 2.0, 220));
+        sh = sw / targetRatio;
+
+        if (sh < face.height * 1.9) {
+          sh = Math.min(sourceHeight, face.height * 1.9);
+          sw = sh * targetRatio;
+        }
+
+        sx = faceCenterX - (sw / 2);
+        sy = faceCenterY - (sh / 2);
+
+        if (sx < 0) sx = 0;
+        if (sy < 0) sy = 0;
+        if (sx + sw > sourceWidth) sx = sourceWidth - sw;
+        if (sy + sh > sourceHeight) sy = sourceHeight - sh;
+
+        sx = Math.max(0, sx);
+        sy = Math.max(0, sy);
+        sw = Math.min(sw, sourceWidth - sx);
+        sh = Math.min(sh, sourceHeight - sy);
+      } else {
+        const sourceRatio = sourceWidth / sourceHeight;
+        const targetRatio = canvasWidth / canvasHeight;
+
+        if (sourceRatio > targetRatio) {
+          sw = sourceHeight * targetRatio;
+          sx = (sourceWidth - sw) / 2;
+        } else {
+          sh = sourceWidth / targetRatio;
+          sy = (sourceHeight - sh) / 2;
+        }
+      }
+
+      ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvasWidth, canvasHeight);
+      const base64 = canvas.toDataURL("image/png");
+      if (recoveryMode) {
+        recoveryCaptureLocked = true;
+        captureBtn.disabled = true;
+        captureBtn.textContent = "Foto capturada";
+        parent.postMessage({
+          type: "recovery-capture",
+          photoBase64: base64,
+          meta: {
+            outputWidth: canvasWidth,
+            outputHeight: canvasHeight,
+            sourceWidth,
+            sourceHeight,
+            cropX: Math.round(sx),
+            cropY: Math.round(sy),
+            cropWidth: Math.round(sw),
+            cropHeight: Math.round(sh),
+            detectedFace: latestDetectionBox ? {
+              x: Math.round(latestDetectionBox.x),
+              y: Math.round(latestDetectionBox.y),
+              width: Math.round(latestDetectionBox.width),
+              height: Math.round(latestDetectionBox.height)
+            } : null
+          }
+        }, "*");
+      } else {
+        parent.postMessage({ photoBase64: base64 }, "*");
+      }
+    }
 
     startVideo().then(loadModels);
   </script>
