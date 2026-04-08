@@ -1,5 +1,7 @@
 require "socket"
 require "net/http"
+require "rbconfig"
+require "English"
 
 module FaceBackend
   class Service
@@ -75,15 +77,30 @@ module FaceBackend
         success = system(*command)
         return if success
 
-        raise "Falha ao preparar o backend facial."
+        exit_status = $CHILD_STATUS&.exitstatus
+        command_str = command.join(" ")
+        linux_hint = "No Ubuntu/Debian, instale: sudo apt install -y python3.12-venv python3-pip"
+        raise "Falha ao preparar o backend facial (exit=#{exit_status}). Comando: #{command_str}. #{linux_hint}"
       end
 
       def py_launcher_path
-        ENV.fetch("FACE_BACKEND_PY_LAUNCHER", "py")
+        default = windows_host? ? "py" : "python3"
+        ENV.fetch("FACE_BACKEND_PY_LAUNCHER", default)
       end
 
       def venv_python_path
-        Rails.root.join(".face_backend_venv", "Scripts", "python.exe").to_s
+        ENV.fetch(
+          "FACE_BACKEND_VENV_PYTHON",
+          if windows_host?
+            Rails.root.join(".face_backend_venv", "Scripts", "python.exe").to_s
+          else
+            Rails.root.join(".face_backend_venv", "bin", "python").to_s
+          end
+        )
+      end
+
+      def windows_host?
+        /mswin|mingw|cygwin/i.match?(RbConfig::CONFIG["host_os"])
       end
     end
   end

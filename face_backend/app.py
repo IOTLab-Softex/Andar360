@@ -33,8 +33,10 @@ class FaceEngine:
         height, width = image.shape[:2]
         attempts = [image]
 
-        # Retry with gentle upscaling for narrow/low-resolution profile photos.
-        if min(width, height) < 320:
+        # Retry with upscaling when face is small or profile photo is distant.
+        if min(width, height) < 900:
+            attempts.append(cv2.resize(image, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC))
+        if min(width, height) < 420:
             attempts.append(cv2.resize(image, None, fx=2.0, fy=2.0, interpolation=cv2.INTER_CUBIC))
 
         for candidate in attempts:
@@ -71,6 +73,9 @@ class FaceEngine:
 
     def extract_feature(self, image_base64):
         image = self.decode_image(image_base64)
+        return self.extract_feature_from_image(image)
+
+    def extract_feature_from_image(self, image):
         image_height, image_width = image.shape[:2]
         face = self.detect_largest_face(image)
         if face is None:
@@ -100,8 +105,19 @@ class FaceEngine:
                 },
             }
 
-        probe_feature, probe_error, probe_info = self.extract_feature(probe_image_base64)
-        if probe_error:
+        probe_image = self.decode_image(probe_image_base64)
+        probe_feature, probe_error, probe_info = self.extract_feature_from_image(probe_image)
+        probe_feature_flipped = None
+        probe_error_flipped = None
+        probe_info_flipped = None
+
+        try:
+            flipped_image = cv2.flip(probe_image, 1)
+            probe_feature_flipped, probe_error_flipped, probe_info_flipped = self.extract_feature_from_image(flipped_image)
+        except Exception:
+            probe_feature_flipped = None
+
+        if probe_error and probe_feature_flipped is None:
             return {
                 "matched": False,
                 "message": "Nao foi possivel localizar o rosto capturado. Ajuste a camera e tente novamente.",
@@ -111,12 +127,22 @@ class FaceEngine:
                 "debug": {
                     "reference": reference_info,
                     "probe": probe_info,
+                    "probe_flipped": probe_info_flipped,
                 },
             }
 
-        cosine_score = float(self.recognizer.match(reference_feature, probe_feature, cv2.FaceRecognizerSF_FR_COSINE))
-        l2_distance = float(self.recognizer.match(reference_feature, probe_feature, cv2.FaceRecognizerSF_FR_NORM_L2))
-        matched = cosine_score >= 0.42 and l2_distance <= 1.10
+        candidates = []
+        if probe_feature is not None:
+            cosine_score = float(self.recognizer.match(reference_feature, probe_feature, cv2.FaceRecognizerSF_FR_COSINE))
+            l2_distance = float(self.recognizer.match(reference_feature, probe_feature, cv2.FaceRecognizerSF_FR_NORM_L2))
+            candidates.append(("probe", cosine_score, l2_distance, probe_info))
+        if probe_feature_flipped is not None:
+            cosine_score_flipped = float(self.recognizer.match(reference_feature, probe_feature_flipped, cv2.FaceRecognizerSF_FR_COSINE))
+            l2_distance_flipped = float(self.recognizer.match(reference_feature, probe_feature_flipped, cv2.FaceRecognizerSF_FR_NORM_L2))
+            candidates.append(("probe_flipped", cosine_score_flipped, l2_distance_flipped, probe_info_flipped))
+
+        best_variant, cosine_score, l2_distance, _best_probe_info = max(candidates, key=lambda item: (item[1], -item[2]))
+        matched = cosine_score >= 0.39 and l2_distance <= 1.18
 
         confidence = max(0.0, min(1.0, (cosine_score - 0.28) / 0.40))
         return {
@@ -128,6 +154,8 @@ class FaceEngine:
             "debug": {
                 "reference": reference_info,
                 "probe": probe_info,
+                "probe_flipped": probe_info_flipped,
+                "best_variant": best_variant,
             },
         }
 

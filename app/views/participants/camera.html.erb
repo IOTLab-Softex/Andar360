@@ -49,6 +49,18 @@
       transition: background .18s ease, border-color .18s ease, box-shadow .18s ease, color .18s ease;
     }
 
+    .recovery-mode .camera-shell {
+      grid-template-rows: minmax(0, 1fr) auto;
+      gap: 10px;
+      max-height: calc(100dvh - 20px);
+      padding: 12px;
+    }
+
+    .recovery-mode h2,
+    .recovery-mode .camera-subtitle {
+      display: none;
+    }
+
     .camera-shell.flash-mode {
       --flash-level: 1;
       background: #ffffff;
@@ -83,6 +95,14 @@
       box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
     }
 
+    .recovery-mode #videoContainer {
+      width: min(100%, 920px);
+      height: min(100%, 78dvh);
+      border-radius: 16px;
+      --ring-w: clamp(210px, 34vw, 290px);
+      --ring-h: clamp(280px, 46vw, 380px);
+    }
+
     #video, #canvas {
       width: 100%;
       height: 100%;
@@ -92,6 +112,11 @@
       transform: translate(var(--pan-x), var(--pan-y)) scaleX(-1) scale(var(--camera-zoom));
       transform-origin: center center;
       transition: transform .48s cubic-bezier(.22,.8,.28,1);
+    }
+
+    .recovery-mode #video,
+    .recovery-mode #canvas {
+      border-radius: 16px;
     }
 
     #canvas {
@@ -376,10 +401,27 @@
       }
 
       #captureBtn { width: 100%; }
+
+      .recovery-mode .camera-shell {
+        padding: 8px 8px 12px;
+        gap: 8px;
+      }
+
+      .recovery-mode #videoContainer {
+        height: min(100%, 76dvh);
+        border-radius: 12px;
+        --ring-w: min(66vw, 280px);
+        --ring-h: min(86vw, 390px);
+      }
+
+      .recovery-mode #video,
+      .recovery-mode #canvas {
+        border-radius: 12px;
+      }
     }
   </style>
 </head>
-<body>
+<body class="<%= @camera_recovery_mode ? "recovery-mode" : "" %>">
   <div class="camera-shell">
     <h2 id="faceStatus">Detectando rosto...</h2>
     <p class="camera-subtitle">Mantenha o rosto centralizado e bem iluminado para uma captura mais natural e sem distorção.</p>
@@ -458,6 +500,8 @@
     let currentPanX = 0;
     let currentPanY = 0;
     let trackingStarted = false;
+    let detectionInterval = null;
+    let detectionInFlight = false;
     let meshTimeout = null;
     let meshPoints = null;
     let lowLightActive = false;
@@ -483,7 +527,6 @@
     videoContainer.style.setProperty("--blur-saturation", tuning.blurSaturation);
     videoContainer.style.setProperty("--focus-inner-radius", `${tuning.focusInnerRadius}%`);
     videoContainer.style.setProperty("--focus-outer-radius", `${tuning.focusOuterRadius}%`);
-
     if (recoveryMode) {
       faceStatus.textContent = "Validação facial segura";
       if (lookHint) lookHint.textContent = "Alinhe o rosto para capturar";
@@ -514,9 +557,75 @@
       }, "*");
     });
 
+    window.addEventListener("message", (event) => {
+      if (!recoveryMode || !event.data || event.data.type !== "unlock-recovery-capture") return;
+      recoveryCaptureLocked = false;
+      captureBtn.disabled = true;
+      captureBtn.textContent = "Alinhe o rosto";
+      parent.postMessage({
+        type: "recovery-match-status",
+        ready: true,
+        matched: false,
+        message: "Ajuste o rosto e tente novamente."
+      }, "*");
+    });
+
+    function reportCameraError(message) {
+      faceStatus.textContent = message;
+      captureBtn.disabled = true;
+      captureBtn.textContent = "Camera indisponivel";
+      if (lookHint) {
+        lookHint.style.display = "block";
+        lookHint.textContent = "Nao foi possivel iniciar a camera";
+      }
+      if (recoveryMode) {
+        parent.postMessage({
+          type: "recovery-match-status",
+          ready: false,
+          matched: false,
+          message
+        }, "*");
+      }
+    }
+
+    function getUserMediaCompat(constraints) {
+      if (navigator.mediaDevices && typeof navigator.mediaDevices.getUserMedia === "function") {
+        return navigator.mediaDevices.getUserMedia(constraints);
+      }
+
+      const localHostnames = ["localhost", "127.0.0.1", "::1"];
+      if (!window.isSecureContext && !localHostnames.includes(window.location.hostname)) {
+        return Promise.reject(
+          new Error("O navegador bloqueou a camera em HTTP. Use HTTPS ou acesse por localhost.")
+        );
+      }
+
+      const legacyGetUserMedia =
+        navigator.getUserMedia ||
+        navigator.webkitGetUserMedia ||
+        navigator.mozGetUserMedia ||
+        navigator.msGetUserMedia;
+
+      if (!legacyGetUserMedia) {
+        return Promise.reject(new Error("Navegador sem suporte a camera."));
+      }
+
+      return new Promise((resolve, reject) => {
+        legacyGetUserMedia.call(navigator, constraints, resolve, reject);
+      });
+    }
+
+    const allowInsecureCamera =
+      <%= ((ENV["ALLOW_INSECURE_CAMERA_FOR_TESTS"] == "true") || params[:allow_insecure] == "1") ? "true" : "false" %>;
+
     async function startVideo() {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        const localHostnames = ["localhost", "127.0.0.1", "::1"];
+        if (!allowInsecureCamera && !window.isSecureContext && !localHostnames.includes(window.location.hostname)) {
+          throw new Error("A camera exige conexao segura (HTTPS) ou acesso por localhost.");
+        }
+
+        const stream = await getUserMediaCompat({
           video: {
             facingMode: "user",
             width: { ideal: 1280 },
@@ -524,8 +633,11 @@
           }
         });
         video.srcObject = stream;
+        return true;
       } catch (err) {
-        alert("Erro ao acessar a camera: " + err.message);
+        const message = `Erro ao acessar a camera: ${err?.message || "permissao negada ou dispositivo indisponivel."}`;
+        reportCameraError(message);
+        return false;
       }
     }
 
@@ -743,16 +855,25 @@
 
     async function loadModels() {
       try {
+        faceStatus.textContent = "Preparando reconhecimento facial...";
         await faceapi.nets.tinyFaceDetector.loadFromUri("/models/tiny_face_detector");
         await faceapi.nets.faceLandmark68TinyNet.loadFromUri("/models/face_landmark_68_tiny");
         checkFaceLoop();
       } catch (_error) {
-        checkFaceLoop();
+        faceStatus.textContent = "Falha ao carregar os modelos faciais.";
+        captureBtn.disabled = true;
+        captureBtn.textContent = "Reconhecimento indisponivel";
       }
     }
 
     function checkFaceLoop() {
-      video.addEventListener("play", () => {
+      const startLoop = () => {
+        if (detectionInterval) return;
+        if (!video.videoWidth || !video.videoHeight) {
+          setTimeout(startLoop, 120);
+          return;
+        }
+
         if (!trackingStarted) {
           trackingStarted = true;
           requestAnimationFrame(animateTracking);
@@ -761,13 +882,20 @@
         const displaySize = { width: video.videoWidth, height: video.videoHeight };
         faceapi.matchDimensions(canvas, displaySize);
 
-        setInterval(async () => {
+        detectionInterval = setInterval(async () => {
+          if (detectionInFlight) return;
+          detectionInFlight = true;
+
+          try {
           const sceneBrightness = estimateSceneBrightness();
           const softFlashLevel = sceneBrightness < 220 ? Math.min(1, ((220 - sceneBrightness) / 220) * 1.9) : 0;
 
           const result = await faceapi.detectSingleFace(
             video,
-            new faceapi.TinyFaceDetectorOptions({ inputSize: 416, scoreThreshold: tuning.scoreThreshold })
+            new faceapi.TinyFaceDetectorOptions({
+              inputSize: recoveryMode ? 320 : 416,
+              scoreThreshold: tuning.scoreThreshold
+            })
           ).withFaceLandmarks(true);
 
           const ctx = canvas.getContext("2d");
@@ -962,8 +1090,14 @@
             captureBtn.textContent = "Sem rosto...";
             faceStatus.textContent = "Nenhum rosto detectado.";
           }
-        }, 700);
-      });
+          } finally {
+            detectionInFlight = false;
+          }
+        }, 380);
+      };
+
+      video.addEventListener("play", startLoop, { once: true });
+      if (!video.paused && video.readyState >= 2) startLoop();
     }
 
     function capturePhoto() {
@@ -1059,7 +1193,10 @@
       }
     }
 
-    startVideo().then(loadModels);
+    startVideo().then((videoStarted) => {
+      if (!videoStarted) return;
+      loadModels();
+    });
   </script>
 </body>
 </html>

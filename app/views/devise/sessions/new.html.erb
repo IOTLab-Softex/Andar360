@@ -23,7 +23,12 @@
         <%= f.label :password do %>
           <i class="fa-solid fa-key"></i> Senha
         <% end %>
-        <%= f.password_field :password, autocomplete: "current-password", class: "login-input" %>
+        <div class="login-password-wrap">
+          <%= f.password_field :password, autocomplete: "current-password", class: "login-input", id: "login-password-input" %>
+          <button type="button" id="toggle-login-password" class="login-password-toggle" aria-label="Mostrar senha" aria-pressed="false">
+            <i class="fa-regular fa-eye" aria-hidden="true"></i>
+          </button>
+        </div>
       </div>
 
       <% if devise_mapping.rememberable? %>
@@ -121,7 +126,7 @@
           <span>Posicione o rosto para iniciar a validação facial.</span>
         </div>
         <div id="recovery-camera-wrapper" class="password-recovery-camera">
-          <iframe id="recovery-camera-frame" src="/camera?recovery=1"></iframe>
+          <iframe id="recovery-camera-frame" src="about:blank" data-camera-src="/camera?recovery=1" allow="camera *"></iframe>
         </div>
       </div>
 
@@ -155,6 +160,19 @@
     }
 
     document.querySelectorAll(".js-cpf-mask").forEach(applyCpfMask);
+    const loginPasswordInput = document.getElementById("login-password-input");
+    const toggleLoginPassword = document.getElementById("toggle-login-password");
+
+    toggleLoginPassword?.addEventListener("click", () => {
+      if (!loginPasswordInput) return;
+      const showing = loginPasswordInput.type === "text";
+      loginPasswordInput.type = showing ? "password" : "text";
+      toggleLoginPassword.setAttribute("aria-pressed", String(!showing));
+      toggleLoginPassword.setAttribute("aria-label", showing ? "Mostrar senha" : "Ocultar senha");
+      toggleLoginPassword.innerHTML = showing
+        ? '<i class="fa-regular fa-eye" aria-hidden="true"></i>'
+        : '<i class="fa-regular fa-eye-slash" aria-hidden="true"></i>';
+    });
 
     const modal = document.getElementById("password-recovery-modal");
     const openBtn = document.getElementById("open-recovery-modal");
@@ -202,6 +220,7 @@
         chip.classList.toggle("is-active", isCurrent);
         chip.classList.toggle("is-done", order.indexOf(chip.dataset.flowChip) < order.indexOf(step));
       });
+      modal?.classList.toggle("is-camera-stage", step === "camera");
       syncPrimaryAction();
     }
 
@@ -346,11 +365,13 @@
       setFeedback(cameraFeedback, "Posicione o rosto e capture uma foto para validação facial.", "pending");
       setFeedback(sendFeedback, "Validação facial concluída. Agora envie o link seguro de redefinição.", "success");
       resetSecurityResult();
-      if (cameraFrame) cameraFrame.src = "/camera?recovery=1";
+      if (cameraFrame) cameraFrame.src = "about:blank";
+      frameReady = false;
     }
 
     function closeModal() {
       modal.hidden = true;
+      modal.classList.remove("is-camera-stage");
       document.body.classList.remove("v-no-scroll");
       chooserStep.classList.add("is-active");
       supportStep.classList.remove("is-active");
@@ -373,6 +394,21 @@
           width: recoveryPayload.photo_width || 300,
           height: recoveryPayload.photo_height || 600
         }
+      }, "*");
+    }
+
+    function ensureCameraFrameLoaded() {
+      if (!cameraFrame) return;
+      const baseSrc = cameraFrame.dataset.cameraSrc || "/camera?recovery=1";
+      if (cameraFrame.src.includes("/camera?recovery=1")) return;
+      frameReady = false;
+      cameraFrame.src = `${baseSrc}&t=${Date.now()}`;
+    }
+
+    function unlockRecoveryCapture() {
+      if (!frameReady || !recoveryPayload) return;
+      cameraFrame.contentWindow?.postMessage({
+        type: "unlock-recovery-capture"
       }, "*");
     }
 
@@ -471,6 +507,7 @@
         if (!serviceOnline) return;
 
         setStage("camera");
+        ensureCameraFrameLoaded();
         setFeedback(cameraFeedback, "Perfil carregado. Posicione o rosto e aguarde a captura automatica para validar.", "pending");
         startRecoveryValidation();
       } catch (_error) {
@@ -564,7 +601,7 @@
         recoveryStageLocked = false;
         setStage("camera");
         setFeedback(cameraFeedback, payload?.message || "Nao foi possivel validar o rosto com seguranca. Posicione o rosto e tente novamente.", "error");
-        startRecoveryValidation();
+        unlockRecoveryCapture();
       }).finally(() => {
         verificationInFlight = false;
         syncPrimaryAction();
@@ -611,6 +648,37 @@
     text-decoration: underline;
   }
 
+  .login-password-wrap {
+    position: relative;
+  }
+
+  .login-password-wrap .login-input {
+    padding-right: 44px;
+  }
+
+  .login-password-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 999px;
+    background: transparent;
+    color: #000;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: color .15s ease, background-color .15s ease;
+  }
+
+  .login-password-toggle:hover {
+    color: #000;
+    background: rgba(148, 163, 184, 0.18);
+  }
+
   .password-recovery-modal[hidden] {
     display: none !important;
   }
@@ -619,37 +687,65 @@
     position: fixed;
     inset: 0;
     z-index: 10060;
+    display: grid;
+    place-items: center;
+    padding: 16px;
+    --pr-surface-1: #2f2f2f;
+    --pr-surface-2: #353535;
+    --pr-surface-3: #3a3a3a;
+    --pr-outline: rgba(255, 255, 255, 0.2);
+    --pr-outline-strong: rgba(255, 255, 255, 0.34);
+    --pr-text-1: #ffffff;
+    --pr-text-2: #f3f4f6;
+    --pr-text-3: #e5e7eb;
+    --pr-primary: #0078d4;
+    --pr-primary-hover: #005fa3;
+    --pr-focus: rgba(0, 120, 212, 0.45);
   }
 
   .password-recovery-modal__backdrop {
     position: absolute;
     inset: 0;
-    background: rgba(8, 8, 10, 0.78);
-    backdrop-filter: blur(4px);
+    background:
+      radial-gradient(circle at 16% 8%, rgba(0, 120, 212, 0.26), transparent 42%),
+      radial-gradient(circle at 84% 16%, rgba(0, 95, 163, 0.25), transparent 42%),
+      rgba(0, 0, 0, 0.74);
+    backdrop-filter: blur(10px);
   }
 
   .password-recovery-modal__dialog {
     position: relative;
-    width: min(92vw, 880px);
-    max-height: calc(100vh - 32px);
-    margin: 16px auto;
-    padding: 24px;
-    border-radius: 20px;
+    width: min(92vw, 820px);
+    max-height: 90vh;
+    margin: 0;
+    padding: 18px 18px 16px;
+    border-radius: 22px;
     background:
-      linear-gradient(180deg, rgba(54, 54, 58, 0.98), rgba(34, 34, 36, 0.99));
-    border: 1px solid rgba(255,255,255,.12);
-    box-shadow: 0 24px 70px rgba(0,0,0,.45);
-    color: #f8fafc;
+      radial-gradient(circle at 18% -20%, rgba(0, 120, 212, 0.18), transparent 38%),
+      radial-gradient(circle at 85% -10%, rgba(0, 95, 163, 0.18), transparent 36%),
+      var(--pr-surface-1);
+    border: 1px solid var(--pr-outline-strong);
+    box-shadow:
+      0 30px 84px rgba(2, 6, 23, 0.58),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    color: var(--pr-text-1);
     overflow: auto;
+  }
+
+  .password-recovery-modal.is-camera-stage .password-recovery-modal__dialog {
+    width: min(96vw, 1180px);
+    max-height: 94vh;
+    padding: 14px;
+    border-radius: 20px;
   }
 
   .password-recovery-modal__dialog::before {
     content: "";
     position: absolute;
     inset: 0 0 auto;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, #6d28d9, transparent);
-    opacity: .95;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(125, 211, 252, 0.8), transparent);
+    opacity: .96;
   }
 
   .password-recovery-modal__close {
@@ -659,12 +755,24 @@
     width: 42px;
     height: 42px;
     border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.14);
-    background: rgba(15, 23, 42, 0.88);
-    color: #fff;
+    border: 1px solid var(--pr-outline-strong);
+    background: rgba(15, 23, 42, 0.92);
+    color: var(--pr-text-1);
     font-size: 26px;
     line-height: 1;
     cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, transform .18s ease;
+  }
+
+  .password-recovery-modal__close:hover {
+    background: #1e293b;
+    border-color: rgba(148, 163, 184, 0.52);
+    transform: translateY(-1px);
+  }
+
+  .password-recovery-modal__close:focus-visible {
+    outline: 3px solid var(--pr-focus);
+    outline-offset: 2px;
   }
 
   .password-recovery-step,
@@ -678,72 +786,90 @@
   }
 
   .password-recovery-step h3 {
-    margin: 0 0 8px;
-    font-size: 1.35rem;
+    margin: 0 0 6px;
+    font-size: 1.08rem;
+    color: var(--pr-text-1) !important;
+    letter-spacing: .01em;
+    text-shadow: 0 2px 12px rgba(2, 6, 23, 0.35);
   }
 
   .password-recovery-step p {
-    margin: 0 0 16px;
-    color: rgba(226,232,240,.82);
+    margin: 0 0 10px;
+    color: var(--pr-text-3) !important;
+    font-size: .9rem;
+    line-height: 1.5;
   }
 
   .password-recovery-choice-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
 
   .password-recovery-choice {
-    padding: 18px;
-    border-radius: 16px;
-    border: 1px solid rgba(255,255,255,.08);
-    background: linear-gradient(180deg, rgba(24, 24, 27, 0.94), rgba(39, 39, 42, 0.96));
-    color: #fff;
+    padding: 15px;
+    border-radius: 14px;
+    border: 1px solid var(--pr-outline-strong);
+    background: linear-gradient(180deg, #3f3f3f, #373737);
+    color: var(--pr-text-1);
     text-align: left;
     cursor: pointer;
-    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+    box-shadow: 0 6px 20px rgba(2, 6, 23, 0.38);
+    transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
   }
 
   .password-recovery-choice:hover {
     transform: translateY(-1px);
-    border-color: rgba(109, 40, 217, .42);
-    box-shadow: 0 16px 32px rgba(0,0,0,.24);
+    border-color: rgba(0, 120, 212, 0.78);
+    background: linear-gradient(180deg, #4a4a4a, #3e3e3e);
+    box-shadow: 0 14px 30px rgba(2, 6, 23, 0.42);
+  }
+
+  .password-recovery-choice:focus-visible {
+    outline: 3px solid var(--pr-focus);
+    outline-offset: 2px;
   }
 
   .password-recovery-choice__title {
     display: block;
     font-weight: 700;
     margin-bottom: 6px;
+    color: var(--pr-text-2) !important;
   }
 
   .password-recovery-choice__text {
     display: block;
-    color: rgba(226,232,240,.78);
+    color: var(--pr-text-3) !important;
     line-height: 1.5;
   }
 
   .password-recovery-steps-bar {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+    margin: 0 0 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
   }
 
   .password-recovery-step-chip {
-    padding: 10px 12px;
+    flex: 0 0 auto;
+    padding: 6px 10px;
     border-radius: 999px;
     text-align: center;
-    font-size: .88rem;
+    font-size: .72rem;
     font-weight: 700;
-    color: rgba(226,232,240,.72);
-    background: rgba(18, 18, 20, 0.74);
-    border: 1px solid rgba(255,255,255,.08);
+    color: #f3f4f6;
+    background: rgba(55, 55, 55, 0.98);
+    border: 1px solid var(--pr-outline);
+    text-transform: uppercase;
+    letter-spacing: .06em;
   }
 
   .password-recovery-step-chip.is-active {
-    color: #fff;
-    background: rgba(109, 40, 217, 0.24);
-    border-color: rgba(139, 92, 246, 0.42);
+    color: #ffffff;
+    background: rgba(0, 120, 212, 0.3);
+    border-color: rgba(0, 120, 212, 0.76);
+    box-shadow: 0 0 0 1px rgba(0, 120, 212, 0.24) inset;
   }
 
   .password-recovery-step-chip.is-done {
@@ -755,10 +881,10 @@
   .password-recovery-support-card,
   .password-recovery-feedback,
   .password-recovery-camera {
-    padding: 14px;
-    border-radius: 16px;
-    background: rgba(24, 24, 27, 0.9);
-    border: 1px solid rgba(255,255,255,.08);
+    padding: 12px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #3b3b3b, #343434);
+    border: 1px solid var(--pr-outline-strong);
   }
 
   .password-recovery-support-card a {
@@ -772,6 +898,7 @@
     display: block;
     margin-bottom: 8px;
     font-weight: 700;
+    color: var(--pr-text-2) !important;
   }
 
   .password-recovery-form__row {
@@ -781,12 +908,13 @@
   }
 
   .password-recovery-feedback {
-    margin-bottom: 14px;
-    color: #e5e7eb;
+    margin-bottom: 8px;
+    color: var(--pr-text-1) !important;
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 62px;
+    min-height: 48px;
+    font-size: .88rem;
   }
 
   .password-recovery-feedback.is-loading {
@@ -798,7 +926,7 @@
     height: 20px;
     border-radius: 50%;
     border: 2px solid rgba(255,255,255,.16);
-    border-top-color: #8b5cf6;
+    border-top-color: var(--pr-primary);
     flex: 0 0 auto;
     animation: recoverySpin .8s linear infinite;
   }
@@ -816,16 +944,21 @@
   }
 
   .password-recovery-camera {
-    margin-bottom: 14px;
+    margin-bottom: 8px;
     overflow: hidden;
+  }
+
+  #recovery-facial-stage-camera.is-active {
+    display: grid;
+    gap: 8px;
   }
 
   .password-recovery-security {
     margin-bottom: 14px;
     padding: 14px;
     border-radius: 16px;
-    background: rgba(24, 24, 27, 0.9);
-    border: 1px solid rgba(255,255,255,.08);
+    background: linear-gradient(180deg, #3b3b3b, #343434);
+    border: 1px solid var(--pr-outline);
   }
 
   .password-recovery-security__header {
@@ -877,14 +1010,14 @@
   .password-recovery-security__item {
     padding: 12px;
     border-radius: 14px;
-    background: rgba(255,255,255,.04);
-    border: 1px solid rgba(255,255,255,.06);
+    background: rgba(51, 65, 85, 0.56);
+    border: 1px solid rgba(148, 163, 184, 0.28);
   }
 
   .password-recovery-security__item span {
     display: block;
     margin-bottom: 6px;
-    color: rgba(226,232,240,.74);
+    color: var(--pr-text-3) !important;
     font-size: .82rem;
   }
 
@@ -895,58 +1028,137 @@
 
   .password-recovery-security__summary {
     margin: 12px 0 0;
-    color: rgba(226,232,240,.82);
+    color: var(--pr-text-3) !important;
     line-height: 1.5;
   }
 
   .password-recovery-camera iframe {
     display: block;
     width: 100%;
-    height: min(66vh, 640px);
+    height: min(66vh, 700px);
     border: 0;
-    border-radius: 16px;
+    border-radius: 12px;
     background: #05070b;
+  }
+
+  .password-recovery-modal.is-camera-stage .password-recovery-note {
+    display: none;
+  }
+
+  .password-recovery-modal.is-camera-stage #recovery-step-facial > h3,
+  .password-recovery-modal.is-camera-stage #recovery-step-facial > p,
+  .password-recovery-modal.is-camera-stage .password-recovery-steps-bar,
+  .password-recovery-modal.is-camera-stage .password-recovery-actions,
+  .password-recovery-modal.is-camera-stage #recovery-facial-stage-cpf,
+  .password-recovery-modal.is-camera-stage #recovery-facial-stage-loading,
+  .password-recovery-modal.is-camera-stage #recovery-facial-stage-send,
+  .password-recovery-modal.is-camera-stage #recovery-camera-feedback {
+    display: none !important;
+  }
+
+  .password-recovery-modal.is-camera-stage #recovery-facial-stage-camera {
+    display: block !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .password-recovery-modal.is-camera-stage #recovery-camera-wrapper {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 12px;
+    background: #020617;
+  }
+
+  .password-recovery-modal.is-camera-stage .password-recovery-steps-bar {
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .password-recovery-modal.is-camera-stage .password-recovery-step-chip {
+    padding: 5px 9px;
+    font-size: .68rem;
+  }
+
+  .password-recovery-modal.is-camera-stage #recovery-camera-feedback {
+    min-height: 40px;
+    margin-bottom: 6px;
+  }
+
+  .password-recovery-modal.is-camera-stage .password-recovery-camera iframe {
+    height: min(78vh, 820px);
   }
 
   .password-recovery-actions {
     display: flex;
     justify-content: space-between;
     gap: 10px;
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255,255,255,.08);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--pr-outline);
+    position: sticky;
+    bottom: -16px;
+    background: linear-gradient(to top, rgba(47, 47, 47, 0.96), rgba(47, 47, 47, 0.76) 70%, transparent);
+    backdrop-filter: blur(4px);
+    z-index: 2;
   }
 
   .password-recovery-primary,
   .password-recovery-secondary {
-    min-height: 44px;
-    padding: 10px 18px;
-    border-radius: 12px;
+    min-height: 42px;
+    padding: 8px 18px;
+    border-radius: 999px;
     font-weight: 700;
+    letter-spacing: .01em;
     border: 1px solid transparent;
     cursor: pointer;
-    transition: transform .18s ease, filter .18s ease, border-color .18s ease;
+    box-shadow: 0 1px 2px rgba(2, 6, 23, 0.26), 0 1px 3px rgba(2, 6, 23, 0.18);
+    transition: transform .18s ease, filter .18s ease, border-color .18s ease, box-shadow .18s ease, background .18s ease;
   }
 
   .password-recovery-primary {
-    background: linear-gradient(135deg, #6d28d9, #4c1d95);
-    color: #fff;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+    background: var(--pr-primary);
+    color: #eff6ff;
+  }
+
+  .password-recovery-primary:hover:not(:disabled) {
+    background: var(--pr-primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.32);
+  }
+
+  .password-recovery-primary:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28);
   }
 
   .password-recovery-primary:disabled {
     opacity: .55;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
   .password-recovery-secondary {
-    background: rgba(24, 24, 27, 0.96);
-    color: #fff;
-    border-color: rgba(255,255,255,.10);
+    background: transparent;
+    color: #bae6fd;
+    border-color: rgba(56, 189, 248, 0.5);
+  }
+
+  .password-recovery-secondary:hover {
+    background: rgba(59, 130, 246, 0.16);
+    border-color: rgba(96, 165, 250, 0.66);
+    transform: translateY(-1px);
+  }
+
+  .password-recovery-primary:focus-visible,
+  .password-recovery-secondary:focus-visible {
+    outline: 3px solid var(--pr-focus);
+    outline-offset: 2px;
   }
 
   .password-recovery-note {
-    color: rgba(212,212,216,.86) !important;
+    color: var(--pr-text-3) !important;
   }
 
   @keyframes recoverySpin {
@@ -954,10 +1166,47 @@
   }
 
   @media (max-width: 720px) {
+    .password-recovery-modal {
+      padding: 10px;
+    }
+
+    .password-recovery-modal__dialog {
+      width: min(96vw, 620px);
+      max-height: 90vh;
+      padding: 16px;
+      border-radius: 18px;
+    }
+
+    .password-recovery-modal.is-camera-stage .password-recovery-modal__dialog {
+      width: min(98vw, 720px);
+      max-height: 94vh;
+      padding: 10px;
+    }
+
     .password-recovery-choice-grid,
-    .password-recovery-steps-bar,
-    .password-recovery-actions {
+    .password-recovery-steps-bar {
       grid-template-columns: minmax(0, 1fr);
+    }
+
+    .password-recovery-actions {
+      flex-direction: column;
+    }
+
+    .password-recovery-primary,
+    .password-recovery-secondary {
+      width: 100%;
+    }
+
+    .password-recovery-security__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .password-recovery-camera iframe {
+      height: min(58vh, 460px);
+    }
+
+    .password-recovery-modal.is-camera-stage .password-recovery-camera iframe {
+      height: min(70vh, 620px);
     }
   }
 

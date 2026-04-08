@@ -7,7 +7,10 @@ import venv
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 VENV_DIR = ROOT / ".face_backend_venv"
-PYTHON_EXE = VENV_DIR / "Scripts" / "python.exe"
+if os.name == "nt":
+    PYTHON_EXE = VENV_DIR / "Scripts" / "python.exe"
+else:
+    PYTHON_EXE = VENV_DIR / "bin" / "python"
 MODELS_DIR = ROOT / "face_backend" / "models"
 REQUIREMENTS = ROOT / "face_backend" / "requirements.txt"
 

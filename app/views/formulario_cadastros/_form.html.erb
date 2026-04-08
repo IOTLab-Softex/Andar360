@@ -109,7 +109,7 @@ Ao prosseguir com o cadastro, o usuário compreende e concorda com o tratamento 
 <!-- Modal/overlay da câmera -->
 <div id="camera-overlay" style="display:none; position:fixed; inset:0; background:#000000cc; z-index:9999; justify-content:center; align-items:center; padding: 42px 12px;">
   <div style="position:relative; max-width: 96vw;">
-    <iframe id="camera-frame" src="/camera" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
+    <iframe id="camera-frame" src="/camera" allow="camera *" style="border: 3px solid #3f3; border-radius: 12px;"></iframe>
 
     <button type="button" onclick="closeCamera()" style="position:absolute; top:-10px; right:-10px; background:#ff4444; border:none; color:white; font-weight:bold; padding:5px 10px; border-radius:10px;">X</button>
   </div>
@@ -391,4 +391,3 @@ Ao prosseguir com o cadastro, o usuário compreende e concorda com o tratamento 
     });
   });
 </script>
-
