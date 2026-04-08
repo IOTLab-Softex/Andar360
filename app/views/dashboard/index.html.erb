@@ -33,23 +33,31 @@
       preload: "auto",
       style: "display:none;" %>
 <%= render "dashboard/kpis" %>
-<div class="board-grid">
-  <section id="card-chamados" class="board-card col-12 col-6">
-    <%= render "dashboard/chamados", chamados: @chamados %>
-  </section>
-  <section id="card-manutencoes" class="board-card col-12 col-6">
-    <%= render "dashboard/manutencoes",
-          manutencoes: @manutencao_programadas,
-          ack_ns: @ack_ns, avisos_tokens: @avisos_tokens, avisos: @avisos_manutencao %>
-  </section>
-  <% if current_user.admin? || current_user.role == "operador" %>
-    <section id="card-salas" class="board-card col-12 col-6">
-      <%= render "dashboard/salas", rooms: @rooms %>
-    </section>
+<div class="board-grid" id="dashboard-board-grid" data-save-url="<%= update_dashboard_card_order_path %>">
+  <% Array(@dashboard_card_order).each do |card_id| %>
+    <% case card_id %>
+    <% when "chamados" %>
+      <section id="card-chamados" class="board-card col-12 col-6" data-card-id="chamados">
+        <%= render "dashboard/chamados", chamados: @chamados %>
+      </section>
+    <% when "manutencoes" %>
+      <section id="card-manutencoes" class="board-card col-12 col-6" data-card-id="manutencoes">
+        <%= render "dashboard/manutencoes",
+              manutencoes: @manutencao_programadas,
+              ack_ns: @ack_ns, avisos_tokens: @avisos_tokens, avisos: @avisos_manutencao %>
+      </section>
+    <% when "salas" %>
+      <% if current_user.admin? || current_user.role == "operador" %>
+        <section id="card-salas" class="board-card col-12 col-6" data-card-id="salas">
+          <%= render "dashboard/salas", rooms: @rooms %>
+        </section>
+      <% end %>
+    <% when "espacos" %>
+      <section id="card-espacos" class="board-card col-12 col-6" data-card-id="espacos">
+        <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
+      </section>
+    <% end %>
   <% end %>
-  <section id="card-espacos" class="board-card col-12 col-6">
-    <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
-  </section>
 </div>
 <% if @avisos_manutencao.present? %>
   <div id="modalAvisos"
@@ -174,6 +182,15 @@ data-ns="<%= @ack_ns %>">
     border-radius: 14px;
     box-shadow: 0 6px 18px rgba(0,0,0,.18);
     overflow: hidden;
+    cursor: default;
+    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  .board-card.dragging{
+    opacity: .32;
+  }
+  .board-card.drag-over{
+    outline: 2px dashed rgba(124, 58, 237, .75);
+    outline-offset: -6px;
   }
   /* Faz o h2 do partial parecer cabeçalho do card */
   .board-card .subtitle {
@@ -187,6 +204,71 @@ data-ns="<%= @ack_ns %>">
     border-bottom: 1px solid rgba(255, 255, 255, .06);
     cursor: pointer;
     font-size: inherit;
+  }
+  .board-card .card-drag-handle{
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    border-radius: 10px;
+    color: rgba(255,255,255,.72);
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    cursor: grab;
+    transition: background .18s ease, color .18s ease, transform .18s ease;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .board-card .card-drag-handle:hover{
+    color: #fff;
+    background: rgba(124, 58, 237, .24);
+  }
+  .board-card .card-drag-handle:active{
+    cursor: grabbing;
+    transform: scale(.96);
+  }
+  .board-card table,
+  .board-card th,
+  .board-card td,
+  .board-card .rooms,
+  .board-card .room-card,
+  .board-card .room-card-link{
+    cursor: default !important;
+  }
+  .dashboard-drag-ghost{
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 12000;
+    background: var(--color-card);
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 14px;
+    box-shadow: 0 22px 48px rgba(0,0,0,.32);
+    color: var(--color-text, #fff);
+    opacity: .96;
+    pointer-events: none;
+    transform: translate3d(0,0,0);
+    overflow: hidden;
+  }
+  .dashboard-drag-ghost .card-drag-handle{
+    visibility: hidden;
+  }
+  body.dashboard-card-dragging,
+  body.dashboard-card-dragging *{
+    cursor: grabbing !important;
+  }
+  .board-card .card-drag-handle i{
+    display: block;
+    font-size: 14px;
+    line-height: 1;
+    margin-right: 0;
+    color: inherit;
+    pointer-events: none;
   }
   .board-card .rooms{ padding: 12px; }
 
@@ -417,6 +499,220 @@ data-ns="<%= @ack_ns %>">
   // roda no load normal / navegação Turbo
   document.addEventListener("DOMContentLoaded", window.initMarkAllButtons);
   document.addEventListener("turbo:load", window.initMarkAllButtons);
+
+  window.initDashboardCardOrdering = function() {
+    const grid = document.getElementById("dashboard-board-grid");
+    if (!grid) return;
+
+    const csrfToken = document.querySelector("meta[name='csrf-token']")?.content;
+    let draggedCard = null;
+    let dragGhost = null;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let ghostTargetX = 0;
+    let ghostTargetY = 0;
+    let ghostCurrentX = 0;
+    let ghostCurrentY = 0;
+    let ghostAnimationFrame = null;
+
+    function saveOrder() {
+      const order = Array.from(grid.querySelectorAll(".board-card[data-card-id]"))
+        .map((card) => card.dataset.cardId)
+        .filter(Boolean);
+
+      fetch(grid.dataset.saveUrl, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": csrfToken
+        },
+        credentials: "same-origin",
+        body: JSON.stringify({ order: order })
+      }).catch(() => {});
+    }
+
+    function pointerPosition(event) {
+      if (event.touches && event.touches[0]) {
+        return { x: event.touches[0].clientX, y: event.touches[0].clientY };
+      }
+      if (event.changedTouches && event.changedTouches[0]) {
+        return { x: event.changedTouches[0].clientX, y: event.changedTouches[0].clientY };
+      }
+      return { x: event.clientX, y: event.clientY };
+    }
+
+    function renderGhost() {
+      if (!dragGhost) return;
+      ghostCurrentX += (ghostTargetX - ghostCurrentX) * 0.28;
+      ghostCurrentY += (ghostTargetY - ghostCurrentY) * 0.28;
+      dragGhost.style.transform = `translate3d(${ghostCurrentX}px, ${ghostCurrentY}px, 0)`;
+
+      if (Math.abs(ghostTargetX - ghostCurrentX) > 0.5 || Math.abs(ghostTargetY - ghostCurrentY) > 0.5) {
+        ghostAnimationFrame = requestAnimationFrame(renderGhost);
+      } else {
+        ghostCurrentX = ghostTargetX;
+        ghostCurrentY = ghostTargetY;
+        dragGhost.style.transform = `translate3d(${ghostCurrentX}px, ${ghostCurrentY}px, 0)`;
+        ghostAnimationFrame = null;
+      }
+    }
+
+    function moveGhost(clientX, clientY) {
+      ghostTargetX = clientX - dragOffsetX;
+      ghostTargetY = clientY - dragOffsetY;
+      if (!ghostAnimationFrame) {
+        ghostAnimationFrame = requestAnimationFrame(renderGhost);
+      }
+    }
+
+    function reorderFromPointer(clientY) {
+      if (!draggedCard) return;
+
+      const otherCards = Array.from(grid.querySelectorAll(".board-card[data-card-id]"))
+        .filter((card) => card !== draggedCard);
+
+      let targetCard = null;
+      for (const card of otherCards) {
+        const rect = card.getBoundingClientRect();
+        const middleY = rect.top + rect.height / 2;
+        if (clientY < middleY) {
+          targetCard = card;
+          break;
+        }
+      }
+
+      otherCards.forEach((card) => card.classList.remove("drag-over"));
+
+      if (targetCard) {
+        targetCard.classList.add("drag-over");
+        if (targetCard.previousElementSibling !== draggedCard) {
+          targetCard.insertAdjacentElement("beforebegin", draggedCard);
+        }
+      } else {
+        const lastCard = otherCards[otherCards.length - 1];
+        if (lastCard && lastCard.nextElementSibling !== draggedCard) {
+          lastCard.insertAdjacentElement("afterend", draggedCard);
+        }
+      }
+    }
+
+    function finishDrag() {
+      if (!draggedCard) return;
+      draggedCard.classList.remove("dragging");
+      document.body.classList.remove("dashboard-card-dragging");
+      grid.querySelectorAll(".board-card.drag-over").forEach((item) => item.classList.remove("drag-over"));
+      if (dragGhost) {
+        dragGhost.remove();
+        dragGhost = null;
+      }
+      if (ghostAnimationFrame) {
+        cancelAnimationFrame(ghostAnimationFrame);
+        ghostAnimationFrame = null;
+      }
+      draggedCard = null;
+      saveOrder();
+      document.removeEventListener("mousemove", handlePointerMove);
+      document.removeEventListener("mouseup", handlePointerUp);
+      document.removeEventListener("touchmove", handlePointerMove);
+      document.removeEventListener("touchend", handlePointerUp);
+      document.removeEventListener("touchcancel", handlePointerUp);
+    }
+
+    function handlePointerMove(event) {
+      if (!draggedCard) return;
+      if (event.cancelable) event.preventDefault();
+      const { x, y } = pointerPosition(event);
+      moveGhost(x, y);
+      reorderFromPointer(y);
+    }
+
+    function handlePointerUp() {
+      finishDrag();
+    }
+
+    function bindCard(card) {
+      if (!card || card.dataset.dragBound === "1") return;
+      card.dataset.dragBound = "1";
+
+      const subtitle = card.querySelector(".subtitle");
+      if (subtitle && !subtitle.querySelector(".card-drag-handle")) {
+        const handle = document.createElement("button");
+        handle.type = "button";
+        handle.className = "card-drag-handle";
+        handle.title = "Segure e arraste para mover o card";
+        handle.setAttribute("aria-label", "Mover card");
+        handle.innerHTML = '<i class="fa-solid fa-up-down-left-right"></i>';
+
+        handle.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        });
+
+        handle.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const rect = card.getBoundingClientRect();
+          const handleRect = handle.getBoundingClientRect();
+          const { x, y } = pointerPosition(event);
+          draggedCard = card;
+          card.classList.add("dragging");
+          document.body.classList.add("dashboard-card-dragging");
+          dragOffsetX = Math.min(handleRect.width / 2, 18);
+          dragOffsetY = Math.min(y - rect.top, 28);
+
+          dragGhost = card.cloneNode(true);
+          dragGhost.classList.add("dashboard-drag-ghost");
+          dragGhost.classList.remove("dragging", "drag-over");
+          dragGhost.removeAttribute("id");
+          dragGhost.style.width = `${rect.width}px`;
+          document.body.appendChild(dragGhost);
+          ghostCurrentX = x - dragOffsetX;
+          ghostCurrentY = y - dragOffsetY;
+          dragGhost.style.transform = `translate3d(${ghostCurrentX}px, ${ghostCurrentY}px, 0)`;
+          moveGhost(x, y);
+
+          document.addEventListener("mousemove", handlePointerMove);
+          document.addEventListener("mouseup", handlePointerUp);
+        });
+
+        handle.addEventListener("touchstart", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          const rect = card.getBoundingClientRect();
+          const handleRect = handle.getBoundingClientRect();
+          const { x, y } = pointerPosition(event);
+          draggedCard = card;
+          card.classList.add("dragging");
+          document.body.classList.add("dashboard-card-dragging");
+          dragOffsetX = Math.min(handleRect.width / 2, 18);
+          dragOffsetY = Math.min(y - rect.top, 28);
+
+          dragGhost = card.cloneNode(true);
+          dragGhost.classList.add("dashboard-drag-ghost");
+          dragGhost.classList.remove("dragging", "drag-over");
+          dragGhost.removeAttribute("id");
+          dragGhost.style.width = `${rect.width}px`;
+          document.body.appendChild(dragGhost);
+          ghostCurrentX = x - dragOffsetX;
+          ghostCurrentY = y - dragOffsetY;
+          dragGhost.style.transform = `translate3d(${ghostCurrentX}px, ${ghostCurrentY}px, 0)`;
+          moveGhost(x, y);
+
+          document.addEventListener("touchmove", handlePointerMove, { passive: false });
+          document.addEventListener("touchend", handlePointerUp);
+          document.addEventListener("touchcancel", handlePointerUp);
+        });
+
+        subtitle.appendChild(handle);
+      }
+    }
+
+    grid.querySelectorAll(".board-card[data-card-id]").forEach(bindCard);
+  };
+
+  document.addEventListener("DOMContentLoaded", window.initDashboardCardOrdering);
+  document.addEventListener("turbo:load", window.initDashboardCardOrdering);
 
 
 
@@ -686,6 +982,9 @@ data-ns="<%= @ack_ns %>">
               }
               if (window.initMarkAllButtons) {
                 window.initMarkAllButtons();
+              }
+              if (window.initDashboardCardOrdering) {
+                window.initDashboardCardOrdering();
               }
             } else {
               console.warn("[dashboard-live] Turbo não disponível, aplicando fallback manual");
@@ -967,90 +1266,105 @@ const { publicKey } = await keyRes.json();
 })();
 
 </script>
-<script>
-/* Marca o card mais central como .active (efeito neon maior)
-   e, quando chegar no final do scroll, força o ÚLTIMO card como active */
-document.addEventListener("DOMContentLoaded", () => {
-  const container = document.querySelector("#comuns-section.smart-scroll");
-  if (!container) return;
+  <script>
+  function initCommonRoomsCarousel() {
+    document.querySelectorAll("#comuns-section.common-stack-carousel[data-common-carousel='true']").forEach((container) => {
+      if (container.dataset.commonCarouselBound === "true") return;
 
-  const cards = Array.from(container.querySelectorAll(".room-card"));
-  if (cards.length === 0) return;
+      const cards = Array.from(container.querySelectorAll(".common-stack-card"));
+      if (!cards.length) return;
 
-  function updateActiveCard() {
-    // Detecta se está perto do final da rolagem
-    const scrollBottom = container.scrollTop + container.clientHeight;
-    const maxScroll = container.scrollHeight;
-    const nearBottom = (maxScroll - scrollBottom) < 16; // margem de 16px
+      container.dataset.commonCarouselBound = "true";
 
-    let activeCard = null;
+      const shell = container.querySelector(".common-stack-carousel__shell");
+      const visibleCount = Math.min(parseInt(container.dataset.visible || "3", 10), cards.length);
+      let activeIndex = 0;
+      let wheelLocked = false;
+      let touchStartY = null;
 
-    if (nearBottom) {
-      // Se estiver no fim, força o último card como active
-      activeCard = cards[cards.length - 1];
-    } else {
-      // Comportamento normal: escolhe o card mais perto do centro
-      const contRect = container.getBoundingClientRect();
-      const centerY = contRect.top + contRect.height / 2;
+      function applyClasses() {
+        cards.forEach((card, index) => {
+          const position = index - activeIndex;
+          card.classList.remove("common-stack-card--active", "common-stack-card--middle", "common-stack-card--bottom", "isHidden");
 
-      let closest = null;
-      let closestDist = Infinity;
-
-      cards.forEach(card => {
-        const rect = card.getBoundingClientRect();
-        const cardCenter = rect.top + rect.height / 2;
-        const dist = Math.abs(cardCenter - centerY);
-
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = card;
-        }
-      });
-
-      activeCard = closest;
-    }
-
-    // Aplica/remover classe .active
-    cards.forEach(c => c.classList.remove("active"));
-    if (activeCard) activeCard.classList.add("active");
-  }
-
-  container.addEventListener("scroll", () => {
-    window.requestAnimationFrame(updateActiveCard);
-  });
-
-  updateActiveCard();
-})
-
-/* Marca como .stacked os cards que já grudaram no topo (ficam menores) */
-document.addEventListener("DOMContentLoaded", () => {
-  const container = document.querySelector("#comuns-section.smart-scroll");
-  if (!container) return;
-
-  const links = Array.from(container.querySelectorAll(".room-card-link"));
-  if (links.length === 0) return;
-
-  const firstTop = parseFloat(window.getComputedStyle(links[0]).top || "0");
-
-  function updateStack() {
-    const contRect = container.getBoundingClientRect();
-    const pinLine = contRect.top + firstTop + 1;
-
-    links.forEach(link => {
-      const rect = link.getBoundingClientRect();
-
-      if (rect.top <= pinLine) {
-        link.classList.add("stacked");
-      } else {
-        link.classList.remove("stacked");
+          if (position === 0) {
+            card.classList.add("common-stack-card--active");
+          } else if (position === 1 && visibleCount > 1) {
+            card.classList.add("common-stack-card--middle");
+          } else if (position === 2 && visibleCount > 2) {
+            card.classList.add("common-stack-card--bottom");
+          } else {
+            card.classList.add("isHidden");
+          }
+        });
       }
+
+      function next() {
+        if (activeIndex >= cards.length - 1) return;
+        activeIndex += 1;
+        applyClasses();
+      }
+
+      function prev() {
+        if (activeIndex <= 0) return;
+        activeIndex -= 1;
+        applyClasses();
+      }
+
+      shell?.addEventListener("wheel", (event) => {
+        if (cards.length <= 1) return;
+        event.preventDefault();
+        if (wheelLocked) return;
+
+        if (Math.abs(event.deltaY) < 8) return;
+
+        wheelLocked = true;
+        if (event.deltaY > 0) {
+          next();
+        } else {
+          prev();
+        }
+
+        window.setTimeout(() => {
+          wheelLocked = false;
+        }, 260);
+      }, { passive: false });
+
+      shell?.addEventListener("touchstart", (event) => {
+        touchStartY = event.touches[0]?.clientY ?? null;
+      }, { passive: true });
+
+      shell?.addEventListener("touchmove", (event) => {
+        if (touchStartY === null || wheelLocked) return;
+        const currentY = event.touches[0]?.clientY;
+        if (typeof currentY !== "number") return;
+
+        const deltaY = touchStartY - currentY;
+        if (Math.abs(deltaY) < 24) return;
+
+        wheelLocked = true;
+        if (deltaY > 0) {
+          next();
+        } else {
+          prev();
+        }
+
+        touchStartY = currentY;
+        window.setTimeout(() => {
+          wheelLocked = false;
+        }, 260);
+      }, { passive: true });
+
+      shell?.addEventListener("touchend", () => {
+        touchStartY = null;
+      }, { passive: true });
+
+      window.addEventListener("resize", applyClasses);
+
+      applyClasses();
     });
   }
 
-  container.addEventListener("scroll", () => {
-    requestAnimationFrame(updateStack);
-  });
-
-  updateStack();
-});
+  document.addEventListener("DOMContentLoaded", initCommonRoomsCarousel);
+  document.addEventListener("turbo:load", initCommonRoomsCarousel);
 </script>

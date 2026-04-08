@@ -1,5 +1,6 @@
 class DashboardController < ApplicationController
   before_action :authenticate_user!
+  before_action :set_dashboard_card_order, only: :index
 
   def index
     @rooms = Room.includes(:reservations)
@@ -55,5 +56,23 @@ class DashboardController < ApplicationController
     respond_to do |format|
       format.turbo_stream
     end
+  end
+
+  def update_card_order
+    available_cards = helpers.dashboard_available_card_ids_for(current_user)
+    requested_order = Array(params[:order]).map(&:to_s)
+    normalized_order = (requested_order & available_cards) + (available_cards - requested_order)
+
+    current_user.update!(dashboard_card_order: normalized_order)
+
+    render json: { ok: true, order: normalized_order }
+  rescue ActiveRecord::ActiveRecordError
+    render json: { ok: false, message: "Nao foi possivel salvar a ordem do dashboard." }, status: :unprocessable_entity
+  end
+
+  private
+
+  def set_dashboard_card_order
+    @dashboard_card_order = helpers.ordered_dashboard_card_ids_for(current_user)
   end
 end

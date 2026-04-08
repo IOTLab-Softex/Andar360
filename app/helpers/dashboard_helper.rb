@@ -1,5 +1,20 @@
 # app/helpers/dashboard_helper.rb
 module DashboardHelper
+  DASHBOARD_CARD_IDS = %w[chamados manutencoes salas espacos].freeze
+
+  def dashboard_available_card_ids_for(user)
+    cards = %w[chamados manutencoes espacos]
+    cards.insert(2, "salas") if user&.admin? || user&.role == "operador"
+    cards
+  end
+
+  def ordered_dashboard_card_ids_for(user)
+    available = dashboard_available_card_ids_for(user)
+    return available unless user
+
+    user.normalized_dashboard_card_order(available)
+  end
+
   def kpi_card(icon_class, label, value, subtitle = nil, opts = {})
     sparkline = opts[:sparkline]
     url       = opts[:url]

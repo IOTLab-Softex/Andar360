@@ -509,9 +509,11 @@
     let ambientFlashLevel = 0;
     let recoveryCaptureLocked = false;
     let latestDetectionBox = null;
+    let recoveryQualityFrames = 0;
     let recoveryCaptureTarget = { width: 300, height: 600 };
     const recoveryMode = <%= @camera_recovery_mode ? "true" : "false" %>;
     const COUNTDOWN_SECONDS = 8;
+    const RECOVERY_AUTO_CAPTURE_FRAMES = 3;
     const tuning = <%= raw((@camera_tuning || Setting::CAMERA_TUNING_DEFAULTS).to_json) %>;
 
     window.addEventListener("message", (event) => {
@@ -547,6 +549,7 @@
         height: Math.max(360, parseInt(captureConfig.height || 600, 10))
       };
       recoveryCaptureLocked = false;
+      recoveryQualityFrames = 0;
       captureBtn.disabled = true;
       captureBtn.textContent = "Alinhe o rosto";
       parent.postMessage({
@@ -734,6 +737,7 @@
       targetPanY = 0;
       meshPoints = null;
       latestDetectionBox = null;
+      recoveryQualityFrames = 0;
       videoContainer.style.setProperty("--ring-x", "50%");
       videoContainer.style.setProperty("--ring-y", "50%");
     }
@@ -1012,6 +1016,12 @@
 
               videoContainer.classList.toggle("focus-mode", shouldTrack && zoomLevel > 1.08);
               const meshReady = ratio >= (tuning.minRatio + 0.06) && goodScore;
+              const captureQualityReady =
+                nearSilhouette &&
+                goodScore &&
+                ratio >= (tuning.minRatio + 0.05) &&
+                (detection.score ?? 1) >= Math.max(tuning.goodScore, 0.72) &&
+                !lowLightDetected;
               if (meshReady && !videoContainer.classList.contains("mesh-active")) {
                 const resized = faceapi.resizeResults(result, currentDisplaySize);
                 meshPoints = resized.landmarks?.positions || null;
@@ -1028,7 +1038,19 @@
               }
 
               if (nearSilhouette) {
-                if (tuning.autoCaptureEnabled && !countdownStart && (!recoveryMode || !recoveryCaptureLocked)) {
+                if (recoveryMode && tuning.autoCaptureEnabled && !recoveryCaptureLocked) {
+                  recoveryQualityFrames = captureQualityReady ? recoveryQualityFrames + 1 : 0;
+
+                  if (captureQualityReady && recoveryQualityFrames >= RECOVERY_AUTO_CAPTURE_FRAMES) {
+                    capturePhoto();
+                  } else if (!captureQualityReady && !countdownStart) {
+                    countdownStart = performance.now();
+                    autoShotTimeout = setTimeout(() => {
+                      capturePhoto();
+                      if (!recoveryMode) resetCountdown();
+                    }, COUNTDOWN_SECONDS * 1000);
+                  }
+                } else if (tuning.autoCaptureEnabled && !countdownStart && (!recoveryMode || !recoveryCaptureLocked)) {
                   countdownStart = performance.now();
                   autoShotTimeout = setTimeout(() => {
                     capturePhoto();
@@ -1041,6 +1063,7 @@
                   autoShotTimeout = null;
                 }
                 countdownStart = null;
+                recoveryQualityFrames = 0;
               }
 
               const elapsed = countdownStart ? (performance.now() - countdownStart) / 1000 : 0;
@@ -1055,15 +1078,25 @@
                 }
                 if (cd) cd.style.display = "none";
               } else {
-                captureBtn.textContent = recoveryMode ? (tuning.autoCaptureEnabled ? `Captura automatica em ${left}s` : "Capturar foto") : (tuning.autoCaptureEnabled ? `Capturar (auto em ${left}s)` : "Capturar");
-                faceStatus.textContent = recoveryMode ? "Rosto pronto para captura." : "Rosto detectado com boa nitidez.";
+                captureBtn.textContent = recoveryMode
+                  ? (tuning.autoCaptureEnabled
+                      ? (captureQualityReady ? "Captura automatica imediata" : `Captura automatica em ${left}s`)
+                      : "Capturar foto")
+                  : (tuning.autoCaptureEnabled ? `Capturar (auto em ${left}s)` : "Capturar");
+                faceStatus.textContent = recoveryMode
+                  ? (captureQualityReady ? "Rosto com boa definicao. Captura automatica pronta." : "Rosto pronto para captura.")
+                  : "Rosto detectado com boa nitidez.";
                 if (recoveryMode) captureBtn.disabled = recoveryCaptureLocked;
                 if (lookHint) {
                   lookHint.style.display = "block";
-                  lookHint.textContent = recoveryMode ? (tuning.autoCaptureEnabled ? "Mantenha o rosto parado para capturar" : "Capture quando estiver pronto") : "Olhe para a camera";
+                  lookHint.textContent = recoveryMode
+                    ? (tuning.autoCaptureEnabled
+                        ? (captureQualityReady ? "Mantenha o rosto parado. Captura imediata." : "Mantenha o rosto parado para capturar")
+                        : "Capture quando estiver pronto")
+                    : "Olhe para a camera";
                 }
                 if (cd) {
-                  if (tuning.autoCaptureEnabled && (!recoveryMode || !recoveryCaptureLocked)) {
+                  if (tuning.autoCaptureEnabled && (!recoveryMode || !recoveryCaptureLocked) && !captureQualityReady) {
                     cd.style.display = "block";
                     cd.textContent = left.toString();
                   } else {
@@ -1078,6 +1111,7 @@
               resetCountdown();
               syncLowLightState(false);
               if (!manualFlashEnabled) setAmbientFlashLevel(softFlashLevel);
+              recoveryQualityFrames = 0;
               captureBtn.disabled = true;
               captureBtn.textContent = "Aproxime o rosto...";
               faceStatus.textContent = goodScore ? "Muito distante, aproxime-se da camera." : "Iluminacao ou posicao ruim. Ajuste e aproxime-se.";
@@ -1086,6 +1120,7 @@
             resetCountdown();
             syncLowLightState(false);
             if (!manualFlashEnabled) setAmbientFlashLevel(softFlashLevel);
+            recoveryQualityFrames = 0;
             captureBtn.disabled = true;
             captureBtn.textContent = "Sem rosto...";
             faceStatus.textContent = "Nenhum rosto detectado.";

@@ -3407,39 +3407,55 @@ background: var(--color-accent);
   z-index: 10;
 }
 
-/* --------------------------------------------------------- */
-/* 🚀 ADIÇÃO DO EFEITO STACK: QUANDO O CARD FICAR PRESO NO   */
-/*     TOPO, ELE ENCOLHE; AO SUBIR DE VOLTA, VOLTA AO NORMAL */
-/* --------------------------------------------------------- */
-
-.rooms.smart-scroll .room-card-link.stacked .room-card {
-  transform: scale(0.90);
-  opacity: 0.85;
+.rooms.smart-scroll {
+  --bottom-focus: 0;
+  scroll-snap-type: y proximity;
+  scroll-padding-top: 1rem;
+  perspective: 1600px;
+  perspective-origin: 50% 0;
 }
 
-/* --------------------------------------------------------- */
-/* 🌟 OPCIONAL: CARA DE CARROSSEL NEON (igual a sua imagem) */
-/*   - card "ativo" no meio maior e com glow                 */
-/*   - cards empilhados atrás menores e mais apagados        */
-/*   Usa a classe .active que seu JS já coloca               */
-/* --------------------------------------------------------- */
+.rooms.smart-scroll .room-card-link {
+  scroll-snap-align: start;
+  will-change: transform;
+  transform-style: preserve-3d;
+  transition: transform .28s cubic-bezier(.22, 1, .36, 1);
+}
 
 .rooms.smart-scroll .room-card {
-  /* base “apagada” */
-  box-shadow: 0 0 0 rgba(0, 255, 255, 0);
+  opacity: 1 !important;
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.24);
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  transition: transform .3s cubic-bezier(.22, 1, .36, 1), box-shadow .3s ease, clip-path .3s ease;
+  clip-path: inset(0 0 0 0 round 20px);
 }
 
-/* card empilhado e não ativo: pequeno e mais opaco */
-.rooms.smart-scroll .room-card-link.stacked .room-card:not(.active) {
-  transform: scale(0.90);
-  opacity: 0.75;
-
+.rooms.smart-scroll .room-card-link.is-active .room-card {
+  transform: scale(1.01) translateZ(18px);
+  box-shadow: 0 24px 42px rgba(0, 0, 0, 0.28);
 }
 
-/* card ativo (mais “no centro” pela sua lógica de active) */
-.rooms.smart-scroll .room-card.active {
-  transform: scale(1.05);
-  opacity: 1;
+.rooms.smart-scroll .room-card-link.is-stacked-1 .room-card {
+  transform: translateY(-20px) scale(0.99);
+  clip-path: inset(0 0 calc(100% - 74px) 0 round 20px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+}
 
+.rooms.smart-scroll .room-card-link.is-stacked-2 .room-card {
+  transform: translateY(-42px) scale(0.975);
+  clip-path: inset(0 0 calc(100% - 54px) 0 round 20px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+.rooms.smart-scroll .room-card-link.is-stacked-3 .room-card {
+  transform: translateY(-62px) scale(0.96);
+  clip-path: inset(0 0 calc(100% - 38px) 0 round 20px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.12);
+}
+
+.rooms.smart-scroll .room-card-link.end-hero .room-card {
+  transform: scale(1.02) translateZ(22px);
+  box-shadow: 0 26px 46px rgba(0, 0, 0, 0.3);
 }
 

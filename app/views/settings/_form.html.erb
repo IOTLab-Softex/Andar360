@@ -193,6 +193,84 @@
             <li><strong>cPanel</strong>: <code>mail.seu-dominio.com</code>, porta <code>587</code>, <code>login</code>, STARTTLS ✓.</li>
           </ul>
         </details>
+
+        <hr class="my-4">
+
+        <h3 class="subtitle mb-3"><i class="fa-solid fa-key me-2"></i> Recuperacao de senha</h3>
+
+        <div class="form-check form-group mb-3">
+          <%= f.check_box :password_recovery_test_mode, class: "form-check-input", id: "setting_password_recovery_test_mode" %>
+          <label class="form-check-label" for="setting_password_recovery_test_mode">
+            Ativar modo teste para links de recuperacao
+          </label>
+          <small class="form-text text-muted d-block">
+            Em modo teste o e-mail usa o dominio local. Desativado, ele usa o dominio publico configurado.
+          </small>
+        </div>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Dominio em modo teste</label>
+              <%= f.text_field :password_recovery_test_host, class: "form-control", placeholder: "localhost:3000" %>
+              <small class="form-text text-muted">Exemplo: <code>localhost:3000</code> ou <code>http://localhost:3000</code>.</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-group">
+              <label>Dominio em modo producao</label>
+              <%= f.text_field :password_recovery_live_host, class: "form-control", placeholder: "softexsrs.ddns.net" %>
+              <small class="form-text text-muted">Exemplo: <code>softexsrs.ddns.net</code> ou <code>https://softexsrs.ddns.net</code>.</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Rota do link de recuperacao</label>
+          <%= f.text_field :password_recovery_link_path, class: "form-control", placeholder: "/users/password/edit" %>
+          <small class="form-text text-muted">
+            Essa rota precisa existir. O token de redefinicao sera anexado automaticamente ao final do link.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Tempo para expirar o link de recuperacao</label>
+          <div class="d-flex gap-2">
+            <%= f.number_field :password_recovery_expiration_minutes, class: "form-control", min: 1, step: 1, placeholder: "360" %>
+            <%= f.select :password_recovery_expiration_unit,
+                  [["Minutos", "minutes"], ["Segundos", "seconds"]],
+                  { selected: (@setting.password_recovery_expiration_unit.presence || "minutes") },
+                  class: "form-control" %>
+          </div>
+          <small class="form-text text-muted">
+            Defina o valor e escolha a unidade. Esse mesmo prazo sera usado na validade real do token e no texto padrao do e-mail.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Assunto do e-mail</label>
+          <%= f.text_field :password_recovery_email_subject, class: "form-control", placeholder: "Recuperacao de senha - Andar360" %>
+        </div>
+
+        <div class="form-group">
+          <label>Corpo do e-mail em HTML</label>
+          <%= f.text_area :password_recovery_email_html,
+                class: "form-control",
+                rows: 14,
+                value: @setting.password_recovery_email_html_or_default,
+                placeholder: "<h2>Recuperacao de senha</h2><p>Ola, {{user_name}}</p><a href='{{reset_url}}'>Redefinir senha</a>" %>
+          <small class="form-text text-muted d-block">
+            Variaveis disponiveis: <code>{{reset_url}}</code>, <code>{{user_name}}</code>, <code>{{user_email}}</code>, <code>{{app_name}}</code>, <code>{{recovery_host}}</code> e <code>{{reset_expiration}}</code>.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label>Preview do link gerado</label>
+          <input type="text" class="form-control" id="password_recovery_link_preview" value="<%= @setting.password_recovery_url('__TOKEN__') %>" readonly>
+          <small class="form-text text-muted">
+            O preview acompanha o modo teste, o dominio escolhido e a rota configurada acima.
+          </small>
+        </div>
       </section>
 
       <!-- ===== 🔔 PUSH NOTIFICATIONS ===== -->
@@ -723,5 +801,43 @@
       syncPreview();
     });
     syncSliderValues();
+  })();
+
+  (function(){
+    const preview = document.getElementById('password_recovery_link_preview');
+    const testMode = document.getElementById('setting_password_recovery_test_mode');
+    const testHost = document.getElementById('setting_password_recovery_test_host');
+    const liveHost = document.getElementById('setting_password_recovery_live_host');
+    const pathField = document.getElementById('setting_password_recovery_link_path');
+    if (!preview || !testMode || !testHost || !liveHost || !pathField) return;
+
+    function normalizeHost(host, fallback, test) {
+      const value = (host || fallback || '').trim().replace(/\/+$/, '');
+      if (!value) return test ? 'http://localhost:3000' : 'https://softexsrs.ddns.net';
+      if (/^https?:\/\//i.test(value)) return value;
+      return test ? `http://${value}` : `https://${value}`;
+    }
+
+    function normalizePath(path) {
+      const value = (path || '/users/password/edit').trim();
+      if (!value) return '/users/password/edit';
+      return value.startsWith('/') ? value : `/${value}`;
+    }
+
+    function syncRecoveryPreview() {
+      const usingTestMode = !!testMode.checked;
+      const host = usingTestMode
+        ? normalizeHost(testHost.value, 'localhost:3000', true)
+        : normalizeHost(liveHost.value, 'softexsrs.ddns.net', false);
+      const path = normalizePath(pathField.value);
+      preview.value = `${host}${path}?reset_password_token=__TOKEN__`;
+    }
+
+    [testMode, testHost, liveHost, pathField].forEach((el) => {
+      el.addEventListener('input', syncRecoveryPreview);
+      el.addEventListener('change', syncRecoveryPreview);
+    });
+
+    syncRecoveryPreview();
   })();
 </script>

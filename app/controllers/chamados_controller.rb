@@ -1,8 +1,8 @@
 class ChamadosController < ApplicationController
   include VisualizacaoHelper
   before_action :authenticate_user!
-  before_action :set_chamado, only: %i[ show edit update destroy change_status ]
-  before_action :authorize_chamado_access, only: %i[ show edit update destroy change_status ]
+  before_action :set_chamado, only: %i[ show edit update destroy change_status send_password_recovery_link ]
+  before_action :authorize_chamado_access, only: %i[ show edit update destroy change_status send_password_recovery_link ]
   before_action :authorize_chamado_edit, only: %i[ edit update destroy ]
   # carregue coleções sempre que vai renderizar formulário
   before_action :prepare_collections, only: %i[new edit create update]
@@ -19,6 +19,7 @@ class ChamadosController < ApplicationController
   @chamados = @chamados.where(unidade: params[:unidade]) if params[:unidade].present? && params[:unidade] != "Todas as unidades"
   @chamados = @chamados.where(prioridade: params[:prioridade]) if params[:prioridade].present? && params[:prioridade] != "Todas as prioridades"
   @chamados = @chamados.where(responsavel: params[:responsavel]) if params[:responsavel].present? && params[:responsavel] != "Todos os responsáveis"
+  @chamados = @chamados.password_recovery_support_requests if params[:password_recovery_support].present? && params[:password_recovery_support] == "Solicitou suporte de acesso"
 
   if params[:data_inicio].present? && params[:data_fim].present?
     @chamados = @chamados.where(data_resolucao: params[:data_inicio]..params[:data_fim])
@@ -164,6 +165,50 @@ end
       redirect_back fallback_location: chamados_path, alert: mensagem
     end
   end
+
+  def send_password_recovery_link
+    unless usuario_pode_enviar_link_recuperacao?
+      redirect_back fallback_location: chamados_path, alert: "Sem permissao para enviar o link de redefinicao."
+      return
+    end
+
+    unless @chamado.password_recovery_support_request?
+      redirect_back fallback_location: chamados_path, alert: "Este chamado nao pertence ao fluxo de recuperacao por suporte."
+      return
+    end
+
+    if @chamado.password_recovery_reset_link_sent?
+      redirect_back fallback_location: chamados_path, alert: "O link de redefinicao ja foi enviado para este chamado."
+      return
+    end
+
+    user = @chamado.password_recovery_target_user
+    if user.blank? || user.email.blank?
+      redirect_back fallback_location: chamados_path, alert: "Nao foi encontrado um usuario com e-mail valido para este chamado."
+      return
+    end
+
+    MailSettings.apply!
+    user.send_reset_password_instructions
+
+    observacao_atual = @chamado.observacao.to_s.strip
+    complemento = [
+      observacao_atual.presence,
+      "Link de redefinicao enviado por #{current_user.participant&.name || current_user.email || 'suporte'} em #{I18n.l(Time.current, format: :short)}."
+    ].compact.join("\n\n")
+
+    @chamado.update!(
+      status: "Concluído",
+      password_recovery_reset_link_sent_at: Time.current,
+      observacao: complemento
+    )
+
+    redirect_back fallback_location: chamados_path, notice: "Link de redefinicao enviado com sucesso e chamado concluido."
+  rescue Errno::ECONNREFUSED, SocketError, IOError, SystemCallError
+    redirect_back fallback_location: chamados_path, alert: "Nao foi possivel conectar ao servidor de e-mail configurado. Revise as configuracoes SMTP."
+  rescue Net::SMTPAuthenticationError, Net::SMTPServerBusy, Net::SMTPSyntaxError, Net::SMTPFatalError, Net::SMTPUnknownError => e
+    redirect_back fallback_location: chamados_path, alert: "Falha ao enviar o e-mail de redefinicao: #{e.message}"
+  end
   
 def remove_foto
   foto = ActiveStorage::Blob.find_signed(params[:foto_id])
@@ -232,6 +277,7 @@ end
     return if current_user.admin? || current_user.operador?
     return unless current_user.client?
     return unless current_user.participant
+    return if action_name == "send_password_recovery_link" && usuario_pode_enviar_link_recuperacao?
 
     eh_solicitante = @chamado.solicitante_id.present? && @chamado.solicitante_id == current_user.participant.id
     eh_responsavel = @chamado.responsavel.present? && @chamado.responsavel == current_user.participant.name
@@ -257,6 +303,16 @@ end
 
   def status_valido?(status)
     ["Pendente", "Em andamento", "Concluído"].include?(normalizar_status_chamado(status.to_s))
+  end
+
+  def usuario_pode_enviar_link_recuperacao?
+    return false unless current_user
+    return false unless current_user.participant
+    return false unless current_user.participant.sub_grupo_empresa&.can_support_access?
+    return false unless @chamado.password_recovery_support_request?
+    return false unless @chamado.solicitante&.grupo_empresa_id.present?
+
+    @chamado.solicitante.grupo_empresa_id == current_user.participant.grupo_empresa_id
   end
 
   def normalizar_status_chamado(status)

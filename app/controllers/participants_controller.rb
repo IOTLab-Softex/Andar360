@@ -136,6 +136,8 @@ end
   # app/controllers/participants_controller.rb
   def index
   tab = params[:tab].presence || "ativos"
+  @can_manage_password_recovery_support = current_user.participant.present? &&
+    current_user.participant.sub_grupo_empresa&.can_support_access?
 
   # --- Empresa padrão + persistência em sessão ---
   if current_user.admin? || current_user.operador?
@@ -201,6 +203,15 @@ end
   else
     # ✅ aqui estava o seu bug: @participants estava nil
     @participants = base.includes(:user)
+    password_recovery_scope = Chamado.password_recovery_support_requests
+      .where(password_recovery_reset_link_sent_at: nil)
+      .where.not(status: ["Concluído", "Concluido", "Concluída", "Finalizada"])
+
+    actionable_password_recovery_scope = password_recovery_scope
+
+    if !@can_manage_password_recovery_support
+      actionable_password_recovery_scope = actionable_password_recovery_scope.none
+    end
 
     # --- filtros acesso/bloqueio ---
     if params[:user_access].present?
@@ -241,6 +252,14 @@ end
       q = "%#{params[:search]}%"
       @participants = @participants.where("name ILIKE :q OR cpf ILIKE :q", q: q)
     end
+
+    if params[:password_recovery_support].present? && params[:password_recovery_support] == "requested"
+      requested_ids = password_recovery_scope.select(:solicitante_id)
+      @participants = @participants.where(id: requested_ids)
+    end
+
+    @password_recovery_chamados_by_participant =
+      actionable_password_recovery_scope.order(created_at: :desc).group_by(&:solicitante_id).transform_values(&:first)
   end
 end
 

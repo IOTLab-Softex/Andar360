@@ -2,62 +2,186 @@
   ESPAÇOS COMUNS <i class="fa-solid fa-angle-down"></i>
 </h2>
 
-<div id="comuns-section" class="rooms smart-scroll">
+<div id="comuns-section" class="rooms common-stack-carousel" data-common-carousel="true" data-visible="3">
   <% if rooms.blank? %>
     <div style="text-align:center; padding:1rem; font-style:italic; color:#888;">
       Nenhum espaço comum cadastrado.
     </div>
   <% else %>
-    <% rooms.each do |room| %>
-      <% if room.photo.attached? %>
-        <% bg_url = rails_blob_url(room.photo, only_path: true) %>
-        <% background = "--bg-url: url('#{bg_url}');" %>
-      <% else %>
-        <% background = "--bg-url: none; background-color: black;" %>
-      <% end %>
+    <div class="common-stack-carousel__shell">
+      <div class="common-stack-carousel__track">
+        <% rooms.each do |room| %>
+          <% if room.photo.attached? %>
+            <% bg_url = rails_blob_url(room.photo, only_path: true) %>
+            <% background = "--bg-url: url('#{bg_url}');" %>
+          <% else %>
+            <% background = "--bg-url: none; background-color: black;" %>
+          <% end %>
 
-      <%= link_to room_reservations_path(room), class: "room-card-link" do %>
-        <div class="room-card" style="<%= background %>">
-          <div class="room-header">
-            <strong><%= room.name %></strong><br>
-            <% if room.dados_do_inquilino.present? %>
-              <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
-            <% else %>
-              RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
-            <% end %>
-          </div>
+          <%= link_to room_reservations_path(room), class: "room-card-link common-stack-card isHidden", data: { common_card_link: true } do %>
+            <div class="room-card" style="<%= background %>">
+              <div class="room-header">
+                <strong><%= room.name %></strong><br>
+                <% if room.dados_do_inquilino.present? %>
+                  <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
+                <% else %>
+                  RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
+                <% end %>
+              </div>
 
-          <div class="room-actions">
-            <% if current_user&.admin? %>
-              <%= button_to edit_room_path(room), method: :get,
-                    class: 'btn edit_room',
-                    form: { data: { turbo: false } },
-                    onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> EDITAR </div>
-              <% end %>
-            <% end %>
+              <div class="room-actions">
+                <% if current_user&.admin? %>
+                  <%= button_to edit_room_path(room), method: :get,
+                        class: 'btn edit_room',
+                        form: { data: { turbo: false } },
+                        onclick: 'event.stopPropagation();' do %>
+                    <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> EDITAR </div>
+                  <% end %>
+                <% end %>
 
-            <% if current_user&.admin? || current_user&.operador? %>
-              <%= button_to open_door_room_path(room), method: :post,
-                    class: 'btn open-door',
-                    form: { data: { turbo: false } },
-                    onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-door-open me-2"></i>  <div class="hide-sm"> ABRIR PORTA</div>
-              <% end %>
-            <% end %>
+                <% if current_user&.admin? || current_user&.operador? %>
+                  <%= button_to open_door_room_path(room), method: :post,
+                        class: 'btn open-door',
+                        form: { data: { turbo: false } },
+                        onclick: 'event.stopPropagation();' do %>
+                    <i class="fa-solid fa-door-open me-2"></i> <div class="hide-sm"> ABRIR PORTA</div>
+                  <% end %>
+                <% end %>
 
-            <% if current_user&.admin? %>
-              <%= button_to room_path(room), method: :delete,
-                    data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' },
-                    class: 'btn btn-warning',
-                    style: 'font-size: 15px; height: 51px; border: solid 2px;',
-                    onclick: 'event.stopPropagation();' do %>
-                <i class="fa-solid fa-trash"></i>   <div class="hide-sm"> EXCLUIR</div>
-              <% end %>
-            <% end %>
-          </div>
-        </div>
-      <% end %>
-    <% end %>
+                <% if current_user&.admin? %>
+                  <%= button_to room_path(room), method: :delete,
+                        data: { confirm: 'Tem certeza que deseja excluir esta sala e todas as reservas associadas?' },
+                        class: 'btn btn-warning',
+                        style: 'font-size: 15px; height: 51px; border: solid 2px;',
+                        onclick: 'event.stopPropagation();' do %>
+                    <i class="fa-solid fa-trash"></i> <div class="hide-sm"> EXCLUIR</div>
+                  <% end %>
+                <% end %>
+              </div>
+            </div>
+          <% end %>
+        <% end %>
+      </div>
+
+    </div>
   <% end %>
 </div>
+
+<style>
+  #comuns-section.common-stack-carousel {
+    padding: 1rem 0 0;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__shell {
+    position: relative;
+    width: min(100%, 37rem);
+    min-height: 35rem;
+    margin: 0 auto;
+    overflow: hidden;
+    perspective: 1800px;
+    perspective-origin: 50% 12%;
+    touch-action: pan-y;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__track {
+    display: block;
+    position: relative;
+    min-height: 33rem;
+    transform-style: preserve-3d;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    position: absolute;
+    inset: 0 auto auto 50%;
+    text-decoration: none;
+    transition: opacity .55s ease, transform .68s cubic-bezier(.22, 1, .36, 1), filter .5s ease;
+    transform: translateX(-50%) scale(.76) rotateX(12deg) rotateY(0deg) rotateZ(0deg);
+    transform-style: preserve-3d;
+    will-change: transform, opacity;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card .room-card {
+    width: 100%;
+    max-width: 100%;
+    min-height: 27rem;
+    border-radius: 28px;
+    overflow: hidden;
+    box-shadow: none !important;
+    backface-visibility: hidden;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card .room-card:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    filter: none !important;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card .room-header {
+    transition: transform .45s ease, opacity .45s ease;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card .room-actions {
+    transition: transform .45s ease, opacity .45s ease;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.isHidden {
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom {
+    z-index: 1;
+    transform: translateX(-50%) translateY(3.6rem) scale(.88) rotateX(18deg) rotateZ(0deg) translateZ(-90px);
+    filter: brightness(.86) saturate(.92);
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle {
+    z-index: 2;
+    transform: translateX(-50%) translateY(1.6rem) scale(.95) rotateX(8deg) rotateZ(0deg) translateZ(-32px);
+    filter: brightness(.95) saturate(.96);
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--active {
+    z-index: 4;
+    transform: translateX(-50%) translateY(0) scale(1) rotateX(0deg) rotateZ(0deg) translateZ(0);
+    filter: brightness(1) saturate(1);
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom .room-actions,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle .room-actions {
+    opacity: 0;
+    transform: translateY(1rem);
+    pointer-events: none;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom .room-header {
+    transform: translateY(-.35rem) scale(.94);
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle .room-header {
+    transform: translateY(-.15rem) scale(.98);
+  }
+
+  @media (max-width: 768px) {
+    #comuns-section.common-stack-carousel .common-stack-carousel__shell {
+      width: min(100%, 25rem);
+      min-height: 28rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card .room-card {
+      min-height: 22rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom {
+      transform: translateX(-50%) translateY(2.8rem) scale(.88) rotateX(18deg) rotateZ(0deg) translateZ(-90px);
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle {
+      transform: translateX(-50%) translateY(1.2rem) scale(.95) rotateX(8deg) rotateZ(0deg) translateZ(-32px);
+    }
+  }
+</style>

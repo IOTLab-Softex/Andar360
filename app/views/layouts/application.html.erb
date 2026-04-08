@@ -108,6 +108,13 @@
       color: white;
     }
 
+    .modal-acoes {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
     .fechar-modal {
       position: absolute;
       top: 12px;
@@ -501,7 +508,7 @@
       </div>
     </div>%>
         <% unless tela_de_alteracao_de_senha? %>
-      <% unless controller_path == "users/registrations" && action_name == "edit" %>
+      <% unless (controller_path == "users/registrations" && action_name == "edit") || (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) %>
         <div class="user-info">
           <% if user_signed_in? %>
             <% participant   = current_user.participant %>
@@ -560,6 +567,9 @@
                       <div class="notificacao-conteudo">
                         <button type="button"
                                 class="abrir-detalhe-notificacao"
+                                data-notification-id="<%= n.id %>"
+                                data-notification-url="<%= n.url.presence || '#' %>"
+                                data-destination-label="<%= n.url.to_s.include?('/chamados/') ? 'Ir até o chamado' : 'Ir até o detalhe' %>"
                                 data-titulo="<%= n.titulo %>"
                                 data-mensagem="<%= n.corpo %>"
                                 data-data="<%= l(n.created_at, format: :short) %>">
@@ -592,6 +602,7 @@
     <main>
       <div class="banner">
         <% unless (controller_path == "users/registrations" && action_name == "edit") || 
+          (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) ||
           (controller_path == "devise/sessions" && action_name == "new") ||
           (controller_path == "users/sessions" && action_name == "new") %>
         <div class="title-wrapper">
@@ -615,7 +626,8 @@
     </nav>
     <!-- 🔹 Aqui começa o “container” com margem lateral -->
     <% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) ||
-     controller_path == "users/registrations" && %w[new edit].include?(action_name) %>
+     controller_path == "users/registrations" && %w[new edit].include?(action_name) ||
+     controller_path == "devise/passwords" && %w[new edit].include?(action_name) %>
       <%= yield %>
     <% else %>
       <div class="page-shell">
@@ -740,6 +752,11 @@
     </button>
     <h2 id="modal-titulo"></h2>
     <p id="modal-mensagem"></p>
+    <div class="modal-acoes">
+      <button type="button" id="btn-ir-notificacao" class="btn btn-success" hidden>
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ir até a notificação
+      </button>
+    </div>
   </div>
 </div>
 <%= render "shared/feedback_fab" %>
@@ -922,6 +939,9 @@
     const titulo   = this.dataset.titulo;
     const mensagem = this.dataset.mensagem;
     const data     = this.dataset.data; // <- vem do ERB acima
+    const notificationId = this.dataset.notificationId;
+    const notificationUrl = this.dataset.notificationUrl;
+    const destinationLabel = this.dataset.destinationLabel;
 
     document.getElementById("modal-titulo").textContent = titulo;
     document.getElementById("modal-mensagem").textContent = mensagem;
@@ -936,6 +956,14 @@
     }
     dataEl.textContent = `📅 ${data}`;
 
+    const actionBtn = document.getElementById("btn-ir-notificacao");
+    if (actionBtn) {
+      actionBtn.hidden = !notificationUrl || notificationUrl === "#";
+      actionBtn.dataset.notificationId = notificationId || "";
+      actionBtn.dataset.notificationUrl = notificationUrl || "";
+      actionBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> ${destinationLabel || "Ir até o detalhe"}`;
+    }
+
     modal.style.display = "flex";
   });
   });
@@ -945,6 +973,59 @@
   function fecharModalNotificacao() {
     document.getElementById("modal-detalhe-notificacao").style.display = "none";
   }
+
+  function atualizarBadgeNotificacoes() {
+    const badge = document.querySelector(".notification-btn .badge");
+    const items = document.querySelectorAll(".notificacoes-lista .notificacao-item");
+    const sidebarContent = document.querySelector(".sidebar-conteudo");
+
+    if (badge) {
+      if (items.length > 0) {
+        badge.textContent = items.length;
+      } else {
+        badge.remove();
+      }
+    }
+
+    if (sidebarContent && items.length === 0 && !sidebarContent.querySelector(".sem-notificacoes")) {
+      sidebarContent.innerHTML = '<div class="sem-notificacoes">Nenhuma notificação nova</div>';
+    }
+  }
+
+  async function marcarNotificacaoComoLida(notificationId) {
+    if (!notificationId) return;
+
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    await fetch(`/notifications/${notificationId}/marcar_como_lida`, {
+      method: "POST",
+      headers: {
+        "Accept": "application/json",
+        "X-CSRF-Token": tokenMeta ? tokenMeta.content : ""
+      },
+      credentials: "same-origin"
+    }).catch(() => {});
+  }
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const actionBtn = document.getElementById("btn-ir-notificacao");
+    if (!actionBtn) return;
+
+    actionBtn.addEventListener("click", async function () {
+      const notificationId = this.dataset.notificationId;
+      const destinationUrl = this.dataset.notificationUrl;
+
+      await marcarNotificacaoComoLida(notificationId);
+      fecharModalNotificacao();
+
+      const item = notificationId ? document.getElementById(`notificacao-${notificationId}`) : null;
+      if (item) item.remove();
+      atualizarBadgeNotificacoes();
+
+      if (destinationUrl && destinationUrl !== "#") {
+        window.location.href = destinationUrl;
+      }
+    });
+  });
 
    document.addEventListener("DOMContentLoaded", function () {
     const token = document.querySelector('meta[name="csrf-token"]').content;

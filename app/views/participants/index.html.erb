@@ -280,7 +280,7 @@
   <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
 </button>
 <%
-  filtros_keys = [:grupo_empresa_id, :sub_grupo_empresa_id, :user_access, :user_block, :search]
+  filtros_keys = [:grupo_empresa_id, :sub_grupo_empresa_id, :user_access, :user_block, :password_recovery_support, :search]
   has_filtros  = filtros_keys.any? { |k| params[k].present? }
 %>
 <%= form_with url: participants_path, method: :get, local: true,
@@ -312,6 +312,12 @@
             class: "form-control" %>
     </div>
     <div class="filtro-field">
+      <span class="filtro-field-label">Recuperacao</span>
+      <%= select_tag :password_recovery_support,
+            options_for_select([["TODOS", ""], ["Solicitaram suporte", "requested"]], params[:password_recovery_support]),
+            class: "form-control" %>
+    </div>
+    <div class="filtro-field">
       <span class="filtro-field-label">Buscar por nome/CPF</span>
       <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Digite nome ou CPF" %>
     </div>
@@ -333,7 +339,8 @@
     sub_grupo_empresa_id: params[:sub_grupo_empresa_id],
     search: params[:search],
     user_access: params[:user_access],
-    user_block: params[:user_block]
+    user_block: params[:user_block],
+    password_recovery_support: params[:password_recovery_support]
   }.compact
 %>
 <div class="tabs">
@@ -554,6 +561,7 @@
     </thead>
     <tbody>
       <% (@participants || []).each do |participant| %>
+        <% password_recovery_chamado = @password_recovery_chamados_by_participant&.[](participant.id) %>
         <tr>
           <td>
             <% if participant.photo.attached? %>
@@ -619,6 +627,20 @@
               <% if participant.solicitacao_exclusao_pendente.blank? %>
                 <%= link_to edit_participant_path(participant), class: "btn edit", style: "width: -webkit-fill-available; text-align: center;" do %>
                   <i class="fa-solid fa-user-pen"></i> Editar
+                <% end %>
+                <% if @can_manage_password_recovery_support && password_recovery_chamado.present? %>
+                  <%= button_to send_password_recovery_link_chamado_path(password_recovery_chamado),
+                        method: :post,
+                        class: "btn btn-success js-send-reset-link",
+                        style: "width: -webkit-fill-available; text-align: center;",
+                        form: {
+                          data: {
+                            confirm_reset_link: "1",
+                            record_name: (participant.name.presence || participant.cpf)
+                          }
+                        } do %>
+                    <i class="fa-solid fa-paper-plane"></i> Enviar link de redefinicao
+                  <% end %>
                 <% end %>
                 <% if current_user.admin? %>
                   <%= button_to participant_path(participant),
@@ -1309,6 +1331,32 @@ document.addEventListener('turbo:load', initFiltroParticipantsCollapse);
 document.addEventListener('turbo:before-cache', () => {
   const toggle = document.getElementById('filtro-toggle');
   if (toggle) toggle.dataset.bound = "";
+});
+
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
+  if (!form.dataset.confirmResetLink) return;
+
+  e.preventDefault();
+
+  const btn = e.submitter;
+  const nome = (btn && btn.dataset.recordName) || form.dataset.recordName || "este usuario";
+
+  if (window.Swal) {
+    const res = await Swal.fire({
+      title: "Enviar link de redefinicao?",
+      html: `Deseja realmente enviar o link de redefinicao para <b>${nome}</b>?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, enviar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (res.isConfirmed) form.submit();
+  } else if (confirm(`Deseja realmente enviar o link de redefinicao para ${nome}?`)) {
+    form.submit();
+  }
 });
 
 </script>

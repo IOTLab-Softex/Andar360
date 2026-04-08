@@ -110,6 +110,7 @@ end
     member do
       patch :anexar_arquivo
       patch :change_status
+      post :send_password_recovery_link
     end
     resources :arquivos_anexos_chamado, only: [:destroy]
   end
@@ -141,6 +142,8 @@ devise_for :users, controllers: {
 }
 
 resource :password_recovery, only: [] do
+  post :support_lookup
+  post :support_request
   get  :facial_status
   post :facial_lookup
   post :facial_verify
@@ -148,6 +151,7 @@ resource :password_recovery, only: [] do
 end
 
   get "/dashboard/refresh", to: "dashboard#refresh", as: :refresh_dashboard
+  patch "/dashboard/card_order", to: "dashboard#update_card_order", as: :update_dashboard_card_order
 
   get "import_logs/status", to: "import_logs#status"
 

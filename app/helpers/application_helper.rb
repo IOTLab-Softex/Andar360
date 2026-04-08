@@ -1,6 +1,14 @@
 module ApplicationHelper
    def tela_de_alteracao_de_senha?
-    request.fullpath == "/users"
+    devise_password_screen? || user_registration_password_screen?
+  end
+
+  def devise_password_screen?
+    controller_path == "devise/passwords" && %w[new edit update create].include?(action_name)
+  end
+
+  def user_registration_password_screen?
+    controller_path == "users/registrations" && action_name == "edit"
   end
 
 

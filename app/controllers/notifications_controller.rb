@@ -4,8 +4,10 @@ class NotificationsController < ApplicationController
   def marcar_como_lida
     notification = current_user.notifications.find(params[:id])
     notification.update(lida: true)
-
-    redirect_back fallback_location: root_path
+    respond_to do |format|
+      format.html { redirect_back fallback_location: root_path }
+      format.json { render json: { ok: true, id: notification.id } }
+    end
   end
 
   def marcar_todas_como_lidas

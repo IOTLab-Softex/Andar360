@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_08_170000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -90,6 +90,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
     t.bigint "room_id"
     t.string "solicitante_nome"
     t.bigint "solicitante_id"
+    t.boolean "password_recovery_support_request", default: false, null: false
+    t.datetime "password_recovery_reset_link_sent_at"
     t.index ["room_id"], name: "index_chamados_on_room_id"
     t.index ["solicitante_id"], name: "index_chamados_on_solicitante_id"
   end
@@ -478,6 +480,14 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
     t.integer "camera_focus_outer_radius"
     t.boolean "camera_auto_capture_enabled"
     t.string "camera_mesh_style"
+    t.boolean "password_recovery_test_mode", default: true, null: false
+    t.string "password_recovery_test_host", default: "localhost:3000"
+    t.string "password_recovery_live_host", default: "softexsrs.ddns.net"
+    t.string "password_recovery_link_path", default: "/users/password/edit"
+    t.string "password_recovery_email_subject"
+    t.text "password_recovery_email_html"
+    t.integer "password_recovery_expiration_minutes", default: 360, null: false
+    t.string "password_recovery_expiration_unit", default: "minutes", null: false
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|
@@ -531,6 +541,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
     t.boolean "can_approve_purchase", default: false, null: false
     t.boolean "can_buy", default: false, null: false
     t.boolean "can_view_monitoring", default: false, null: false
+    t.boolean "can_support_access", default: false, null: false
     t.index ["grupo_empresa_id"], name: "index_sub_grupo_empresas_on_grupo_empresa_id"
   end
 
@@ -553,6 +564,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_06_120000) do
     t.string "current_sign_in_ip"
     t.string "last_sign_in_ip"
     t.boolean "blocked", default: false, null: false
+    t.jsonb "dashboard_card_order", default: [], null: false
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true

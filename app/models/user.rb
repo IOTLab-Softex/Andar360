@@ -51,5 +51,18 @@ def inactive_message
   :inactive
 end
 
+def self.reset_password_within
+  Setting.instance.password_recovery_reset_within
+rescue StandardError
+  super
+end
+
+def normalized_dashboard_card_order(available_cards)
+  allowed = Array(available_cards).map(&:to_s)
+  saved = Array(dashboard_card_order).map(&:to_s)
+
+  (saved & allowed) + (allowed - saved)
+end
+
 
 end

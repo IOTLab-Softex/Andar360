@@ -3,7 +3,7 @@
 <% end %>
 
 <%= turbo_stream.replace "card-manutencoes" do %>
-  <section id="card-manutencoes" class="board-card col-12 col-6">
+  <section id="card-manutencoes" class="board-card col-12 col-6" data-card-id="manutencoes">
     <%= render "dashboard/manutencoes",
           manutencoes: @manutencao_programadas,
           ack_ns: @ack_ns,
@@ -13,21 +13,21 @@
 <% end %>
 
 <%= turbo_stream.replace "card-chamados" do %>
-  <section id="card-chamados" class="board-card col-12 col-6">
+  <section id="card-chamados" class="board-card col-12 col-6" data-card-id="chamados">
     <%= render "dashboard/chamados", chamados: @chamados %>
   </section>
 <% end %>
 
 <% if current_user.admin? || current_user.role == "operador" %>
   <%= turbo_stream.replace "card-salas" do %>
-    <section id="card-salas" class="board-card col-12 col-6">
+    <section id="card-salas" class="board-card col-12 col-6" data-card-id="salas">
       <%= render "dashboard/salas", rooms: @rooms %>
     </section>
   <% end %>
 <% end %>
 
 <%= turbo_stream.replace "card-espacos" do %>
-  <section id="card-espacos" class="board-card col-12 col-6">
+  <section id="card-espacos" class="board-card col-12 col-6" data-card-id="espacos">
     <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
   </section>
 <% end %>

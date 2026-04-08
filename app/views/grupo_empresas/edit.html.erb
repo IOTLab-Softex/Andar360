@@ -60,7 +60,8 @@
               :can_request_purchase,
               :can_approve_purchase,
               :can_buy,
-              :can_view_monitoring)  # 👈 NOVO
+              :can_view_monitoring,
+              :can_support_access)  # 👈 NOVO
       .to_json %>">
 </div>
 
@@ -130,6 +131,12 @@
                       id: "sub_grupo_empresa_can_view_monitoring" %>
       Acessar painel de monitoramento
     </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_support_access,
+                      id: "sub_grupo_empresa_can_support_access" %>
+      Suporte de acesso
+    </label>
   </div>
 </fieldset>
 
@@ -170,6 +177,8 @@
 
 const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monitoring');
   if (chkMonitoring) chkMonitoring.checked = false;
+const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
+  if (chkSupportAccess) chkSupportAccess.checked = false;
 
     title.textContent = 'Adicionar Subgrupo';
     modal.style.display = 'flex';
@@ -210,6 +219,8 @@ const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monito
 
 const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monitoring');
 if (chkMonitoring) chkMonitoring.checked = !!sg.can_view_monitoring;
+const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
+if (chkSupportAccess) chkSupportAccess.checked = !!sg.can_support_access;
 
     title.textContent = 'Editar Subgrupo';
     modal.style.display = 'flex';

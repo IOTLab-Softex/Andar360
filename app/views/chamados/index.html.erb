@@ -89,7 +89,7 @@
   <i class="fa-solid fa-chevron-up filtro-chevron" aria-hidden="true"></i>
 </button>
 <%
-  filtros_keys = [:local, :unidade, :status, :prioridade, :responsavel, :data_inicio, :data_fim]
+  filtros_keys = [:local, :unidade, :status, :prioridade, :responsavel, :password_recovery_support, :data_inicio, :data_fim]
   has_filtros  = filtros_keys.any? { |k| params[k].present? }
 %>
 
@@ -129,6 +129,13 @@
       <span class="filtro-field-label">Responsável</span>
       <%= select_tag :responsavel,
             options_for_select(["Todos os responsáveis"] + scope.distinct.pluck(:responsavel), params[:responsavel]),
+            class: "form-control" %>
+    </div>
+
+    <div class="filtro-field">
+      <span class="filtro-field-label">Recuperacao</span>
+      <%= select_tag :password_recovery_support,
+            options_for_select(["Todos", "Solicitou suporte de acesso"], params[:password_recovery_support]),
             class: "form-control" %>
     </div>
 
@@ -189,6 +196,21 @@
           <%= link_to chamado_path(chamado), class: "btn btn-success" do %>
             <i class="fa-solid fa-eye"></i> <div class="hide-sm"> Ver </div>
           <% end %>
+          <% if pode_enviar_link_recuperacao_chamado?(chamado, current_user) %>
+            <%= button_to send_password_recovery_link_chamado_path(chamado),
+                  method: :post,
+                  class: "btn btn-primary",
+                  form: {
+                    class: "form-send-reset-link",
+                    data: {
+                      record_name: (chamado.solicitante&.name.presence || chamado.titulo.presence || chamado.os),
+                      turbo: false
+                    },
+                    style: "display:inline"
+                  } do %>
+              <i class="fa-solid fa-paper-plane"></i> <div class="hide-sm"> Enviar redefinicao </div>
+            <% end %>
+          <% end %>
           <% if pode_editar_chamado?(chamado, current_user) %>
             <%= link_to edit_chamado_path(chamado), class: "edit btn btn-sm btn-outline-secondary" do %>
                <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
@@ -226,6 +248,34 @@
   </table>
 </div>
 <script>
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
+  if (!form.classList.contains("form-send-reset-link")) return;
+
+  e.preventDefault();
+
+  const btn = e.submitter;
+  const nome = (btn && btn.dataset.recordName) || form.dataset.recordName || "este usuario";
+
+  if (window.Swal) {
+    const res = await Swal.fire({
+      title: "Enviar link de redefinicao?",
+      html: `Deseja realmente enviar o e-mail de redefinicao para <b>${nome}</b>?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, enviar",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (res.isConfirmed) form.submit();
+  } else {
+    if (confirm(`Deseja realmente enviar o e-mail de redefinicao para ${nome}?`)) {
+      form.submit();
+    }
+  }
+});
+
 document.addEventListener("submit", async function(e) {
   const form = e.target;
   if (!form.classList.contains("form-excluir-chamado")) return;

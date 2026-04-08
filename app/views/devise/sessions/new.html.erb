@@ -1,5 +1,3 @@
-<% support_contact = Setting.instance.reply_to_or_default || Setting.instance.from_email_or_default || "suporte@seusite.com" %>
-
 <div class="login-container">
   <div class="logo-mobile">
     <img src="/logo.png" alt="Logo do Projeto" style="width: -webkit-fill-available; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));">
@@ -70,24 +68,26 @@
 
       <div class="password-recovery-choice-grid">
         <button type="button" class="password-recovery-choice" data-recovery-step="support">
-          <span class="password-recovery-choice__title">Falar com suporte</span>
-          <span class="password-recovery-choice__text">Receba orientação do time responsável pelo sistema.</span>
+          <span class="password-recovery-choice__title">
+            <i class="fa-solid fa-headset" aria-hidden="true"></i>
+            Enviar solicitacao ao suporte
+          </span>
+          <span class="password-recovery-choice__text">Solicite ajuda do time responsavel pela redefinicao do acesso.</span>
         </button>
 
         <button type="button" class="password-recovery-choice" data-recovery-step="facial">
-          <span class="password-recovery-choice__title">Liberar por reconhecimento facial</span>
+          <span class="password-recovery-choice__title">
+            <i class="fa-solid fa-user-check" aria-hidden="true"></i>
+            Liberar por reconhecimento facial
+          </span>
           <span class="password-recovery-choice__text">Valide seu rosto e depois envie um link seguro para o e-mail cadastrado.</span>
         </button>
       </div>
     </div>
 
     <div id="recovery-step-support" class="password-recovery-step">
-      <h3>Falar com suporte</h3>
-      <p>Entre em contato com o suporte para validar sua identidade e receber ajuda com a recuperação da senha.</p>
-      <div class="password-recovery-support-card">
-        <strong>Canal sugerido</strong>
-        <a href="mailto:<%= support_contact %>"><%= support_contact %></a>
-      </div>
+      <h3>Solicitar suporte</h3>
+      <p>Confirme seu CPF para liberar o envio da solicitacao ao suporte da redefinicao.</p>
       <div class="password-recovery-actions">
         <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
       </div>
@@ -95,10 +95,6 @@
 
     <div id="recovery-step-facial" class="password-recovery-step">
       <h3>Liberação por reconhecimento facial</h3>
-      <p class="password-recovery-note">
-        Fluxo seguro: digite o CPF, aguarde o carregamento do perfil, faça a validação facial e então envie o link de redefinição.
-      </p>
-
       <div class="password-recovery-steps-bar">
         <div class="password-recovery-step-chip is-active" data-flow-chip="cpf">1. CPF</div>
         <div class="password-recovery-step-chip" data-flow-chip="loading">2. Carregar</div>
@@ -179,24 +175,69 @@
     const closeBtn = document.getElementById("close-recovery-modal");
     const chooserStep = document.getElementById("recovery-step-chooser");
     const supportStep = document.getElementById("recovery-step-support");
+    if (supportStep) {
+      supportStep.innerHTML = `
+        <h3>Solicitar suporte</h3>
+        <p>Confirme seu CPF para liberar o envio da solicitacao ao suporte.</p>
+        <div class="password-recovery-steps-bar">
+          <div class="password-recovery-step-chip is-active" data-support-chip="cpf">1. CPF</div>
+          <div class="password-recovery-step-chip" data-support-chip="loading">2. Carregar</div>
+          <div class="password-recovery-step-chip" data-support-chip="send">3. Enviar solicitacao ao suporte</div>
+        </div>
+        <div id="recovery-support-stage-cpf" class="password-recovery-flow-stage is-active">
+          <div class="password-recovery-form">
+            <label for="support-cpf-input">Informe seu CPF</label>
+            <div class="password-recovery-form__row">
+              <input id="support-cpf-input" class="login-input js-cpf-mask" type="text" inputmode="numeric" placeholder="000.000.000-00">
+            </div>
+          </div>
+        </div>
+        <div id="recovery-support-stage-loading" class="password-recovery-flow-stage">
+          <div id="recovery-support-feedback" class="password-recovery-feedback is-pending">
+            <span>Informe seu CPF para iniciar a solicitacao.</span>
+          </div>
+        </div>
+        <div id="recovery-support-stage-send" class="password-recovery-flow-stage">
+          <div id="recovery-support-send-feedback" class="password-recovery-feedback is-success">
+            <span>CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.</span>
+          </div>
+        </div>
+        <div class="password-recovery-actions">
+          <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
+          <button type="button" id="support-primary-action" class="password-recovery-primary">Enviar solicitacao ao suporte</button>
+        </div>
+      `;
+    }
     const facialStep = document.getElementById("recovery-step-facial");
     const primaryActionBtn = document.getElementById("recovery-primary-action");
+    const supportPrimaryActionBtn = document.getElementById("support-primary-action");
+    const supportCpfInput = document.getElementById("support-cpf-input");
+    const supportFeedback = document.getElementById("recovery-support-feedback");
+    const supportSendFeedback = document.getElementById("recovery-support-send-feedback");
     const cpfInput = document.getElementById("recovery-cpf-input");
     const loadingFeedback = document.getElementById("recovery-facial-feedback");
     const cameraFeedback = document.getElementById("recovery-camera-feedback");
     const sendFeedback = document.getElementById("recovery-send-feedback");
     const cameraFrame = document.getElementById("recovery-camera-frame");
     const chips = Array.from(document.querySelectorAll("[data-flow-chip]"));
+    const supportChips = Array.from(document.querySelectorAll("[data-support-chip]"));
     const stages = {
       cpf: document.getElementById("recovery-facial-stage-cpf"),
       loading: document.getElementById("recovery-facial-stage-loading"),
       camera: document.getElementById("recovery-facial-stage-camera"),
       send: document.getElementById("recovery-facial-stage-send")
     };
+    const supportStages = {
+      cpf: document.getElementById("recovery-support-stage-cpf"),
+      loading: document.getElementById("recovery-support-stage-loading"),
+      send: document.getElementById("recovery-support-stage-send")
+    };
 
     let recoveryPayload = null;
+    let supportPayload = null;
     let frameReady = false;
     let facialValidated = false;
+    let supportValidated = false;
     let verificationInFlight = false;
     let recoveryStageLocked = false;
     let lastRecoveryPhotoBase64 = null;
@@ -205,6 +246,8 @@
     let serviceReady = false;
     const MAX_RECOVERY_VERIFY_ATTEMPTS = 3;
     const MAX_SERVICE_STATUS_ATTEMPTS = 20;
+
+    applyCpfMask(supportCpfInput);
 
     function normalizedCpf(value) {
       return (value || "").replace(/\D/g, "");
@@ -222,6 +265,19 @@
       });
       modal?.classList.toggle("is-camera-stage", step === "camera");
       syncPrimaryAction();
+    }
+
+    function setSupportStage(step) {
+      Object.entries(supportStages).forEach(([key, element]) => {
+        element.classList.toggle("is-active", key === step);
+      });
+      supportChips.forEach((chip) => {
+        const isCurrent = chip.dataset.supportChip === step;
+        const order = ["cpf", "loading", "send"];
+        chip.classList.toggle("is-active", isCurrent);
+        chip.classList.toggle("is-done", order.indexOf(chip.dataset.supportChip) < order.indexOf(step));
+      });
+      syncSupportAction();
     }
 
     function setFeedback(element, message, type = "pending", loading = false) {
@@ -255,6 +311,29 @@
       primaryActionBtn.hidden = true;
     }
 
+    function syncSupportAction() {
+      if (!supportPrimaryActionBtn) return;
+
+      if (supportValidated) {
+        supportPrimaryActionBtn.hidden = false;
+        supportPrimaryActionBtn.disabled = false;
+        supportPrimaryActionBtn.textContent = "Enviar solicitacao ao suporte";
+        return;
+      }
+
+      const currentStage =
+        Object.entries(supportStages).find(([, element]) => element?.classList.contains("is-active"))?.[0] || "cpf";
+
+      if (currentStage === "cpf") {
+        supportPrimaryActionBtn.hidden = false;
+        supportPrimaryActionBtn.disabled = false;
+        supportPrimaryActionBtn.textContent = "Avancar";
+        return;
+      }
+
+      supportPrimaryActionBtn.hidden = true;
+    }
+
     let securityResult = null;
     let securityBadge = null;
     let securityConfidence = null;
@@ -270,32 +349,15 @@
       securityResult.className = "password-recovery-security";
       securityResult.hidden = true;
       securityResult.innerHTML = `
-        <div class="password-recovery-security__header">
-          <strong>Resultado da validacao</strong>
-          <span id="recovery-security-badge" class="password-recovery-security__badge">Em analise</span>
+        <div class="password-recovery-security__icon" aria-hidden="true">✓</div>
+        <div class="password-recovery-security__content">
+          <strong id="recovery-security-badge" class="password-recovery-security__title">Validacao aprovada</strong>
+          <p id="recovery-security-summary" class="password-recovery-security__summary">Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.</p>
         </div>
-        <div class="password-recovery-security__grid">
-          <div class="password-recovery-security__item">
-            <span>Confianca</span>
-            <strong id="recovery-security-confidence">-</strong>
-          </div>
-          <div class="password-recovery-security__item">
-            <span>Score facial</span>
-            <strong id="recovery-security-score">-</strong>
-          </div>
-          <div class="password-recovery-security__item">
-            <span>Distancia</span>
-            <strong id="recovery-security-distance">-</strong>
-          </div>
-        </div>
-        <p id="recovery-security-summary" class="password-recovery-security__summary">Aguardando resultado da comparacao.</p>
       `;
 
       stages.send.appendChild(securityResult);
       securityBadge = document.getElementById("recovery-security-badge");
-      securityConfidence = document.getElementById("recovery-security-confidence");
-      securityScore = document.getElementById("recovery-security-score");
-      securityDistance = document.getElementById("recovery-security-distance");
       securitySummary = document.getElementById("recovery-security-summary");
     }
 
@@ -303,44 +365,23 @@
       ensureSecurityResult();
       if (securityResult) securityResult.hidden = true;
       if (securityBadge) {
-        securityBadge.textContent = "Em analise";
-        securityBadge.className = "password-recovery-security__badge";
+        securityBadge.textContent = "Validacao aprovada";
+        securityBadge.className = "password-recovery-security__title";
       }
-      if (securityConfidence) securityConfidence.textContent = "-";
-      if (securityScore) securityScore.textContent = "-";
-      if (securityDistance) securityDistance.textContent = "-";
-      if (securitySummary) securitySummary.textContent = "Aguardando resultado da comparacao.";
+      if (securitySummary) securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.";
     }
 
     function renderSecurityResult(payload) {
       ensureSecurityResult();
 
-      const confidence = Number(payload?.confidence ?? 0);
-      const score = Number(payload?.score ?? 0);
-      const distance = Number(payload?.distance ?? 0);
-      let label = "Limitrofe";
-      let tone = "is-low";
-      let summary = "A validacao passou, mas ficou perto do limite minimo de seguranca.";
-
-      if (confidence >= 0.85 && score >= 0.55 && distance <= 0.9) {
-        label = "Alta seguranca";
-        tone = "is-high";
-        summary = "A comparacao facial foi validada com boa margem de seguranca.";
-      } else if (confidence >= 0.65 && score >= 0.46 && distance <= 1.0) {
-        label = "Seguranca moderada";
-        tone = "is-medium";
-        summary = "A comparacao facial foi validada com seguranca aceitavel, mas sem muita folga.";
-      }
-
       if (securityResult) securityResult.hidden = false;
       if (securityBadge) {
-        securityBadge.textContent = label;
-        securityBadge.className = `password-recovery-security__badge ${tone}`;
+        securityBadge.textContent = "Reconhecimento confirmado";
+        securityBadge.className = "password-recovery-security__title";
       }
-      if (securityConfidence) securityConfidence.textContent = `${(confidence * 100).toFixed(1)}%`;
-      if (securityScore) securityScore.textContent = score.toFixed(4);
-      if (securityDistance) securityDistance.textContent = distance.toFixed(4);
-      if (securitySummary) securitySummary.textContent = summary;
+      if (securitySummary) {
+        securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.";
+      }
     }
 
     function openModal() {
@@ -369,6 +410,15 @@
       frameReady = false;
     }
 
+    function resetSupportFlow() {
+      supportPayload = null;
+      supportValidated = false;
+      if (supportCpfInput) supportCpfInput.value = "";
+      setSupportStage("cpf");
+      setFeedback(supportFeedback, "Informe seu CPF para iniciar a solicitacao.", "pending");
+      setFeedback(supportSendFeedback, "CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.", "success");
+    }
+
     function closeModal() {
       modal.hidden = true;
       modal.classList.remove("is-camera-stage");
@@ -377,13 +427,17 @@
       supportStep.classList.remove("is-active");
       facialStep.classList.remove("is-active");
       resetFacialFlow();
+      resetSupportFlow();
     }
+
+    resetSupportFlow();
 
     function goToMainStep(step) {
       chooserStep.classList.toggle("is-active", step === "chooser");
       supportStep.classList.toggle("is-active", step === "support");
       facialStep.classList.toggle("is-active", step === "facial");
       if (step !== "facial") resetFacialFlow();
+      if (step !== "support") resetSupportFlow();
     }
 
     function startRecoveryValidation() {
@@ -517,6 +571,48 @@
       }
     }
 
+    async function lookupSupportCpf() {
+      const cpf = normalizedCpf(supportCpfInput?.value);
+      if (cpf.length !== 11) {
+        setSupportStage("loading");
+        setFeedback(supportFeedback, "Informe um CPF valido para continuar.", "error");
+        return;
+      }
+
+      if (supportPrimaryActionBtn) supportPrimaryActionBtn.disabled = true;
+      supportValidated = false;
+      supportPayload = null;
+      setSupportStage("loading");
+      setFeedback(supportFeedback, "Carregando perfil para solicitacao de suporte...", "pending", true);
+
+      try {
+        const response = await fetch("<%= support_lookup_password_recovery_path %>", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+          },
+          body: JSON.stringify({ cpf: cpf })
+        });
+
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) {
+          setFeedback(supportFeedback, payload.message || "Nao foi possivel validar este CPF.", "error");
+          return;
+        }
+
+        supportPayload = payload;
+        supportValidated = true;
+        setSupportStage("send");
+        setFeedback(supportSendFeedback, payload.message || "CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.", "success");
+      } catch (_error) {
+        setFeedback(supportFeedback, "Falha ao consultar o perfil para o suporte.", "error");
+      } finally {
+        syncSupportAction();
+      }
+    }
+
     async function sendRecoveryResetLink() {
       if (!recoveryPayload || !facialValidated) return;
 
@@ -544,11 +640,46 @@
       }
     }
 
+    async function sendSupportRequest() {
+      if (!supportPayload || !supportValidated) return;
+
+      if (supportPrimaryActionBtn) supportPrimaryActionBtn.disabled = true;
+      setSupportStage("send");
+      setFeedback(supportSendFeedback, "Enviando solicitacao ao suporte...", "pending", true);
+
+      try {
+        const response = await fetch("<%= support_request_password_recovery_path %>", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name=\"csrf-token\"]')?.content || ""
+          },
+          body: JSON.stringify({ cpf: supportPayload.cpf })
+        });
+
+        const payload = await response.json();
+        setFeedback(supportSendFeedback, payload.message || "Operacao concluida.", response.ok ? "success" : "error");
+      } catch (_error) {
+        setFeedback(supportSendFeedback, "Falha ao enviar a solicitacao de suporte. Tente novamente.", "error");
+      } finally {
+        syncSupportAction();
+      }
+    }
+
     primaryActionBtn?.addEventListener("click", async () => {
       if (facialValidated) {
         await sendRecoveryResetLink();
       } else {
         await lookupRecoveryCpf();
+      }
+    });
+
+    supportPrimaryActionBtn?.addEventListener("click", async () => {
+      if (supportValidated) {
+        await sendSupportRequest();
+      } else {
+        await lookupSupportCpf();
       }
     });
 
@@ -831,10 +962,20 @@
   }
 
   .password-recovery-choice__title {
-    display: block;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
     font-weight: 700;
     margin-bottom: 6px;
     color: var(--pr-text-2) !important;
+  }
+
+  .password-recovery-choice__title i {
+    color: #5ab0ff;
+    font-size: 0.95rem;
+    width: 16px;
+    text-align: center;
+    flex: 0 0 16px;
   }
 
   .password-recovery-choice__text {
@@ -955,79 +1096,44 @@
 
   .password-recovery-security {
     margin-bottom: 14px;
-    padding: 14px;
+    padding: 18px;
     border-radius: 16px;
     background: linear-gradient(180deg, #3b3b3b, #343434);
     border: 1px solid var(--pr-outline);
-  }
-
-  .password-recovery-security__header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
+    gap: 16px;
   }
 
-  .password-recovery-security__badge {
+  .password-recovery-security__icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 999px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 32px;
-    padding: 6px 12px;
-    border-radius: 999px;
-    background: rgba(148, 163, 184, 0.18);
-    color: #e2e8f0;
-    border: 1px solid rgba(148, 163, 184, 0.25);
-    font-size: .84rem;
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.32);
+    color: #86efac;
+    font-size: 2rem;
+    font-weight: 900;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+  }
+
+  .password-recovery-security__content {
+    display: grid;
+    gap: 4px;
+  }
+
+  .password-recovery-security__title {
+    display: block;
+    color: #dcfce7;
+    font-size: 1.02rem;
     font-weight: 700;
   }
 
-  .password-recovery-security__badge.is-high {
-    background: rgba(34, 197, 94, 0.16);
-    border-color: rgba(34, 197, 94, 0.32);
-    color: #86efac;
-  }
-
-  .password-recovery-security__badge.is-medium {
-    background: rgba(250, 204, 21, 0.16);
-    border-color: rgba(250, 204, 21, 0.32);
-    color: #fde68a;
-  }
-
-  .password-recovery-security__badge.is-low {
-    background: rgba(248, 113, 113, 0.16);
-    border-color: rgba(248, 113, 113, 0.32);
-    color: #fca5a5;
-  }
-
-  .password-recovery-security__grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-  }
-
-  .password-recovery-security__item {
-    padding: 12px;
-    border-radius: 14px;
-    background: rgba(51, 65, 85, 0.56);
-    border: 1px solid rgba(148, 163, 184, 0.28);
-  }
-
-  .password-recovery-security__item span {
-    display: block;
-    margin-bottom: 6px;
-    color: var(--pr-text-3) !important;
-    font-size: .82rem;
-  }
-
-  .password-recovery-security__item strong {
-    font-size: 1.05rem;
-    color: #f8fafc;
-  }
-
   .password-recovery-security__summary {
-    margin: 12px 0 0;
+    margin: 0;
     color: var(--pr-text-3) !important;
     line-height: 1.5;
   }
@@ -1215,3 +1321,5 @@
     height: 55px !important;
   }
 </style>
+
+

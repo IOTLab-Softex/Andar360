@@ -4,6 +4,7 @@ class Chamado < ApplicationRecord
   has_many_attached :fotos
   belongs_to :room, optional: true
   belongs_to :solicitante, class_name: "Participant", optional: true
+  has_many :notifications, as: :notificavel, dependent: :destroy
 
   # 🔹 Relações que tinham antes
   has_many :ocorrencias, as: :ocorrenciavel, dependent: :destroy
@@ -13,6 +14,8 @@ class Chamado < ApplicationRecord
 
   validates :titulo,      presence: true
   validates :responsavel, presence: true
+
+  scope :password_recovery_support_requests, -> { where(password_recovery_support_request: true) }
 
   # --------------------------------------------------------------------
   # 🔹 SCOPE: Chamados visíveis para o usuário atual
@@ -37,6 +40,18 @@ class Chamado < ApplicationRecord
 
     participant = Participant.find_by(name: responsavel)
     User.find_by(participant_id: participant&.id)
+  end
+
+  def password_recovery_target_user
+    solicitante&.user || User.find_by(participant_id: solicitante_id)
+  end
+
+  def password_recovery_reset_link_sent?
+    password_recovery_reset_link_sent_at.present?
+  end
+
+  def status_concluido?
+    ["Concluído", "Concluido", "Concluída", "Concluida", "Finalizada"].include?(status.to_s)
   end
 
   # --------------------------------------------------------------------
@@ -101,6 +116,7 @@ class Chamado < ApplicationRecord
 
   def notificar_chamado_atualizado
     return unless previous_changes.key?("status") || previous_changes.key?("responsavel")
+    return ocultar_notificacoes_para_todos! if status_concluido?
 
     usuarios_para_notificar.each do |user|
       criar_notificacao_para(
@@ -109,5 +125,9 @@ class Chamado < ApplicationRecord
         "O chamado '#{titulo}' foi atualizado com status: #{status}."
       )
     end
+  end
+
+  def ocultar_notificacoes_para_todos!
+    notifications.update_all(lida: true)
   end
 end
