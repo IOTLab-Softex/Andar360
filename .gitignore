@@ -31,6 +31,10 @@
 /public/assets
 /.face_backend_venv/
 /face_backend/__pycache__/
+/.codex-gcc-test/
+/.ruby33-portable/
+/.ruby33-portable-test/
+/vendor/bundle/
 
 # Ignore master key for decrypting credentials and more.
 /config/master.key

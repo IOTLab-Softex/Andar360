@@ -2643,6 +2643,18 @@ position: absolute;
   background:#2a2a2a; color:#f0f0f0; border:1px solid #3a3a3a; padding:.45rem .7rem; border-radius:999px; cursor:pointer;
 }
 .btn-chip.active { background:#3f9142; border-color:#3f9142; }
+.btn-chip--wide {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .55rem;
+}
+.dashboard-layout-block {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
 
 /* Botões rodapé */
 .btn-danger  { background:#d9363e; border:0; color:#fff; padding:.55rem .85rem; border-radius:.45rem; cursor:pointer; }

@@ -9,6 +9,10 @@
     </div>
   <% else %>
     <div class="common-stack-carousel__shell">
+      <button type="button" class="common-stack-carousel__nav common-stack-carousel__nav--prev" aria-label="Ver espaco anterior" data-common-prev>
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+
       <div class="common-stack-carousel__track">
         <% rooms.each do |room| %>
           <% if room.photo.attached? %>
@@ -63,6 +67,9 @@
         <% end %>
       </div>
 
+      <button type="button" class="common-stack-carousel__nav common-stack-carousel__nav--next" aria-label="Ver proximo espaco" data-common-next>
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
     </div>
   <% end %>
 </div>
@@ -74,47 +81,103 @@
 
   #comuns-section.common-stack-carousel .common-stack-carousel__shell {
     position: relative;
-    width: min(100%, 37rem);
-    min-height: 35rem;
+    width: min(100%, 72rem);
+    min-height: 31rem;
     margin: 0 auto;
+    padding: 0 3.25rem;
     overflow: hidden;
-    perspective: 1800px;
-    perspective-origin: 50% 12%;
-    touch-action: pan-y;
+    user-select: none;
   }
 
   #comuns-section.common-stack-carousel .common-stack-carousel__track {
-    display: block;
     position: relative;
-    min-height: 33rem;
-    transform-style: preserve-3d;
+    height: 29rem;
+    overflow: hidden;
+    touch-action: pan-y;
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, .9) 14%,
+      #000 24%,
+      #000 76%,
+      rgba(0, 0, 0, .9) 86%,
+      transparent 100%
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(0, 0, 0, .9) 14%,
+      #000 24%,
+      #000 76%,
+      rgba(0, 0, 0, .9) 86%,
+      transparent 100%
+    );
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(17, 17, 17, .78);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    transition: opacity .2s ease, transform .2s ease, background .2s ease;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__nav:hover {
+    background: rgba(17, 17, 17, .92);
+    transform: translateY(-50%) scale(1.05);
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__nav:disabled {
+    opacity: .35;
+    cursor: default;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__nav--prev {
+    left: 0;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-carousel__nav--next {
+    right: 0;
   }
 
   #comuns-section.common-stack-carousel .common-stack-card {
-    display: block;
-    width: 100%;
-    max-width: 100%;
     position: absolute;
-    inset: 0 auto auto 50%;
+    top: 50%;
+    left: 50%;
+    width: min(31rem, 72vw);
+    max-width: 44rem;
     text-decoration: none;
-    transition: opacity .55s ease, transform .68s cubic-bezier(.22, 1, .36, 1), filter .5s ease;
-    transform: translateX(-50%) scale(.76) rotateX(12deg) rotateY(0deg) rotateZ(0deg);
-    transform-style: preserve-3d;
+    opacity: 0;
+    pointer-events: none;
+    transform: translate(-50%, -50%) scale(.55);
+    transition:
+      transform .7s cubic-bezier(.22, 1, .36, 1),
+      opacity .45s ease,
+      filter .55s ease;
     will-change: transform, opacity;
   }
 
   #comuns-section.common-stack-carousel .common-stack-card .room-card {
     width: 100%;
     max-width: 100%;
-    min-height: 27rem;
+    min-height: 24rem;
     border-radius: 28px;
     overflow: hidden;
     box-shadow: none !important;
-    backface-visibility: hidden;
+    transition: transform .35s ease;
   }
 
   #comuns-section.common-stack-carousel .common-stack-card .room-card:hover {
-    transform: none !important;
+    transform: translateY(-4px);
     box-shadow: none !important;
     filter: none !important;
   }
@@ -130,58 +193,159 @@
   #comuns-section.common-stack-carousel .common-stack-card.isHidden {
     opacity: 0;
     pointer-events: none;
-    z-index: 0;
   }
 
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom {
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-left {
+    opacity: 1;
     z-index: 1;
-    transform: translateX(-50%) translateY(3.6rem) scale(.88) rotateX(18deg) rotateZ(0deg) translateZ(-90px);
-    filter: brightness(.86) saturate(.92);
+    transform: translate(calc(-50% - 24rem), calc(-50% + 1.6rem)) scale(.68);
+    filter: brightness(.45) saturate(.78);
   }
 
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle {
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--left {
+    opacity: 1;
     z-index: 2;
-    transform: translateX(-50%) translateY(1.6rem) scale(.95) rotateX(8deg) rotateZ(0deg) translateZ(-32px);
-    filter: brightness(.95) saturate(.96);
+    transform: translate(calc(-50% - 13.5rem), calc(-50% + .8rem)) scale(.83);
+    filter: brightness(.62) saturate(.84);
   }
 
   #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--active {
+    opacity: 1;
     z-index: 4;
-    transform: translateX(-50%) translateY(0) scale(1) rotateX(0deg) rotateZ(0deg) translateZ(0);
+    pointer-events: auto;
+    transform: translate(-50%, -50%) scale(1);
     filter: brightness(1) saturate(1);
   }
 
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom .room-actions,
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle .room-actions {
-    opacity: 0;
-    transform: translateY(1rem);
-    pointer-events: none;
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--right {
+    opacity: 1;
+    z-index: 2;
+    pointer-events: auto;
+    transform: translate(calc(-50% + 13.5rem), calc(-50% + .8rem)) scale(.83);
+    filter: brightness(.62) saturate(.84);
   }
 
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom .room-header {
-    transform: translateY(-.35rem) scale(.94);
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-right {
+    opacity: 1;
+    z-index: 1;
+    transform: translate(calc(-50% + 24rem), calc(-50% + 1.6rem)) scale(.68);
+    filter: brightness(.45) saturate(.78);
   }
 
-  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle .room-header {
-    transform: translateY(-.15rem) scale(.98);
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-left .room-actions,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--left .room-actions,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--right .room-actions,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-right .room-actions {
+    opacity: 1;
+    transform: none;
+    pointer-events: auto;
+  }
+
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-left .room-header,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--left .room-header,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--right .room-header,
+  #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-right .room-header {
+    opacity: .96;
   }
 
   @media (max-width: 768px) {
     #comuns-section.common-stack-carousel .common-stack-carousel__shell {
-      width: min(100%, 25rem);
-      min-height: 28rem;
+      width: 100%;
+      min-height: 29rem;
+      padding: 0 2rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-carousel__track {
+      height: 27rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card {
+      width: min(20rem, 82vw);
+      max-width: 20rem;
     }
 
     #comuns-section.common-stack-carousel .common-stack-card .room-card {
-      min-height: 22rem;
+      min-height: 23rem;
     }
 
-    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--bottom {
-      transform: translateX(-50%) translateY(2.8rem) scale(.88) rotateX(18deg) rotateZ(0deg) translateZ(-90px);
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-left,
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--far-right {
+      opacity: 0;
+      pointer-events: none;
     }
 
-    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--middle {
-      transform: translateX(-50%) translateY(1.2rem) scale(.95) rotateX(8deg) rotateZ(0deg) translateZ(-32px);
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--left {
+      opacity: .9;
+      transform: translate(calc(-50% - 9.2rem), calc(-50% + 1rem)) scale(.72);
+      filter: brightness(.52) saturate(.8);
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--right {
+      opacity: .9;
+      transform: translate(calc(-50% + 9.2rem), calc(-50% + 1rem)) scale(.72);
+      filter: brightness(.52) saturate(.8);
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-carousel__nav {
+      width: 2.2rem;
+      height: 2.2rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    #comuns-section.common-stack-carousel .common-stack-carousel__shell {
+      min-height: 26.5rem;
+      padding: 0 1.6rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-carousel__track {
+      height: 24.5rem;
+      -webkit-mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, .9) 10%,
+        #000 18%,
+        #000 82%,
+        rgba(0, 0, 0, .9) 90%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to right,
+        transparent 0%,
+        rgba(0, 0, 0, .9) 10%,
+        #000 18%,
+        #000 82%,
+        rgba(0, 0, 0, .9) 90%,
+        transparent 100%
+      );
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card {
+      width: min(18rem, 84vw);
+      max-width: 18rem;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card .room-card {
+      min-height: 19.5rem;
+      width: 329px !important;
+      font-size: 20px;
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--left {
+      opacity: .82;
+      transform: translate(calc(-50% - 7.2rem), calc(-50% + .95rem)) scale(.66);
+      filter: brightness(.48) saturate(.78);
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-card.common-stack-card--right {
+      opacity: .82;
+      transform: translate(calc(-50% + 7.2rem), calc(-50% + .95rem)) scale(.66);
+      filter: brightness(.48) saturate(.78);
+    }
+
+    #comuns-section.common-stack-carousel .common-stack-carousel__nav {
+      width: 1.9rem;
+      height: 1.9rem;
     }
   }
 </style>

@@ -1,5 +1,7 @@
 source "https://rubygems.org"
 
+ruby "3.3.11"
+
 gem 'httparty'
 gem 'net-http-digest_auth'
 gem 'rufus-scheduler'
@@ -27,13 +29,15 @@ gem "webpush", "1.1.0"
 
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.0.2"
+gem "psych", "= 5.1.2"
 # The modern asset pipeline for Rails [https://github.com/rails/propshaft]
 gem "propshaft"
 # Use sqlite3 as the database for Active Record
 #gem "sqlite3", ">= 2.1"
 gem 'pg'
-# Use the Puma web server [https://github.com/puma/puma]
-gem "puma", ">= 5.0"
+# Use Puma on MRI Unix-like environments; on Windows we fall back to WEBrick
+gem "puma", ">= 5.0", platforms: :mri
+gem "webrick", platforms: %i[ mingw x64_mingw mswin ]
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"
 # Hotwire's SPA-like page accelerator [https://turbo.hotwired.dev]
@@ -42,6 +46,7 @@ gem "turbo-rails"
 gem "stimulus-rails"
 # Build JSON APIs with ease [https://github.com/rails/jbuilder]
 gem "jbuilder"
+
 
 # Use Active Model has_secure_password [https://guides.rubyonrails.org/active_model_basics.html#securepassword]
 # gem "bcrypt", "~> 3.1.7"
@@ -58,8 +63,8 @@ gem "solid_cable"
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
 
-# Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
-gem "kamal", require: false
+# Deploy tooling isn't needed for local Windows boot
+gem "kamal", require: false, platforms: :mri
 
 # Add HTTP asset caching/compression and X-Sendfile acceleration to Puma [https://github.com/basecamp/thruster/]
 gem "thruster", require: false

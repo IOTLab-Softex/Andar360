@@ -78,6 +78,7 @@ GEM
     base64 (0.3.0)
     bcrypt (3.1.21)
     bcrypt_pbkdf (1.1.2)
+    bcrypt_pbkdf (1.1.2-x64-mingw-ucrt)
     benchmark (0.5.0)
     bigdecimal (4.0.1)
     bindex (0.8.1)
@@ -129,6 +130,7 @@ GEM
     et-orbi (1.4.0)
       tzinfo
     ffi (1.17.3)
+    ffi (1.17.3-x64-mingw-ucrt)
     fugit (1.12.1)
       et-orbi (~> 1.4)
       raabro (~> 1.4)
@@ -223,6 +225,8 @@ GEM
     nokogiri (1.19.0)
       mini_portile2 (~> 2.8.2)
       racc (~> 1.4)
+    nokogiri (1.19.0-x64-mingw-ucrt)
+      racc (~> 1.4)
     orm_adapter (0.5.0)
     ostruct (0.6.3)
     parallel (1.27.0)
@@ -230,6 +234,7 @@ GEM
       ast (~> 2.4.1)
       racc
     pg (1.6.3)
+    pg (1.6.3-x64-mingw-ucrt)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -238,8 +243,7 @@ GEM
       actionpack (>= 7.0.0)
       activesupport (>= 7.0.0)
       rack
-    psych (5.3.1)
-      date
+    psych (5.1.2)
       stringio
     public_suffix (7.0.2)
     puma (7.1.0)
@@ -409,6 +413,7 @@ GEM
     webpush (1.1.0)
       hkdf (~> 0.2)
       jwt (~> 2.0)
+    webrick (1.9.2)
     websocket (1.2.11)
     websocket-driver (0.8.0)
       base64
@@ -443,6 +448,7 @@ DEPENDENCIES
   net-http-digest_auth
   pg
   propshaft
+  psych (= 5.1.2)
   puma (>= 5.0)
   rails (~> 8.0.2)
   rest-client
@@ -461,6 +467,10 @@ DEPENDENCIES
   tzinfo-data
   web-console
   webpush (= 1.1.0)
+  webrick
+
+RUBY VERSION
+   ruby 3.3.11p205
 
 BUNDLED WITH
    2.6.3

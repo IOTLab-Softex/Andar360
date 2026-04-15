@@ -732,6 +732,17 @@
             </div>
             <small class="muted">Aplica no app (não muda o zoom do navegador).</small>
           </div>
+          <% if controller_name == "dashboard" && action_name == "index" %>
+            <hr class="pmodal__divider">
+            <div class="dashboard-layout-block">
+              <div class="zoom-title"><i class="fa-solid fa-table-cells-large"></i> Personalizar dashboard</div>
+              <small class="muted">Ative para exibir os controles e arrastar os cards de posicao.</small>
+              <button type="button" class="btn-chip btn-chip--wide" id="dashboard-layout-toggle" data-dashboard-layout-toggle="false">
+                <i class="fa-solid fa-up-down-left-right"></i>
+                <span>Personalizar cards</span>
+              </button>
+            </div>
+          <% end %>
         </div>
         <div class="pmodal__footer">
           <%= button_to destroy_user_session_path,
@@ -1223,13 +1234,17 @@
   const backdrop  = document.getElementById('user-profile-backdrop');
   const closeBtn  = document.getElementById('user-profile-close');
   const cancelBtn = document.getElementById('user-profile-cancel');
-  const zoomBtns  = modal.querySelectorAll('.btn-chip');
+  const zoomBtns  = modal.querySelectorAll('.btn-chip[data-zoom]');
+  const layoutToggleBtn = document.getElementById('dashboard-layout-toggle');
+  const dashboardGrid = document.getElementById('dashboard-board-grid');
+  const DASHBOARD_LAYOUT_KEY = 'dashboardLayoutEditing';
 
   // ---- abrir/fechar
   function openModal() {
     modal.classList.add('is-open');
     document.body.classList.add('noscroll');
     highlightCurrentZoom();
+    syncDashboardLayoutButton();
   }
   function closeModal() {
     modal.classList.remove('is-open');
@@ -1266,8 +1281,32 @@
     });
   }
 
+  function isDashboardLayoutEditing() {
+    try {
+      return localStorage.getItem(DASHBOARD_LAYOUT_KEY) === 'true';
+    } catch(e) {
+      return false;
+    }
+  }
+
+  function applyDashboardLayoutEditing(enabled) {
+    if (!dashboardGrid) return;
+    dashboardGrid.classList.toggle('is-layout-editing', enabled);
+    try { localStorage.setItem(DASHBOARD_LAYOUT_KEY, String(enabled)); } catch(e) {}
+  }
+
+  function syncDashboardLayoutButton() {
+    if (!layoutToggleBtn) return;
+    const enabled = dashboardGrid?.classList.contains('is-layout-editing');
+    layoutToggleBtn.dataset.dashboardLayoutToggle = enabled ? 'true' : 'false';
+    layoutToggleBtn.classList.toggle('active', !!enabled);
+    layoutToggleBtn.querySelector('span').textContent = enabled ? 'Desativar personalizacao' : 'Personalizar cards';
+  }
+
   // aplica no load
   applyZoom(getSavedZoom());
+  applyDashboardLayoutEditing(isDashboardLayoutEditing());
+  syncDashboardLayoutButton();
 
   // clique nas opções
   zoomBtns.forEach(btn => {
@@ -1276,6 +1315,13 @@
       applyZoom(scale);
       highlightCurrentZoom();
     });
+  });
+
+  layoutToggleBtn?.addEventListener('click', () => {
+    const enabled = !(dashboardGrid?.classList.contains('is-layout-editing'));
+    applyDashboardLayoutEditing(enabled);
+    syncDashboardLayoutButton();
+    closeModal();
   });
   });
 

@@ -216,17 +216,36 @@ data-ns="<%= @ack_ns %>">
     min-width: 34px;
     min-height: 34px;
     border-radius: 10px;
-    color: rgba(255,255,255,.72);
-    background: rgba(255,255,255,.06);
-    border: 1px solid rgba(255,255,255,.08);
+    color: var(--color-text);
+    background: color-mix(in srgb, var(--color-card) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
     cursor: grab;
     transition: background .18s ease, color .18s ease, transform .18s ease;
     flex-shrink: 0;
     line-height: 1;
   }
+  .board-grid:not(.is-layout-editing) .card-drag-handle{
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    min-width: 0;
+    min-height: 0;
+    margin-left: 0;
+    border: 0;
+    overflow: hidden;
+  }
+  .board-grid.is-layout-editing .card-drag-handle{
+    opacity: 1;
+    pointer-events: auto;
+    color: var(--color-btn--text);
+    background: color-mix(in srgb, var(--color-btn) 26%, var(--color-card));
+    border-color: color-mix(in srgb, var(--color-btn) 52%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-btn) 22%, transparent),
+                0 0 14px color-mix(in srgb, var(--color-btn) 24%, transparent);
+  }
   .board-card .card-drag-handle:hover{
-    color: #fff;
-    background: rgba(124, 58, 237, .24);
+    color: var(--color-btn);
+    background: color-mix(in srgb, var(--color-btn) 18%, var(--color-card));
   }
   .board-card .card-drag-handle:active{
     cursor: grabbing;
@@ -1277,89 +1296,102 @@ const { publicKey } = await keyRes.json();
       container.dataset.commonCarouselBound = "true";
 
       const shell = container.querySelector(".common-stack-carousel__shell");
-      const visibleCount = Math.min(parseInt(container.dataset.visible || "3", 10), cards.length);
+      const prevButton = container.querySelector("[data-common-prev]");
+      const nextButton = container.querySelector("[data-common-next]");
       let activeIndex = 0;
       let wheelLocked = false;
-      let touchStartY = null;
+      let touchStartX = null;
+      const positionClasses = [
+        "common-stack-card--far-left",
+        "common-stack-card--left",
+        "common-stack-card--active",
+        "common-stack-card--right",
+        "common-stack-card--far-right",
+        "isHidden"
+      ];
+
+      function relativePosition(index) {
+        const count = cards.length;
+        let diff = index - activeIndex;
+        const half = Math.floor(count / 2);
+
+        if (diff > half) diff -= count;
+        if (diff < -half) diff += count;
+
+        return diff;
+      }
 
       function applyClasses() {
         cards.forEach((card, index) => {
-          const position = index - activeIndex;
-          card.classList.remove("common-stack-card--active", "common-stack-card--middle", "common-stack-card--bottom", "isHidden");
+          const diff = relativePosition(index);
+          card.classList.remove(...positionClasses);
 
-          if (position === 0) {
+          if (diff === 0) {
             card.classList.add("common-stack-card--active");
-          } else if (position === 1 && visibleCount > 1) {
-            card.classList.add("common-stack-card--middle");
-          } else if (position === 2 && visibleCount > 2) {
-            card.classList.add("common-stack-card--bottom");
+          } else if (diff === -1) {
+            card.classList.add("common-stack-card--left");
+          } else if (diff === 1) {
+            card.classList.add("common-stack-card--right");
+          } else if (diff === -2 && cards.length > 4) {
+            card.classList.add("common-stack-card--far-left");
+          } else if (diff === 2 && cards.length > 4) {
+            card.classList.add("common-stack-card--far-right");
           } else {
             card.classList.add("isHidden");
           }
         });
       }
 
-      function next() {
-        if (activeIndex >= cards.length - 1) return;
-        activeIndex += 1;
+      function move(direction) {
+        activeIndex = (activeIndex + direction + cards.length) % cards.length;
         applyClasses();
       }
 
-      function prev() {
-        if (activeIndex <= 0) return;
-        activeIndex -= 1;
-        applyClasses();
-      }
+      prevButton?.addEventListener("click", () => move(-1));
+      nextButton?.addEventListener("click", () => move(1));
 
       shell?.addEventListener("wheel", (event) => {
         if (cards.length <= 1) return;
+
         event.preventDefault();
         if (wheelLocked) return;
 
-        if (Math.abs(event.deltaY) < 8) return;
+        const delta = Math.abs(event.deltaY) >= Math.abs(event.deltaX) ? event.deltaY : event.deltaX;
+        if (Math.abs(delta) < 10) return;
 
         wheelLocked = true;
-        if (event.deltaY > 0) {
-          next();
-        } else {
-          prev();
-        }
+        move(delta > 0 ? 1 : -1);
 
         window.setTimeout(() => {
           wheelLocked = false;
-        }, 260);
+        }, 420);
       }, { passive: false });
 
       shell?.addEventListener("touchstart", (event) => {
-        touchStartY = event.touches[0]?.clientY ?? null;
+        touchStartX = event.touches[0]?.clientX ?? null;
       }, { passive: true });
 
       shell?.addEventListener("touchmove", (event) => {
-        if (touchStartY === null || wheelLocked) return;
-        const currentY = event.touches[0]?.clientY;
-        if (typeof currentY !== "number") return;
+        if (touchStartX === null || wheelLocked) return;
 
-        const deltaY = touchStartY - currentY;
-        if (Math.abs(deltaY) < 24) return;
+        const currentX = event.touches[0]?.clientX;
+        if (typeof currentX !== "number") return;
+
+        const deltaX = touchStartX - currentX;
+        if (Math.abs(deltaX) < 24) return;
 
         wheelLocked = true;
-        if (deltaY > 0) {
-          next();
-        } else {
-          prev();
-        }
+        move(deltaX > 0 ? 1 : -1);
+        touchStartX = currentX;
 
-        touchStartY = currentY;
         window.setTimeout(() => {
           wheelLocked = false;
-        }, 260);
+        }, 420);
       }, { passive: true });
 
       shell?.addEventListener("touchend", () => {
-        touchStartY = null;
+        touchStartX = null;
       }, { passive: true });
-
-      window.addEventListener("resize", applyClasses);
 
       applyClasses();
     });
