@@ -11,7 +11,7 @@ class Participant < ApplicationRecord
   validates :name, :cpf, :telefone, presence: true
   validates :cpf, presence: true, uniqueness: true
 
-  before_save :attach_photo_from_base64
+  after_save :attach_photo_from_base64
   before_create :generate_hex_id
 scope :ativos, -> { where("excluido = ? OR excluido IS NULL", false) }
 scope :excluidos, -> { where(excluido: true) }
@@ -33,7 +33,7 @@ scope :excluidos, -> { where(excluido: true) }
   end
 
   def attach_photo_from_base64
-    return unless photo_base64.present? && photo_base64_changed?
+    return unless photo_base64.present? && saved_change_to_photo_base64?
 
     content_type = photo_base64[%r{\Adata:(image/(?:png|jpeg|jpg));base64,}i, 1] || "image/jpeg"
     decoded_image = Base64.decode64(photo_base64.sub(%r{\Adata:image/(?:png|jpeg|jpg);base64,}i, ""))
