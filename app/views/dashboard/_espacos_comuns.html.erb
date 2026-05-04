@@ -25,13 +25,13 @@
           <%= link_to room_reservations_path(room), class: "room-card-link common-stack-card isHidden", data: { common_card_link: true } do %>
             <div class="room-card" style="<%= background %>">
               <div class="room-header">
-                <strong><%= room.name %></strong><br>
-                <% if room.dados_do_inquilino.present? %>
-                  <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
-                <% else %>
-                  RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
-                <% end %>
-              </div>
+  <strong><%= room.name %> <i class="fa-solid fa-arrow-up-right-from-square room-link-icon"></i></strong><br>
+  <% if room.dados_do_inquilino.present? %>
+    <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
+  <% else %>
+    RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
+  <% end %>
+</div>
 
               <div class="room-actions">
                 <% if current_user&.admin? %>
@@ -348,4 +348,17 @@
       height: 1.9rem;
     }
   }
+
+  #comuns-section.common-stack-carousel .common-stack-card .room-link-icon {
+  font-size: 0.65em;
+  opacity: 0.7;
+  vertical-align: middle;
+  margin-left: 4px;
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+#comuns-section.common-stack-carousel .common-stack-card.common-stack-card--active .room-card:hover .room-link-icon {
+  opacity: 1;
+  transform: translate(2px, -2px);
+}
 </style>
