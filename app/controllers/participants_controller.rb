@@ -83,48 +83,55 @@ end
   end
 
   def update
-  @participant = Participant.find(params[:id])
-  if @participant.update(participant_params)
-    if params[:criar_usuario] == "1"
-      senha = params[:manter_senha] == "1" ? nil : (params[:senha_gerada] || SecureRandom.hex(4))
+    @participant = Participant.find(params[:id])
+    if @participant.update(participant_params)
+      if params[:criar_usuario] == "1"
+        senha = params[:manter_senha] == "1" ? nil : (params[:senha_gerada] || SecureRandom.hex(4))
+        senha_final = senha.presence || SecureRandom.hex(4)
 
-      if @participant.user.present?
-        user = @participant.user
-        user.role = params[:user_role] if params[:user_role].present?
+        begin
+          if @participant.user.present?
+            user = @participant.user
+            user.role = params[:user_role] if params[:user_role].present?
 
-        if senha.present?
-          user.password = senha
-          user.password_confirmation = senha
-          user.force_password_change = true
-          Rails.logger.info "Senha atualizada para #{user.email || user.cpf} - Nova senha: #{senha}"
-        elsif user.force_password_change?
-          user.force_password_change = false
+            if senha.present?
+              user.password = senha_final
+              user.password_confirmation = senha_final
+              user.force_password_change = true
+              Rails.logger.info "Senha atualizada para #{user.email || user.cpf} - Nova senha: #{senha_final}"
+            elsif user.force_password_change?
+              user.force_password_change = false
+            end
+
+            user.save!
+          else
+            user = User.create!(
+              cpf:                   @participant.cpf,
+              email:                 @participant.email,
+              password:              senha_final,
+              password_confirmation: senha_final,
+              role:                  params[:user_role],
+              participant_id:        @participant.id,
+              force_password_change: true
+            )
+            Rails.logger.info "Usuário criado: #{user.email || user.cpf} - Senha: #{senha_final}"
+          end
+        rescue ActiveRecord::RecordInvalid => e
+          return redirect_to edit_participant_path(@participant),
+                             alert: "Participante salvo, mas erro ao gerenciar acesso: #{e.record.errors.full_messages.join(', ')}"
         end
 
-        user.save!
-      else
-        user = User.create!(
-          cpf: @participant.cpf,
-          email: @participant.email,
-          password: senha || SecureRandom.hex(4),
-          password_confirmation: senha || SecureRandom.hex(4),
-          role: params[:user_role],
-          participant_id: @participant.id,
-          force_password_change: true,
-        )
-        Rails.logger.info "Usuário criado: #{user.email || user.cpf} - Senha: #{senha}"
+      elsif params[:criar_usuario] != "1" && @participant.user.present?
+        @participant.user.destroy
+        Rails.logger.info "Acesso removido para o participante #{@participant.id}"
       end
-    elsif params[:criar_usuario] != "1" && @participant.user.present?
-      @participant.user.destroy
-      Rails.logger.info "Acesso removido para o participante #{@participant.id}"
-    end
 
-    redirect_to participants_path, notice: "Participante atualizado com sucesso."
-  else
-    flash.now[:alert] = "Não foi possível atualizar o participante. Verifique os erros."
-    render :edit, status: :unprocessable_entity
+      redirect_to participants_path, notice: "Participante atualizado com sucesso."
+    else
+      flash.now[:alert] = "Não foi possível atualizar o participante. Verifique os erros."
+      render :edit, status: :unprocessable_entity
+    end
   end
-end
 
   def camera
     @camera_tuning = Setting.instance.camera_tuning_config
