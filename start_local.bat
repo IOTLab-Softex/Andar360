@@ -1,33 +1,41 @@
 @echo off
-cd %~dp0
+cd /d %~dp0
 setlocal EnableDelayedExpansion
-set RAILS_ENV=production
 
-:: Se chamado com argumento "auto", inicia direto na opÃ§Ã£o 2
+:: ==========================
+:: CONFIGURACAO
+:: ==========================
+set RUBY_HOME=C:\Ruby33-x64\bin
+set PATH=%RUBY_HOME%;%PATH%
+set RAILS_ENV=production
+set PORT=3000
+set BIND=0.0.0.0
+set NGINX_DIR=C:\nginx-1.28.0
+set NGINX_CONF=C:\nginx-1.28.0\conf\nginx.conf
+
+if not exist log mkdir log
+
+:: AUTO START
 if "%1"=="auto" (
     call :iniciar oculto
     exit /b
 )
-
-
 
 :menu
 cls
 echo ==========================
 echo     MENU SOFTEX RESERVAS
 echo ==========================
-echo [1] Iniciar o SRS (com atualizaÃ§Ã£o, oculto)
-echo [2] Iniciar o SRS (sem atualizaÃ§Ã£o, oculto)
-echo [3] Iniciar o SRS (sem atualizaÃ§Ã£o, visÃ­vel nos CMDs)
-echo [4] Exibir Rails server no terminal
-echo [5] Exibir Delayed Job no terminal
-echo [6] Encerrar o SRS
+echo [1] Iniciar com atualizacao
+echo [2] Iniciar sem atualizacao (oculto)
+echo [3] Iniciar sem atualizacao (visivel)
+echo [4] Ver Rails no terminal
+echo [5] Ver Delayed Job no terminal
+echo [6] Encerrar tudo
 echo [7] Sair
-echo [8] Ativar inicializaÃ§Ã£o automÃ¡tica no Windows (opÃ§Ã£o 2)
-echo [9] Desativar inicializaÃ§Ã£o automÃ¡tica no Windows
 echo ==========================
 
-set /p choice="Digite a opcao desejada (1-8): "
+set /p choice="Escolha: "
 
 if "%choice%"=="1" (
     call :atualizar
@@ -49,264 +57,123 @@ if "%choice%"=="3" (
 )
 
 if "%choice%"=="4" (
-    call :encerrar
-    echo Iniciando Rails server no terminal...
-    ruby bin\rails server -e production
-    pause
+    bundle exec rails s -b %BIND% -p %PORT% -e production
     goto menu
 )
 
 if "%choice%"=="5" (
-    call :encerrar
-    echo Iniciando Delayed Job no terminal...
-    ruby bin\delayed_job run
-    pause
+    bundle exec bin\delayed_job run
     goto menu
 )
 
 if "%choice%"=="6" (
     call :encerrar
-    echo Todos os serviÃ§os foram encerrados.
     pause
     goto menu
 )
 
-if "%choice%"=="7" (
-    echo Saindo...
-    exit /b
-)
-
-if "%choice%"=="8" (
-    call :ativar_auto_startup
-    pause
-    goto menu
-)
-
-if "%choice%"=="9" (
-    call :desativar_auto_startup
-    pause
-    goto menu
-)
-
+if "%choice%"=="7" exit /b
 
 goto menu
 
-:desativar_auto_startup
-echo ==========================
-echo Removendo atalho da inicializaÃ§Ã£o do Windows...
-
-:: Caminho para a pasta Startup do usuÃ¡rio
-set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
-
-:: Nome do atalho
-set shortcutName=SRS_Iniciar_Automaticamente.lnk
-
-:: Remover o atalho, se existir
-if exist "%startupFolder%\%shortcutName%" (
-    del "%startupFolder%\%shortcutName%"
-    echo âœ” InicializaÃ§Ã£o automÃ¡tica desativada com sucesso!
-) else (
-    echo âš  Nenhum atalho encontrado para remover.
-)
-
-goto :eof
-
-
-
-:ativar_auto_startup
-echo ==========================
-echo Criando atalho na inicializaÃ§Ã£o do Windows...
-
-:: Caminho para a pasta Startup do usuÃ¡rio
-set startupFolder=%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
-
-:: Nome do atalho
-set shortcutName=SRS_Iniciar_Automaticamente.lnk
-
-:: Criar atalho usando PowerShell
-powershell "$s=(New-Object -COM WScript.Shell).CreateShortcut('%startupFolder%\%shortcutName%'); $s.TargetPath='%~dp0start.bat'; $s.Arguments='auto'; $s.Save()"
-
-if exist "%startupFolder%\%shortcutName%" (
-    echo âœ” InicializaÃ§Ã£o automÃ¡tica configurada com sucesso!
-) else (
-    echo âš  Falha ao criar o atalho. Execute este script como administrador.
-)
-
-goto :eof
-
-
-
-
+:: ==========================
+:: ATUALIZACAO
+:: ==========================
 :atualizar
-echo ==========================
-echo Atualizando cÃ³digo...
-git pull > git_output.txt
-findstr /C:"Already up to date" git_output.txt >nul
-if !errorlevel! equ 0 (
-    echo CÃ³digo jÃ¡ estÃ¡ atualizado. Pulando etapas de build.
-) else (
-    echo CÃ³digo atualizado! Executando dependÃªncias e migraÃ§Ãµes...
-    bundle install
-    yarn install
-    rails db:migrate
-    rails assets:precompile
-)
-del git_output.txt
+echo Atualizando codigo...
+git pull
+
+echo Instalando dependencias...
+bundle install
+yarn install
+
+echo Rodando migrate...
+bundle exec rails db:migrate
+
+echo Precompilando assets...
+bundle exec rails assets:precompile
+
 goto :eof
 
+:: ==========================
+:: INICIAR
+:: ==========================
 :iniciar
-
-:: Parametro %1 pode ser "oculto"
 set modo=%1
 
-echo Iniciando delayed_job...
+echo ==========================
+echo Encerrando processos antigos...
+
+taskkill /IM nginx.exe /F >nul 2>&1
+taskkill /IM ruby.exe /F >nul 2>&1
+taskkill /IM rails.exe /F >nul 2>&1
+
+if exist tmp\pids\server.pid del /f /q tmp\pids\server.pid
+
+timeout /t 2 >nul
+
+echo ==========================
+echo Iniciando nginx...
+
+if exist "%NGINX_DIR%\nginx.exe" (
+    start "" /D "%NGINX_DIR%" nginx.exe -c "%NGINX_CONF%"
+)
+
+echo ==========================
+echo Iniciando Delayed Job...
+
 if "%modo%"=="oculto" (
-    start /b "" cmd /c "ruby bin\delayed_job run > nul 2>&1"
-) else if "%modo%"=="visivel" (
-    start "Delayed Job Worker" cmd /k "ruby bin\delayed_job run"
+    start /b "" cmd /c "bundle exec bin\delayed_job run > log\delayed_job.log 2>&1"
 ) else (
-    ruby bin\delayed_job run
+    start "Delayed Job" cmd /k "bundle exec bin\delayed_job run"
 )
 
-echo Iniciando Rails server...
+echo ==========================
+echo Iniciando Rails...
+
 if "%modo%"=="oculto" (
-    start /b "" cmd /c "ruby bin\rails server -e production > nul 2>&1"
-) else if "%modo%"=="visivel" (
-    start "Rails Server" cmd /k "ruby bin\rails server -e production"
+    start /b "" cmd /c "bundle exec rails s -b %BIND% -p %PORT% -e production > log\rails.log 2>&1"
 ) else (
-    ruby bin\rails server -e production
-)
-
-
-echo ==========================
-echo Verificando nginx...
-tasklist /FI "IMAGENAME eq nginx.exe" | find /I "nginx.exe" >nul
-if !errorlevel! equ 0 (
-    echo nginx.exe ja esta rodando. Reiniciando...
-    taskkill /IM nginx.exe /F
-)
-start "" /D "C:\nginx-1.28.0" nginx.exe -c "C:\nginx-1.28.0\conf\nginx.conf"
-
-echo ==========================
-echo Verificando delayed_job...
-tasklist /FI "WINDOWTITLE eq Delayed Job Worker*" | find /I "Delayed Job Worker" >nul
-if !errorlevel! equ 0 (
-    echo delayed_job ja esta rodando. Encerrando...
-    ruby bin\delayed_job stop
-)
-echo Iniciando delayed_job...
-if "%modo%"=="oculto" (
-   start /b "" cmd /c "ruby bin\delayed_job run > nul 2>&1"
-
-) else (
-    ruby bin\delayed_job run
+    start "Rails Server" cmd /k "bundle exec rails s -b %BIND% -p %PORT% -e production"
 )
 
 echo ==========================
-echo Verificando Rails server...
+echo Aguardando Rails subir...
 
-set rails_running=false
+set /a tentativas=0
 
-:: Checar pelo PID file
-if exist tmp\pids\server.pid (
-    set pid=
-    for /f %%p in (tmp\pids\server.pid) do set pid=%%p
-    if defined pid (
-        echo Rails server detectado pelo PID %%p.
-        set rails_running=true
-    )
+:wait
+netstat -ano | find ":%PORT%" | find "LISTENING" >nul
+if %errorlevel%==0 (
+    echo Rails rodando na porta %PORT%
+    goto ok
 )
 
-:: Checar pelo processo ruby.exe ouvindo na porta 3000
-if "!rails_running!"=="false" (
-    netstat -an | find ":3000" | find "LISTENING" >nul
-    if !errorlevel! equ 0 (
-        echo Rails server detectado ouvindo na porta 3000.
-        set rails_running=true
-    )
+set /a tentativas+=1
+if %tentativas% LEQ 15 (
+    timeout /t 2 >nul
+    goto wait
 )
 
-:: Se estiver rodando, parar
-if "!rails_running!"=="true" (
-    echo Encerrando Rails server atual...
-    if defined pid (
-        taskkill /PID %pid% /F
-    ) else (
-        echo Nenhum PID file, matando todos ruby.exe ouvindo.
-        for /f "tokens=2 delims=," %%p in ('netstat -ano ^| find ":3000" ^| find "LISTENING"') do (
-            taskkill /PID %%p /F
-        )
-    )
-) else (
-    echo Rails server nao estava rodando.
-)
-
-:: Iniciar Rails server
-echo Iniciando Rails server...
-if "%modo%"=="oculto" (
-    start /b "" cmd /c "ruby bin\rails server -e production > nul 2>&1"
-) else (
-    ruby bin\rails server -e production
-)
-
-echo ==========================
-echo Verificando status final...
-
-:: Checar nginx
-tasklist /FI "IMAGENAME eq nginx.exe" | find /I "nginx.exe" >nul
-if !errorlevel! equ 0 (
-    echo âœ” nginx rodando.
-) else (
-    echo âš  nginx nao detectado.
-)
-
-:: Checar delayed_job (olhamos por ruby.exe + janela)
-tasklist /FI "WINDOWTITLE eq Delayed Job Worker*" | find /I "Delayed Job Worker" >nul
-if !errorlevel! equ 0 (
-    echo âœ” delayed_job rodando.
-) else (
-    echo âš  delayed_job nao detectado.
-)
-
-echo ==========================
-echo Aguardando Rails server abrir a porta 3000...
-
-set /a retries=0
-set rails_ready=false
-
-:wait_for_rails_port
-netstat -an | find ":3000" | find "LISTENING" >nul
-if !errorlevel! equ 0 (
-    set rails_ready=true
-    echo âœ” Rails server agora esta ouvindo na porta 3000.
-) else (
-    set /a retries+=1
-    if !retries! leq 10 (
-        echo Tentativa !retries!/10: Aguardando porta 3000...
-        timeout /t 2 >nul
-        goto wait_for_rails_port
-    ) else (
-        echo âš  Rails server nao abriu a porta 3000 apos 10 tentativas.
-    )
-)
-
-echo ==========================
-
-echo ==========================
-
-pause
+echo ERRO: Rails nao subiu
 goto :eof
 
-:encerrar
+:ok
 echo ==========================
-echo Encerrando nginx...
-taskkill /IM nginx.exe /F
+echo SISTEMA ONLINE
+goto :eof
 
-echo Encerrando delayed_job...
-ruby bin\delayed_job stop
+:: ==========================
+:: ENCERRAR
+:: ==========================
+:encerrar
+echo Encerrando tudo...
 
-echo Encerrando Rails server...
-taskkill /IM ruby.exe /F
+taskkill /IM nginx.exe /F >nul 2>&1
+taskkill /IM ruby.exe /F >nul 2>&1
+taskkill /IM rails.exe /F >nul 2>&1
 
-echo Todos os serviÃ§os foram encerrados.
+if exist tmp\pids\server.pid del /f /q tmp\pids\server.pid
+
+echo OK
 goto :eof

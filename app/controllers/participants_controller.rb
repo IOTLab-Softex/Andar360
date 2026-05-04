@@ -281,14 +281,21 @@ end
         next
       end
 
-      p.destroy
-      total += 1
+      begin
+        p.destroy
+        total += 1
+      rescue ActiveRecord::InvalidForeignKey
+        pulados << p.name
+      end
     end
 
-    mensagem = "🗑️ #{total} participante(s) foram excluídos com sucesso."
-    mensagem += " ⚠️ Pulados: #{pulados.join(", ")}" if pulados.any?
+    mensagem = "#{total} participante(s) excluídos com sucesso."
+    mensagem += " Pulados (#{pulados.count}): #{pulados.first(5).join(', ')}#{pulados.count > 5 ? '...' : ''}" if pulados.any?
 
-    redirect_to participants_path, notice: mensagem
+    respond_to do |format|
+      format.html { redirect_to participants_path, notice: mensagem }
+      format.json { render json: { message: mensagem, total: total, pulados: pulados.count } }
+    end
   end
 
   def destroy

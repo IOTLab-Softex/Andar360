@@ -23,6 +23,9 @@
       <button class="tab-link"        data-tab="tab-email"     role="tab" aria-selected="false">
         <i class="fa-solid fa-envelope"></i> E-mail (SMTP)
       </button>
+      <button class="tab-link" data-tab="tab-participantes" role="tab" aria-selected="false">
+        <i class="fa-solid fa-users"></i> Participantes
+      </button>
     </div>
 
     <div class="tabs-panels settings-form">
@@ -50,6 +53,7 @@
           <%= f.time_field :horario_rotina_importacao, class: "form-control" %>
           <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
         </div>
+
       </section>
 
       <!-- ===== 📅 RESERVAS ===== -->
@@ -332,6 +336,21 @@
         </small>
       </section>
 
+      <!-- ===== 👥 PARTICIPANTES ===== -->
+      <section id="tab-participantes" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-1 mb-3"><i class="fa-solid fa-users me-2"></i> Participantes</h2>
+
+        <hr class="my-4">
+
+        <h3 class="subtitle mb-2"><i class="fa-solid fa-users-slash me-2"></i> Zona de Perigo</h3>
+        <p class="form-text text-muted mb-3">
+          Participantes vinculados a reservas ou chamados não serão excluídos.
+        </p>
+        <button type="button" id="btn-delete-all-participants" class="btn btn-danger">
+          <i class="fa-solid fa-trash me-2"></i> Excluir todos os participantes
+        </button>
+      </section>
+
     </div>
 
     <!-- AÇÕES -->
@@ -450,6 +469,7 @@
 </div>
 
 <% end %>  <%# <-- FECHA O FORM PRINCIPAL AQUI %>
+
 <div class="settings-actions text-end mt-2">
   <%= button_to "Gerar chaves VAPID",
         generate_vapid_setting_path(@setting),
@@ -476,6 +496,22 @@
 
 </div>
 
+
+<!-- ===== MODAL EXCLUSÃO DE PARTICIPANTES ===== -->
+<div id="delete-all-modal" style="display:none; position:fixed; inset:0; z-index:10100; background:rgba(0,0,0,0.65); align-items:center; justify-content:center;">
+  <div style="background:#fff; border-radius:14px; padding:28px 32px; width:min(420px,92vw); box-shadow:0 24px 64px rgba(0,0,0,0.35);">
+    <h5 style="margin:0 0 6px; display:flex; align-items:center; gap:8px;">
+      <i class="fa-solid fa-trash text-danger"></i> Excluindo participantes...
+    </h5>
+    <p id="delete-all-modal-msg" style="font-size:0.88rem; color:#666; margin-bottom:18px;">
+      Aguarde enquanto os participantes são removidos.
+    </p>
+    <div style="background:#e9ecef; border-radius:999px; height:10px; overflow:hidden;">
+      <div id="delete-all-bar" style="height:100%; width:0%; background:#dc3545; border-radius:999px; transition:width 0.4s ease;"></div>
+    </div>
+    <p id="delete-all-bar-text" style="font-size:0.78rem; color:#999; margin-top:6px; text-align:center;">0%</p>
+  </div>
+</div>
 
 <!-- ===== JS tabs (com persistência no localStorage) ===== -->
 <style>
@@ -839,5 +875,52 @@
     });
 
     syncRecoveryPreview();
+  })();
+
+  (function(){
+    const btn = document.getElementById('btn-delete-all-participants');
+    if (!btn) return;
+
+    btn.addEventListener('click', function() {
+      if (!confirm('Tem certeza? Todos os participantes sem reservas ou chamados serão excluídos permanentemente. Esta ação não pode ser desfeita.')) return;
+
+      const modal   = document.getElementById('delete-all-modal');
+      const bar     = document.getElementById('delete-all-bar');
+      const barText = document.getElementById('delete-all-bar-text');
+      const msg     = document.getElementById('delete-all-modal-msg');
+
+      modal.style.display = 'flex';
+      let progress = 0;
+
+      const tick = setInterval(() => {
+        if (progress < 85) {
+          progress += (85 - progress) * 0.12 + Math.random() * 3;
+          progress = Math.min(progress, 85);
+          bar.style.width = progress.toFixed(1) + '%';
+          barText.textContent = Math.round(progress) + '%';
+        }
+      }, 350);
+
+      fetch('<%= delete_all_participants_path %>', {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
+          'Accept': 'application/json'
+        }
+      })
+      .then(r => r.ok ? r.json() : r.json().then(e => Promise.reject(e)))
+      .then(data => {
+        clearInterval(tick);
+        bar.style.width = '100%';
+        barText.textContent = '100%';
+        msg.textContent = data.message || 'Concluído!';
+        setTimeout(() => { modal.style.display = 'none'; }, 900);
+      })
+      .catch(err => {
+        clearInterval(tick);
+        modal.style.display = 'none';
+        alert('Erro: ' + (err.message || JSON.stringify(err)));
+      });
+    });
   })();
 </script>

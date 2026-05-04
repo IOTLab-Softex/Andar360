@@ -64,7 +64,9 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
         end
 
         zip_file.each do |entry|
-          destination = File.join(extract_dir, entry.name)
+          next if entry.directory?
+
+          destination = File.join(extract_dir, File.basename(entry.name))
 
           begin
             entry.extract(destination) { true }

@@ -1,5 +1,6 @@
 import os
 import pathlib
+import shutil
 import subprocess
 import urllib.request
 import venv
@@ -20,11 +21,27 @@ MODEL_URLS = {
 }
 
 
+def packages_ok():
+    if not PYTHON_EXE.exists():
+        return False
+    try:
+        subprocess.run(
+            [str(PYTHON_EXE), "-c", "import numpy, cv2, flask, requests, waitress"],
+            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+        )
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+
 def ensure_venv():
-    if PYTHON_EXE.exists():
-        return
-    builder = venv.EnvBuilder(with_pip=True)
-    builder.create(VENV_DIR)
+    if VENV_DIR.exists() and not packages_ok():
+        print("[bootstrap] Venv inválido ou incompleto — recriando...")
+        shutil.rmtree(VENV_DIR)
+
+    if not PYTHON_EXE.exists():
+        builder = venv.EnvBuilder(with_pip=True)
+        builder.create(VENV_DIR)
 
 
 def run(*command):
@@ -33,7 +50,7 @@ def run(*command):
 
 def ensure_packages():
     run(str(PYTHON_EXE), "-m", "pip", "install", "--upgrade", "pip")
-    run(str(PYTHON_EXE), "-m", "pip", "install", "-r", str(REQUIREMENTS))
+    run(str(PYTHON_EXE), "-m", "pip", "install", "--prefer-binary", "-r", str(REQUIREMENTS))
 
 
 def ensure_models():

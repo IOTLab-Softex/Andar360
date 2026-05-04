@@ -33,8 +33,8 @@ scope :excluidos, -> { where(excluido: true) }
   end
 
   def attach_photo_from_base64
-    return unless photo_base64.present?
-  
+    return unless photo_base64.present? && photo_base64_changed?
+
     content_type = photo_base64[%r{\Adata:(image/(?:png|jpeg|jpg));base64,}i, 1] || "image/jpeg"
     decoded_image = Base64.decode64(photo_base64.sub(%r{\Adata:image/(?:png|jpeg|jpg);base64,}i, ""))
     io = StringIO.new(decoded_image)

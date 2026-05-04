@@ -30,11 +30,18 @@ class ImportDadosIcontrolJob < ApplicationJob
     full_path = resolve_image_path(path)
     raise "Imagem não encontrada com extensão válida: #{path}" unless full_path
 
-    image = MiniMagick::Image.open(full_path)
-    image.resize "#{width}x#{height}"
-    image.format "png"
+    begin
+      image = MiniMagick::Image.open(full_path)
+      image.resize "#{width}x#{height}"
+      image.format "png"
+      return "data:image/png;base64,#{Base64.strict_encode64(image.to_blob)}"
+    rescue => e
+      Rails.logger.warn "[⚠️] MiniMagick falhou (#{e.message}), usando imagem original sem redimensionar"
+    end
 
-    Base64.strict_encode64(image.to_blob)
+    raw = File.read(full_path, mode: "rb")
+    mime = raw[0, 2].b.start_with?("\xFF\xD8".b) ? "image/jpeg" : "image/png"
+    "data:#{mime};base64,#{Base64.strict_encode64(raw)}"
   end
 
   def perform
@@ -135,12 +142,12 @@ class ImportDadosIcontrolJob < ApplicationJob
           next
         end
 
-        foto_base = foto_rel.present? ? File.join(dir_fotos, File.basename(foto_rel.tr('\\', '/'))) : nil
-        base64    = nil
+        foto_base  = foto_rel.present? ? File.join(dir_fotos, File.basename(foto_rel.tr('\\', '/'))) : nil
+        photo_data = nil
 
         if foto_base.present? && (participant.nil? || participant.photo_base64.blank?)
           begin
-            base64 = resize_image_to_base64(foto_base, 150, 300)
+            photo_data = resize_image_to_base64(foto_base, 150, 300)
           rescue => e
             msg = "Foto ausente ou inválida para #{nome} — #{e.message}"
             Rails.logger.warn "[⚠️] #{msg}"
@@ -157,8 +164,8 @@ class ImportDadosIcontrolJob < ApplicationJob
           telefone:      telefone,
           grupo_empresa: grupo
         }
-        if base64
-          attrs[:photo_base64] = "data:image/png;base64,#{base64}"
+        if photo_data
+          attrs[:photo_base64] = photo_data
         elsif participant.new_record?
           attrs[:photo_base64] = nil
         end
