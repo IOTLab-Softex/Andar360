@@ -1,0 +1,43 @@
+<%= form_with model: @announcement, local: true, html: { enctype: "multipart/form-data" } do |f| %>
+  <% if @announcement.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% @announcement.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-group mb-3">
+    <%= f.label :title, "Título (opcional)" %>
+    <%= f.text_field :title, class: "form-control", placeholder: "Título do anúncio" %>
+  </div>
+
+  <div class="form-group mb-3">
+    <%= f.label :body, "Texto (opcional)" %>
+    <%= f.text_area :body, class: "form-control", rows: 5, placeholder: "Conteúdo do anúncio..." %>
+  </div>
+
+  <div class="form-group mb-3">
+    <%= f.label :image, "Imagem / Arte (opcional)" %>
+    <%= f.file_field :image, class: "form-control", accept: "image/*" %>
+    <% if @announcement.persisted? && @announcement.image.attached? %>
+      <div class="mt-2">
+        <%= image_tag url_for(@announcement.image), style: "max-height:160px; border-radius:8px;" %>
+        <small class="text-muted d-block mt-1">Imagem atual — envie outra para substituir.</small>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="form-check mb-4">
+    <%= f.check_box :active, class: "form-check-input" %>
+    <%= f.label :active, "Anúncio ativo", class: "form-check-label" %>
+    <small class="text-muted d-block">Somente anúncios ativos são exibidos aos usuários.</small>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit @announcement.persisted? ? "Salvar alterações" : "Criar anúncio", class: "btn btn-primary" %>
+    <%= link_to "Cancelar", announcements_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>

@@ -1,0 +1,65 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fa-solid fa-bullhorn me-2"></i> Anúncios</h2>
+    <% if current_user.admin? || current_user.operador? %>
+      <%= link_to new_announcement_path, class: "btn btn-primary" do %>
+        <i class="fa-solid fa-plus me-1"></i> Novo anúncio
+      <% end %>
+    <% end %>
+  </div>
+
+  <% if @announcements.empty? %>
+    <p class="text-muted">Nenhum anúncio cadastrado.</p>
+  <% else %>
+    <div class="table-responsive">
+      <table class="table table-salas">
+        <thead class="table-secondary text-dark">
+          <tr>
+            <th>Título</th>
+            <th>Imagem</th>
+            <th>Status</th>
+            <th>Visualizações</th>
+            <th>Criado por</th>
+            <th>Data</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @announcements.each do |ann| %>
+            <tr>
+              <td><%= ann.title.presence || "<em class='text-muted'>Sem título</em>".html_safe %></td>
+              <td>
+                <% if ann.image.attached? %>
+                  <%= image_tag url_for(ann.image), style: "height:48px; border-radius:6px;" %>
+                <% else %>
+                  <span class="text-muted">—</span>
+                <% end %>
+              </td>
+              <td>
+                <% if ann.active? %>
+                  <span class="badge bg-success">Ativo</span>
+                <% else %>
+                  <span class="badge bg-secondary">Inativo</span>
+                <% end %>
+              </td>
+              <td><%= ann.announcement_views.size %></td>
+              <td><%= ann.created_by&.email || "—" %></td>
+              <td><%= ann.created_at.strftime("%d/%m/%Y") %></td>
+              <td class="d-flex gap-1">
+                <%= link_to edit_announcement_path(ann), class: "btn btn-sm edit", title: "Editar" do %>
+                  <i class="fa-solid fa-pen-to-square"></i>
+                <% end %>
+                <%= button_to announcement_path(ann), method: :delete,
+                      class: "btn btn-sm btn-warning",
+                      title: "Excluir",
+                      data: { turbo_confirm: "Excluir este anúncio?" } do %>
+                  <i class="fa-solid fa-trash"></i>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+        </tbody>
+      </table>
+    </div>
+  <% end %>
+</div>

@@ -1,0 +1,75 @@
+<% if user_signed_in? %>
+  <% pending = Announcement.active
+                            .where.not(id: current_user.announcement_views.select(:announcement_id))
+                            .order(created_at: :asc) %>
+  <% if pending.any? %>
+    <div id="announcement-modal-overlay"
+         style="display:flex; position:fixed; inset:0; z-index:10200; background:rgba(0,0,0,0.7);
+                align-items:center; justify-content:center;">
+      <div id="announcement-modal-box"
+           style="background:#fff; border-radius:16px; width:min(520px,94vw);
+                  max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(0,0,0,0.4);
+                  display:flex; flex-direction:column;">
+
+        <div id="announcement-modal-body" style="padding:28px 28px 0;">
+        </div>
+
+        <div style="padding:16px 28px 24px; display:flex; justify-content:flex-end;">
+          <button id="announcement-modal-close" class="btn btn-primary px-4">
+            Entendido
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      const announcements = <%= pending.map { |a| {
+        id:    a.id,
+        title: a.title,
+        body:  a.body,
+        image: a.image.attached? ? url_for(a.image) : nil,
+        markUrl: mark_viewed_announcement_path(a)
+      }}.to_json.html_safe %>;
+
+      let current = 0;
+      const overlay = document.getElementById('announcement-modal-overlay');
+      const body    = document.getElementById('announcement-modal-body');
+      const closeBtn = document.getElementById('announcement-modal-close');
+      const csrf    = document.querySelector('meta[name="csrf-token"]')?.content;
+
+      function render(ann) {
+        let html = '';
+        if (ann.title) {
+          html += `<h4 style="margin:0 0 12px; font-weight:700;">${ann.title}</h4>`;
+        }
+        if (ann.image) {
+          html += `<img src="${ann.image}" style="width:100%; border-radius:10px; margin-bottom:14px; object-fit:cover; max-height:320px;">`;
+        }
+        if (ann.body) {
+          html += `<p style="color:#444; line-height:1.6; white-space:pre-wrap;">${ann.body}</p>`;
+        }
+        body.innerHTML = html;
+      }
+
+      function markAndAdvance() {
+        const ann = announcements[current];
+        fetch(ann.markUrl, {
+          method: 'POST',
+          headers: { 'X-CSRF-Token': csrf, 'Content-Type': 'application/json' }
+        });
+        current++;
+        if (current < announcements.length) {
+          render(announcements[current]);
+        } else {
+          overlay.style.display = 'none';
+        }
+      }
+
+      closeBtn.addEventListener('click', markAndAdvance);
+
+      render(announcements[0]);
+    })();
+    </script>
+  <% end %>
+<% end %>

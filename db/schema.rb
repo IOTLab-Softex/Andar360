@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_08_170000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_04_130001) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -62,6 +62,26 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_170000) do
     t.bigint "blob_id", null: false
     t.string "variation_digest", null: false
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
+  end
+
+  create_table "announcement_views", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "announcement_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["announcement_id"], name: "index_announcement_views_on_announcement_id"
+    t.index ["user_id", "announcement_id"], name: "index_announcement_views_on_user_id_and_announcement_id", unique: true
+    t.index ["user_id"], name: "index_announcement_views_on_user_id"
+  end
+
+  create_table "announcements", force: :cascade do |t|
+    t.string "title"
+    t.text "body"
+    t.boolean "active", default: true, null: false
+    t.bigint "created_by_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["created_by_id"], name: "index_announcements_on_created_by_id"
   end
 
   create_table "arquivo_anexos", force: :cascade do |t|
@@ -577,6 +597,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_08_170000) do
   add_foreign_key "access_logs", "reservations"
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
   add_foreign_key "active_storage_variant_records", "active_storage_blobs", column: "blob_id"
+  add_foreign_key "announcement_views", "announcements"
+  add_foreign_key "announcement_views", "users"
+  add_foreign_key "announcements", "users", column: "created_by_id"
   add_foreign_key "arquivo_anexos", "chamados"
   add_foreign_key "arquivo_anexos", "manutencao_programadas"
   add_foreign_key "chamados", "participants", column: "solicitante_id"

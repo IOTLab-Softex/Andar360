@@ -157,6 +157,10 @@ end
 
   get "import_logs/index"
  
+  resources :announcements do
+    member { post :mark_viewed }
+  end
+
   resources :devices
   resources :room_groups, except: [:show]
 

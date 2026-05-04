@@ -919,6 +919,14 @@ end
     end
   end
 
+  if operador_ou_admin?
+    items << content_tag(:li) do
+      link_to announcements_path, class: "submenu-toggle btn-exit" do
+        content_tag(:i, "", class: "fa-solid fa-bullhorn") + " Anúncios"
+      end
+    end
+  end
+
 
   items << content_tag(:li) do
     safe_join([
