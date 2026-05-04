@@ -3,53 +3,239 @@
                             .where.not(id: current_user.announcement_views.select(:announcement_id))
                             .order(created_at: :asc) %>
   <% if pending.any? %>
-    <div id="announcement-modal-overlay"
-         style="display:flex; position:fixed; inset:0; z-index:10200; background:rgba(0,0,0,0.7);
-                align-items:center; justify-content:center;">
-      <div id="announcement-modal-box"
-           style="background:#fff; border-radius:16px; width:min(520px,94vw);
-                  max-height:90vh; overflow-y:auto; box-shadow:0 32px 80px rgba(0,0,0,0.4);
-                  display:flex; flex-direction:column;">
 
-        <div id="announcement-modal-body" style="padding:28px 28px 0;">
+    <style>
+      #ann-overlay {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        z-index: 10200;
+        background: rgba(0, 0, 0, 0.75);
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        backdrop-filter: blur(4px);
+      }
+
+      #ann-box {
+        background: var(--color-card, #fff);
+        color: var(--color-text, #111);
+        border-radius: 20px;
+        width: min(640px, 96vw);
+        max-height: 92vh;
+        overflow-y: auto;
+        box-shadow: 0 32px 80px rgba(0, 0, 0, 0.45);
+        display: flex;
+        flex-direction: column;
+        border: 1px solid rgba(112, 20, 241, 0.25);
+        scrollbar-width: thin;
+      }
+
+      #ann-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px 12px;
+        border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+        flex-shrink: 0;
+      }
+
+      #ann-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--color-accent, #7014f1);
+        color: #fff;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        padding: 4px 10px;
+        border-radius: 999px;
+        text-transform: uppercase;
+      }
+
+      #ann-counter {
+        font-size: 0.78rem;
+        color: var(--color-muted, #888);
+      }
+
+      #ann-image-wrap {
+        width: 100%;
+        background: #000;
+        flex-shrink: 0;
+      }
+
+      #ann-image-wrap img {
+        width: 100%;
+        max-height: 420px;
+        object-fit: contain;
+        display: block;
+      }
+
+      #ann-content {
+        padding: 20px 24px 8px;
+        flex: 1;
+      }
+
+      #ann-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        margin: 0 0 10px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-text, #111);
+      }
+
+      #ann-body-text {
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--color-text, #444);
+        white-space: pre-wrap;
+        margin: 0;
+      }
+
+      #ann-footer {
+        padding: 16px 24px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        border-top: 1px solid rgba(128, 128, 128, 0.15);
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+
+      #ann-dots {
+        display: flex;
+        gap: 6px;
+      }
+
+      .ann-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(128, 128, 128, 0.35);
+        transition: background 0.2s;
+      }
+
+      .ann-dot.active {
+        background: var(--color-accent, #7014f1);
+      }
+
+      #ann-close-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: var(--color-accent, #7014f1);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 9px 22px;
+        font-size: 0.92rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.15s;
+        margin-left: auto;
+      }
+
+      #ann-close-btn:hover { opacity: 0.85; }
+    </style>
+
+    <div id="ann-overlay">
+      <div id="ann-box">
+
+        <div id="ann-header">
+          <span id="ann-badge">
+            <i class="fa-solid fa-bullhorn"></i> Anúncio
+          </span>
+          <span id="ann-counter"></span>
         </div>
 
-        <div style="padding:16px 28px 24px; display:flex; justify-content:flex-end;">
-          <button id="announcement-modal-close" class="btn btn-primary px-4">
-            Entendido
+        <div id="ann-image-wrap" style="display:none;">
+          <img id="ann-image" src="" alt="Imagem do anúncio">
+        </div>
+
+        <div id="ann-content">
+          <p id="ann-title" style="display:none;"></p>
+          <p id="ann-body-text" style="display:none;"></p>
+        </div>
+
+        <div id="ann-footer">
+          <div id="ann-dots"></div>
+          <button id="ann-close-btn">
+            <i class="fa-solid fa-check"></i> Entendido
           </button>
         </div>
+
       </div>
     </div>
 
     <script>
     (function(){
       const announcements = <%= pending.map { |a| {
-        id:    a.id,
-        title: a.title,
-        body:  a.body,
-        image: a.image.attached? ? url_for(a.image) : nil,
+        id:      a.id,
+        title:   a.title,
+        body:    a.body,
+        image:   a.image.attached? ? url_for(a.image) : nil,
         markUrl: mark_viewed_announcement_path(a)
       }}.to_json.html_safe %>;
 
       let current = 0;
-      const overlay = document.getElementById('announcement-modal-overlay');
-      const body    = document.getElementById('announcement-modal-body');
-      const closeBtn = document.getElementById('announcement-modal-close');
-      const csrf    = document.querySelector('meta[name="csrf-token"]')?.content;
+      const csrf      = document.querySelector('meta[name="csrf-token"]')?.content;
+      const overlay   = document.getElementById('ann-overlay');
+      const imageWrap = document.getElementById('ann-image-wrap');
+      const imageEl   = document.getElementById('ann-image');
+      const titleEl   = document.getElementById('ann-title');
+      const bodyEl    = document.getElementById('ann-body-text');
+      const closeBtn  = document.getElementById('ann-close-btn');
+      const counter   = document.getElementById('ann-counter');
+      const dotsWrap  = document.getElementById('ann-dots');
+
+      // Dots
+      if (announcements.length > 1) {
+        announcements.forEach((_, i) => {
+          const d = document.createElement('span');
+          d.className = 'ann-dot' + (i === 0 ? ' active' : '');
+          d.id = 'ann-dot-' + i;
+          dotsWrap.appendChild(d);
+        });
+      }
 
       function render(ann) {
-        let html = '';
-        if (ann.title) {
-          html += `<h4 style="margin:0 0 12px; font-weight:700;">${ann.title}</h4>`;
-        }
+        const box = document.getElementById('ann-box');
+        box.scrollTop = 0;
+
         if (ann.image) {
-          html += `<img src="${ann.image}" style="width:100%; border-radius:10px; margin-bottom:14px; object-fit:cover; max-height:320px;">`;
+          imageEl.src = ann.image;
+          imageWrap.style.display = 'block';
+        } else {
+          imageWrap.style.display = 'none';
         }
+
+        if (ann.title) {
+          titleEl.innerHTML = '<i class="fa-solid fa-star" style="color:var(--color-accent,#7014f1);font-size:0.95rem;"></i> ' + ann.title;
+          titleEl.style.display = 'flex';
+        } else {
+          titleEl.style.display = 'none';
+        }
+
         if (ann.body) {
-          html += `<p style="color:#444; line-height:1.6; white-space:pre-wrap;">${ann.body}</p>`;
+          bodyEl.textContent = ann.body;
+          bodyEl.style.display = 'block';
+        } else {
+          bodyEl.style.display = 'none';
         }
-        body.innerHTML = html;
+
+        if (announcements.length > 1) {
+          counter.textContent = (current + 1) + ' / ' + announcements.length;
+          document.querySelectorAll('.ann-dot').forEach((d, i) => {
+            d.classList.toggle('active', i === current);
+          });
+          closeBtn.innerHTML = current < announcements.length - 1
+            ? '<i class="fa-solid fa-arrow-right"></i> Próximo'
+            : '<i class="fa-solid fa-check"></i> Entendido';
+        }
       }
 
       function markAndAdvance() {
@@ -67,9 +253,9 @@
       }
 
       closeBtn.addEventListener('click', markAndAdvance);
-
       render(announcements[0]);
     })();
     </script>
+
   <% end %>
 <% end %>
