@@ -454,16 +454,18 @@
                 <% if current_user.admin? || current_user.operador? %>
                   <button type="button"
             class="btn btn-success js-approve-one"
+            title="Aprovar"
             style= "width: -webkit-fill-available; text-align: center;"
             data-id="<%= f.id %>">
-                    <i class="fa-solid fa-check"></i> Aprovar
+                    <i class="fa-solid fa-check"></i><div class="hide-sm">Aprovar</div>
                   </button>
                   <button type="button"
             class="btn btn-warning js-reject-one"
+            title="Reprovar"
             style= "width: -webkit-fill-available; text-align: center;"
             data-id="<%= f.id %>"
             data-default-motivo="Reprovado pelo administrador">
-                    <i class="fa-solid fa-ban"></i> Reprovar
+                    <i class="fa-solid fa-ban"></i><div class="hide-sm">Reprovar</div>
                   </button>
                 <% else %>
                   -
@@ -517,23 +519,26 @@
             <td>
               <%= link_to edit_formulario_cadastro_path(f),
                     class: "btn edit",
+                    title: "Editar",
                     style: "width: -webkit-fill-available; text-align: center;" do %>
-                <i class="fa-solid fa-pen-to-square"><div class="hide-sm">EDITAR</div>
+                <i class="fa-solid fa-pen-to-square"></i><div class="hide-sm">EDITAR</div>
               <% end %>
               <%= button_to reenviar_para_aprovacao_formulario_cadastro_path(f),
                     method: :post,
                     class: "btn btn-success",
+                    title: "Reenviar para aprovação",
                     style: "width: -webkit-fill-available; text-align: center;",
                     data: { confirm: "Enviar novamente este pré-cadastro para aprovação?" } do %>
-                <i class="fa-solid fa-arrows-rotate"></i> Reenviar para aprovação
+                <i class="fa-solid fa-arrows-rotate"></i><div class="hide-sm">Reenviar para aprovação</div>
               <% end %>
               <% if current_user.admin? %>
                 <%= button_to formulario_cadastro_path(f),
                       method: :delete,
                       class: "btn btn-warning",
+                      title: "Excluir",
                       style: "width: -webkit-fill-available; text-align: center;",
                       data: { confirm: "Deseja excluir este pré-cadastro reprovado?" } do %>
-                  <i class="fa-solid fa-trash"></i> Excluir
+                  <i class="fa-solid fa-trash"></i><div class="hide-sm">Excluir</div>
                 <% end %>
               <% end %>
             </td>
@@ -613,25 +618,27 @@
           <td><%= participant.email.presence || "-" %></td>
           <td>
             <% if params[:tab] == 'excluidos' %>
-              <%= button_to resgatar_participant_path(participant), method: :post, class: "btn btn-success", data: { confirm: "Deseja resgatar este participante?" } do %>
-                <i class="fa-solid fa-rotate-left"></i> Resgatar
+              <%= button_to resgatar_participant_path(participant), method: :post, class: "btn btn-success", title: "Resgatar", data: { confirm: "Deseja resgatar este participante?" } do %>
+                <i class="fa-solid fa-rotate-left"></i><div class="hide-sm">Resgatar</div>
               <% end %>
               <%= button_to participant_path(participant),
                     method: :delete,
                     data: { confirm: "Tem certeza que deseja excluir este participante? Esta ação não poderá ser desfeita!" },
                     class: "btn btn-warning",
+                    title: "Excluir",
                     form: { style: "display: contents;" } do %>
-                <i class="fa-solid fa-user-xmark"></i> Excluir
+                <i class="fa-solid fa-user-xmark"></i><div class="hide-sm">Excluir</div>
               <% end %>
             <% else %>
               <% if participant.solicitacao_exclusao_pendente.blank? %>
-                <%= link_to edit_participant_path(participant), class: "btn edit", style: "width: -webkit-fill-available; text-align: center;" do %>
-                  <i class="fa-solid fa-user-pen"></i> Editar
+                <%= link_to edit_participant_path(participant), class: "btn edit", title: "Editar", style: "width: -webkit-fill-available; text-align: center;" do %>
+                  <i class="fa-solid fa-user-pen"></i><div class="hide-sm">Editar</div>
                 <% end %>
                 <% if @can_manage_password_recovery_support && password_recovery_chamado.present? %>
                   <%= button_to send_password_recovery_link_chamado_path(password_recovery_chamado),
                         method: :post,
                         class: "btn btn-success js-send-reset-link",
+                        title: "Enviar link de redefinicao",
                         style: "width: -webkit-fill-available; text-align: center;",
                         form: {
                           data: {
@@ -639,7 +646,7 @@
                             record_name: (participant.name.presence || participant.cpf)
                           }
                         } do %>
-                    <i class="fa-solid fa-paper-plane"></i> Enviar link de redefinicao
+                    <i class="fa-solid fa-paper-plane"></i><div class="hide-sm">Enviar link de redefinicao</div>
                   <% end %>
                 <% end %>
                 <% if current_user.admin? %>
@@ -647,27 +654,28 @@
                         method: :delete,
                         data: { confirm: "Tem certeza que deseja excluir este participante?" },
                         class: "btn btn-warning",
+                        title: "Excluir",
                         style: "width: -webkit-fill-available; text-align: center;",
                         form: { style: "display: contents;" } do %>
-                    <i class="fa-solid fa-user-xmark"></i> Excluir
+                    <i class="fa-solid fa-user-xmark"></i><div class="hide-sm">Excluir</div>
                   <% end %>
                 <% end %>
               <% end %>
               <% if (current_user.admin? || current_user.operador?) && participant.user.present? %>
                 <% if participant.user.respond_to?(:blocked?) && participant.user.blocked? %>
-                  <%= button_to unblock_access_participant_path(participant), method: :patch, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;" do %>
-                    <i class="fa-solid fa-unlock"></i> Desbloquear
+                  <%= button_to unblock_access_participant_path(participant), method: :patch, class: "btn btn-success", title: "Desbloquear", style: "width: -webkit-fill-available; text-align: center;" do %>
+                    <i class="fa-solid fa-unlock"></i><div class="hide-sm">Desbloquear</div>
                   <% end %>
                 <% else %>
-                  <%= button_to block_access_participant_path(participant), method: :patch, class: "btn btn-warning", style: "width: -webkit-fill-available; text-align: center;" do %>
-                    <i class="fa-solid fa-lock"></i> Bloquear
+                  <%= button_to block_access_participant_path(participant), method: :patch, class: "btn btn-warning", title: "Bloquear", style: "width: -webkit-fill-available; text-align: center;" do %>
+                    <i class="fa-solid fa-lock"></i><div class="hide-sm">Bloquear</div>
                   <% end %>
                 <% end %>
               <% end %>
               <% if params[:tab] == 'pendentes' %>
                 <% if current_user.admin? %>
-                  <%= button_to aprovar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;", data: { confirm: "Deseja realmente aprovar a exclusão deste participante?" } do %>
-                    <i class="fa-solid fa-check"></i> Aprovar Exclusão
+                  <%= button_to aprovar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", title: "Aprovar Exclusao", style: "width: -webkit-fill-available; text-align: center;", data: { confirm: "Deseja realmente aprovar a exclus??o deste participante?" } do %>
+                    <i class="fa-solid fa-check"></i><div class="hide-sm">Aprovar Exclusão</div>
                   <% end %>
                 <% end %>
                 <% is_client = current_user.client? %>
@@ -677,13 +685,14 @@
                 <%= button_to reprovar_exclusao_participant_path(participant),
                       method: :post,
                       class: "btn btn-warning",
+                      title: label_text,
                       style: "width: -webkit-fill-available; text-align: center;",
                       data: { confirm: confirm_text } do %>
-                  <i class="fa-solid fa-ban"></i> <%= label_text %>
+                  <i class="fa-solid fa-ban"></i><div class="hide-sm"><%= label_text %></div>
                 <% end %>
               <% elsif participant.solicitacao_exclusao_pendente.blank? %>
-                <%= button_to solicitar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", style: "width: -webkit-fill-available; text-align: center;" do %>
-                  <i class="fa-solid fa-paper-plane"></i> Solicitar Exclusão
+                <%= button_to solicitar_exclusao_participant_path(participant), method: :post, class: "btn btn-success", title: "Solicitar Exclusao", style: "width: -webkit-fill-available; text-align: center;" do %>
+                  <i class="fa-solid fa-paper-plane"></i><div class="hide-sm">Solicitar Exclusão</div>
                 <% end %>
               <% end %>
             <% end %>
@@ -710,7 +719,7 @@
      href="#"
      download
      rel="noopener">
-        <i class="fa-solid fa-download"></i> Baixar
+        <i class="fa-solid fa-download"></i><div class="hide-sm">Baixar</div>
       </a>
     </div>
   </div>
@@ -1360,3 +1369,8 @@ document.addEventListener("submit", async function(e) {
 });
 
 </script>
+
+
+
+
+

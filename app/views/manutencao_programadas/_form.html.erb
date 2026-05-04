@@ -152,6 +152,15 @@
             <%= link_to url_for(arquivo), target: "_blank", class: "anexo-link" do %>
               <i class="fa fa-download"></i> <%= arquivo.filename.to_s %>
             <% end %>
+            <% if arquivo.content_type&.start_with?("video/") %>
+              <div class="mt-2">
+                <%= video_tag url_for(arquivo),
+                              controls: true,
+                              preload: "metadata",
+                              playsinline: true,
+                              style: "width:100%; max-width:420px; border-radius:10px; background:#000;" %>
+              </div>
+            <% end %>
           </div>
           <%= button_to remove_arquivo_manutencao_programada_path(@manutencao_programada, blob_signed_id: arquivo.signed_id),
                 method: :delete,
@@ -169,6 +178,15 @@
           <div class="anexo-info">
             <%= link_to url_for(anexo.arquivo), target: "_blank", class: "anexo-link" do %>
               <i class="fa fa-download"></i> <%= anexo.nome %>
+            <% end %>
+            <% if anexo.arquivo.content_type&.start_with?("video/") %>
+              <div class="mt-2">
+                <%= video_tag url_for(anexo.arquivo),
+                              controls: true,
+                              preload: "metadata",
+                              playsinline: true,
+                              style: "width:100%; max-width:420px; border-radius:10px; background:#000;" %>
+              </div>
             <% end %>
           </div>
           <%= button_to manutencao_programada_arquivo_anexo_path(@manutencao_programada, anexo),
@@ -201,6 +219,15 @@
             <div class="anexo-info">
               <%= link_to url_for(blob), target: "_blank", class: "anexo-link" do %>
                 <i class="fa fa-download"></i> <%= blob.filename.to_s %>
+              <% end %>
+              <% if blob.content_type&.start_with?("video/") %>
+                <div class="mt-2">
+                  <%= video_tag url_for(blob),
+                                controls: true,
+                                preload: "metadata",
+                                playsinline: true,
+                                style: "width:100%; max-width:420px; border-radius:10px; background:#000;" %>
+                </div>
               <% end %>
             </div>
             <%= button_to remover_arquivo_ocorrencia_path(oc, blob_signed_id: blob.signed_id),

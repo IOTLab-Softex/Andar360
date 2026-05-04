@@ -69,7 +69,7 @@ def visualizado_pelo_usuario?(id)
   cookies[id].present?
 end
 
- def marcar_todos
+def marcar_todos
     tipo = params[:tipo]
     ids = params[:ids] || []
 
@@ -82,6 +82,19 @@ end
     end
 
     head :ok
+  end
+
+  def media_attachment_kind(attachment)
+    content_type = attachment&.content_type.to_s
+    return :image if content_type.start_with?("image/")
+    return :video if content_type.start_with?("video/")
+    return :audio if content_type.start_with?("audio/")
+
+    :file
+  end
+
+  def media_attachment_display_name(attachment, label = nil)
+    label.presence || attachment&.filename.to_s
   end
 
 end

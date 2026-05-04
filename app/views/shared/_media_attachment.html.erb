@@ -1,0 +1,44 @@
+<% attachment_name = media_attachment_display_name(attachment, local_assigns[:label]) %>
+<% attachment_kind = media_attachment_kind(attachment) %>
+<% attachment_url = url_for(attachment) %>
+
+<div class="media-attachment-card media-attachment-card--<%= attachment_kind %>">
+  <div class="media-attachment-preview">
+    <% case attachment_kind %>
+    <% when :image %>
+      <%= link_to attachment_url, target: "_blank", rel: "noopener", class: "media-attachment-image-link" do %>
+        <%= image_tag attachment_url, alt: attachment_name, class: "media-attachment-image" %>
+      <% end %>
+    <% when :video %>
+      <%= video_tag attachment_url,
+                    controls: true,
+                    preload: "metadata",
+                    playsinline: true,
+                    class: "media-attachment-video" %>
+    <% when :audio %>
+      <%= audio_tag attachment_url, controls: true, preload: "metadata", class: "media-attachment-audio" %>
+    <% else %>
+      <div class="media-attachment-file-icon">
+        <i class="fa-regular fa-file-lines"></i>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="media-attachment-meta">
+    <div class="media-attachment-title"><%= attachment_name %></div>
+    <small class="media-attachment-info">
+      <%= attachment.content_type.presence || "arquivo" %>
+      <% if attachment.respond_to?(:byte_size) && attachment.byte_size.present? %>
+        • <%= number_to_human_size(attachment.byte_size) %>
+      <% end %>
+    </small>
+
+    <div class="media-attachment-actions">
+      <%= link_to "Abrir", attachment_url, target: "_blank", rel: "noopener", class: "media-attachment-action" %>
+      <%= link_to "Baixar",
+                  rails_blob_path(attachment, disposition: :attachment),
+                  class: "media-attachment-action" %>
+    </div>
+  </div>
+</div>
+
