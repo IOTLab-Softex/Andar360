@@ -54,6 +54,26 @@
           <small class="form-text text-muted">Hora programada para iniciar a rotina de extração do Icontrol (formato HH:MM).</small>
         </div>
 
+        <div class="form-check form-group mb-3">
+          <%= f.check_box :login_weather_card_enabled, class: "form-check-input", id: "setting_login_weather_card_enabled" %>
+          <label class="form-check-label" for="setting_login_weather_card_enabled">
+            <i class="fa-solid fa-cloud-sun me-2"></i> Exibir card do clima na tela de login
+          </label>
+          <small class="form-text text-muted d-block">
+            Quando habilitado, um card de clima aparece junto aos cards de anuncios no rodape da tela de login.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-location-dot me-2"></i> Local do clima no login</label>
+          <div class="d-flex gap-2">
+            <%= f.text_field :login_weather_city, class: "form-control", placeholder: "Ex: Recife" %>
+            <%= f.number_field :login_weather_latitude, class: "form-control", step: "0.000001", placeholder: "Latitude" %>
+            <%= f.number_field :login_weather_longitude, class: "form-control", step: "0.000001", placeholder: "Longitude" %>
+          </div>
+          <small class="form-text text-muted">Padrao: Recife (-8.047562, -34.877003). O clima e carregado pelo navegador usando Open-Meteo.</small>
+        </div>
+
       </section>
 
       <!-- ===== 📅 RESERVAS ===== -->

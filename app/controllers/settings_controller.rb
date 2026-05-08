@@ -85,6 +85,7 @@ end
       :limite_horas_turno_reservas_manha, :limite_horas_turno_reservas_tarde, :limite_horas_turno_reservas_noite,
       :tempo_verificacao_online, :tempo_verificacao_online_unidade,
       :horario_rotina_importacao,
+      :login_weather_card_enabled, :login_weather_city, :login_weather_latitude, :login_weather_longitude,
       :smtp_from_email, :smtp_reply_to,
       :smtp_address, :smtp_port, :smtp_domain,
       :smtp_username, :smtp_password,

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_04_130001) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_04_130003) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -81,6 +81,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_04_130001) do
     t.bigint "created_by_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.boolean "show_on_login", default: false, null: false
     t.index ["created_by_id"], name: "index_announcements_on_created_by_id"
   end
 
@@ -508,6 +509,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_04_130001) do
     t.text "password_recovery_email_html"
     t.integer "password_recovery_expiration_minutes", default: 360, null: false
     t.string "password_recovery_expiration_unit", default: "minutes", null: false
+    t.boolean "login_weather_card_enabled", default: false, null: false
+    t.string "login_weather_city", default: "Recife"
+    t.decimal "login_weather_latitude", precision: 10, scale: 6, default: "-8.047562"
+    t.decimal "login_weather_longitude", precision: 10, scale: 6, default: "-34.877003"
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|

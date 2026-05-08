@@ -626,6 +626,7 @@
     </nav>
     <!-- 🔹 Aqui começa o “container” com margem lateral -->
     <% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) ||
+     controller_path == "users/sessions" && %w[new edit].include?(action_name) ||
      controller_path == "users/registrations" && %w[new edit].include?(action_name) ||
      controller_path == "devise/passwords" && %w[new edit].include?(action_name) %>
       <%= yield %>

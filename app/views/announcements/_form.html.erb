@@ -20,21 +20,44 @@
   </div>
 
   <div class="form-group mb-3">
-    <%= f.label :image, "Imagem / Arte (opcional)" %>
+    <%= f.label :image, "Imagem / arte do card e do modal (opcional)" %>
     <%= f.file_field :image, class: "form-control", accept: "image/*" %>
+    <small class="text-muted d-block mt-1">A imagem aparece como miniatura no card do login e inteira no modal do anuncio.</small>
     <% if @announcement.persisted? && @announcement.image.attached? %>
       <div class="mt-2">
-        <%= image_tag url_for(@announcement.image), style: "max-height:160px; border-radius:8px;" %>
+        <%= image_tag url_for(@announcement.image), style: "max-width:280px; max-height:180px; object-fit:contain; border-radius:8px; background:#111827;" %>
         <small class="text-muted d-block mt-1">Imagem atual — envie outra para substituir.</small>
       </div>
     <% end %>
   </div>
 
-  <div class="form-check mb-4">
+  <div class="form-check mb-3">
     <%= f.check_box :active, class: "form-check-input" %>
     <%= f.label :active, "Anúncio ativo", class: "form-check-label" %>
     <small class="text-muted d-block">Somente anúncios ativos são exibidos aos usuários.</small>
   </div>
+
+  <div class="form-check mb-2">
+    <%= f.check_box :show_on_login, class: "form-check-input", id: "ann_show_on_login" %>
+    <%= f.label :show_on_login, "Exibir card na tela de login", class: "form-check-label" %>
+    <small class="text-muted d-block">Mostra um card compacto no rodape da tela de login. Ao clicar no card, o usuario abre um modal com a imagem e o texto completo. Apenas o anuncio mais recente com esta opcao ativa sera exibido.</small>
+  </div>
+
+  <div id="login-image-tip" class="alert alert-info py-2 mb-4" style="font-size:0.85rem; display:none;">
+    <i class="fa-solid fa-circle-info"></i>
+    Para o novo modelo do login, use uma <strong>imagem bem legivel em paisagem ou quadrada</strong> (ex: 1200x800, 1600x900 ou 1080x1080). O card usa uma miniatura pequena e o modal mostra a imagem inteira, sem corte.
+  </div>
+
+  <script>
+    (function(){
+      var cb = document.getElementById('ann_show_on_login');
+      var tip = document.getElementById('login-image-tip');
+      if (!cb || !tip) return;
+      function sync(){ tip.style.display = cb.checked ? '' : 'none'; }
+      cb.addEventListener('change', sync);
+      sync();
+    })();
+  </script>
 
   <div class="d-flex gap-2">
     <%= f.submit @announcement.persisted? ? "Salvar alterações" : "Criar anúncio", class: "btn btn-primary" %>

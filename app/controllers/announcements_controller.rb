@@ -55,6 +55,6 @@ class AnnouncementsController < ApplicationController
   end
 
   def announcement_params
-    params.require(:announcement).permit(:title, :body, :image, :active)
+    params.require(:announcement).permit(:title, :body, :image, :active, :show_on_login)
   end
 end

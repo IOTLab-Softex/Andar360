@@ -1,0 +1,1148 @@
+<% login_settings = Setting.instance %>
+<% login_anns = Announcement.where(active: true, show_on_login: true).with_attached_image.order(created_at: :desc) %>
+<% login_weather_enabled = login_settings.login_weather_card_enabled? %>
+<% if login_anns.any? || login_weather_enabled %>
+  <style>
+    .login-ann-stack {
+      --login-ann-card-height: 132px;
+      position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 7px;
+    z-index: 50;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 10px;
+    width: min(860px, calc(100vw - 32px));
+    margin: 0 auto;
+    padding: 2px 2px 8px;
+      overflow-x: auto;
+      transform: none;
+      scrollbar-width: none;
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+    }
+
+    .login-ann-stack::-webkit-scrollbar {
+      display: none;
+    }
+
+   .login-ann-panel {
+    position: relative;
+    flex: 0 0 min(264px, calc(100vw - 32px));
+    width: min(264px, calc(100vw - 32px));
+    height: var(--login-ann-card-height);
+    min-height: var(--login-ann-card-height);
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    border: 1px solid rgb(255 255 255 / 11%);
+    border-radius: 2px;
+    background: rgb(149 149 149 / 29%);
+    box-shadow: 1px 0px 4px 2px rgb(0 0 0 / 31%);
+    backdrop-filter: blur(22px) saturate(140%);
+    -webkit-backdrop-filter: blur(22px) saturate(140%);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s, transform 0.18s;
+    border-radius: 13px;
+}
+
+    .login-ann-panel:hover {
+      background: rgba(28, 40, 72, 0.84);
+      border-color: rgba(255, 255, 255, 0.28);
+      transform: translateY(-2px);
+    }
+
+    .login-ann-img {
+      position: relative;
+      flex: 0 0 74px;
+      min-height: var(--login-ann-card-height);
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .login-ann-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    .login-ann-img-placeholder {
+      width: 100%;
+      height: 100%;
+      min-height: var(--login-ann-card-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 1.45rem;
+      background: linear-gradient(135deg, rgba(0, 120, 212, 0.72), rgba(39, 52, 92, 0.88));
+    }
+
+    .login-ann-overlay {
+      position: relative;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 13px 28px 12px 12px;
+      background: transparent;
+    }
+
+    .login-ann-title {
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin: 0 0 3px;
+      line-height: 1.22;
+      text-shadow: 0 1px 7px rgba(0, 0, 0, 0.42);
+      display: -webkit-box;
+      -webkit-line-clamp: 1;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .login-ann-body {
+      color: rgba(255, 255, 255, 0.72) !important;
+      font-size: 0.66rem;
+      line-height: 1.28;
+      margin: 0;
+      white-space: pre-wrap;
+      text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .login-ann-body * {
+      color: inherit !important;
+    }
+
+    .login-ann-close {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 18px;
+      height: 18px;
+      border-radius: 2px;
+      border: 0;
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s, color 0.18s;
+      z-index: 2;
+    }
+
+    .login-ann-close:hover {
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+    }
+
+.login-ann-top-badge {
+    position: absolute;
+    left: 86px;
+    bottom: 7px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.70rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+    .login-weather-icon {
+      flex: 0 0 70px;
+      min-height: var(--login-ann-card-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+    }
+
+    .login-weather-symbol {
+      content: "";
+      position: relative;
+      width: 64px;
+      height: 56px;
+      display: block;
+      border-radius: 999px;
+      filter: drop-shadow(0 9px 14px rgba(0, 0, 0, 0.34));
+    }
+
+    .login-weather-symbol::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 4px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 30% 28%, #ffd66b 0 16%, transparent 18%),
+        linear-gradient(135deg, #ff9f0a 0%, #ffbf3f 68%, #f59e0b 100%);
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.08), 0 7px 15px rgba(245, 158, 11, 0.28);
+    }
+
+    .login-weather-symbol::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      bottom: 3px;
+      width: 58px;
+      height: 31px;
+      border-radius: 28px;
+      background:
+        radial-gradient(circle at 39px 8px, #ffffff 0 14px, transparent 15px),
+        radial-gradient(circle at 21px 7px, #f8fbff 0 17px, transparent 18px),
+        radial-gradient(circle at 11px 18px, #eef4ff 0 12px, transparent 13px),
+        linear-gradient(180deg, #ffffff 0%, #edf2fa 54%, #cdd7e7 100%);
+      box-shadow: inset 0 -1px 0 rgba(99, 116, 139, 0.18), 0 8px 14px rgba(15, 23, 42, 0.2);
+    }
+
+    .login-weather-symbol.is-clear::after,
+    .login-weather-symbol.is-night::after {
+      display: none;
+    }
+
+    .login-weather-symbol.is-night::before {
+      left: 10px;
+      background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+      box-shadow: inset -10px 1px 0 rgba(55, 65, 81, 0.86), 0 7px 15px rgba(148, 163, 184, 0.22);
+    }
+
+    .login-weather-symbol.is-rain::after {
+      box-shadow:
+        inset 0 -1px 0 rgba(99, 116, 139, 0.18),
+        9px 17px 0 -7px #6cb8ff,
+        22px 19px 0 -7px #6cb8ff,
+        36px 17px 0 -7px #6cb8ff;
+    }
+
+    .login-weather-symbol.is-storm::after {
+      box-shadow:
+        inset 0 -1px 0 rgba(99, 116, 139, 0.18),
+        21px 19px 0 -7px #facc15,
+        34px 17px 0 -7px #6cb8ff;
+    }
+
+    .login-weather-symbol.is-cloudy::before {
+      opacity: 0.32;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      box-shadow: none;
+    }
+
+    .login-weather-symbol.is-fog::before {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      box-shadow: none;
+      opacity: 0.48;
+    }
+
+    .login-weather-symbol.is-fog::after {
+      background:
+        radial-gradient(circle at 39px 8px, #cbd5e1 0 14px, transparent 15px),
+        radial-gradient(circle at 21px 7px, #94a3b8 0 17px, transparent 18px),
+        radial-gradient(circle at 11px 18px, #64748b 0 12px, transparent 13px),
+        linear-gradient(180deg, #cbd5e1 0%, #94a3b8 54%, #64748b 100%);
+      box-shadow:
+        inset 0 -1px 0 rgba(99, 116, 139, 0.18),
+        4px 14px 0 -5px rgba(148, 163, 184, 0.72),
+        22px 16px 0 -5px rgba(148, 163, 184, 0.52),
+        40px 14px 0 -5px rgba(148, 163, 184, 0.62);
+    }
+
+    .login-weather-symbol.is-snow::after {
+      box-shadow:
+        inset 0 -1px 0 rgba(99, 116, 139, 0.18),
+        9px 17px 0 -8px #bae6fd,
+        22px 19px 0 -8px #bae6fd,
+        36px 17px 0 -8px #bae6fd;
+    }
+
+    .login-weather-card {
+      flex-basis: min(264px, calc(100vw - 32px));
+      width: min(264px, calc(100vw - 32px));
+      min-height: var(--login-ann-card-height);
+      align-items: center;
+      padding: 0 10px;
+      gap: 6px;
+      cursor: pointer;
+    }
+
+    .login-weather-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .login-weather-main {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      flex: 1 1 auto;
+      gap: 6px;
+    }
+
+    .login-weather-temp-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 3px;
+      flex: 0 0 auto;
+    }
+
+    .login-weather-card .login-weather-temp {
+      color: #fff !important;
+      font-size: 2.25rem;
+      font-weight: 300;
+      line-height: 0.95;
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    .login-weather-card .login-weather-unit {
+      color: rgba(255, 255, 255, 0.95) !important;
+      font-size: 0.58rem;
+      line-height: 1;
+      padding-top: 5px;
+      white-space: nowrap;
+    }
+
+    .login-weather-card .login-weather-stats {
+      color: rgba(255, 255, 255, 0.82) !important;
+      font-size: 0.56rem;
+      line-height: 1.28;
+      min-width: 72px;
+      flex: 1 1 72px;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .login-weather-card .login-weather-stats *,
+    .login-weather-card .login-weather-main * {
+      color: inherit;
+    }
+
+    .login-weather-summary {
+      display: none;
+    }
+
+    .login-weather-desc {
+      color: rgba(255, 255, 255, 0.72) !important;
+      font-size: 0.52rem;
+      line-height: 1.2;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 82px;
+    }
+
+    .login-weather-modal-dialog {
+      width: min(690px, calc(100vw - 32px));
+      padding: 14px 18px 18px;
+      background: rgba(31, 34, 42, 0.98);
+      color: #fff;
+    }
+
+    .login-weather-modal-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding-right: 34px;
+    }
+
+    .login-weather-modal-place {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #fff;
+      font-size: 0.86rem;
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .login-weather-modal-place i {
+      color: rgba(255, 255, 255, 0.82);
+    }
+
+    .login-weather-modal-current {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 24px 0 10px;
+    }
+
+    .login-weather-modal-current .login-weather-symbol {
+      width: 62px;
+      height: 54px;
+      flex: 0 0 62px;
+    }
+
+    .login-weather-modal-temp {
+      color: #fff !important;
+      font-size: 3rem;
+      font-weight: 300;
+      line-height: 1;
+      margin: 0;
+    }
+
+    .login-weather-modal-unit {
+      color: #fff !important;
+      align-self: flex-start;
+      padding-top: 7px;
+      font-size: 0.82rem;
+    }
+
+    .login-weather-modal-stats {
+      color: rgba(255, 255, 255, 0.78) !important;
+      font-size: 0.72rem;
+      line-height: 1.25;
+      margin-left: 6px;
+    }
+
+    .login-weather-modal-heading {
+      margin-left: auto;
+      text-align: right;
+      color: rgba(255, 255, 255, 0.74);
+      font-size: 1rem;
+      line-height: 1.35;
+    }
+
+    .login-weather-modal-heading strong {
+      display: block;
+      color: #fff;
+      font-size: 1.42rem;
+      line-height: 1.1;
+    }
+
+    .login-weather-tabs {
+      display: flex;
+      gap: 16px;
+      margin-top: 4px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .login-weather-tab {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: #fff;
+      padding: 8px 0;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+    }
+
+    .login-weather-tab.is-active {
+      border-color: #f8d84a;
+    }
+
+    .login-weather-tab:hover {
+      color: #f8d84a;
+    }
+
+    .login-weather-chart {
+      height: 116px;
+      margin-top: 16px;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(180deg, transparent 0%, rgba(248, 216, 74, 0.12) 100%);
+    }
+
+    .login-weather-chart svg {
+      width: 100%;
+      height: 80px;
+      display: block;
+      overflow: visible;
+    }
+
+    .login-weather-chart polyline {
+      fill: none;
+      stroke: #f2c500;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .login-weather-chart-labels,
+    .login-weather-chart-times {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 0;
+      color: rgba(255, 255, 255, 0.68);
+      font-size: 0.68rem;
+      text-align: center;
+    }
+
+    .login-weather-chart-labels {
+      color: rgba(255, 255, 255, 0.86);
+      margin-bottom: 2px;
+    }
+
+    .login-weather-days {
+      display: grid;
+      grid-template-columns: repeat(8, minmax(58px, 1fr));
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .login-weather-day {
+      min-height: 94px;
+      border-radius: 8px;
+      padding: 8px 5px;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.82);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .login-weather-day:first-child {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .login-weather-day-name {
+      display: block;
+      color: #fff;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .login-weather-day .login-weather-symbol {
+      width: 42px;
+      height: 36px;
+      margin: 0 auto 6px;
+      transform: scale(0.68);
+      transform-origin: center;
+    }
+
+    .login-weather-day-temp {
+      font-size: 0.72rem;
+      white-space: nowrap;
+    }
+
+    .login-ann-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .login-ann-modal[hidden] {
+      display: none;
+    }
+
+    .login-ann-modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.58);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .login-ann-modal-dialog {
+    position: relative;
+    z-index: 1;
+    width: min(760px, calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    background: linear-gradient(180deg, rgb(113 133 187 / 96%), rgb(50 95 107 / 96%));
+    color: #fff;
+    box-shadow: 0 24px 72px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(24px) saturate(140%);
+    -webkit-backdrop-filter: blur(24px) saturate(140%);
+}
+
+    .login-ann-modal-dialog--with-image {
+      width: fit-content;
+      max-width: calc(100vw - 32px);
+      height: auto;
+    }
+
+    .login-ann-modal-media {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: auto;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+        rgba(5, 10, 22, 0.9);
+    }
+
+    .login-ann-modal-media img {
+      width: auto;
+      height: auto;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 48px);
+      object-fit: contain;
+      object-position: center;
+      display: block;
+    }
+
+    .login-ann-modal-content {
+      position: absolute;
+      z-index: 2;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: flex;
+      flex-direction: column;
+      max-height: min(42vh, 320px);
+      padding: 86px 30px 30px;
+      background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        rgba(12, 18, 34, 0.55) 26%,
+        rgba(12, 18, 34, 0.96) 58%,
+        rgba(12, 18, 34, 0.98) 100%
+      );
+      pointer-events: none;
+    }
+
+    .login-ann-modal-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+      color: rgba(255, 255, 255, 0.64);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      flex: 0 0 auto;
+    }
+
+    .login-ann-modal-title {
+      margin: 0 38px 12px 0;
+      font-size: 1.45rem;
+      font-weight: 800;
+      line-height: 1.25;
+      letter-spacing: 0;
+      flex: 0 0 auto;
+    }
+
+    .login-ann-modal-details {
+      overflow-y: auto;
+      max-height: 150px;
+      padding-right: 10px;
+      pointer-events: auto;
+    }
+
+    .login-ann-modal-body {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.84) !important;
+      font-size: 0.96rem;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+
+    .login-ann-modal-body * {
+      color: inherit !important;
+    }
+
+    .login-ann-modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 3;
+      width: 32px;
+      height: 32px;
+      border: 0;
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.42);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-ann-modal-close:hover {
+      background: rgba(255, 255, 255, 0.18);
+    }
+
+    @media (max-width: 960px) {
+      .login-ann-stack {
+        bottom: 12px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .login-ann-stack,
+      .login-ann-panel,
+      .login-ann-modal {
+        display: none !important;
+      }
+    }
+  </style>
+
+  <div class="login-ann-stack" id="login-ann-stack">
+    <% if login_weather_enabled %>
+      <div id="login-weather-card"
+           class="login-ann-panel login-weather-card"
+           role="button"
+           tabindex="0"
+           aria-haspopup="dialog"
+           aria-controls="login-weather-modal"
+           data-login-weather-card
+           data-weather-city="<%= login_settings.login_weather_city_or_default %>"
+           data-weather-latitude="<%= login_settings.login_weather_latitude_or_default %>"
+           data-weather-longitude="<%= login_settings.login_weather_longitude_or_default %>">
+        <div class="login-weather-icon" data-weather-icon>
+          <span class="login-weather-symbol" data-weather-symbol></span>
+        </div>
+
+        <div class="login-weather-main">
+          <div class="login-weather-temp-wrap">
+            <p class="login-weather-temp" data-weather-temp>--</p>
+            <span class="login-weather-unit">&deg;C</span>
+          </div>
+
+          <div class="login-weather-stats">
+            <div>Chuva <span data-weather-rain>--</span>%</div>
+            <div>Umid. <span data-weather-humidity>--</span>%</div>
+            <div>Vento <span data-weather-wind>--</span> km/h</div>
+          </div>
+
+          <p class="login-weather-desc" data-weather-desc hidden>Carregando clima...</p>
+        </div>
+      </div>
+    <% end %>
+
+    <% login_anns.each do |login_ann| %>
+      <div id="login-ann-panel-<%= login_ann.id %>"
+           class="login-ann-panel"
+           role="button"
+           tabindex="0"
+           aria-haspopup="dialog"
+           aria-controls="login-ann-modal-<%= login_ann.id %>"
+           data-login-ann-card
+           data-ann-id="<%= login_ann.id %>">
+        <span class="login-ann-top-badge">
+          <i class="fa-solid fa-bullhorn"></i> Anuncio
+        </span>
+
+        <% if login_ann.image.attached? %>
+          <div class="login-ann-img">
+            <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
+          </div>
+        <% else %>
+          <div class="login-ann-img">
+            <div class="login-ann-img-placeholder">
+              <i class="fa-solid fa-bullhorn"></i>
+            </div>
+          </div>
+        <% end %>
+
+        <div class="login-ann-overlay">
+          <% if login_ann.title.present? %>
+            <h2 class="login-ann-title"><%= login_ann.title %></h2>
+          <% end %>
+          <% if login_ann.body.present? %>
+            <p class="login-ann-body"><%= login_ann.body %></p>
+          <% end %>
+        </div>
+
+        <button type="button" class="login-ann-close" aria-label="Fechar anuncio" data-login-ann-dismiss>
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+    <% end %>
+  </div>
+
+  <% if login_weather_enabled %>
+    <div id="login-weather-modal" class="login-ann-modal" hidden>
+      <div class="login-ann-modal-backdrop" data-login-weather-modal-close></div>
+      <div class="login-ann-modal-dialog login-weather-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="login-weather-modal-title">
+        <button type="button" class="login-ann-modal-close" aria-label="Fechar clima" data-login-weather-modal-close>
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="login-weather-modal-top">
+          <p class="login-weather-modal-place">
+            <i class="fa-solid fa-location-dot"></i>
+            <span data-weather-modal-city><%= login_settings.login_weather_city_or_default %></span>
+          </p>
+        </div>
+
+        <div class="login-weather-modal-current">
+          <span class="login-weather-symbol" data-weather-modal-symbol></span>
+          <p class="login-weather-modal-temp"><span data-weather-modal-temp>--</span></p>
+          <span class="login-weather-modal-unit">&deg;C</span>
+
+          <div class="login-weather-modal-stats">
+            <div>Chuva: <span data-weather-modal-rain>--</span>%</div>
+            <div>Umidade: <span data-weather-modal-humidity>--</span>%</div>
+            <div>Vento: <span data-weather-modal-wind>--</span> km/h</div>
+          </div>
+
+          <div class="login-weather-modal-heading">
+            <strong id="login-weather-modal-title">Clima</strong>
+            <span data-weather-modal-time>agora</span><br>
+            <span data-weather-modal-desc>Carregando clima...</span>
+          </div>
+        </div>
+
+        <div class="login-weather-tabs" role="tablist" aria-label="Dados do clima">
+          <button type="button" class="login-weather-tab is-active" role="tab" aria-selected="true" data-weather-tab="temperature">Temperatura</button>
+          <button type="button" class="login-weather-tab" role="tab" aria-selected="false" data-weather-tab="rain">Chuva</button>
+          <button type="button" class="login-weather-tab" role="tab" aria-selected="false" data-weather-tab="wind">Vento</button>
+        </div>
+
+        <div class="login-weather-chart">
+          <div class="login-weather-chart-labels" data-weather-chart-labels></div>
+          <svg viewBox="0 0 100 70" preserveAspectRatio="none" aria-hidden="true">
+            <polyline data-weather-chart-line points=""></polyline>
+          </svg>
+          <div class="login-weather-chart-times" data-weather-chart-times></div>
+        </div>
+
+        <div class="login-weather-days" data-weather-days></div>
+      </div>
+    </div>
+  <% end %>
+
+  <% login_anns.each do |login_ann| %>
+    <div id="login-ann-modal-<%= login_ann.id %>" class="login-ann-modal" hidden>
+      <div class="login-ann-modal-backdrop" data-login-ann-modal-close></div>
+      <div class="login-ann-modal-dialog <%= 'login-ann-modal-dialog--with-image' if login_ann.image.attached? %>" role="dialog" aria-modal="true" aria-labelledby="login-ann-modal-title-<%= login_ann.id %>">
+        <button type="button" class="login-ann-modal-close" aria-label="Fechar anuncio" data-login-ann-modal-close>
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <% if login_ann.image.attached? %>
+          <div class="login-ann-modal-media">
+            <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
+          </div>
+        <% end %>
+
+        <div class="login-ann-modal-content">
+          <span class="login-ann-modal-kicker">
+            <i class="fa-solid fa-bullhorn"></i> Anuncio
+          </span>
+
+          <% if login_ann.title.present? %>
+            <h2 class="login-ann-modal-title" id="login-ann-modal-title-<%= login_ann.id %>"><%= login_ann.title %></h2>
+          <% else %>
+            <h2 class="login-ann-modal-title" id="login-ann-modal-title-<%= login_ann.id %>">Anuncio</h2>
+          <% end %>
+
+          <div class="login-ann-modal-details">
+            <% if login_ann.body.present? %>
+              <p class="login-ann-modal-body"><%= login_ann.body %></p>
+            <% end %>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% end %>
+
+  <script>
+  (function() {
+    function weatherLabel(code) {
+      var labels = {
+        0: "Ceu limpo",
+        1: "Principalmente limpo",
+        2: "Parcialmente nublado",
+        3: "Nublado",
+        45: "Nevoeiro",
+        48: "Nevoeiro com geada",
+        51: "Garoa fraca",
+        53: "Garoa moderada",
+        55: "Garoa forte",
+        61: "Chuva fraca",
+        63: "Chuva moderada",
+        65: "Chuva forte",
+        80: "Pancadas de chuva",
+        81: "Pancadas moderadas",
+        82: "Pancadas fortes",
+        95: "Trovoadas"
+      };
+      return labels[code] || "Clima atualizado";
+    }
+
+    function weatherIcon(code, isDay) {
+      if ([0, 1].includes(code)) return isDay ? "is-clear" : "is-night";
+      if (code === 3) return "is-cloudy";
+      if ([45, 48].includes(code)) return "is-fog";
+      if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return "is-rain";
+      if ([71, 73, 75, 77, 85, 86].includes(code)) return "is-snow";
+      if (code >= 95) return "is-storm";
+      return "";
+    }
+
+    function nearestHourIndex(times) {
+      if (!Array.isArray(times) || times.length === 0) return 0;
+      var now = Date.now();
+      var bestIndex = 0;
+      var bestDiff = Infinity;
+      times.forEach(function(time, index) {
+        var diff = Math.abs(new Date(time).getTime() - now);
+        if (diff < bestDiff) {
+          bestDiff = diff;
+          bestIndex = index;
+        }
+      });
+      return bestIndex;
+    }
+
+    function formatHour(time) {
+      return new Date(time).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function formatDay(date) {
+      return new Date(date + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "");
+    }
+
+    function setText(root, selector, value) {
+      var el = root.querySelector(selector);
+      if (el) el.textContent = value;
+    }
+
+    function renderWeatherChart(modal, series, mode) {
+      if (!modal || !series || !series[mode]) return;
+      var config = series[mode];
+      var values = config.values;
+      var times = config.times;
+      if (!Array.isArray(values) || values.length === 0) return;
+
+      var minValue = Math.min.apply(null, values);
+      var maxValue = Math.max.apply(null, values);
+      var spread = Math.max(1, maxValue - minValue);
+      var points = values.map(function(value, index) {
+        var x = (index / Math.max(1, values.length - 1)) * 100;
+        var y = 60 - ((value - minValue) / spread) * 42;
+        return x.toFixed(2) + "," + y.toFixed(2);
+      }).join(" ");
+
+      var line = modal.querySelector("[data-weather-chart-line]");
+      if (line) line.setAttribute("points", points);
+
+      var labels = modal.querySelector("[data-weather-chart-labels]");
+      if (labels) {
+        labels.innerHTML = values.map(function(value) {
+          return "<span>" + value + config.suffix + "</span>";
+        }).join("");
+      }
+
+      var timeLabels = modal.querySelector("[data-weather-chart-times]");
+      if (timeLabels) {
+        timeLabels.innerHTML = times.map(function(time) {
+          return "<span>" + formatHour(time) + "</span>";
+        }).join("");
+      }
+
+      modal.querySelectorAll("[data-weather-tab]").forEach(function(tab) {
+        var active = tab.dataset.weatherTab === mode;
+        tab.classList.toggle("is-active", active);
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+      });
+    }
+
+    function openWeatherModal() {
+      var modal = document.getElementById("login-weather-modal");
+      if (!modal) return;
+      modal.hidden = false;
+      document.body.style.overflow = "hidden";
+      var closeBtn = modal.querySelector("[data-login-weather-modal-close].login-ann-modal-close");
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeWeatherModal() {
+      var modal = document.getElementById("login-weather-modal");
+      if (!modal) return;
+      modal.hidden = true;
+      document.body.style.overflow = "";
+      var card = document.querySelector("[data-login-weather-card]");
+      if (card && card.offsetParent !== null) card.focus();
+    }
+
+    document.querySelectorAll('[data-login-weather-card]').forEach(function(card) {
+      var lat = card.dataset.weatherLatitude;
+      var lon = card.dataset.weatherLongitude;
+      var tempEl = card.querySelector('[data-weather-temp]');
+      var descEl = card.querySelector('[data-weather-desc]');
+      var iconEl = card.querySelector('[data-weather-symbol]');
+      var modal = document.getElementById("login-weather-modal");
+
+      card.addEventListener("click", openWeatherModal);
+      card.addEventListener("keydown", function(event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openWeatherModal();
+        }
+      });
+
+      fetch('https://api.open-meteo.com/v1/forecast?latitude=' + encodeURIComponent(lat) + '&longitude=' + encodeURIComponent(lon) + '&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,is_day,wind_speed_10m&hourly=temperature_2m,precipitation_probability,wind_speed_10m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=8&timezone=auto')
+        .then(function(response) { return response.ok ? response.json() : Promise.reject(); })
+        .then(function(payload) {
+          var current = payload.current || {};
+          var hourly = payload.hourly || {};
+          var daily = payload.daily || {};
+          var hourIndex = nearestHourIndex(hourly.time);
+          var temp = Math.round(current.temperature_2m);
+          var apparent = Math.round(current.apparent_temperature);
+          var humidity = Math.round(current.relative_humidity_2m);
+          var rain = Math.round((hourly.precipitation_probability || [])[hourIndex] || 0);
+          var wind = Math.round(current.wind_speed_10m);
+          var code = Number(current.weather_code);
+          var isDay = Number(current.is_day) === 1;
+          var iconClass = weatherIcon(code, isDay);
+          var label = weatherLabel(code);
+          if (tempEl && Number.isFinite(temp)) tempEl.textContent = temp;
+          if (card.querySelector('[data-weather-rain]')) card.querySelector('[data-weather-rain]').textContent = Number.isFinite(rain) ? rain : "--";
+          if (card.querySelector('[data-weather-humidity]')) card.querySelector('[data-weather-humidity]').textContent = Number.isFinite(humidity) ? humidity : "--";
+          if (card.querySelector('[data-weather-wind]')) card.querySelector('[data-weather-wind]').textContent = Number.isFinite(wind) ? wind : "--";
+          if (descEl) { descEl.hidden = false; descEl.textContent = label; }
+          if (iconEl) iconEl.className = "login-weather-symbol " + iconClass;
+
+          if (!modal) return;
+          setText(modal, "[data-weather-modal-temp]", Number.isFinite(temp) ? temp : "--");
+          setText(modal, "[data-weather-modal-rain]", Number.isFinite(rain) ? rain : "--");
+          setText(modal, "[data-weather-modal-humidity]", Number.isFinite(humidity) ? humidity : "--");
+          setText(modal, "[data-weather-modal-wind]", Number.isFinite(wind) ? wind : "--");
+          setText(modal, "[data-weather-modal-desc]", label);
+          setText(modal, "[data-weather-modal-time]", new Date().toLocaleDateString("pt-BR", { weekday: "long" }) + ", " + new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+          var modalIcon = modal.querySelector("[data-weather-modal-symbol]");
+          if (modalIcon) modalIcon.className = "login-weather-symbol " + iconClass;
+
+          var times = (hourly.time || []).slice(hourIndex, hourIndex + 8);
+          var weatherSeries = {
+            temperature: {
+              values: (hourly.temperature_2m || []).slice(hourIndex, hourIndex + 8).map(function(value) { return Math.round(value); }),
+              times: times,
+              suffix: ""
+            },
+            rain: {
+              values: (hourly.precipitation_probability || []).slice(hourIndex, hourIndex + 8).map(function(value) { return Math.round(value); }),
+              times: times,
+              suffix: "%"
+            },
+            wind: {
+              values: (hourly.wind_speed_10m || []).slice(hourIndex, hourIndex + 8).map(function(value) { return Math.round(value); }),
+              times: times,
+              suffix: ""
+            }
+          };
+
+          modal.dataset.weatherActiveTab = modal.dataset.weatherActiveTab || "temperature";
+          modal._weatherSeries = weatherSeries;
+          renderWeatherChart(modal, weatherSeries, modal.dataset.weatherActiveTab);
+
+          if (!modal._tabListenersAdded) {
+            modal._tabListenersAdded = true;
+            modal.querySelectorAll("[data-weather-tab]").forEach(function(tab) {
+              tab.addEventListener("click", function() {
+                modal.dataset.weatherActiveTab = tab.dataset.weatherTab;
+                renderWeatherChart(modal, modal._weatherSeries, tab.dataset.weatherTab);
+              });
+            });
+          }
+
+          var days = modal.querySelector("[data-weather-days]");
+          if (days && Array.isArray(daily.time)) {
+            days.innerHTML = daily.time.slice(0, 8).map(function(day, index) {
+              var dayCode = Number((daily.weather_code || [])[index]);
+              var max = Math.round((daily.temperature_2m_max || [])[index]);
+              var min = Math.round((daily.temperature_2m_min || [])[index]);
+              return '<div class="login-weather-day">' +
+                '<span class="login-weather-day-name">' + formatDay(day) + '</span>' +
+                '<span class="login-weather-symbol ' + weatherIcon(dayCode, true) + '"></span>' +
+                '<span class="login-weather-day-temp">' + max + '&deg; ' + min + '&deg;</span>' +
+              '</div>';
+            }).join("");
+          }
+        })
+        .catch(function() {
+          if (descEl) { descEl.hidden = false; descEl.textContent = "Clima indisponivel"; }
+          if (modal) setText(modal, "[data-weather-modal-desc]", "Clima indisponivel no momento");
+        });
+    });
+
+    document.querySelectorAll('[data-login-weather-modal-close]').forEach(function(el) {
+      el.addEventListener("click", closeWeatherModal);
+    });
+
+    function modalFor(card) {
+      return document.getElementById('login-ann-modal-' + card.dataset.annId);
+    }
+
+    function openModal(card) {
+      var modal = modalFor(card);
+      if (!modal) return;
+      modal.hidden = false;
+      document.body.style.overflow = 'hidden';
+      var closeBtn = modal.querySelector('[data-login-ann-modal-close].login-ann-modal-close');
+      if (closeBtn) closeBtn.focus();
+    }
+
+    function closeModal(modal) {
+      if (!modal) return;
+      modal.hidden = true;
+      document.body.style.overflow = '';
+      var card = document.querySelector('[data-login-ann-card][data-ann-id="' + modal.id.replace('login-ann-modal-', '') + '"]');
+      if (card && card.offsetParent !== null) card.focus();
+    }
+
+    document.querySelectorAll('[data-login-ann-card]').forEach(function(card) {
+      var storageKey = 'ann_login_dismissed_' + card.dataset.annId;
+
+      try {
+        if (localStorage.getItem(storageKey) === '1') {
+          card.style.display = 'none';
+          return;
+        }
+      } catch(e) {}
+
+      card.addEventListener('click', function() {
+        openModal(card);
+      });
+
+      card.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openModal(card);
+        }
+      });
+
+      var dismiss = card.querySelector('[data-login-ann-dismiss]');
+      if (dismiss) {
+        dismiss.addEventListener('click', function(event) {
+          event.stopPropagation();
+          try { localStorage.setItem(storageKey, '1'); } catch(e) {}
+          card.style.display = 'none';
+        });
+      }
+    });
+
+    document.querySelectorAll('.login-ann-modal').forEach(function(modal) {
+      modal.querySelectorAll('[data-login-ann-modal-close]').forEach(function(el) {
+        el.addEventListener('click', function() {
+          closeModal(modal);
+        });
+      });
+    });
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key !== 'Escape') return;
+      document.querySelectorAll('.login-ann-modal:not([hidden])').forEach(closeModal);
+      closeWeatherModal();
+    });
+  })();
+  </script>
+<% end %>

@@ -138,7 +138,8 @@ end
   get "/sub_grupo_empresas/por_empresa/:grupo_empresa_id", to: "sub_grupo_empresas#por_empresa"
 
 devise_for :users, controllers: {
-  registrations: 'users/registrations'
+  registrations: 'users/registrations',
+  sessions: 'users/sessions'
 }
 
 resource :password_recovery, only: [] do

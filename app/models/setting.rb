@@ -173,6 +173,22 @@ end
     password_recovery_test_mode.nil? ? true : password_recovery_test_mode
   end
 
+  def login_weather_card_enabled?
+    login_weather_card_enabled == true
+  end
+
+  def login_weather_city_or_default
+    login_weather_city.presence || "Recife"
+  end
+
+  def login_weather_latitude_or_default
+    (login_weather_latitude.presence || -8.047562).to_f
+  end
+
+  def login_weather_longitude_or_default
+    (login_weather_longitude.presence || -34.877003).to_f
+  end
+
   def password_recovery_test_host_or_default
     password_recovery_test_host.presence || PASSWORD_RECOVERY_DEFAULT_TEST_HOST
   end
