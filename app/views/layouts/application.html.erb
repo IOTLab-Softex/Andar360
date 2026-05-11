@@ -650,7 +650,15 @@
     ⏳ Backup em andamento...
   </div>
   <%# Notificação dinâmica com JS externo %>
-  <% if flash[:notice] || flash[:alert] %>
+  <% access_alert = flash[:alert].to_s.match?(/acesso|permiss[aã]o|autorizado/i) %>
+  <% suppress_access_alert =
+       access_alert &&
+       (
+         (controller_name == "reservations" && action_name == "new") ||
+         (controller_name == "dashboard" && current_user&.client?) ||
+         (controller_name == "participants" && current_user&.client?)
+       ) %>
+  <% if !suppress_access_alert && (flash[:notice] || flash[:alert]) %>
     <div id="notification-flash"
        data-type="<%= flash[:notice] ? 'success' : 'error' %>"
        data-sound="<%= flash[:flash_sound].presence || (flash[:notice] ? 'success' : 'error') %>"
@@ -837,14 +845,14 @@
 
    // Quando a página começar a carregar
     window.addEventListener("DOMContentLoaded", () => {
-      document.querySelector(".menu").classList.add("fade-border");
+      document.querySelector(".menu")?.classList.add("fade-border");
     });
 
     // Quando a página terminar de carregar tudo
     window.addEventListener("load", () => {
       setTimeout(() => {
-        document.querySelector(".menu").classList.remove("fade-border");
-  document.querySelector(".menu").classList.add("fade-border-stop");
+        document.querySelector(".menu")?.classList.remove("fade-border");
+  document.querySelector(".menu")?.classList.add("fade-border-stop");
 
 
       }, 1000); // espera 1s para sumir suavemente
@@ -853,9 +861,42 @@
     document.addEventListener("DOMContentLoaded", function () {
       const sidebar = document.querySelector(".sidebar");
       const toggleBtn = document.getElementById("toggleSidebarBtn");
+      if (!sidebar || !toggleBtn) return;
 
-      toggleBtn.addEventListener("click", function () {
-        sidebar.classList.toggle("sidebar-hidden");
+      function isSidebarOpen() {
+        return !sidebar.classList.contains("sidebar-hidden");
+      }
+
+      function closeSidebar() {
+        sidebar.classList.add("sidebar-hidden");
+        toggleBtn.setAttribute("aria-expanded", "false");
+      }
+
+      function openSidebar() {
+        sidebar.classList.remove("sidebar-hidden");
+        toggleBtn.setAttribute("aria-expanded", "true");
+      }
+
+      toggleBtn.setAttribute("aria-expanded", isSidebarOpen() ? "true" : "false");
+
+      toggleBtn.addEventListener("click", function (event) {
+        event.stopPropagation();
+        isSidebarOpen() ? closeSidebar() : openSidebar();
+      });
+
+      sidebar.addEventListener("click", function (event) {
+        event.stopPropagation();
+      });
+
+      document.addEventListener("click", function (event) {
+        if (!isSidebarOpen()) return;
+        if (sidebar.contains(event.target) || toggleBtn.contains(event.target)) return;
+
+        closeSidebar();
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && isSidebarOpen()) closeSidebar();
       });
     });
 

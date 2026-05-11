@@ -62,7 +62,7 @@ end
   # Ações rápidas (admin)
   def change_status
     @feedback.update(status: params[:status]) # ex.: "em_andamento"
-    redirect_back fallback_location: feedbacks_path, notice: "Status atualizado para #{@feedback.status.humanize}."
+    redirect_back fallback_location: feedbacks_path, notice: "Status atualizado para #{@feedback.status.humanize}.", status: :see_other
   end
 
   def assign_to_me
@@ -71,8 +71,11 @@ end
   end
 
   def resolve
-    @feedback.update(status: :resolvido, resolved_by: current_user, resolved_at: Time.current)
-    redirect_back fallback_location: feedbacks_path, notice: "Marcado como resolvido."
+    if @feedback.update(status: :resolvido, resolved_by: current_user, resolved_at: Time.current)
+      redirect_back fallback_location: feedbacks_path, notice: "Marcado como resolvido.", status: :see_other
+    else
+      redirect_back fallback_location: feedbacks_path, alert: @feedback.errors.full_messages.to_sentence, status: :see_other
+    end
   end
 
   private

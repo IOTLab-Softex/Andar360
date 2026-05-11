@@ -27,7 +27,9 @@
               <div class="room-header">
   <strong><%= room.name %> <i class="fa-solid fa-arrow-up-right-from-square room-link-icon"></i></strong><br>
   <% if room.dados_do_inquilino.present? %>
+   <% if current_user&.admin? %>
     <span class="text-inquilino">INQUILINO: <%= room.dados_do_inquilino %></span>
+    <% end %>
   <% else %>
     RESERVAS: <%= room.reservations.count.to_s.rjust(2, "0") %>
   <% end %>

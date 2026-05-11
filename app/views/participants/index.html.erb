@@ -210,7 +210,7 @@
 /* painel do filtro (form) */
 .filtros-form {
     margin-top: 1px;
-    overflow: hidden;
+    overflow: visible;
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, .10);
     background: var(--color-bg-table-salas);
@@ -220,6 +220,7 @@
 /* fechado */
 .filtros-form.collapsed{
   border-color: rgba(255,255,255,.06);
+  overflow: hidden;
 }
 
 /* seu grid/linha interna (você já tem) */
@@ -266,6 +267,26 @@
   margin: 0 !important;
 }
 
+.filtros-form .choices {
+  margin-bottom: 0;
+}
+
+.filtros-form .choices__list--dropdown,
+.filtros-form .choices__list[aria-expanded] {
+  display: none;
+  z-index: 10050;
+}
+
+.filtros-form .choices__list--dropdown.is-active,
+.filtros-form .choices__list[aria-expanded].is-active {
+  display: block;
+}
+
+.filtros-form .choices__list--dropdown .choices__list,
+.filtros-form .choices__list[aria-expanded] .choices__list {
+  max-height: 260px;
+}
+
 
 </style>
 <button type="button"
@@ -290,8 +311,8 @@
     <div class="filtro-field">
       <span class="filtro-field-label">Grupo Empresa</span>
       <%= select_tag :grupo_empresa_id,
-            options_for_select([["TODOS", ""]] + GrupoEmpresa.all.order(:nome).map { |g| [g.nome, g.id] }, @selected_grupo_empresa_id),
-            class: "form-control" %>
+            options_for_select([["TODOS", ""]] + scoped_grupo_empresas.order(:nome).map { |g| [g.nome, g.id] }, @selected_grupo_empresa_id),
+            class: "form-control", id: "grupo_empresa_filter" %>
     </div>
     <div class="filtro-field">
       <span class="filtro-field-label">Setor (Sub Grupos)</span>
@@ -752,6 +773,8 @@
   });
 
   document.addEventListener("DOMContentLoaded", function () {
+    if (document.getElementById("grupo_empresa_filter")) return;
+
     const empresaSelect = document.querySelector("select[name='grupo_empresa_id']");
     const subgrupoSelect = document.getElementById("subgrupo_filter");
 
@@ -789,6 +812,59 @@
         carregarSubgrupos(empresaSelect.value, selectedSubgrupo);
       }
     }
+  });
+
+
+  document.addEventListener("DOMContentLoaded", function () {
+    const empresaSelect = document.getElementById("grupo_empresa_filter");
+    const subgrupoSelect = document.getElementById("subgrupo_filter");
+    if (!empresaSelect || !subgrupoSelect || !window.Choices) return;
+
+    const searchableSelectOptions = {
+      searchEnabled: true,
+      searchPlaceholderValue: "Pesquisar...",
+      itemSelectText: "",
+      shouldSort: false,
+      renderChoiceLimit: -1,
+      searchResultLimit: 999,
+      position: "bottom",
+      noResultsText: "Nenhum resultado encontrado",
+      noChoicesText: "Nenhuma opcao disponivel"
+    };
+
+    new Choices(empresaSelect, searchableSelectOptions);
+    const subgrupoChoices = new Choices(subgrupoSelect, searchableSelectOptions);
+
+    function setSubgrupoOptions(items, selectedId = "") {
+      subgrupoChoices.clearStore();
+      subgrupoChoices.setChoices(items, "value", "label", true);
+      subgrupoChoices.setChoiceByValue(String(selectedId || ""));
+    }
+
+    function loadSearchableSubgrupos(grupoId, selectedId = "") {
+      setSubgrupoOptions([{ value: "", label: "Carregando..." }]);
+
+      if (!grupoId) {
+        setSubgrupoOptions([{ value: "", label: "TODOS" }]);
+        return;
+      }
+
+      fetch(`/sub_grupo_empresas/por_empresa/${grupoId}`)
+        .then(response => response.json())
+        .then(data => {
+          const items = [{ value: "", label: "TODOS" }].concat(
+            data.map(sub => ({ value: String(sub.id), label: sub.nome }))
+          );
+          setSubgrupoOptions(items, selectedId);
+        })
+        .catch(() => setSubgrupoOptions([{ value: "", label: "TODOS" }]));
+    }
+
+    empresaSelect.addEventListener("change", function () {
+      loadSearchableSubgrupos(this.value);
+    });
+
+    loadSearchableSubgrupos(empresaSelect.value, "<%= params[:sub_grupo_empresa_id].to_s %>");
   });
 
 

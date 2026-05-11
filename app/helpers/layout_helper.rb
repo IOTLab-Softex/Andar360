@@ -48,7 +48,7 @@ module LayoutHelper
     when "import_logs#index"
       "Logs de Importação"
     when "grupo_empresas#index"
-      "EMPRESAS CADASTRADAS"
+       current_user&.client? ? "SUA EMPRESA" : "EMPRESAS CADASTRADAS"
     when "grupo_empresas#new"
       "CADASTRAR EMPRESAS"
     when "settings#edit"
@@ -312,7 +312,7 @@ module LayoutHelper
         dashboard_button,
 
         link_to(grupo_empresas_path, class: "menu-btn") do
-          content_tag(:i, "", class: "fa-solid fa-building") + " EMPRESAS CADASTRADAS"
+          content_tag(:i, "", class: "fa-solid fa-building") + (current_user&.client? ? " SUA EMPRESA" : " EMPRESAS CADASTRADAS")
         end,
       ])
     when "grupo_empresas#edit"
@@ -320,7 +320,7 @@ module LayoutHelper
         dashboard_button,
 
         link_to(grupo_empresas_path, class: "menu-btn") do
-          content_tag(:i, "", class: "fa-solid fa-building") + " EMPRESAS CADASTRADAS"
+          content_tag(:i, "", class: "fa-solid fa-building") + (current_user&.client? ? " SUA EMPRESA" : " EMPRESAS CADASTRADAS")
         end,
       ])
     when "settings#edit"
@@ -866,7 +866,7 @@ end
       end,
 
       content_tag(:li) do link_to(grupo_empresas_path) do safe_join([content_tag(:span, "", class: "fa-solid fa-building"),
-                                                                     " Empresas Cadastradas"])       end       end,
+                                                                     current_user&.client? ? "SUA EMPRESA" : "EMPRESAS CADASTRADAS"])       end       end,
 
     ])
   end

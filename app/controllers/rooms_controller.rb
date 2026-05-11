@@ -72,6 +72,9 @@ end
 def rules
   @room = Room.find(params[:id])
 
+  html_room_observation =
+    @room.try(:observacao)&.body&.to_s.presence
+
   html_room_rules =
     @room.try(:rules)&.body&.to_s.presence ||
     @room.try(:regras_de_uso)&.body&.to_s.presence
@@ -79,7 +82,19 @@ def rules
   html_global =
     Setting.first&.try(:room_rules)&.body&.to_s # se você declarou has_rich_text :room_rules no model Setting
 
-  render html: (html_room_rules.presence || html_global.presence || "").to_s.html_safe, layout: false
+  html = []
+  if html_room_observation.present?
+    html << view_context.content_tag(:h3, "Observacoes da sala")
+    html << html_room_observation
+  end
+
+  rules_html = html_room_rules.presence || html_global.presence
+  if rules_html.present?
+    html << view_context.content_tag(:h3, "Regras de uso")
+    html << rules_html
+  end
+
+  render html: html.join.html_safe, layout: false
 end
 
 

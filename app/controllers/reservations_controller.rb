@@ -21,6 +21,8 @@ class ReservationsController < ApplicationController
 
   # GET /reservations/new
   def new
+    clear_access_alert_on_new_reservation
+
     raw_attrs = flash[:reservation_attrs] || params[:reservation]
     raw_attrs = raw_attrs.to_unsafe_h if raw_attrs&.respond_to?(:to_unsafe_h)
     @reservation = Reservation.new(raw_attrs || {})
@@ -447,5 +449,11 @@ end
       @grupo_empresas = GrupoEmpresa.where(id: empresa_id)
       @rooms = Room.where(espaco_comun: true)
     end
+  end
+
+  def clear_access_alert_on_new_reservation
+    return unless flash[:alert].to_s.match?(/acesso|permiss[aã]o|autorizado/i)
+
+    flash.delete(:alert)
   end
 end

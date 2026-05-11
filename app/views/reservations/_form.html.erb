@@ -1,4 +1,4 @@
-<% require_ack = Setting.first&.require_room_rules_ack? %>
+<% require_ack = reservation.new_record? || Setting.first&.require_room_rules_ack? %>
 <!-- Fallback de regras (globais) escondido; usado se a sala não tiver regra própria -->
 <div id="globalRulesHtml" style="display:none;">
   <%= Setting.first&.room_rules&.body %>
@@ -404,10 +404,10 @@
     function loadBlockedDates(roomId) {
     if (!roomId) return;
 
-    fetch(`/rooms/${roomId}/reservations.json`)
+    fetch(`/rooms/${roomId}/reservations/json`)
       .then(response => response.json())
       .then(data => {
-        unavailableRanges = data.map(res => ({
+        unavailableRanges = (data.reservas || []).map(res => ({
           from: res.starts_at,
           to: res.ends_at
         }));
@@ -830,6 +830,7 @@
 
 
   document.addEventListener("DOMContentLoaded", function () {
+      return;
       const flash = document.getElementById("notification-flash");
 
       if (flash) {
