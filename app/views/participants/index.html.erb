@@ -244,6 +244,51 @@
   margin-bottom: .35rem;
 }
 
+#filtros-participants .form-control {
+  width: 100%;
+  min-height: 42px;
+  padding: .58rem .8rem;
+  border: 1px solid rgba(167, 139, 250, .75) !important;
+  border-radius: 8px !important;
+  background-color: rgba(18, 18, 22, .96) !important;
+  color: #f7f3ff !important;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03) !important;
+}
+
+#filtros-participants .form-control:focus {
+  border-color: var(--color-accent) !important;
+  background-color: rgba(18, 18, 22, .98) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, .22) !important;
+}
+
+#filtros-participants .form-control::placeholder {
+  color: rgba(247, 243, 255, .62);
+}
+
+#filtros-participants select.form-control option {
+  background: #17171b;
+  color: #f7f3ff;
+}
+
+#filtros-participants select.form-control {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 2.4rem !important;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #c4b5fd 50%),
+    linear-gradient(135deg, #c4b5fd 50%, transparent 50%) !important;
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50% !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+}
+
+#filtros-participants select.form-control::-ms-expand {
+  display: none;
+}
+
 .filtro-actions{
   display:flex;
   gap: .5rem;
@@ -269,12 +314,44 @@
 
 .filtros-form .choices {
   margin-bottom: 0;
+  color: #f7f3ff;
+}
+
+.filtros-form .choices__inner {
+  min-height: 42px;
+  border: 1px solid rgba(167, 139, 250, .75);
+  border-radius: 8px;
+  background: rgba(18, 18, 22, .96);
+  color: #f7f3ff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.filtros-form .is-focused .choices__inner,
+.filtros-form .is-open .choices__inner {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, .22);
+}
+
+.filtros-form .choices__list--single {
+  padding: 2px 28px 2px 4px;
+}
+
+.filtros-form .choices__placeholder,
+.filtros-form .choices__item {
+  color: #f7f3ff;
+  opacity: 1;
 }
 
 .filtros-form .choices__list--dropdown,
 .filtros-form .choices__list[aria-expanded] {
   display: none;
   z-index: 10050;
+  overflow: hidden;
+  margin-top: .35rem;
+  border: 1px solid rgba(167, 139, 250, .35);
+  border-radius: 8px;
+  background: #17171b;
+  box-shadow: 0 18px 40px rgba(0,0,0,.38);
 }
 
 .filtros-form .choices__list--dropdown.is-active,
@@ -285,6 +362,42 @@
 .filtros-form .choices__list--dropdown .choices__list,
 .filtros-form .choices__list[aria-expanded] .choices__list {
   max-height: 260px;
+}
+
+.filtros-form .choices__list--dropdown .choices__item,
+.filtros-form .choices__list[aria-expanded] .choices__item {
+  padding: .65rem .8rem;
+  color: #f7f3ff;
+  background: transparent;
+}
+
+.filtros-form .choices__list--dropdown .choices__item--selectable.is-highlighted,
+.filtros-form .choices__list[aria-expanded] .choices__item--selectable.is-highlighted,
+.filtros-form .choices__list--dropdown .choices__item--selectable:hover,
+.filtros-form .choices__list[aria-expanded] .choices__item--selectable:hover {
+  background: rgba(124, 58, 237, .28);
+  color: #ffffff;
+}
+
+.filtros-form .choices__input,
+.filtros-form .choices__input:focus {
+  margin: 0;
+  padding: .65rem .8rem;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  background: #111116;
+  color: #f7f3ff;
+}
+
+.filtros-form .choices__input::placeholder {
+  color: rgba(247, 243, 255, .62);
+}
+
+.filtros-form .choices[data-type*=select-one]::after {
+  border-color: #c4b5fd transparent transparent transparent;
+}
+
+.filtros-form .choices[data-type*=select-one].is-open::after {
+  border-color: transparent transparent #c4b5fd transparent;
 }
 
 
@@ -388,6 +501,7 @@
     <% end %>
   <% end %>
 </div>
+<% can_manage_aprovacoes = current_user.admin? || current_user.operador? %>
 <% if params[:tab] == 'aprovacoes' %>
   <!-- Form único para enviar para approve ou reject (definimos a action via JS) -->
   <%= form_with url: bulk_approve_formulario_cadastros_path, method: :post, local: true, id: "bulk-form" do %>
@@ -397,26 +511,30 @@
     <%= hidden_field_tag :_csrf_reject,
       form_authenticity_token(form_options: { action: bulk_reject_formulario_cadastros_path }),
       id: "bulk-csrf-reject" %>
-    <div id="bulk-toolbar"
-         class="hidden"
-         data-approve-url="<%= bulk_approve_formulario_cadastros_path %>"
-         data-reject-url="<%= bulk_reject_formulario_cadastros_path %>"
-         style="display:flex; gap:.6rem; align-items:center; justify-content:space-between; background: #ff8c42; color: var(--color-btn); padding:.6rem .9rem; border-radius: 10px; margin-bottom: .8rem;">
-      <div>
-        <strong id="selected-count">0</strong> selecionado(s)
+    <% if can_manage_aprovacoes %>
+      <div id="bulk-toolbar"
+           class="hidden"
+           data-approve-url="<%= bulk_approve_formulario_cadastros_path %>"
+           data-reject-url="<%= bulk_reject_formulario_cadastros_path %>"
+           style="display:flex; gap:.6rem; align-items:center; justify-content:space-between; background: #ff8c42; color: var(--color-btn); padding:.6rem .9rem; border-radius: 10px; margin-bottom: .8rem;">
+        <div>
+          <strong id="selected-count">0</strong> selecionado(s)
+        </div>
+        <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
+          <button type="button" id="btn-bulk-approve" class="btn btn-success">✅ Aprovar selecionados</button>
+          <button type="button" id="btn-bulk-reject"  class="btn btn-warning">❌ Reprovar selecionados</button>
+        </div>
+        <input type="hidden" name="motivo" id="bulk-motivo">
       </div>
-      <div style="display:flex; gap:.4rem; flex-wrap:wrap;">
-        <button type="button" id="btn-bulk-approve" class="btn btn-success">✅ Aprovar selecionados</button>
-        <button type="button" id="btn-bulk-reject"  class="btn btn-warning">❌ Reprovar selecionados</button>
-      </div>
-      <input type="hidden" name="motivo" id="bulk-motivo">
-    </div>
+    <% end %>
     <table id="participantsTable" class="rtable  selection-table" style="width: 100%;">
       <thead>
         <tr>
-          <th class="sel-cell" style="display:none; width:36px; text-align:center;">
-            <input type="checkbox" id="check-all">
-          </th>
+          <% if can_manage_aprovacoes %>
+            <th class="sel-cell" style="display:none; width:36px; text-align:center;">
+              <input type="checkbox" id="check-all">
+            </th>
+          <% end %>
           <th class="col-foto keep-sm">Foto</th>
           <th class="col-nome keep-sm">Nome</th>
           <th class="col-cpf hide-md">CPF</th>
@@ -427,14 +545,16 @@
           <th class="col-horario hide-lg">Horário</th>
           <th class="th-actions keep-sm">
             <span>Ações</span>
-            <div class="kebab-wrapper">
-              <button id="aprovacoes-kebab" type="button" class="btn" title="Mais opções" style="padding:6px 10px;font-size: 1rem;">⋮</button>
-              <div id="aprovacoes-menu" class="kebab-menu" hidden>
-                <button type="button" class="menu-item js-toggle-selection">Selecionar</button>
-                <button type="button" class="menu-item js-select-all hidden">Selecionar todos</button>
-                <button type="button" class="menu-item js-clear-selection hidden">Limpar seleção</button>
+            <% if can_manage_aprovacoes %>
+              <div class="kebab-wrapper">
+                <button id="aprovacoes-kebab" type="button" class="btn" title="Mais opções" style="padding:6px 10px;font-size: 1rem;">⋮</button>
+                <div id="aprovacoes-menu" class="kebab-menu" hidden>
+                  <button type="button" class="menu-item js-toggle-selection">Selecionar</button>
+                  <button type="button" class="menu-item js-select-all hidden">Selecionar todos</button>
+                  <button type="button" class="menu-item js-clear-selection hidden">Limpar seleção</button>
+                </div>
               </div>
-            </div>
+            <% end %>
           </th>
         </tr>
       </thead>
@@ -442,9 +562,11 @@
         <% if (@formularios_pendentes || []).any? %>
           <% @formularios_pendentes.each do |f| %>
             <tr>
-              <td class="sel-cell" style="display:none; text-align:center;">
-                <input type="checkbox" class="row-check" name="ids[]" value="<%= f.id %>">
-              </td>
+              <% if can_manage_aprovacoes %>
+                <td class="sel-cell" style="display:none; text-align:center;">
+                  <input type="checkbox" class="row-check" name="ids[]" value="<%= f.id %>">
+                </td>
+              <% end %>
               <td>
                 <% if f.foto&.attached? %>
                   <% preview_url  = url_for(f.foto) %>
@@ -472,7 +594,7 @@
               <td><%= f.dias_trabalho.to_s.presence || "-" %></td>
               <td><%= f.horario_trabalho.to_s.presence || "-" %></td>
               <td style="display:flex; gap:.5rem; flex-wrap: wrap;">
-                <% if current_user.admin? || current_user.operador? %>
+                <% if can_manage_aprovacoes %>
                   <button type="button"
             class="btn btn-success js-approve-one"
             title="Aprovar"
@@ -496,7 +618,7 @@
           <% end %>
         <% else %>
           <tr>
-            <td colspan="10" style="text-align:center; padding: 1rem;">Nenhum pré-cadastro pendente.</td>
+            <td colspan="<%= can_manage_aprovacoes ? 10 : 9 %>" style="text-align:center; padding: 1rem;">Nenhum pré-cadastro pendente.</td>
           </tr>
         <% end %>
       </tbody>

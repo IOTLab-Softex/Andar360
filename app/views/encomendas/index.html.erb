@@ -63,7 +63,7 @@
             <td><%= e.destinatario&.name || "-" %></td>
             <td class="hide-sm"><%= e.notificar_destinatario == "1" ? "Sim" : "Não" %></td>
             <td>
-             <% unless e.entregue? %>
+             <% if can_manage_encomendas? && !e.entregue? %>
             <button
   type="button"
   class="btn btn-success btn-sm"
@@ -76,16 +76,18 @@
               <%= link_to encomenda_path(e), class: "btn btn-success" do %>
                 <i class="fa-solid fa-eye"></i> <div class="hide-sm">Ver</div>
               <% end %>
-               <% unless e.entregue? %>
+               <% if can_manage_encomendas? && !e.entregue? %>
               <%= link_to edit_encomenda_path(e), class: 'btn edit' do %>
                 <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm">Edite</div>
               <% end %>
               <% end %>
-              <%= button_to encomenda_path(e),
-                  method: :delete,
-                  data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
-                  class: 'btn btn-warning' do %>
-                <i class="fa-solid fa-trash"></i> <div class="hide-sm">Excluir</div>
+              <% if can_manage_encomendas? %>
+                <%= button_to encomenda_path(e),
+                    method: :delete,
+                    data: { turbo_confirm: 'Tem certeza que deseja excluir?' },
+                    class: 'btn btn-warning' do %>
+                  <i class="fa-solid fa-trash"></i> <div class="hide-sm">Excluir</div>
+                <% end %>
               <% end %>
             </td>
           </tr>

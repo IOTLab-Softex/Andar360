@@ -1,5 +1,6 @@
 class ItemsController < ApplicationController
   before_action :set_item, only: %i[ show edit update destroy ]
+  before_action :authorize_items_portaria!
 
   def index
     @items = Item.all
@@ -117,5 +118,11 @@ end
 
   def item_params
     params.require(:item).permit(:nome, :descricao, :status, :foto)
+  end
+
+  def authorize_items_portaria!
+    return if can_manage_items?
+
+    redirect_to root_path, alert: "Acesso não autorizado."
   end
 end

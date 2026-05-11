@@ -1,11 +1,13 @@
 class EncomendasController < ApplicationController
   before_action :set_encomenda, only: %i[show edit update destroy entregar]
+  before_action :authorize_encomenda_visibility!, only: %i[show]
+  before_action :authorize_encomendas_portaria!, only: %i[new create edit update destroy entregar marcar_entregue]
 
   # GET /encomendas or /encomendas.json
   def index
-    @encomendas = Encomenda.all
-      @encomendas_nao_entregues = Encomenda.nao_entregues
-  @encomendas_entregues = Encomenda.entregues
+    @encomendas = encomendas_scope
+      @encomendas_nao_entregues = encomendas_scope.nao_entregues
+  @encomendas_entregues = encomendas_scope.entregues
 
     # Filtro por status
   if params[:status].present?
@@ -105,6 +107,30 @@ class EncomendasController < ApplicationController
     :unidade, :codigo, :transportadora, :tipo, :tamanho, :remetente,
     :destinatario_id, :observacao, :imagem, :notificar_destinatario
   )
+end
+
+def encomendas_scope
+  return Encomenda.all if can_manage_encomendas?
+
+  grupo_empresa_id = current_user.participant&.grupo_empresa_id
+  return Encomenda.none if grupo_empresa_id.blank?
+
+  Encomenda
+    .joins("INNER JOIN participants ON participants.id = encomendas.destinatario_id")
+    .where(participants: { grupo_empresa_id: grupo_empresa_id })
+end
+
+def authorize_encomendas_portaria!
+  return if can_manage_encomendas?
+
+  redirect_to encomendas_path, alert: "Acesso não autorizado."
+end
+
+def authorize_encomenda_visibility!
+  return if can_manage_encomendas?
+  return if @encomenda.destinatario&.grupo_empresa_id == current_user.participant&.grupo_empresa_id
+
+  redirect_to encomendas_path, alert: "Acesso não autorizado."
 end
 
 end

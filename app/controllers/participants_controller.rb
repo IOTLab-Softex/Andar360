@@ -313,6 +313,17 @@ end
       return
     end
 
+    unless current_user.admin?
+      redirect_back fallback_location: participants_path, alert: "Apenas administradores podem excluir participantes."
+      return
+    end
+
+    if @participant.excluido?
+      permanently_destroy_participant!(@participant)
+      redirect_back fallback_location: participants_path(tab: "excluidos"), status: :see_other, notice: "Participante excluído definitivamente."
+      return
+    end
+
     if Reservation.where("solicitante_id = :id OR responsavel_id = :id", id: @participant.id).exists?
       redirect_to participants_path, alert: "⚠️ Este participante está vinculado a uma reserva e não pode ser excluído."
       return
@@ -456,5 +467,23 @@ end
 
   def participant_params
     params.require(:participant).permit(:name, :email, :cpf, :telefone, :photo, :photo_base64, :grupo_empresa_id, :sub_grupo_empresa_id)
+  end
+
+  def permanently_destroy_participant!(participant)
+    Participant.transaction do
+      participant.users.destroy_all
+      participant.solicitacao_participantes.destroy_all
+
+      AccessLog.where(participant_id: participant.id).delete_all
+      Chamado.where(solicitante_id: participant.id).update_all(solicitante_id: nil)
+      Encomenda.where(destinatario_id: participant.id).update_all(destinatario_id: nil)
+      Encomenda.where(recebido_por_id: participant.id).update_all(recebido_por_id: nil)
+
+      Reservation.where(solicitante_id: participant.id).update_all(solicitante_id: nil)
+      Reservation.where(responsavel_id: participant.id).update_all(responsavel_id: nil)
+      participant.reservations.clear
+
+      participant.destroy!
+    end
   end
 end

@@ -6,7 +6,7 @@ class FormularioCadastrosController < ApplicationController
   before_action :set_formulario_cadastro, only: %i[
     show edit update destroy approve reject reenviar_para_aprovacao
   ]
-  before_action :authorize_admin_or_operator!, only: %i[ approve reject ]
+  before_action :authorize_admin_or_operator!, only: %i[ approve reject bulk_approve bulk_reject ]
   before_action :authorize_resubmitter!,      only: %i[ reenviar_para_aprovacao ]
 
   def index
@@ -17,7 +17,7 @@ class FormularioCadastrosController < ApplicationController
 
   def new
     @formulario_cadastro = FormularioCadastro.new
-    @formulario_cadastro.grupo_empresa_id = params[:grupo_empresa_id] if params[:grupo_empresa_id].present?
+    @formulario_cadastro.grupo_empresa_id = default_grupo_empresa_id
   end
 
   def edit; end
@@ -26,6 +26,7 @@ class FormularioCadastrosController < ApplicationController
   def create
     arruma_campos_checkboxes
     @formulario_cadastro = FormularioCadastro.new(formulario_cadastro_params)
+    @formulario_cadastro.grupo_empresa_id = current_user.participant&.grupo_empresa_id if current_user&.client?
     attach_foto_base64(@formulario_cadastro)
 
     # Bloqueia se já existe Participant OU já existe pré-cadastro pendente do mesmo CPF
@@ -251,6 +252,12 @@ end
 
   def set_formulario_cadastro
     @formulario_cadastro = FormularioCadastro.find(params[:id])
+  end
+
+  def default_grupo_empresa_id
+    return current_user.participant&.grupo_empresa_id if current_user&.client?
+
+    params[:grupo_empresa_id].presence
   end
 
   def formulario_cadastro_params

@@ -1,4 +1,4 @@
-<%= form_with(model: encomenda, local: true, html: { multipart: true }) do |form| %>
+<%= form_with(model: encomenda, local: true, html: { multipart: true, class: "encomenda-form" }) do |form| %>
   <% if encomenda.errors.any? %>
     <div class="alert alert-danger">
       <h4><%= pluralize(encomenda.errors.count, "erro") %>:</h4>
@@ -97,7 +97,7 @@
         <div style="flex: 1;">
           <%= form.label :tipo %>
           <%= form.select :tipo,
-          ["Pacote", "Caixa", "Pallet","Envelop", "Sacola", "Outro"],
+          ["Pacote", "Caixa", "Palete", "Envelope", "Sacola", "Outro"],
           { prompt: "Selecione o tipo" },
            class: "form-control" %>
         </div>
@@ -192,7 +192,8 @@ function initEncomendaForm() {
     $('#destinatario_select').select2({
       width: '100%',
       placeholder: 'Selecione um participante',
-      allowClear: true
+      allowClear: true,
+      dropdownCssClass: 'encomenda-select2-dropdown'
     });
   }
 
@@ -219,7 +220,8 @@ function initEncomendaForm() {
           $('#destinatario_select').select2({
             width: '100%',
             placeholder: 'Selecione um participante',
-            allowClear: true
+            allowClear: true,
+            dropdownCssClass: 'encomenda-select2-dropdown'
           });
         }
         return;
@@ -257,7 +259,8 @@ function initEncomendaForm() {
           $('#destinatario_select').select2({
             width: '100%',
             placeholder: 'Selecione um participante',
-            allowClear: true
+            allowClear: true,
+            dropdownCssClass: 'encomenda-select2-dropdown'
           });
         }
       }
@@ -386,6 +389,148 @@ document.addEventListener('turbo:load', initEncomendaForm);
 .btn-primary { background:#2ea043; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
 .btn-secondary { background:#444; border:0; color:#fff; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
 .btn-ghost   { background:transparent; border:1px solid #aaa; color:#ddd; padding:.5rem .8rem; border-radius:.5rem; cursor:pointer; }
+
+.encomenda-form .form-control {
+  width: 100%;
+  min-height: 42px;
+  padding: .58rem .8rem;
+  border: 1px solid rgba(167, 139, 250, .75);
+  border-radius: 8px;
+  background-color: rgba(18, 18, 22, .96);
+  color: #f7f3ff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.encomenda-form .form-control:focus {
+  border-color: var(--color-accent);
+  background-color: rgba(18, 18, 22, .98);
+  color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, .22);
+}
+
+.encomenda-form .form-control::placeholder {
+  color: rgba(247, 243, 255, .62);
+}
+
+.encomenda-form textarea.form-control {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.encomenda-form input[type="file"].form-control {
+  padding: .46rem .8rem;
+}
+
+.encomenda-form input[type="file"].form-control::file-selector-button {
+  margin-right: .8rem;
+  border: 0;
+  border-radius: 6px;
+  background: var(--color-accent);
+  color: #ffffff;
+  padding: .42rem .7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.encomenda-form select.form-control {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.4rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #c4b5fd 50%),
+    linear-gradient(135deg, #c4b5fd 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.encomenda-form select.form-control option {
+  background: #17171b;
+  color: #f7f3ff;
+}
+
+.encomenda-form select.form-control::-ms-expand {
+  display: none;
+}
+
+.encomenda-form .select2-container {
+  width: 100% !important;
+}
+
+.encomenda-form .select2-container--default .select2-selection--single {
+  min-height: 42px;
+  border: 1px solid rgba(167, 139, 250, .75);
+  border-radius: 8px;
+  background: rgba(18, 18, 22, .96);
+  color: #f7f3ff;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+
+.encomenda-form .select2-container--default.select2-container--focus .select2-selection--single,
+.encomenda-form .select2-container--default.select2-container--open .select2-selection--single {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, .22);
+}
+
+.encomenda-form .select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: #f7f3ff;
+  line-height: 40px;
+  padding-left: .8rem;
+  padding-right: 2.4rem;
+}
+
+.encomenda-form .select2-container--default .select2-selection--single .select2-selection__placeholder {
+  color: rgba(247, 243, 255, .62);
+}
+
+.encomenda-form .select2-container--default .select2-selection--single .select2-selection__arrow {
+  height: 40px;
+  right: 10px;
+}
+
+.encomenda-form .select2-container--default .select2-selection--single .select2-selection__arrow b {
+  border-color: #c4b5fd transparent transparent transparent;
+}
+
+.select2-container--default .encomenda-select2-dropdown {
+  overflow: hidden;
+  border: 1px solid rgba(167, 139, 250, .35);
+  border-radius: 8px;
+  background: #17171b;
+  color: #f7f3ff;
+  box-shadow: 0 18px 40px rgba(0,0,0,.38);
+}
+
+.select2-container--default .encomenda-select2-dropdown .select2-search--dropdown {
+  padding: 0;
+}
+
+.select2-container--default .encomenda-select2-dropdown .select2-search__field {
+  min-height: 42px;
+  padding: .65rem .8rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  background: #111116;
+  color: #f7f3ff;
+  outline: none;
+}
+
+.select2-container--default .encomenda-select2-dropdown .select2-results__option {
+  padding: .65rem .8rem;
+  color: #f7f3ff;
+}
+
+.select2-container--default .encomenda-select2-dropdown .select2-results__option--highlighted[aria-selected] {
+  background: rgba(124, 58, 237, .28);
+  color: #ffffff;
+}
+
+.select2-container--default .encomenda-select2-dropdown .select2-results__option[aria-selected=true] {
+  background: rgba(124, 58, 237, .18);
+  color: #ffffff;
+}
 
 /* ---- Modal puro ---- */
 .pmodal { position:fixed; inset:0; display:none; }

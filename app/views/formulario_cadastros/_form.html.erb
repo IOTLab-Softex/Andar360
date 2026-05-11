@@ -272,6 +272,19 @@ Ao prosseguir com o cadastro, o usuário compreende e concorda com o tratamento 
 
 </style>
 <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const successMessage = "<%= j(flash[:notice].to_s) %>";
+    if (!successMessage || !window.Swal) return;
+
+    Swal.fire({
+      icon: "success",
+      title: "Cadastrado",
+      text: successMessage,
+      timer: 4500,
+      showConfirmButton: false
+    });
+  });
+
   // ===== Estado global =====
   let photoSource = null;          // null | 'camera' | 'upload'
   let acceptCameraMessages = false; // só aceitar mensagens quando a câmera estiver realmente ativa

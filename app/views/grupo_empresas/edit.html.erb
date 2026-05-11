@@ -61,7 +61,9 @@
               :can_approve_purchase,
               :can_buy,
               :can_view_monitoring,
-              :can_support_access)  # 👈 NOVO
+              :can_support_access,
+              :can_manage_items,
+              :can_manage_encomendas)
       .to_json %>">
 </div>
 
@@ -140,6 +142,25 @@
   </div>
 </fieldset>
 
+<fieldset class="groupbox-portaria"
+          style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;<%= ' display:none;' if readonly_for_client %>">
+  <legend style="font-weight: 600; padding: 0 .5rem;">Portaria</legend>
+
+  <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-top: .5rem;">
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_manage_items,
+                      id: "sub_grupo_empresa_can_manage_items" %>
+      Controle de objetos
+    </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_manage_encomendas,
+                      id: "sub_grupo_empresa_can_manage_encomendas" %>
+      Encomendas
+    </label>
+  </div>
+</fieldset>
+
 
 
       <div style="margin-top: 1.5rem;
@@ -179,6 +200,10 @@ const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monito
   if (chkMonitoring) chkMonitoring.checked = false;
 const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
   if (chkSupportAccess) chkSupportAccess.checked = false;
+const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_items');
+  if (chkManageItems) chkManageItems.checked = false;
+const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');
+  if (chkManageEncomendas) chkManageEncomendas.checked = false;
 
     title.textContent = 'Adicionar Subgrupo';
     modal.style.display = 'flex';
@@ -221,6 +246,10 @@ const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monito
 if (chkMonitoring) chkMonitoring.checked = !!sg.can_view_monitoring;
 const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
 if (chkSupportAccess) chkSupportAccess.checked = !!sg.can_support_access;
+const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_items');
+if (chkManageItems) chkManageItems.checked = !!sg.can_manage_items;
+const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');
+if (chkManageEncomendas) chkManageEncomendas.checked = !!sg.can_manage_encomendas;
 
     title.textContent = 'Editar Subgrupo';
     modal.style.display = 'flex';

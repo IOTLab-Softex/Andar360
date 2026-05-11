@@ -1,4 +1,4 @@
-<%= render "shared/login_announcement" %>
+<%= render "shared/login_announcement" unless flash[:alert].present? || flash.now[:alert].present? %>
 <div class="login-container">
   <div class="logo-mobile">
     <img src="/logo.png" alt="Logo do Projeto" style="width: -webkit-fill-available; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.6));">
@@ -55,7 +55,7 @@
     <div></div>
   </div>
 
-  <small style="bottom: 0; position: fixed; right: 6px; color: white;">Versão 1.0.7</small>
+  <small style="bottom: 0; position: fixed; right: 6px; color: white;">Versão 1.0.9</small>
 </div>
 
 <div id="password-recovery-modal" class="password-recovery-modal" hidden>

@@ -785,10 +785,16 @@ background: var(--color-accent);
 
 .calendar-nav {
     display: flex;
-    /* gap: .5rem; */
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
     font-weight: 600;
-    position: absolute;
-    right: 0;
+    flex: 0 0 auto;
+}
+
+.calendar-room {
+  min-width: 190px;
+  flex: 1 1 240px;
 }
 
 #calendarCurrentMonth {
@@ -894,4 +900,41 @@ background: var(--color-accent);
 .cal-ativa { background:#28a745; }
 .cal-encerrada { background:#6c757d; }
 .cal-cancelada { background:#dc3545; }
+
+@media (max-width: 640px) {
+  .calendar-wrapper {
+    padding: .9rem;
+  }
+
+  .calendar-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: .75rem;
+  }
+
+  .calendar-room {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #calendarRoomSelect {
+    width: 100%;
+  }
+
+  .calendar-nav {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  #calendarCurrentMonth {
+    min-width: 0;
+    flex: 1 1 auto;
+    padding: 0 .35rem;
+    font-size: 1rem;
+  }
+
+  .calendar-nav .btn {
+    flex: 0 0 48px;
+  }
+}
 </style>

@@ -6,21 +6,23 @@ class ApplicationController < ActionController::Base
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
 
- helper_method :can_view_monitoring?
+ helper_method :can_view_monitoring?, :can_manage_items?, :can_manage_encomendas?, :can_access_portaria?
 
   def can_view_monitoring?
-    return false unless current_user
-
-    participant = current_user.participant
-    return false unless participant
-
-    sub = participant.sub_grupo_empresa
-    return false unless sub
-
-    # Se você tiver a coluna booleana `can_view_monitoring` no subgrupo:
-    sub.respond_to?(:can_view_monitoring) ? !!sub.can_view_monitoring : false
+    subgrupo_permission_enabled?(:can_view_monitoring)
   end
 
+  def can_manage_items?
+    current_user&.admin? || current_user&.operador? || subgrupo_permission_enabled?(:can_manage_items)
+  end
+
+  def can_manage_encomendas?
+    current_user&.admin? || current_user&.operador? || subgrupo_permission_enabled?(:can_manage_encomendas)
+  end
+
+  def can_access_portaria?
+    can_manage_items? || can_manage_encomendas?
+  end
 
   def after_sign_in_path_for(resource)
   dashboard_path
@@ -70,6 +72,15 @@ def check_password_change_required
   return if request.path == edit_user_registration_path
   flash[:alert] = "Você precisa definir uma nova senha antes de continuar."
   redirect_to edit_user_registration_path
+end
+
+def subgrupo_permission_enabled?(permission)
+  return false unless current_user
+
+  sub = current_user.participant&.sub_grupo_empresa
+  return false unless sub&.respond_to?(permission)
+
+  !!sub.public_send(permission)
 end
 
 

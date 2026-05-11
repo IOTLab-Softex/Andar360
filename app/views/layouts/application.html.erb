@@ -502,12 +502,13 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   </head>
   <body>
+    <% login_screen = ["devise/sessions", "users/sessions"].include?(controller_path) %>
     <%#<div id="app-loader">
       <div class="app-loader-icon">
         <img src="/loading.gif" alt="Carregando…" />
       </div>
     </div>%>
-        <% unless tela_de_alteracao_de_senha? %>
+        <% unless tela_de_alteracao_de_senha? || login_screen %>
       <% unless (controller_path == "users/registrations" && action_name == "edit") || (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) %>
         <div class="user-info">
           <% if user_signed_in? %>
@@ -600,6 +601,13 @@
     <% end %>    <!-- fim do unless tela_de_alteracao_de_senha? -->
 
     <main>
+      <% hide_banner =
+           login_screen ||
+           (controller_path == "users/registrations" && action_name == "edit") ||
+           (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) ||
+           (controller_path == "devise/sessions" && action_name == "new") ||
+           (controller_path == "users/sessions" && action_name == "new") %>
+      <% unless hide_banner %>
       <div class="banner">
         <% unless (controller_path == "users/registrations" && action_name == "edit") || 
           (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) ||
@@ -619,14 +627,16 @@
         <% end %>
       <% end %>
     </div>
-    <nav class="sidebar sidebar-hidden">
-      <ul class="sidebar-links">
-        <%= sidebar_menu %>
-      </ul>
-    </nav>
+    <% end %>
+    <% unless login_screen %>
+      <nav class="sidebar sidebar-hidden">
+        <ul class="sidebar-links">
+          <%= sidebar_menu %>
+        </ul>
+      </nav>
+    <% end %>
     <!-- 🔹 Aqui começa o “container” com margem lateral -->
-    <% if controller_path == "devise/sessions" && %w[new edit].include?(action_name) ||
-     controller_path == "users/sessions" && %w[new edit].include?(action_name) ||
+    <% if login_screen ||
      controller_path == "users/registrations" && %w[new edit].include?(action_name) ||
      controller_path == "devise/passwords" && %w[new edit].include?(action_name) %>
       <%= yield %>
@@ -658,7 +668,11 @@
          (controller_name == "dashboard" && current_user&.client?) ||
          (controller_name == "participants" && current_user&.client?)
        ) %>
-  <% if !suppress_access_alert && (flash[:notice] || flash[:alert]) %>
+  <% suppress_formulario_success =
+       controller_name == "formulario_cadastros" &&
+       action_name == "new" &&
+       flash[:notice].present? %>
+  <% if !suppress_access_alert && !suppress_formulario_success && (flash[:notice] || flash[:alert]) %>
     <div id="notification-flash"
        data-type="<%= flash[:notice] ? 'success' : 'error' %>"
        data-sound="<%= flash[:flash_sound].presence || (flash[:notice] ? 'success' : 'error') %>"

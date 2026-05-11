@@ -53,7 +53,9 @@ class SubGrupoEmpresasController < ApplicationController
         :can_approve_purchase,
         :can_buy,
         :can_view_monitoring,
-        :can_support_access
+        :can_support_access,
+        :can_manage_items,
+        :can_manage_encomendas
       )
     else
       # 👤 Cliente comum: só pode mudar nome (e empresa, se fizer sentido)

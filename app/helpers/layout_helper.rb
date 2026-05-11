@@ -465,24 +465,26 @@ module LayoutHelper
         end,
       ])
     when "encomendas#show"
-      safe_join([
+      items = [
         dashboard_button,
         link_to(encomendas_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-box") + " VER TODOS"
-        end,
-        link_to(new_encomenda_path, class: "menu-btn hide-sm") do
+        end
+      ]
+      if can_manage_encomendas?
+        items << link_to(new_encomenda_path, class: "menu-btn hide-sm") do
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADCIONAR"
-        end,
-
-      ])
+        end
+      end
+      safe_join(items)
     when "encomendas#index"
-      safe_join([
-        dashboard_button,
-        link_to(new_encomenda_path, class: "menu-btn") do
+      items = [dashboard_button]
+      if can_manage_encomendas?
+        items << link_to(new_encomenda_path, class: "menu-btn") do
           content_tag(:i, "", class: "fa-solid fa-plus") + " ADCIONAR"
-        end,
-
-      ])
+        end
+      end
+      safe_join(items)
     when "encomendas#edit"
       safe_join([
         dashboard_button,
@@ -794,26 +796,32 @@ end
     ])
   end
 
-  if current_user&.admin? || current_user&.operador?
+  if can_access_portaria?
+    portaria_links = []
+    if can_manage_items?
+      portaria_links << content_tag(:li) do
+        link_to(items_path) do
+          safe_join([
+            content_tag(:span, "", class: "fa-solid fa-key"),
+            " Controle de Objetos",
+          ])
+        end
+      end
+    end
+
+    if can_manage_encomendas?
+      portaria_links << content_tag(:li) do
+        link_to(encomendas_path) do
+          safe_join([
+            content_tag(:span, "", class: "fa-solid fa-box-open"),
+            " Encomendas",
+          ])
+        end
+      end
+    end
+
     submenu_portaria = content_tag(:ul, class: "submenu", id: "submenu_portaria", style: "display: none;") do
-      safe_join([
-        content_tag(:li) do
-          link_to(items_path) do
-            safe_join([
-              content_tag(:span, "", class: "fa-solid fa-key"),
-              " Controle de Objetos",
-            ])
-          end
-        end,
-        content_tag(:li) do
-          link_to(encomendas_path) do
-            safe_join([
-              content_tag(:span, "", class: "fa-solid fa-box-open"),
-              " Encomendas",
-            ])
-          end
-        end,
-      ])
+      safe_join(portaria_links)
     end
 
     items << content_tag(:li) do
