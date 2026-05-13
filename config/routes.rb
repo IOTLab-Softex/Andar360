@@ -160,6 +160,7 @@ end
  
   resources :announcements do
     member { post :mark_viewed }
+    collection { post :reorder }
   end
 
   resources :devices
@@ -211,6 +212,7 @@ resources :participants do
     post  :reprovar_exclusao
     patch :block_access
     patch :unblock_access
+    get   :check_dependencies
   end
 end
 

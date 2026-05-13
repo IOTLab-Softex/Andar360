@@ -113,6 +113,12 @@ module LayoutHelper
       "SOLICITAÇÃO DE COMPRA"
       when "solicitacao_compras#edit"
       "EDITAR SOLICITAÇÃO DE COMPRA: #{@solicitacao_compra.id}"
+      when "announcements#index"
+      "Anúncios"
+        when "announcements#new"
+      "Anúncios"
+        when "announcements#edit"
+      "Anúncio #{@announcement&.id}"
     else
       content_for?(:title) ? content_for(:title) : "Sistema"
     end
@@ -578,6 +584,35 @@ module LayoutHelper
       content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " SOLICITAÇÕES COMPRA"
     end
   ])
+
+    when "announcements#index"
+  safe_join([
+        dashboard_button,   
+
+    link_to(new_announcement_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " NOVO ANÚNCIOS"
+    end
+  ])
+
+  when "announcements#new"
+  safe_join([
+    link_to(announcements_path, class: "menu-btn hide-sm") do
+      content_tag(:i, "", class: "fa-solid fa-left-long") + " VOLTAR"
+    end,
+    dashboard_button
+  ])
+
+   when "announcements#edit"
+  safe_join([
+    link_to(announcements_path, class: "menu-btn hide-sm") do
+      content_tag(:i, "", class: "fa-solid fa-left-long") + " VOLTAR"
+    end,
+    dashboard_button,
+     link_to(new_announcement_path, class: "menu-btn") do
+      content_tag(:i, "", class: "fa-solid fa-file-circle-plus") + " NOVO ANÚNCIOS"
+    end
+  ])
+  
     end
   end
 end

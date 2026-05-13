@@ -1,7 +1,10 @@
 <% if user_signed_in? %>
+  <% Announcement.expire_passed! %>
   <% pending = Announcement.active
+                            .in_period
+                            .visible_to(current_user)
                             .where.not(id: current_user.announcement_views.select(:announcement_id))
-                            .order(created_at: :asc) %>
+                            .reorder(position: :asc, created_at: :asc) %>
   <% if pending.any? %>
 
     <style>
@@ -63,14 +66,35 @@
         width: 100%;
         background: #000;
         flex-shrink: 0;
+        position: relative;
       }
 
-      #ann-image-wrap img {
+      #ann-image-wrap img,
+      #ann-image-wrap video {
         width: 100%;
         max-height: 420px;
         object-fit: contain;
         display: block;
       }
+
+      #ann-sound-btn {
+        position: absolute;
+        bottom: 10px;
+        right: 10px;
+        z-index: 2;
+        width: 34px;
+        height: 34px;
+        border: 0;
+        border-radius: 50%;
+        background: rgba(0, 0, 0, 0.52);
+        color: #fff;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.18s;
+      }
+      #ann-sound-btn:hover { background: rgba(0, 0, 0, 0.76); }
 
       #ann-content {
         padding: 20px 24px 8px;
@@ -136,10 +160,37 @@
         font-weight: 600;
         cursor: pointer;
         transition: opacity 0.15s;
-        margin-left: auto;
       }
 
       #ann-close-btn:hover { opacity: 0.85; }
+
+      #ann-cta-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 22px;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        font-weight: 700;
+        text-decoration: none;
+        color: #fff;
+        background: linear-gradient(135deg, #3b0d8c, #7014f1);
+        box-shadow: 0 4px 18px rgba(112,20,241,.5);
+        transition: transform .15s, box-shadow .15s, opacity .15s;
+        cursor: pointer;
+        border: none;
+        white-space: nowrap;
+      }
+
+      #ann-cta-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 7px 26px rgba(112,20,241,.65);
+        opacity: .92;
+        color: #fff;
+        text-decoration: none;
+      }
+
+      #ann-cta-btn:active { transform: translateY(0); }
     </style>
 
     <div id="ann-overlay">
@@ -153,7 +204,11 @@
         </div>
 
         <div id="ann-image-wrap" style="display:none;">
-          <img id="ann-image" src="" alt="Imagem do anúncio">
+          <img id="ann-image" src="" alt="Imagem do anúncio" style="display:none;">
+          <video id="ann-video" autoplay muted loop playsinline style="display:none;"></video>
+          <button id="ann-sound-btn" type="button" aria-label="Ativar/Desativar som" title="Ativar/Desativar som">
+            <i class="fa-solid fa-volume-xmark"></i>
+          </button>
         </div>
 
         <div id="ann-content">
@@ -163,9 +218,15 @@
 
         <div id="ann-footer">
           <div id="ann-dots"></div>
-          <button id="ann-close-btn">
-            <i class="fa-solid fa-check"></i> Entendido
-          </button>
+          <div style="display:flex; align-items:center; gap:10px; margin-left:auto; flex-wrap:wrap; justify-content:flex-end;">
+            <a id="ann-cta-btn" href="#" target="_blank" rel="noopener" style="display:none;">
+              <i class="fa-solid fa-arrow-up-right-from-square"></i>
+              <span id="ann-cta-label"></span>
+            </a>
+            <button id="ann-close-btn">
+              <i class="fa-solid fa-check"></i> Entendido
+            </button>
+          </div>
         </div>
 
       </div>
@@ -173,24 +234,42 @@
 
     <script>
     (function(){
-      const announcements = <%= pending.map { |a| {
-        id:      a.id,
-        title:   a.title,
-        body:    a.body,
-        image:   a.image.attached? ? url_for(a.image) : nil,
-        markUrl: mark_viewed_announcement_path(a)
-      }}.to_json.html_safe %>;
+      const announcements = <%= pending.map { |a|
+        is_video = a.image.attached? && a.image.content_type.start_with?("video/")
+        {
+          id:       a.id,
+          title:    a.title,
+          body:     a.body,
+          image:    a.image.attached? && !is_video ? url_for(a.image) : nil,
+          video:    is_video ? url_for(a.image) : nil,
+          ctaUrl:   a.cta_url.presence,
+          ctaLabel: a.cta_label.presence || "Saiba mais",
+          markUrl:  mark_viewed_announcement_path(a)
+        }
+      }.to_json.html_safe %>;
 
       let current = 0;
       const csrf      = document.querySelector('meta[name="csrf-token"]')?.content;
       const overlay   = document.getElementById('ann-overlay');
       const imageWrap = document.getElementById('ann-image-wrap');
       const imageEl   = document.getElementById('ann-image');
+      const videoEl   = document.getElementById('ann-video');
+      const soundBtn  = document.getElementById('ann-sound-btn');
       const titleEl   = document.getElementById('ann-title');
       const bodyEl    = document.getElementById('ann-body-text');
       const closeBtn  = document.getElementById('ann-close-btn');
       const counter   = document.getElementById('ann-counter');
       const dotsWrap  = document.getElementById('ann-dots');
+      const ctaBtn    = document.getElementById('ann-cta-btn');
+      const ctaLabel  = document.getElementById('ann-cta-label');
+
+      if (soundBtn) {
+        soundBtn.addEventListener('click', function() {
+          if (!videoEl) return;
+          videoEl.muted = !videoEl.muted;
+          soundBtn.querySelector('i').className = videoEl.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+        });
+      }
 
       // Dots
       if (announcements.length > 1) {
@@ -206,10 +285,24 @@
         const box = document.getElementById('ann-box');
         box.scrollTop = 0;
 
-        if (ann.image) {
+        if (ann.video) {
+          imageEl.style.display = 'none';
+          videoEl.src = ann.video;
+          videoEl.style.display = 'block';
+          videoEl.muted = true;
+          videoEl.play().catch(function(){});
+          if (soundBtn) { soundBtn.style.display = 'flex'; soundBtn.querySelector('i').className = 'fa-solid fa-volume-xmark'; }
+          imageWrap.style.display = 'block';
+        } else if (ann.image) {
+          videoEl.pause(); videoEl.style.display = 'none';
+          if (soundBtn) soundBtn.style.display = 'none';
           imageEl.src = ann.image;
+          imageEl.style.display = 'block';
           imageWrap.style.display = 'block';
         } else {
+          videoEl.pause(); videoEl.style.display = 'none';
+          imageEl.style.display = 'none';
+          if (soundBtn) soundBtn.style.display = 'none';
           imageWrap.style.display = 'none';
         }
 
@@ -225,6 +318,16 @@
           bodyEl.style.display = 'block';
         } else {
           bodyEl.style.display = 'none';
+        }
+
+        if (ctaBtn) {
+          if (ann.ctaUrl) {
+            ctaBtn.href = ann.ctaUrl;
+            if (ctaLabel) ctaLabel.textContent = ann.ctaLabel || 'Saiba mais';
+            ctaBtn.style.display = 'inline-flex';
+          } else {
+            ctaBtn.style.display = 'none';
+          }
         }
 
         if (announcements.length > 1) {

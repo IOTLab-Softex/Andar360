@@ -176,12 +176,19 @@
     }
 
     .notification-btn {
-      background: none;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: var(--foto-user-avatar);
       border: none;
       position: relative;
       cursor: pointer;
       font-size: 20px;
-        color: var(--color-text);
+      color: var(--color-text);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
     }
 
     .notification-btn .badge {
@@ -276,9 +283,9 @@
     border-radius: 50%;
     border: 2px solid #ffe595;
     opacity: 0;
-    animation: pulseBell 1.8s
-  ease-out infinite;
+    animation: pulseBell 1.8s ease-out infinite;
     background: #ffc107;
+    pointer-events: none;
   }
   @keyframes pulseBell{
     0%{transform:scale(.85); opacity:.95;}
@@ -288,21 +295,21 @@
 
   /* Balão apontando para o sino */
   .notif-nudge {
-      position: absolute;
-      top: 36px;
-      left: -9px;
-      background: #ffc107;
-      color: #222;
-      padding: 8px 12px;
-      border-radius: 10px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, .2);
-      z-index: 10000;
-      display: none;
-      align-items: center;
-      gap: .5rem;
-      font-weight: 600;
-      animation: nudgeIn .18s ease-out, floaty 3s ease-in-out infinite;
-  }
+    position: absolute;
+    top: 65px;
+    left: -129px;
+    background: #ffc107;
+    color: #222;
+    padding: 8px 12px;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, .2);
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    gap: .5rem;
+    font-weight: 600;
+    animation: nudgeIn .18s ease-out, floaty 3s ease-in-out infinite;
+}
 
   .notif-nudge.show{ display:flex; }
 
@@ -310,7 +317,7 @@
       content: "";
     position: absolute;
     top: -5px;           /* posiciona acima do balão */
-    left: 20px;          /* centraliza horizontalmente (ajuste conforme precisar) */
+    left: 149px;          /* centraliza horizontalmente (ajuste conforme precisar) */
     width: 0;
     height: 0;
     border-left: 6px solid transparent;
@@ -338,10 +345,10 @@
 
   /* Responsivo: em telas pequenas, joga o balão para baixo do sino */
   @media (max-width: 520px){
-    .notif-nudge{
-      top:36px;
-      right:-4px;
-      left: -150px;
+    .notif-nudge {
+        top: 66px;
+        right: -4px;
+        left: -141px;
     }
     .notif-nudge::after{
       top:-6px;
@@ -521,10 +528,6 @@
               <div class="user-avatar" id="user-avatar-trigger"><i class="fa-solid fa-circle-user"></i></div>
             <% end %>
 
-            <div class="hide-on-mobile user-name">
-              Bem-vindo, <%= participant&.name || current_user.email %>
-            </div>
-
             <div class="notification-icon-wrapper">
               <% latest = notificacoes.first %>
               <button class="notification-btn"
@@ -544,6 +547,10 @@
                   <button type="button" class="notif-nudge-close" aria-label="Fechar dica">&times;</button>
                 </div>
               <% end %>
+            </div>
+
+            <div class="hide-on-mobile user-name">
+              Bem-vindo, <%= participant&.name || current_user.email %>
             </div>
           <% end %>  <!-- fim do if user_signed_in? -->
         </div>       <!-- fim da div.user-info -->
@@ -1140,7 +1147,6 @@
 
   const SHOW_CLASS = 'show';
   const ATT_CLASS  = 'attention';
-  let dismissedThisSession = false; // só controla o balão visual
 
   // Lê o número de não lidas do badge
   function getUnreadCount() {
@@ -1187,48 +1193,42 @@
   } catch(e) {}
 
   // --------- VISUAL (sino piscando + balão) ---------
+  // Persiste quantas não lidas havia quando o usuário abriu o sino pela última vez.
+  // O efeito só aparece se chegaram notificações NOVAS desde então.
+  const DISMISSED_AT_KEY = 'notif_dismissed_at_count';
+  let dismissedAtCount = 0;
+  try {
+    dismissedAtCount = parseInt(localStorage.getItem(DISMISSED_AT_KEY) || '0', 10);
+    if (Number.isNaN(dismissedAtCount)) dismissedAtCount = 0;
+  } catch(e) {}
+
   function applyVisual(show) {
-    if (!nudge) return;
-    if (show) {
-      bellBtn.classList.add(ATT_CLASS);
-      nudge.classList.add(SHOW_CLASS);
-    } else {
-      bellBtn.classList.remove(ATT_CLASS);
-      nudge.classList.remove(SHOW_CLASS);
-    }
+    bellBtn.classList.toggle(ATT_CLASS, show);
+    if (nudge) nudge.classList.toggle(SHOW_CLASS, show);
   }
 
-  function syncVisualInitial() {
-    const hasUnread = unreadNow > 0;
-    applyVisual(hasUnread && !dismissedThisSession);
-  }
-
-  // Ao carregar, já ajusta visual
-  syncVisualInitial();
+  // Mostra efeito apenas se há mais não lidas do que quando o usuário abriu pela última vez
+  applyVisual(unreadNow > dismissedAtCount);
 
   function dismiss() {
-    dismissedThisSession = true;
+    try { localStorage.setItem(DISMISSED_AT_KEY, String(unreadNow)); } catch(e) {}
+    dismissedAtCount = unreadNow;
     applyVisual(false);
   }
 
-  // Clicar no sino → some o destaque e o balão
+  // Clicar no sino → persiste a contagem atual e some o efeito
   bellBtn.addEventListener('click', dismiss);
 
-  // Clicar no X do balão → some também
+  // Clicar no X do balão → mesmo comportamento
   nudge?.querySelector('.notif-nudge-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
     dismiss();
   });
 
-  // Se o badge mudar (ex.: limpar todas via Turbo), atualiza SÓ o visual.
-  // (não tocamos som aqui pra garantir que ele só toca 1x por "chegada")
+  // Se o badge mudar (limpar todas etc.), recalcula
   const observer = new MutationObserver(() => {
-    const hasUnread = getUnreadCount() > 0;
-    if (!hasUnread) {
-      applyVisual(false);
-    } else if (!dismissedThisSession) {
-      applyVisual(true);
-    }
+    const current = getUnreadCount();
+    applyVisual(current > dismissedAtCount);
   });
 
   observer.observe(bellBtn, { childList: true, subtree: true, characterData: true });

@@ -2,6 +2,8 @@ class GrupoEmpresa < ApplicationRecord
     has_many :participants
     has_one_attached :logo
     has_many :sub_grupo_empresas, dependent: :destroy
+    has_and_belongs_to_many :announcements,
+                            join_table: :announcement_grupo_empresas
     validates :nome, presence: true
       has_many :users, optional: true rescue nil
     def notification_emails

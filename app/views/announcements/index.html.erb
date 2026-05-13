@@ -1,12 +1,16 @@
-<div class="container mt-4">
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fa-solid fa-bullhorn me-2"></i> Anúncios</h2>
-    <% if current_user.admin? || current_user.operador? %>
-      <%= link_to new_announcement_path, class: "btn btn-primary" do %>
-        <i class="fa-solid fa-plus me-1"></i> Novo anúncio
-      <% end %>
-    <% end %>
+<div id="ann-video-modal" onclick="annCloseVideo()" style="display:none; position:fixed; inset:0; z-index:10500; background:rgba(0,0,0,0.92); align-items:center; justify-content:center; cursor:default;">
+  <div style="position:relative; display:inline-block;" onclick="event.stopPropagation()">
+    <button onclick="annCloseVideo()" style="position:absolute; top:-14px; right:-14px; width:30px; height:30px; border-radius:50%; border:none; background:rgba(255,255,255,0.15); color:#fff; font-size:1.1rem; cursor:pointer; display:flex; align-items:center; justify-content:center; z-index:3; line-height:1; backdrop-filter:blur(4px);">&times;</button>
+    <video id="ann-video-modal-el" controls autoplay loop playsinline style="max-width:90vw; max-height:85vh; border-radius:12px; background:#000; display:block;"></video>
   </div>
+</div>
+
+<div id="ann-img-modal" onclick="annCloseImg()" style="display:none; position:fixed; inset:0; z-index:10500; background:rgba(0,0,0,0.88); align-items:center; justify-content:center; cursor:zoom-out;">
+  <span style="position:absolute; top:20px; right:30px; color:#fff; font-size:2rem; cursor:pointer; font-weight:bold; z-index:2;">&times;</span>
+  <img id="ann-img-modal-el" src="" alt="" onclick="event.stopPropagation()" style="max-width:90vw; max-height:88vh; border-radius:12px; cursor:default;">
+</div>
+
+<div class="container mt-4">
 
   <% if @announcements.empty? %>
     <p class="text-muted">Nenhum anúncio cadastrado.</p>
@@ -15,26 +19,78 @@
       <table class="table table-salas">
         <thead class="table-secondary text-dark">
           <tr>
+            <% if current_user.admin? || current_user.operador? %>
+              <th style="width:36px;" title="Arrastar para reordenar prioridade"></th>
+            <% end %>
+            <th>#</th>
             <th>Título</th>
-            <th>Imagem</th>
+            <th>Mídia</th>
             <th>Status</th>
-            <th>Visualizações</th>
+            <th>Período</th>
+            <th style="min-width:80px;">Visualizações</th>
+            <th>Empresas</th>
             <th>Criado por</th>
             <th>Data</th>
             <th></th>
           </tr>
         </thead>
-        <tbody>
-          <% @announcements.each do |ann| %>
-            <tr>
+        <tbody id="ann-tbody">
+          <% @announcements.each_with_index do |ann, idx| %>
+            <tr data-id="<%= ann.id %>">
+              <% if current_user.admin? || current_user.operador? %>
+                <td class="ann-drag-handle" style="cursor:grab; color:#aaa; text-align:center; vertical-align:middle; user-select:none;">
+                  <i class="fa-solid fa-grip-vertical"></i>
+                </td>
+              <% end %>
+              <td style="font-size:.78rem; color:#888; vertical-align:middle;">
+                <span class="ann-priority-badge" style="display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgb(255 255 255 / 12%);
+    border: 1px solid rgb(255 255 255 / 25%);
+    color: #ffffff;
+    font-size: .68rem;
+    font-weight: 700"><%= idx + 1 %></span>
+              </td>
               <td><%= ann.title.presence || "<em class='text-muted'>Sem título</em>".html_safe %></td>
+
+              <%# ── Mídia ── %>
               <td>
                 <% if ann.image.attached? %>
-                  <%= image_tag url_for(ann.image), style: "height:48px; border-radius:6px;" %>
+                  <% ann_is_video = ann.image.content_type.start_with?("video/") %>
+                  <div style="display:flex; flex-direction:column; align-items:flex-start; gap:4px;">
+                    <% if ann_is_video %>
+                      <div class="ann-thumb-video-wrap">
+                        <video src="<%= url_for(ann.image) %>" muted playsinline preload="metadata"
+                               style="height:48px; border-radius:6px; background:#000; display:block;"></video>
+                        <div class="overlay-eye" onclick="annOpenVideo('<%= url_for(ann.image) %>')">
+                          <i class="fa-solid fa-eye"></i>
+                        </div>
+                      </div>
+                      <span class="badge" style="background:#6366f1; font-size:0.68rem;">
+                        <i class="fa-solid fa-film"></i> Vídeo
+                      </span>
+                    <% else %>
+                      <div class="ann-thumb-img-wrap">
+                        <%= image_tag url_for(ann.image), style: "height:48px; border-radius:6px; display:block;" %>
+                        <div class="overlay-eye" onclick="annOpenImg('<%= url_for(ann.image) %>')">
+                          <i class="fa-solid fa-eye"></i>
+                        </div>
+                      </div>
+                      <span class="badge bg-secondary" style="font-size:0.68rem;">
+                        <i class="fa-solid fa-image"></i> Imagem
+                      </span>
+                    <% end %>
+                  </div>
                 <% else %>
                   <span class="text-muted">—</span>
                 <% end %>
               </td>
+
+              <%# ── Status ── %>
               <td>
                 <% if ann.active? %>
                   <span class="badge bg-success">Ativo</span>
@@ -42,7 +98,62 @@
                   <span class="badge bg-secondary">Inativo</span>
                 <% end %>
               </td>
-              <td><%= ann.announcement_views.size %></td>
+
+              <%# ── Período ── %>
+              <td style="font-size:.82rem; white-space:nowrap;">
+                <% if ann.starts_at.nil? && ann.ends_at.nil? %>
+                  <span class="text-muted">Sempre</span>
+                <% else %>
+                  <div style="display:flex; flex-direction:column; gap:2px;">
+                    <% if ann.starts_at %>
+                      <span title="Início">
+                        <i class="fa-solid fa-play" style="color:#4ade80; font-size:.7rem;"></i>
+                        <%= ann.starts_at.strftime("%d/%m/%Y %H:%M") %>
+                      </span>
+                    <% else %>
+                      <span class="text-muted" title="Sem início definido"><i class="fa-solid fa-play" style="font-size:.7rem;"></i> —</span>
+                    <% end %>
+                    <% if ann.ends_at %>
+                      <span title="Fim">
+                        <i class="fa-solid fa-stop" style="color:#f87171; font-size:.7rem;"></i>
+                        <%= ann.ends_at.strftime("%d/%m/%Y %H:%M") %>
+                      </span>
+                    <% else %>
+                      <span class="text-muted" title="Sem fim definido"><i class="fa-solid fa-stop" style="font-size:.7rem;"></i> —</span>
+                    <% end %>
+                  </div>
+                  <% now = Time.current %>
+                  <% if ann.starts_at && now < ann.starts_at %>
+                    <span class="badge" style="background:#f59e0b; font-size:.65rem; margin-top:3px;">Aguardando</span>
+                  <% elsif ann.ends_at && now > ann.ends_at %>
+                    <span class="badge bg-secondary" style="font-size:.65rem; margin-top:3px;">Expirado</span>
+                  <% end %>
+                <% end %>
+              </td>
+
+              <%# ── Visualizações ── %>
+              <td style="text-align:center;">
+                <span style="font-size:1.05rem; font-weight:700;"><%= ann.announcement_views.size %></span>
+                <br><small class="text-muted" style="font-size:.72rem;">usuário<%= ann.announcement_views.size == 1 ? "" : "s" %></small>
+              </td>
+
+              <%# ── Empresas ── %>
+              <td style="font-size:.82rem; max-width:180px;">
+                <% if ann.grupo_empresas.empty? %>
+                  <span class="badge" style="background:rgba(112,20,241,.15); color:var(--color-accent,#7014f1); border:1px solid rgba(112,20,241,.3);">
+                    <i class="fa-solid fa-earth-americas"></i> Todos
+                  </span>
+                <% else %>
+                  <div style="display:flex; flex-wrap:wrap; gap:3px;">
+                    <% ann.grupo_empresas.each do |ge| %>
+                      <span class="badge" style="background:rgba(99,102,241,.15); color:#6366f1; border:1px solid rgba(99,102,241,.3); font-size:.68rem;">
+                        <i class="fa-solid fa-building-user"></i> <%= ge.nome %>
+                      </span>
+                    <% end %>
+                  </div>
+                <% end %>
+              </td>
+
               <td><%= ann.created_by&.email || "—" %></td>
               <td><%= ann.created_at.strftime("%d/%m/%Y") %></td>
               <td class="d-flex gap-1">
@@ -63,3 +174,89 @@
     </div>
   <% end %>
 </div>
+
+<style>
+.ann-thumb-video-wrap,
+.ann-thumb-img-wrap {
+  position: relative;
+  display: inline-block;
+}
+.ann-thumb-video-wrap:hover .overlay-eye,
+.ann-thumb-img-wrap:hover .overlay-eye {
+  opacity: 1;
+}
+</style>
+
+<script>
+function annOpenVideo(src) {
+  var modal = document.getElementById('ann-video-modal');
+  var video = document.getElementById('ann-video-modal-el');
+  if (!modal || !video) return;
+  video.src = src;
+  video.muted = false;
+  video.play().catch(function () { video.muted = true; video.play().catch(function(){}); });
+  modal.style.display = 'flex';
+}
+function annCloseVideo() {
+  var modal = document.getElementById('ann-video-modal');
+  var video = document.getElementById('ann-video-modal-el');
+  if (video) { video.pause(); video.src = ''; }
+  if (modal) modal.style.display = 'none';
+}
+function annOpenImg(src) {
+  var modal = document.getElementById('ann-img-modal');
+  var img   = document.getElementById('ann-img-modal-el');
+  if (!modal || !img) return;
+  img.src = src;
+  modal.style.display = 'flex';
+}
+function annCloseImg() {
+  var modal = document.getElementById('ann-img-modal');
+  var img   = document.getElementById('ann-img-modal-el');
+  if (img) img.src = '';
+  if (modal) modal.style.display = 'none';
+}
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') { annCloseVideo(); annCloseImg(); }
+});
+</script>
+
+<% if current_user.admin? || current_user.operador? %>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+  (function() {
+    var tbody = document.getElementById('ann-tbody');
+    if (!tbody) return;
+
+    Sortable.create(tbody, {
+      handle: '.ann-drag-handle',
+      animation: 180,
+      ghostClass: 'ann-drag-ghost',
+      onEnd: function() {
+        var ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(function(tr) {
+          return tr.dataset.id;
+        });
+
+        // Update priority badges
+        tbody.querySelectorAll('.ann-priority-badge').forEach(function(badge, i) {
+          badge.textContent = i + 1;
+        });
+
+        var csrf = document.querySelector('meta[name="csrf-token"]');
+        fetch('<%= reorder_announcements_path %>', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrf ? csrf.content : ''
+          },
+          body: JSON.stringify({ ids: ids })
+        });
+      }
+    });
+  })();
+  </script>
+  <style>
+    .ann-drag-ghost { opacity: .45; background: rgba(112,20,241,.08) !important; }
+    .ann-drag-handle:active { cursor: grabbing; }
+  </style>
+<% end %>

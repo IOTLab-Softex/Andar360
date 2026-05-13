@@ -580,7 +580,7 @@
      data-alt="Foto de <%= f.nome %>">
                     <img src="<%= preview_url %>"
          alt="Foto"
-         style="width:50px;height:50px;border-radius:50%;object-fit:cover;">
+         style="width:65px;height:72px;border-radius:50%;object-fit:cover;">
                   </a>
                 <% else %>
                   Sem Foto
@@ -795,11 +795,17 @@
                 <% if current_user.admin? %>
                   <%= button_to participant_path(participant),
                         method: :delete,
-                        data: { confirm: "Tem certeza que deseja excluir este participante?" },
                         class: "btn btn-warning",
                         title: "Excluir",
                         style: "width: -webkit-fill-available; text-align: center;",
-                        form: { style: "display: contents;" } do %>
+                        form: {
+                          style: "display: contents;",
+                          data: {
+                            smart_delete: "1",
+                            participant_name: participant.name,
+                            check_url: check_dependencies_participant_path(participant)
+                          }
+                        } do %>
                     <i class="fa-solid fa-user-xmark"></i><div class="hide-sm">Excluir</div>
                   <% end %>
                 <% end %>
@@ -1538,6 +1544,74 @@ document.addEventListener('turbo:load', initFiltroParticipantsCollapse);
 document.addEventListener('turbo:before-cache', () => {
   const toggle = document.getElementById('filtro-toggle');
   if (toggle) toggle.dataset.bound = "";
+});
+
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
+  if (!form.dataset.smartDelete) return;
+
+  e.preventDefault();
+
+  const participantName = form.dataset.participantName || "este participante";
+  const checkUrl = form.dataset.checkUrl;
+
+  if (!window.Swal) {
+    if (confirm(`Tem certeza que deseja excluir "${participantName}"?`)) form.submit();
+    return;
+  }
+
+  let deps;
+  try {
+    const res = await fetch(checkUrl, {
+      headers: { "Accept": "application/json", "X-Requested-With": "XMLHttpRequest" }
+    });
+    deps = await res.json();
+  } catch (_) {
+    if (confirm(`Tem certeza que deseja excluir "${participantName}"?`)) form.submit();
+    return;
+  }
+
+  if (!deps.has_dependencies) {
+    const result = await Swal.fire({
+      title: "Excluir participante?",
+      text: `Tem certeza que deseja excluir "${participantName}"?`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sim, excluir",
+      confirmButtonColor: "#d33",
+      cancelButtonText: "Cancelar",
+      reverseButtons: true,
+      focusCancel: true
+    });
+    if (result.isConfirmed) form.submit();
+    return;
+  }
+
+  const items = [];
+  if (deps.chamados_solicitante > 0)
+    items.push(`<li><b>${deps.chamados_solicitante}</b> chamado(s) onde é solicitante serão <strong>excluídos</strong></li>`);
+  if (deps.reservas_solicitante > 0)
+    items.push(`<li><b>${deps.reservas_solicitante}</b> reserva(s) onde é solicitante serão <strong>excluídas</strong></li>`);
+  if (deps.reservas_responsavel > 0)
+    items.push(`<li><b>${deps.reservas_responsavel}</b> reserva(s) onde é responsável (será apenas removido)</li>`);
+  if (deps.reservas_participante > 0)
+    items.push(`<li><b>${deps.reservas_participante}</b> reserva(s) onde é participante (será apenas removido)</li>`);
+
+  const result = await Swal.fire({
+    title: "Atenção!",
+    html: `<p>O participante <b>${participantName}</b> está vinculado a outros registros:</p>
+           <ul style="text-align:left;margin:0.5rem 0 0.5rem 1rem">${items.join("")}</ul>
+           <p style="margin-top:0.5rem">Deseja continuar com a exclusão?</p>`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sim, excluir",
+    confirmButtonColor: "#d33",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true
+  });
+
+  if (result.isConfirmed) form.submit();
 });
 
 document.addEventListener("submit", async function(e) {

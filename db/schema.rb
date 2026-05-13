@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_11_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_13_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -64,6 +64,13 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_11_120000) do
     t.index ["blob_id", "variation_digest"], name: "index_active_storage_variant_records_uniqueness", unique: true
   end
 
+  create_table "announcement_grupo_empresas", id: false, force: :cascade do |t|
+    t.bigint "announcement_id", null: false
+    t.bigint "grupo_empresa_id", null: false
+    t.index ["announcement_id", "grupo_empresa_id"], name: "idx_ann_grupo_empresas_unique", unique: true
+    t.index ["grupo_empresa_id"], name: "idx_ann_grupo_empresa_id"
+  end
+
   create_table "announcement_views", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "announcement_id", null: false
@@ -82,6 +89,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_11_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.boolean "show_on_login", default: false, null: false
+    t.datetime "starts_at"
+    t.datetime "ends_at"
+    t.string "cta_url"
+    t.string "cta_label"
+    t.integer "position", default: 0, null: false
     t.index ["created_by_id"], name: "index_announcements_on_created_by_id"
   end
 

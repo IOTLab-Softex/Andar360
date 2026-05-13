@@ -1,6 +1,31 @@
+<div id="modal-image-viewer" onclick="annHideModal()">
+  <span class="close-modal">&times;</span>
+  <img src="" alt="Visualizar imagem">
+</div>
+
+<div id="modal-video-viewer" onclick="annHideVideoModal()">
+  <span class="close-modal">&times;</span>
+  <video id="modal-video-el" controls autoplay muted loop playsinline onclick="event.stopPropagation()"></video>
+</div>
+
 <%= form_with model: @announcement, local: true, html: { enctype: "multipart/form-data" } do |f| %>
+
+  <div class="form-group-fixed" style="display:flex; justify-content:center; gap:0.75rem;">
+    <div class="mt-3 text-center">
+      <%= link_to "Cancelar", announcements_path, class: "btn btn-warning" %>
+    </div>
+    <div class="mt-3 text-center">
+      <%= f.button type: "submit", class: "btn btn-success" do %>
+        <i class="fa-solid fa-floppy-disk"></i>
+        <%= @announcement.persisted? ? "Salvar alterações" : "Criar anúncio" %>
+      <% end %>
+    </div>
+  </div>
+
+  <br>
+
   <% if @announcement.errors.any? %>
-    <div class="alert alert-danger">
+    <div class="alert alert-danger mb-3">
       <ul class="mb-0">
         <% @announcement.errors.full_messages.each do |msg| %>
           <li><%= msg %></li>
@@ -9,58 +34,743 @@
     </div>
   <% end %>
 
-  <div class="form-group mb-3">
-    <%= f.label :title, "Título (opcional)" %>
-    <%= f.text_field :title, class: "form-control", placeholder: "Título do anúncio" %>
-  </div>
+  <%# ── CONTEÚDO ───────────────────────────────────────────────── %>
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5><i class="fa-solid fa-bullhorn"></i> Conteúdo do anúncio</h5>
+    </div>
+    <div class="section-body chamado-grid">
 
-  <div class="form-group mb-3">
-    <%= f.label :body, "Texto (opcional)" %>
-    <%= f.text_area :body, class: "form-control", rows: 5, placeholder: "Conteúdo do anúncio..." %>
-  </div>
-
-  <div class="form-group mb-3">
-    <%= f.label :image, "Imagem / arte do card e do modal (opcional)" %>
-    <%= f.file_field :image, class: "form-control", accept: "image/*" %>
-    <small class="text-muted d-block mt-1">A imagem aparece como miniatura no card do login e inteira no modal do anuncio.</small>
-    <% if @announcement.persisted? && @announcement.image.attached? %>
-      <div class="mt-2">
-        <%= image_tag url_for(@announcement.image), style: "max-width:280px; max-height:180px; object-fit:contain; border-radius:8px; background:#111827;" %>
-        <small class="text-muted d-block mt-1">Imagem atual — envie outra para substituir.</small>
+      <div class="chamado-field chamado-observacao">
+        <span class="label"><%= f.label :title, "Título" %></span>
+        <div class="value">
+          <%= f.text_field :title, class: "form-control", placeholder: "Ex: Manutenção programada, Novo recurso…" %>
+          <small class="form-text">Opcional — aparece como cabeçalho no card e no modal.</small>
+        </div>
       </div>
-    <% end %>
+
+      <div class="chamado-field chamado-observacao">
+        <span class="label"><%= f.label :body, "Texto" %></span>
+        <div class="value">
+          <%= f.text_area :body, class: "form-control", rows: 4, placeholder: "Descreva o anúncio com os detalhes relevantes para o usuário…" %>
+          <small class="form-text">Opcional — exibido no modal ao clicar no card.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field chamado-observacao">
+        <span class="label"><%= f.label :image, "Imagem ou Vídeo" %></span>
+        <div class="value">
+          <%= f.file_field :image, class: "form-control", accept: "image/*,video/*", id: "ann_image_input" %>
+          <small class="form-text">Opcional. Aceita foto ou vídeo. O vídeo reproduz automaticamente no modo silencioso — o usuário pode ativar o som. Recomendamos paisagem (1200×800 ou 1600×900).</small>
+
+          <%# Preview ao selecionar novo arquivo %>
+          <div id="ann-media-new-preview" class="mt-2" style="display:none;"></div>
+
+          <% if @announcement.persisted? && @announcement.image.attached? %>
+            <% ann_is_video = @announcement.image.content_type.start_with?("video/") %>
+            <div class="mt-2">
+              <% if ann_is_video %>
+                <div class="ann-video-wrap">
+                  <video class="ann-video-preview" autoplay muted loop playsinline>
+                    <source src="<%= url_for(@announcement.image) %>">
+                  </video>
+                  <div class="overlay-eye" onclick="annShowVideoModal('<%= url_for(@announcement.image) %>')">
+                    <i class="fa-solid fa-eye"></i>
+                  </div>
+                </div>
+              <% else %>
+                <div class="image-thumb ann-image-thumb">
+                  <%= image_tag url_for(@announcement.image) %>
+                  <div class="overlay-eye" onclick="annShowModal(this)">
+                    <i class="fa-solid fa-eye"></i>
+                  </div>
+                </div>
+              <% end %>
+              <small class="form-text d-block mt-1">Mídia atual — envie outra para substituir.</small>
+            </div>
+          <% end %>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div class="form-check mb-3">
-    <%= f.check_box :active, class: "form-check-input" %>
-    <%= f.label :active, "Anúncio ativo", class: "form-check-label" %>
-    <small class="text-muted d-block">Somente anúncios ativos são exibidos aos usuários.</small>
+  <%# ── CONFIGURAÇÕES ───────────────────────────────────────────── %>
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5><i class="fa-solid fa-sliders"></i> Configurações de exibição</h5>
+    </div>
+    <div class="section-body chamado-grid">
+
+      <div class="chamado-field">
+        <span class="label">Status</span>
+        <div class="value d-flex align-items-center gap-3 mt-1">
+          <label class="ann-toggle">
+            <%= f.check_box :active, class: "ann-toggle__input" %>
+            <span class="ann-toggle__track"></span>
+            <span class="ann-toggle__labels" data-on="Ativo" data-off="Inativo"></span>
+          </label>
+        </div>
+        <small class="form-text mt-2">Somente anúncios ativos são exibidos. Desative para pausar sem excluir.</small>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label">
+          Tela de login
+          <span id="ann-public-badge" class="badge ms-1" style="background: rgb(112 20 241); font-size:0.68rem; padding:2px 7px; border-radius:20px; display:none;">Visível para todos</span>
+        </span>
+        <div class="value d-flex align-items-center gap-3 mt-1">
+          <label class="ann-toggle" id="ann-login-toggle-label">
+            <%= f.check_box :show_on_login, class: "ann-toggle__input", id: "ann_show_on_login" %>
+            <span class="ann-toggle__track"></span>
+            <span class="ann-toggle__labels" data-on="Sim" data-off="Não"></span>
+          </label>
+        </div>
+        <small class="form-text mt-2">Exibe um card no rodapé da tela de login, visível para <strong>qualquer pessoa</strong> — mesmo sem estar logada. Apenas o anúncio mais recente com esta opção ativa é exibido.</small>
+        <div id="ann-login-blocked-msg" class="d-flex align-items-center gap-2 mt-2" style="display:none !important; font-size:.8rem; color:#f59e0b;">
+          <i class="fa-solid fa-lock"></i>
+          <span>Indisponível — este anúncio está segmentado por empresa. Remova todas as empresas selecionadas para liberar esta opção.</span>
+        </div>
+      </div>
+
+    </div>
   </div>
 
-  <div class="form-check mb-2">
-    <%= f.check_box :show_on_login, class: "form-check-input", id: "ann_show_on_login" %>
-    <%= f.label :show_on_login, "Exibir card na tela de login", class: "form-check-label" %>
-    <small class="text-muted d-block">Mostra um card compacto no rodape da tela de login. Ao clicar no card, o usuario abre um modal com a imagem e o texto completo. Apenas o anuncio mais recente com esta opcao ativa sera exibido.</small>
+  <div id="login-image-tip" class="alert alert-info d-flex align-items-start gap-2 mb-4" style="font-size:0.85rem; display:none !important;">
+    <i class="fa-solid fa-circle-info mt-1 flex-shrink-0"></i>
+    <span>Para melhor apresentação, utilize uma <strong>imagem em paisagem ou quadrada</strong> (ex: 1200×800, 1600×900 ou 1080×1080).</span>
   </div>
 
-  <div id="login-image-tip" class="alert alert-info py-2 mb-4" style="font-size:0.85rem; display:none;">
-    <i class="fa-solid fa-circle-info"></i>
-    Para o novo modelo do login, use uma <strong>imagem bem legivel em paisagem ou quadrada</strong> (ex: 1200x800, 1600x900 ou 1080x1080). O card usa uma miniatura pequena e o modal mostra a imagem inteira, sem corte.
+  <%# ── BOTÃO DE AÇÃO (CTA) ───────────────────────────────────────── %>
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5><i class="fa-solid fa-arrow-up-right-from-square"></i> Botão de ação <span style="font-size:.72rem;font-weight:400;color:var(--fx-muted,#9ca3af);">opcional</span></h5>
+    </div>
+    <div class="section-body chamado-grid">
+
+      <div class="chamado-field chamado-observacao">
+        <span class="label"><%= f.label :cta_url, "Link de destino" %></span>
+        <div class="value">
+          <%= f.url_field :cta_url, class: "form-control", placeholder: "https://…" %>
+          <small class="form-text">URL que o usuário abrirá ao clicar no botão.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label"><%= f.label :cta_label, "Texto do botão" %></span>
+        <div class="value">
+          <%= f.text_field :cta_label, class: "form-control", placeholder: "Ex: Saiba mais, Ver novidades, Acessar…",
+                maxlength: 50 %>
+          <small class="form-text">Deixe em branco para usar "Saiba mais" como padrão.</small>
+        </div>
+      </div>
+
+    </div>
+
+    <%# Preview do botão em tempo real %>
+    <div id="ann-cta-preview" class="section-body" style="padding-top:0; display:none;">
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span style="font-size:.8rem; color:var(--fx-muted,#9ca3af);">Preview:</span>
+        <a id="ann-cta-btn-preview" href="#" target="_blank" rel="noopener"
+           class="ann-cta-btn" onclick="return false;">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          <span id="ann-cta-label-preview">Saiba mais</span>
+        </a>
+      </div>
+    </div>
   </div>
 
-  <script>
-    (function(){
-      var cb = document.getElementById('ann_show_on_login');
-      var tip = document.getElementById('login-image-tip');
-      if (!cb || !tip) return;
-      function sync(){ tip.style.display = cb.checked ? '' : 'none'; }
-      cb.addEventListener('change', sync);
-      sync();
-    })();
-  </script>
+  <%# ── PERÍODO DE EXIBIÇÃO ──────────────────────────────────────── %>
+  <div class="chamado-section section-box">
+    <div class="section-header">
+      <h5><i class="fa-solid fa-calendar-range"></i> Período de exibição</h5>
+    </div>
+    <div class="section-body chamado-grid">
 
-  <div class="d-flex gap-2">
-    <%= f.submit @announcement.persisted? ? "Salvar alterações" : "Criar anúncio", class: "btn btn-primary" %>
-    <%= link_to "Cancelar", announcements_path, class: "btn btn-outline-secondary" %>
+      <div class="chamado-field">
+        <span class="label"><%= f.label :starts_at, "Exibir a partir de" %></span>
+        <div class="value">
+          <%= f.datetime_local_field :starts_at, class: "form-control",
+                value: @announcement.starts_at&.strftime("%Y-%m-%dT%H:%M") %>
+          <small class="form-text">Opcional — deixe em branco para exibir imediatamente.</small>
+        </div>
+      </div>
+
+      <div class="chamado-field">
+        <span class="label"><%= f.label :ends_at, "Exibir até" %></span>
+        <div class="value">
+          <%= f.datetime_local_field :ends_at, class: "form-control",
+                value: @announcement.ends_at&.strftime("%Y-%m-%dT%H:%M") %>
+          <small class="form-text">Opcional — deixe em branco para não ter data de encerramento.</small>
+        </div>
+      </div>
+
+    </div>
   </div>
+
+  <%# ── EMPRESAS ────────────────────────────────────────────────── %>
+  <div class="chamado-section section-box">
+    <div class="section-header" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+      <h5 style="margin:0;"><i class="fa-solid fa-building"></i> Segmentação por empresa</h5>
+      <span id="ann-ge-counter" class="badge" style="background:rgba(112,20,241,.15); color:var(--color-accent,#7014f1); border:1px solid rgba(112,20,241,.3); font-size:.75rem;"></span>
+    </div>
+    <div class="section-body">
+      <p class="form-text mb-3">
+        Selecione as empresas que poderão ver este anúncio.
+        Se <strong>nenhuma</strong> for selecionada, o anúncio será exibido para <strong>todos os usuários</strong>.
+      </p>
+
+      <% if @grupo_empresas.present? %>
+        <div class="ann-ge-search-wrap">
+          <i class="fa-solid fa-magnifying-glass ann-ge-search-icon"></i>
+          <input type="text" id="ann-ge-search" class="form-control ann-ge-search-input"
+                 placeholder="Buscar empresa…" autocomplete="off">
+          <button type="button" id="ann-ge-clear" class="ann-ge-clear-btn" title="Limpar busca" style="display:none;">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <p id="ann-ge-no-results" class="text-muted mt-2" style="display:none; font-size:.875rem;">
+          <i class="fa-solid fa-circle-exclamation"></i> Nenhuma empresa encontrada para "<span id="ann-ge-search-term"></span>".
+        </p>
+
+        <div class="ann-companies-grid" id="ann-companies-grid">
+          <% @grupo_empresas.each do |ge| %>
+            <label class="ann-company-item" data-company-name="<%= ge.nome.downcase %>">
+              <%= check_box_tag "announcement[grupo_empresa_ids][]", ge.id,
+                    @announcement.grupo_empresa_ids.include?(ge.id),
+                    id: "ann_ge_#{ge.id}", class: "ann-company-cb" %>
+              <span class="ann-company-label">
+                <i class="fa-solid fa-building-user" style="opacity:.6;font-size:.85em;"></i>
+                <%= ge.nome %>
+              </span>
+            </label>
+          <% end %>
+        </div>
+        <%# campo oculto para enviar array vazio quando nada está marcado %>
+        <%= hidden_field_tag "announcement[grupo_empresa_ids][]", "" %>
+      <% else %>
+        <p class="text-muted"><em>Nenhuma empresa cadastrada.</em></p>
+      <% end %>
+    </div>
+  </div>
+
 <% end %>
+
+<style>
+/* ── Modal visualizador de imagem ── */
+#modal-image-viewer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+}
+#modal-image-viewer img {
+  max-width: 90vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+  transform-origin: center center;
+  cursor: default;
+}
+#modal-image-viewer .close-modal {
+  position: absolute;
+  top: 20px; right: 30px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: bold;
+  z-index: 2;
+}
+.ann-image-thumb {
+  width: 140px;
+  height: 100px;
+  flex-shrink: 0;
+}
+.ann-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--fx-border);
+}
+.ann-video-preview {
+  max-width: 320px;
+  max-height: 200px;
+  border-radius: 8px;
+  border: 1px solid var(--fx-border);
+  display: block;
+  background: #000;
+}
+
+#modal-video-viewer {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.85);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+}
+#modal-video-viewer video {
+  max-width: 90vw;
+  max-height: 90vh;
+  border-radius: 12px;
+  cursor: default;
+  background: #000;
+}
+#modal-video-viewer .close-modal {
+  position: absolute;
+  top: 20px; right: 30px;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: bold;
+  z-index: 2;
+}
+
+.ann-video-wrap {
+  position: relative;
+  display: inline-block;
+}
+.ann-video-wrap:hover .overlay-eye {
+  opacity: 1;
+}
+
+.ann-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  cursor: pointer;
+  user-select: none;
+}
+.ann-toggle__input { display: none; }
+.ann-toggle__track {
+  width: 44px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--fx-border, #3f3f5a);
+  position: relative;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.ann-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+}
+.ann-toggle__input:checked + .ann-toggle__track {
+  background: #4ade80;
+}
+.ann-toggle__input:checked + .ann-toggle__track::after {
+  transform: translateX(20px);
+}
+.ann-toggle__labels {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--fx-muted, #9ca3af);
+}
+.ann-toggle__labels::before {
+  content: attr(data-off);
+}
+.ann-toggle__input:checked ~ .ann-toggle__labels::before {
+  content: attr(data-on);
+  color: #4ade80;
+}
+
+/* ── Grade de empresas ── */
+.ann-companies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+.ann-company-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--fx-border, rgba(128,128,128,.25));
+  cursor: pointer;
+  transition: border-color .2s, background .2s, opacity .2s, filter .2s;
+  user-select: none;
+}
+.ann-company-item:hover {
+  border-color: var(--color-accent, #7014f1);
+  background: rgba(112,20,241,.06);
+}
+.ann-company-cb { display: none; }
+
+/* ── estado selecionado ── */
+.ann-company-item:has(.ann-company-cb:checked) {
+  border-color: #7014f1;
+  background: rgb(54 7 120);
+  box-shadow: 0 0 0 2px rgb(112 20 241);
+}
+.ann-company-item:has(.ann-company-cb:checked) .ann-company-label {
+  color: #fff;
+  font-weight: 700;
+}
+.ann-company-item:has(.ann-company-cb:checked) .ann-company-label i {
+  opacity: 1;
+}
+
+/* ── itens acinzentados quando há algum selecionado ── */
+#ann-companies-grid.has-selection .ann-company-item:not(:has(.ann-company-cb:checked)) {
+  opacity: .35;
+  filter: saturate(.3);
+}
+#ann-companies-grid.has-selection .ann-company-item:not(:has(.ann-company-cb:checked)):hover {
+  opacity: .7;
+  filter: saturate(.7);
+  border-color: var(--fx-border, rgba(128,128,128,.25));
+  background: transparent;
+}
+
+.ann-company-label {
+  font-size: .875rem;
+  color: var(--color-text, #374151);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Botão CTA ── */
+.ann-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: 12px;
+  font-size: .92rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity .15s, transform .15s, box-shadow .15s;
+  background: linear-gradient(135deg, #4c1d95, var(--color-accent, #7014f1));
+  color: #fff;
+  border: none;
+  box-shadow: 0 4px 18px rgba(112,20,241,.45);
+  letter-spacing: .01em;
+}
+.ann-cta-btn:hover {
+  opacity: .9;
+  transform: translateY(-1px);
+  box-shadow: 0 7px 24px rgba(112,20,241,.55);
+  color: #fff;
+  text-decoration: none;
+}
+.ann-cta-btn:active { transform: translateY(0); }
+
+/* ── Barra de pesquisa de empresas ── */
+.ann-ge-search-wrap {
+  position: relative;
+  margin-bottom: 12px;
+}
+.ann-ge-search-icon {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fx-muted, #9ca3af);
+  font-size: .85rem;
+  pointer-events: none;
+}
+.ann-ge-search-input {
+  padding-left: 32px !important;
+  padding-right: 32px !important;
+}
+.ann-ge-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--fx-muted, #9ca3af);
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  font-size: .85rem;
+  transition: color .15s;
+}
+.ann-ge-clear-btn:hover { color: var(--color-text, #374151); }
+
+/* ── Toggle bloqueado ── */
+.ann-toggle--locked {
+  opacity: .4;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+</style>
+
+<script>
+(function () {
+  var cb     = document.getElementById("ann_show_on_login");
+  var tip    = document.getElementById("login-image-tip");
+  var badge  = document.getElementById("ann-public-badge");
+
+  function syncBadge() {
+    if (badge) badge.style.display = cb.checked ? "inline" : "none";
+    if (tip)   tip.style.setProperty("display", cb.checked ? "flex" : "none", "important");
+  }
+
+  if (!cb) return;
+
+  cb.addEventListener("change", function () {
+    if (!cb.checked) { syncBadge(); return; }
+
+    cb.checked = false;
+    syncBadge();
+
+    var fire = window.Swal
+      ? Swal.fire({
+          title: "Anúncio público",
+          html: "<p>Ao ativar esta opção, o card ficará <strong>visível para qualquer pessoa</strong> que acessar a tela de login do Andar360 — incluindo usuários não autenticados.</p><p class='mb-0 mt-2'>Deseja continuar?</p>",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonText: "Sim, exibir para todos",
+          cancelButtonText: "Cancelar",
+          reverseButtons: true,
+          focusCancel: true
+        })
+      : Promise.resolve({
+          isConfirmed: confirm("Este anúncio ficará visível para qualquer pessoa na tela de login, mesmo sem estar logada. Deseja continuar?")
+        });
+
+    fire.then(function (result) {
+      if (result.isConfirmed) { cb.checked = true; }
+      syncBadge();
+    });
+  });
+
+  syncBadge();
+})();
+
+// ── Visualizador de imagem ──
+var annCurrentZoom = 1;
+
+function annShowModal(el) {
+  var thumb = el.closest(".image-thumb");
+  var img   = thumb && thumb.querySelector("img");
+  if (!img) return;
+  var modal    = document.getElementById("modal-image-viewer");
+  var modalImg = modal.querySelector("img");
+  modalImg.src = img.src;
+  modalImg.style.transform = "scale(1)";
+  annCurrentZoom = 1;
+  modal.style.display = "flex";
+}
+
+function annHideModal() {
+  var modal = document.getElementById("modal-image-viewer");
+  if (modal) modal.style.display = "none";
+}
+
+function annShowVideoModal(src) {
+  var modal = document.getElementById('modal-video-viewer');
+  var video = document.getElementById('modal-video-el');
+  if (!modal || !video) return;
+  video.src = src;
+  video.muted = false;
+  video.play().catch(function () { video.muted = true; video.play().catch(function(){}); });
+  modal.style.display = 'flex';
+}
+
+function annHideVideoModal() {
+  var modal = document.getElementById('modal-video-viewer');
+  var video = document.getElementById('modal-video-el');
+  if (video) { video.pause(); video.src = ''; }
+  if (modal) modal.style.display = 'none';
+}
+
+(function () {
+  var modal = document.getElementById("modal-image-viewer");
+  if (!modal) return;
+  modal.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    var img   = this.querySelector("img");
+    var delta = e.deltaY > 0 ? -0.15 : 0.15;
+    annCurrentZoom = Math.max(0.2, Math.min(annCurrentZoom + delta, 5));
+    img.style.transform = "scale(" + annCurrentZoom + ")";
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { annHideModal(); annHideVideoModal(); }
+  });
+})();
+
+// ── Preview do botão CTA ─────────────────────────────────────
+(function () {
+  var urlInput   = document.querySelector('input[name="announcement[cta_url]"]');
+  var labelInput = document.querySelector('input[name="announcement[cta_label]"]');
+  var preview    = document.getElementById('ann-cta-preview');
+  var btnPreview = document.getElementById('ann-cta-btn-preview');
+  var lblPreview = document.getElementById('ann-cta-label-preview');
+  if (!urlInput) return;
+
+  function syncPreview() {
+    var hasUrl = urlInput.value.trim().length > 0;
+    if (preview) preview.style.display = hasUrl ? 'block' : 'none';
+    if (lblPreview) lblPreview.textContent = labelInput && labelInput.value.trim() ? labelInput.value.trim() : 'Saiba mais';
+    if (btnPreview) btnPreview.href = urlInput.value.trim() || '#';
+  }
+
+  urlInput.addEventListener('input', syncPreview);
+  if (labelInput) labelInput.addEventListener('input', syncPreview);
+  syncPreview();
+})();
+
+// ── Busca e contador de empresas ──────────────────────────────
+(function () {
+  var searchInput = document.getElementById("ann-ge-search");
+  var clearBtn    = document.getElementById("ann-ge-clear");
+  var noResults   = document.getElementById("ann-ge-no-results");
+  var searchTerm  = document.getElementById("ann-ge-search-term");
+  var counter     = document.getElementById("ann-ge-counter");
+  var grid        = document.getElementById("ann-companies-grid");
+  if (!searchInput || !grid) return;
+
+  var items = Array.from(grid.querySelectorAll(".ann-company-item"));
+  var checkboxes = grid.querySelectorAll(".ann-company-cb");
+
+  var loginCb          = document.getElementById("ann_show_on_login");
+  var loginToggleLabel = document.getElementById("ann-login-toggle-label");
+  var loginBlockedMsg  = document.getElementById("ann-login-blocked-msg");
+
+  function syncLoginToggle(hasSelection) {
+    if (!loginCb) return;
+    if (hasSelection) {
+      loginCb.checked = false;
+      loginCb.disabled = true;
+      if (loginToggleLabel) loginToggleLabel.classList.add("ann-toggle--locked");
+      if (loginBlockedMsg) loginBlockedMsg.style.setProperty("display", "flex", "important");
+      // sincroniza badge e tip do outro bloco
+      var badge = document.getElementById("ann-public-badge");
+      var tip   = document.getElementById("login-image-tip");
+      if (badge) badge.style.display = "none";
+      if (tip)   tip.style.setProperty("display", "none", "important");
+    } else {
+      loginCb.disabled = false;
+      if (loginToggleLabel) loginToggleLabel.classList.remove("ann-toggle--locked");
+      if (loginBlockedMsg) loginBlockedMsg.style.setProperty("display", "none", "important");
+    }
+  }
+
+  function updateCounter() {
+    var checked = grid.querySelectorAll(".ann-company-cb:checked").length;
+    if (counter) {
+      if (checked === 0) {
+        counter.textContent = "Todos os usuários";
+      } else {
+        counter.textContent = checked === 1 ? "1 empresa selecionada" : checked + " empresas selecionadas";
+      }
+    }
+    grid.classList.toggle("has-selection", checked > 0);
+    syncLoginToggle(checked > 0);
+  }
+
+  function filterItems(q) {
+    var term = q.trim().toLowerCase();
+    var visible = 0;
+    items.forEach(function (item) {
+      var name = item.getAttribute("data-company-name") || "";
+      var show = !term || name.includes(term);
+      item.style.display = show ? "" : "none";
+      if (show) visible++;
+    });
+    if (noResults) {
+      noResults.style.display = (visible === 0 && term) ? "" : "none";
+      if (searchTerm) searchTerm.textContent = q.trim();
+    }
+    if (clearBtn) clearBtn.style.display = term ? "" : "none";
+  }
+
+  searchInput.addEventListener("input", function () {
+    filterItems(this.value);
+  });
+
+  if (clearBtn) {
+    clearBtn.addEventListener("click", function () {
+      searchInput.value = "";
+      filterItems("");
+      searchInput.focus();
+    });
+  }
+
+  checkboxes.forEach(function (cb) {
+    cb.addEventListener("change", updateCounter);
+  });
+
+  updateCounter();
+})();
+
+// ── Preview de mídia ao selecionar arquivo ──────────────────────
+(function () {
+  var fileInput  = document.getElementById('ann_image_input');
+  var previewBox = document.getElementById('ann-media-new-preview');
+  if (!fileInput || !previewBox) return;
+  var objectUrl = null;
+
+  fileInput.addEventListener('change', function () {
+    if (objectUrl) { URL.revokeObjectURL(objectUrl); objectUrl = null; }
+    previewBox.innerHTML = '';
+    var file = this.files[0];
+    if (!file) { previewBox.style.display = 'none'; return; }
+
+    objectUrl = URL.createObjectURL(file);
+    previewBox.style.display = 'block';
+
+    if (file.type.startsWith('video/')) {
+      var vWrap = document.createElement('div');
+      vWrap.className = 'ann-video-wrap';
+      var video = document.createElement('video');
+      video.src = objectUrl;
+      video.autoplay = true;
+      video.muted = true;
+      video.loop = true;
+      video.className = 'ann-video-preview';
+      vWrap.appendChild(video);
+      var overlay = document.createElement('div');
+      overlay.className = 'overlay-eye';
+      overlay.innerHTML = '<i class="fa-solid fa-eye"></i>';
+      overlay.addEventListener('click', function () { annShowVideoModal(objectUrl); });
+      vWrap.appendChild(overlay);
+      previewBox.appendChild(vWrap);
+    } else {
+      var wrap = document.createElement('div');
+      wrap.className = 'image-thumb ann-image-thumb';
+      var img = document.createElement('img');
+      img.src = objectUrl;
+      wrap.appendChild(img);
+      var eye = document.createElement('div');
+      eye.className = 'overlay-eye';
+      eye.innerHTML = '<i class="fa-solid fa-eye"></i>';
+      eye.addEventListener('click', function () { annShowModal(eye); });
+      wrap.appendChild(eye);
+      previewBox.appendChild(wrap);
+    }
+
+    var hint = document.createElement('small');
+    hint.className = 'form-text d-block mt-1';
+    hint.textContent = 'Preview da mídia selecionada.';
+    previewBox.appendChild(hint);
+  });
+})();
+</script>

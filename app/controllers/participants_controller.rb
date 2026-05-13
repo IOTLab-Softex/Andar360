@@ -324,12 +324,14 @@ end
       return
     end
 
-    if Reservation.where("solicitante_id = :id OR responsavel_id = :id", id: @participant.id).exists?
-      redirect_to participants_path, alert: "⚠️ Este participante está vinculado a uma reserva e não pode ser excluído."
-      return
+    Participant.transaction do
+      Chamado.where(solicitante_id: @participant.id).destroy_all
+      Reservation.where(solicitante_id: @participant.id).destroy_all
+      Reservation.where(responsavel_id: @participant.id).update_all(responsavel_id: nil)
+      @participant.reservations.clear
+      @participant.destroy!
     end
 
-    @participant.destroy
     redirect_to participants_path, notice: "Participante excluído com sucesso."
   end
 
@@ -407,6 +409,27 @@ end
     else
       redirect_to participants_path(tab: "pendentes"), alert: "Solicitação não encontrada."
     end
+  end
+
+  def check_dependencies
+    participant = Participant.find(params[:id])
+
+    chamados_solicitante = Chamado.where(solicitante_id: participant.id).count
+    reservas_solicitante = Reservation.where(solicitante_id: participant.id).count
+    reservas_responsavel = Reservation.where(responsavel_id: participant.id).count
+    reservas_participante = participant.reservations
+      .where.not(solicitante_id: participant.id)
+      .where.not(responsavel_id: participant.id)
+      .count
+
+    render json: {
+      chamados_solicitante: chamados_solicitante,
+      reservas_solicitante: reservas_solicitante,
+      reservas_responsavel: reservas_responsavel,
+      reservas_participante: reservas_participante,
+      has_dependencies: chamados_solicitante > 0 || reservas_solicitante > 0 ||
+                        reservas_responsavel > 0 || reservas_participante > 0
+    }
   end
 
   before_action :kick_blocked_user

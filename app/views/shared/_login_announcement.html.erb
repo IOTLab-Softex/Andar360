@@ -1,27 +1,28 @@
 <% login_settings = Setting.instance %>
-<% login_anns = Announcement.where(active: true, show_on_login: true).with_attached_image.order(created_at: :desc) %>
+<% Announcement.expire_passed! %>
+<% login_anns = Announcement.where(active: true, show_on_login: true).in_period.with_attached_image.order(position: :asc, created_at: :asc) %>
 <% login_weather_enabled = login_settings.login_weather_card_enabled? %>
 <% if login_anns.any? || login_weather_enabled %>
   <style>
     .login-ann-stack {
       --login-ann-card-height: 132px;
       position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 7px;
-    z-index: 50;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 10px;
-    width: min(860px, calc(100vw - 32px));
-    margin: 0 auto;
-    padding: 2px 2px 8px;
+      left: 0;
+      right: 0;
+      bottom: 7px;
+      z-index: 50;
+      display: flex;
+      align-items: flex-end;
+      justify-content: flex-start;
+      gap: 10px;
+      width: min(860px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 2px 32px 8px;
       overflow-x: auto;
       transform: none;
       scrollbar-width: none;
-      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
-      mask-image: linear-gradient(to right, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
+      mask-image: linear-gradient(to right, transparent 0, #000 32px, #000 calc(100% - 32px), transparent 100%);
     }
 
     .login-ann-stack::-webkit-scrollbar {
@@ -651,6 +652,32 @@
       white-space: pre-wrap;
     }
 
+    .login-ann-cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 11px 26px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      color: #fff;
+      background: linear-gradient(135deg, #3b0d8c, #7014f1);
+      box-shadow: 0 5px 22px rgba(112,20,241,.55);
+      transition: transform .15s, box-shadow .15s, opacity .15s;
+      border: none;
+      cursor: pointer;
+    }
+    .login-ann-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 30px rgba(112,20,241,.7);
+      opacity: .92;
+      color: #fff;
+      text-decoration: none;
+    }
+    .login-ann-cta-btn:active { transform: translateY(0); }
+
     .login-ann-modal-body * {
       color: inherit !important;
     }
@@ -675,6 +702,42 @@
     .login-ann-modal-close:hover {
       background: rgba(255, 255, 255, 0.18);
     }
+
+    .login-ann-img video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+    }
+
+    .login-ann-modal-media video {
+      width: auto;
+      height: auto;
+      max-width: calc(100vw - 32px);
+      max-height: calc(100vh - 48px);
+      display: block;
+      background: #000;
+    }
+
+    .ann-sound-btn {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      z-index: 3;
+      width: 34px;
+      height: 34px;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.52);
+      color: #fff;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.18s;
+    }
+    .ann-sound-btn:hover { background: rgba(0, 0, 0, 0.76); }
 
     @media (max-width: 960px) {
       .login-ann-stack {
@@ -737,17 +800,21 @@
           <i class="fa-solid fa-bullhorn"></i> Anuncio
         </span>
 
-        <% if login_ann.image.attached? %>
-          <div class="login-ann-img">
-            <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
-          </div>
-        <% else %>
-          <div class="login-ann-img">
+        <div class="login-ann-img">
+          <% if login_ann.image.attached? %>
+            <% if login_ann.image.content_type.start_with?("video/") %>
+              <video autoplay muted loop playsinline>
+                <source src="<%= url_for(login_ann.image) %>">
+              </video>
+            <% else %>
+              <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
+            <% end %>
+          <% else %>
             <div class="login-ann-img-placeholder">
               <i class="fa-solid fa-bullhorn"></i>
             </div>
-          </div>
-        <% end %>
+          <% end %>
+        </div>
 
         <div class="login-ann-overlay">
           <% if login_ann.title.present? %>
@@ -826,8 +893,18 @@
         </button>
 
         <% if login_ann.image.attached? %>
-          <div class="login-ann-modal-media">
-            <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
+          <% modal_is_video = login_ann.image.content_type.start_with?("video/") %>
+          <div class="login-ann-modal-media" style="position:relative;">
+            <% if modal_is_video %>
+              <video id="ann-modal-video-<%= login_ann.id %>" autoplay muted loop playsinline>
+                <source src="<%= url_for(login_ann.image) %>">
+              </video>
+              <button type="button" class="ann-sound-btn" data-sound-video="ann-modal-video-<%= login_ann.id %>" aria-label="Ativar som" title="Ativar/Desativar som">
+                <i class="fa-solid fa-volume-xmark"></i>
+              </button>
+            <% else %>
+              <%= image_tag url_for(login_ann.image), alt: login_ann.title.presence || "Anuncio" %>
+            <% end %>
           </div>
         <% end %>
 
@@ -845,6 +922,14 @@
           <div class="login-ann-modal-details">
             <% if login_ann.body.present? %>
               <p class="login-ann-modal-body"><%= login_ann.body %></p>
+            <% end %>
+
+            <% if login_ann.cta_url.present? %>
+              <a href="<%= login_ann.cta_url %>" target="_blank" rel="noopener"
+                 class="login-ann-cta-btn">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                <%= login_ann.cta_label.presence || "Saiba mais" %>
+              </a>
             <% end %>
           </div>
         </div>
@@ -1087,6 +1172,7 @@
       if (!modal) return;
       modal.hidden = false;
       document.body.style.overflow = 'hidden';
+      modal.querySelectorAll('video').forEach(function(v) { v.play().catch(function(){}); });
       var closeBtn = modal.querySelector('[data-login-ann-modal-close].login-ann-modal-close');
       if (closeBtn) closeBtn.focus();
     }
@@ -1095,9 +1181,26 @@
       if (!modal) return;
       modal.hidden = true;
       document.body.style.overflow = '';
+      modal.querySelectorAll('video').forEach(function(v) {
+        v.pause();
+        v.muted = true;
+      });
+      modal.querySelectorAll('.ann-sound-btn i').forEach(function(i) {
+        i.className = 'fa-solid fa-volume-xmark';
+      });
       var card = document.querySelector('[data-login-ann-card][data-ann-id="' + modal.id.replace('login-ann-modal-', '') + '"]');
       if (card && card.offsetParent !== null) card.focus();
     }
+
+    document.querySelectorAll('.ann-sound-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var video = document.getElementById(btn.dataset.soundVideo);
+        if (!video) return;
+        video.muted = !video.muted;
+        btn.querySelector('i').className = video.muted ? 'fa-solid fa-volume-xmark' : 'fa-solid fa-volume-high';
+      });
+    });
 
     document.querySelectorAll('[data-login-ann-card]').forEach(function(card) {
       var storageKey = 'ann_login_dismissed_' + card.dataset.annId;
@@ -1143,6 +1246,17 @@
       document.querySelectorAll('.login-ann-modal:not([hidden])').forEach(closeModal);
       closeWeatherModal();
     });
+
+    // Mouse wheel → horizontal scroll on the card strip
+    var annStack = document.getElementById('login-ann-stack');
+    if (annStack) {
+      annStack.addEventListener('wheel', function(e) {
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          e.preventDefault();
+          annStack.scrollLeft += e.deltaY;
+        }
+      }, { passive: false });
+    }
   })();
   </script>
 <% end %>

@@ -1652,7 +1652,7 @@ left: 0;
 .user-info {
   top: 7px;
   z-index: 5;
-  right: 11px;
+  right: 24px;
  position: fixed;
   display: flex
 ;
@@ -3481,5 +3481,22 @@ background: var(--color-accent);
 .rooms.smart-scroll .room-card-link.end-hero .room-card {
   transform: scale(1.02) translateZ(22px);
   box-shadow: 0 26px 46px rgba(0, 0, 0, 0.3);
+}
+
+/* ── SweetAlert2: garante legibilidade independente do tema ── */
+.swal2-popup {
+  color: #1f2937 !important;
+  background: #ffffff !important;
+}
+.swal2-title,
+.swal2-html-container,
+.swal2-content {
+  color: #1f2937 !important;
+}
+.swal2-html-container p,
+.swal2-html-container li,
+.swal2-html-container strong,
+.swal2-html-container b {
+  color: #1f2937 !important;
 }
 
