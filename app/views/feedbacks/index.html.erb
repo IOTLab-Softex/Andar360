@@ -84,11 +84,10 @@
       { "aberto"=>"row--open", "em_andamento"=>"row--progress",
         "resolvido"=>"row--done", "ignorado"=>"row--muted" }[fb.status] %>
 
-  <tr class="fx-row <%= row_class %>">
+            <tr class="fx-row <%= row_class %>">
             <% sev_class = { "baixa"=>"sev--low", "media"=>"sev--med", "alta"=>"sev--high", "critica"=>"sev--crit" }[fb.severity] || "sev--med" %>
             <% st_class  = { "aberto"=>"tag--secondary", "em_andamento"=>"tag--primary", "resolvido"=>"tag--success", "ignorado"=>"tag--muted" }[fb.status] || "tag--secondary" %>
 
-            <tr>
               <td title="<%= l(fb.created_at, format: "%d/%m/%Y %H:%M") %>">
                 <div class="fx-when"><i class="fa-regular fa-clock"></i> <%= time_ago_in_words(fb.created_at) %> atrás</div>
                 <small class="fx-when-abs"><%= l(fb.created_at, format: "%d/%m/%Y %H:%M") %></small>
@@ -125,19 +124,19 @@
                   <i class="fa-regular fa-eye"></i>
                 <% end %>
 
-                <%= button_to assign_to_me_feedback_path(fb), method: :patch, class: "btn-icon", form: { class: "inline", data: { turbo: false } }, title: "Atribuir a mim" do %>
+                <%= button_to assign_to_me_feedback_path(fb), method: :patch, authenticity_token: true, class: "btn-icon", form: { class: "inline", data: { turbo: false } }, title: "Atribuir a mim" do %>
                   <i class="fa-regular fa-user"></i>
                 <% end %>
 
-                <%= button_to resolve_feedback_path(fb), method: :patch, class: "btn-icon success", form: { class: "inline", data: { turbo: false } }, title: "Resolver" do %>
+                <%= button_to resolve_feedback_path(fb), method: :patch, authenticity_token: true, class: "btn-icon success", form: { class: "inline", data: { turbo: false } }, title: "Resolver" do %>
                   <i class="fa-regular fa-circle-check"></i>
                 <% end %>
 
-                <%= button_to change_status_feedback_path(fb, status: :ignorado), method: :patch, class: "btn-icon warn", form: { class: "inline", data: { turbo: false } }, title: "Ignorar" do %>
+                <%= button_to change_status_feedback_path(fb, status: :ignorado), method: :patch, authenticity_token: true, class: "btn-icon warn", form: { class: "inline", data: { turbo: false } }, title: "Ignorar" do %>
                   <i class="fa-regular fa-circle-xmark"></i>
                 <% end %>
 
-                <%= button_to feedback_path(fb), method: :delete, data: { confirm: "Remover este feedback?" }, class: "btn-icon danger", form: { class: "inline", data: { turbo: false } }, title: "Excluir" do %>
+                <%= button_to feedback_path(fb), method: :delete, authenticity_token: true, data: { confirm: "Remover este feedback?" }, class: "btn-icon danger", form: { class: "inline", data: { turbo: false } }, title: "Excluir" do %>
                   <i class="fa-regular fa-trash-can"></i>
                 <% end %>
                 <% if fb.release.present? %>
@@ -154,7 +153,6 @@
         </tbody>
       </table>
     </div>
-      </tr>
   <% end %>
 </section>
 

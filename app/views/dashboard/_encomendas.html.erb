@@ -1,0 +1,70 @@
+<% encomendas_pendentes = encomendas.reject(&:entregue?) %>
+
+<h2 class="subtitle collapsed" onclick="toggleSection('encomendas-section', this)">
+  <i class="fa-solid fa-box-open"></i>
+  ENCOMENDAS
+  <i class="fa-solid fa-angle-down dashboard-card-toggle"></i>
+</h2>
+
+<div id="encomendas-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Status</th>
+        <th>Unidade</th>
+        <th class="hide-sm">Codigo</th>
+        <th>Destinatario</th>
+        <th class="hide-sm">Recebida em</th>
+        <th>Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if encomendas.blank? %>
+        <tr class="show-sm">
+          <td colspan="3" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma encomenda encontrada.
+          </td>
+        </tr>
+        <tr class="hide-sm">
+          <td colspan="6" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma encomenda encontrada.
+          </td>
+        </tr>
+      <% else %>
+        <% encomendas.each do |encomenda| %>
+          <tr id="encomenda-<%= encomenda.id %>">
+            <td>
+              <% if encomenda.entregue? %>
+                <span class="badge bg-success">
+                  <i class="fa-solid fa-check"></i> Entregue
+                </span>
+              <% else %>
+                <span class="badge" style="background:#f59e0b;">
+                  <i class="fa-solid fa-box"></i> Pendente
+                </span>
+              <% end %>
+            </td>
+            <td><%= encomenda.unidade.presence || "-" %></td>
+            <td class="hide-sm"><%= encomenda.codigo.presence || "-" %></td>
+            <td><%= encomenda.destinatario&.name || "-" %></td>
+            <td class="hide-sm"><%= encomenda.created_at.strftime("%d/%m/%Y") %></td>
+            <td class="td-acoes">
+              <%= link_to encomenda_path(encomenda), class: "btn-dash btn btn-success" do %>
+                <i class="fa-solid fa-eye"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+
+  <% if encomendas_pendentes.any? %>
+    <div class="dashboard-card-footer">
+      <%= link_to encomendas_path(status: "pendente"), class: "btn btn-success" do %>
+        <i class="fa-solid fa-box-open"></i>
+        Ver pendentes
+      <% end %>
+    </div>
+  <% end %>
+</div>

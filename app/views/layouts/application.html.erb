@@ -276,21 +276,19 @@
     }
 
     /* Ping no sino */
-  .notification-btn.attention::before{
+  .notification-btn.attention::before {
     content: "";
     position: absolute;
-    inset: -6px;
+    inset: -5px;
     border-radius: 50%;
-    border: 2px solid #ffe595;
-    opacity: 0;
-    animation: pulseBell 1.8s ease-out infinite;
-    background: #ffc107;
+    border: 4px solid #ffc107;
+    opacity: 1;
+    animation: pulseBell 1.5s ease-in-out infinite;
     pointer-events: none;
   }
   @keyframes pulseBell{
-    0%{transform:scale(.85); opacity:.95;}
-    70%{transform:scale(5.45); opacity:0;}
-    100%{opacity:0;}
+    0%, 100%{transform:scale(1); opacity:1;}
+    50%{transform:scale(1.12); opacity:1;}
   }
 
   /* Balão apontando para o sino */
@@ -436,10 +434,12 @@
     background: var(--color-accent);
     color: #fff;
     box-shadow: 0 10px 25px rgba(0, 0, 0, .25);
-    position: fixed;
-    bottom: 110px;
-    right: 20px;
+    position: relative;
+    bottom: auto;
+    right: auto;
     border: none;
+    margin: 0;
+    padding: 0;
     transform: translateY(0) scale(1);
     transform-origin: center;
     transition: transform .18s cubic-bezier(.2, .8, .2, 1), box-shadow .18s cubic-bezier(.2, .8, .2, 1);
@@ -456,8 +456,8 @@
 
 @media (max-width: 768px) {
   #monitoring-fab {
-    bottom: 90px;
-    right: 18px;
+    bottom: auto;
+    right: auto;
   }
 }
 
@@ -653,7 +653,8 @@
       </div>
     <% end %>
   </main>
-  <div id="backup-progress" style="
+  <% if can_manage_import_backup? %>
+    <div id="backup-progress" style="
   position: fixed;
   bottom: 30px;
   left: 20px;
@@ -665,7 +666,8 @@
   display: none;
   z-index: 9999;">
     ⏳ Backup em andamento...
-  </div>
+    </div>
+  <% end %>
   <%# Notificação dinâmica com JS externo %>
   <% access_alert = flash[:alert].to_s.match?(/acesso|permiss[aã]o|autorizado/i) %>
   <% suppress_access_alert =
@@ -800,24 +802,32 @@
     </div>
   </div>
 </div>
-<%= render "shared/feedback_fab" %>
-<%= render "shared/feedback_modal" %>
-<%= render "shared/announcement_modal" %>
 
-<% if controller_name == "dashboard" &&
-      action_name == "index" &&
-      user_signed_in? &&
-      can_view_monitoring? %>
-  <button
-    id="monitoring-fab"
-    type="button"
-    class="monitor-fab btn btn-sm btn-secondary"
-    data-monitor-toggle="dashboard"
-    data-monitor-variant="fab"
-    title="Ativar/desativar monitoramento em tempo real">
-    <i class="fa-solid fa-play"></i>
-  </button>
-<% end %>
+<div class="fab-stack">
+  <%= render "shared/feedback_fab" %>
+  <%= render "shared/feedback_modal" %>
+  <%= render "shared/announcement_modal" %>
+
+  <% if controller_name == "dashboard" &&
+        action_name == "index" &&
+        user_signed_in? &&
+        can_view_monitoring? %>
+    <button
+      id="monitoring-fab"
+      type="button"
+      class="monitor-fab btn btn-sm btn-secondary"
+      data-monitor-toggle="dashboard"
+      data-monitor-variant="fab"
+      title="Ativar/desativar monitoramento em tempo real">
+      <i class="fa-solid fa-play"></i>
+    </button>
+  <% end %>
+
+  <% if user_signed_in? %>
+    <%= render "shared/ai_agent_fab" %>
+    <%= render "shared/ai_agent_modal" %>
+  <% end %>
+</div>
 
 
 <%= javascript_include_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" %>
@@ -973,6 +983,8 @@
   document.addEventListener("DOMContentLoaded", function() {
     const userSignedIn = <%= user_signed_in? ? "true" : "false" %>;
     if (!userSignedIn) return;
+    const canManageImportBackup = <%= can_manage_import_backup? ? "true" : "false" %>;
+    if (!canManageImportBackup) return;
 
     function checkImportStatus() {
       fetch("/import_logs/status", {

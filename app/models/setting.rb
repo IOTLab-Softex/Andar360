@@ -122,6 +122,14 @@ class Setting < ApplicationRecord
     meshStyle: "biometric"
   }.freeze
 
+  AI_AGENT_DEFAULT_PROMPT = <<~PROMPT.freeze
+    Voce e o Agente IA do sistema Andar360. Responda em portugues do Brasil, de forma objetiva.
+    Ajude usuarios a operar o sistema. Quando o usuario pedir para cadastrar uma reserva de sala,
+    use a ferramenta criar_reserva_sala somente se tiver sala, data/hora inicial e final suficientes.
+    Se faltar alguma informacao obrigatoria, pergunte exatamente o que falta antes de criar.
+  PROMPT
+  AI_AGENT_VOICES = %w[alloy ash ballad coral echo fable nova onyx sage shimmer verse marin cedar].freeze
+
   def self.instance
   first_or_create!
 end
@@ -187,6 +195,22 @@ end
 
   def login_weather_longitude_or_default
     (login_weather_longitude.presence || -34.877003).to_f
+  end
+
+  def ai_agent_enabled?
+    ai_agent_enabled == true
+  end
+
+  def ai_agent_model_or_default
+    ai_agent_model.presence || "gpt-4o-mini"
+  end
+
+  def ai_agent_prompt_or_default
+    ai_agent_prompt.presence || AI_AGENT_DEFAULT_PROMPT
+  end
+
+  def ai_agent_voice_or_default
+    AI_AGENT_VOICES.include?(ai_agent_voice) ? ai_agent_voice : "coral"
   end
 
   def password_recovery_test_host_or_default

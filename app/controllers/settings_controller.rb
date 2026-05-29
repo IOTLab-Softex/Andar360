@@ -12,9 +12,12 @@ def show; end
 
   def edit; end
 
-  def update
+def update
   if params[:setting].present? && params[:setting][:smtp_password].blank?
     params[:setting].delete(:smtp_password)
+  end
+  if params[:setting].present? && params[:setting][:ai_agent_api_token].blank?
+    params[:setting].delete(:ai_agent_api_token)
   end
 
   if @setting.update(setting_params)
@@ -86,6 +89,7 @@ end
       :tempo_verificacao_online, :tempo_verificacao_online_unidade,
       :horario_rotina_importacao,
       :login_weather_card_enabled, :login_weather_city, :login_weather_latitude, :login_weather_longitude,
+      :ai_agent_enabled, :ai_agent_api_token, :ai_agent_model, :ai_agent_prompt, :ai_agent_voice,
       :smtp_from_email, :smtp_reply_to,
       :smtp_address, :smtp_port, :smtp_domain,
       :smtp_username, :smtp_password,

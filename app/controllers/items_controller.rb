@@ -3,7 +3,7 @@ class ItemsController < ApplicationController
   before_action :authorize_items_portaria!
 
   def index
-    @items = Item.all
+    @items = Item.includes(:item_movimentacoes).all
 @empresas = GrupoEmpresa.includes(:participants)
 @participants = Participant.all
 @ultima_movimentacao_por_item = ItemMovimentacao

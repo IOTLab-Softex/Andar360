@@ -108,15 +108,15 @@
       <div class="fx-card">
         <h3 class="fx-card-title"><i class="fa-regular fa-square-check"></i> Ações</h3>
         <div class="fx-actions">
-          <%= button_to change_status_feedback_path(@feedback, status: :em_andamento), method: :patch, class: "btn btn-soft", form: { data: { turbo: false } } do %>
+          <%= button_to change_status_feedback_path(@feedback, status: :em_andamento), method: :patch, authenticity_token: true, class: "btn btn-soft", form: { data: { turbo: false } } do %>
             <i class="fa-regular fa-user"></i> Em andamento
           <% end %>
 
-          <%= button_to resolve_feedback_path(@feedback), method: :patch, class: "btn btn-soft success", form: { data: { turbo: false } } do %>
+          <%= button_to resolve_feedback_path(@feedback), method: :patch, authenticity_token: true, class: "btn btn-soft success", form: { data: { turbo: false } } do %>
             <i class="fa-regular fa-circle-check"></i> Resolver
           <% end %>
 
-          <%= button_to change_status_feedback_path(@feedback, status: :ignorado), method: :patch, class: "btn btn-soft warn", form: { data: { turbo: false } } do %>
+          <%= button_to change_status_feedback_path(@feedback, status: :ignorado), method: :patch, authenticity_token: true, class: "btn btn-soft warn", form: { data: { turbo: false } } do %>
             <i class="fa-regular fa-circle-xmark"></i> Ignorar
           <% end %>
         </div>

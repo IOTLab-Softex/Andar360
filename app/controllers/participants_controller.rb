@@ -182,7 +182,7 @@ end
   @count_excluidos = current_user.admin? ? base.where(excluido: true).count : 0
 
   ids_pend = SolicitacaoParticipante.where(status: "pendente").pluck(:participant_id)
-  @count_pendentes = base.where(id: ids_pend).count
+  @count_pendentes = base.where(id: ids_pend).where("excluido = ? OR excluido IS NULL", false).count
 
   aprov_scope  = FormularioCadastro.where(status: "pendente")
   reprov_scope = FormularioCadastro.where(status: "reprovado")
@@ -247,7 +247,7 @@ end
       @participants = @participants.where(excluido: true)
     when "pendentes"
       ids = SolicitacaoParticipante.where(status: "pendente").pluck(:participant_id)
-      @participants = @participants.where(id: ids)
+      @participants = @participants.where(id: ids).where("excluido = ? OR excluido IS NULL", false)
     end
 
     # --- filtros extras ---
@@ -390,7 +390,7 @@ end
     if solicitacao
       solicitacao.update!(status: "aprovado")
       @participant.update!(excluido: true)
-      redirect_to participants_path(tab: "pendentes"), notice: "Exclusão aprovada e participante removido!"
+      redirect_to participants_path(tab: "excluidos"), notice: "Exclusão aprovada e participante removido!"
     else
       redirect_to participants_path(tab: "pendentes"), alert: "Solicitação não encontrada."
     end

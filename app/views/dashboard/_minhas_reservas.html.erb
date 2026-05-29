@@ -1,0 +1,57 @@
+<h2 class="subtitle collapsed" onclick="toggleSection('minhas-reservas-section', this)">
+  <i class="fa-solid fa-calendar-check"></i>
+  MINHAS RESERVAS
+  <i class="fa-solid fa-angle-down dashboard-card-toggle"></i>
+</h2>
+
+<div id="minhas-reservas-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Sala</th>
+        <th>Início</th>
+        <th class="hide-sm">Fim</th>
+        <th class="hide-sm">Responsável</th>
+        <th>Ações</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <% reservas = Array(reservas) %>
+
+      <% if reservas.empty? %>
+        <tr class="show-sm">
+          <td colspan="3" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma reserva ativa.
+          </td>
+        </tr>
+        <tr class="hide-sm">
+          <td colspan="5" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhuma reserva ativa.
+          </td>
+        </tr>
+      <% else %>
+        <% reservas.each do |reserva| %>
+          <tr>
+            <td>
+              <strong style="color: var(--color-btn) !important;">
+                <%= reserva.room&.name || "Sala" %>
+              </strong>
+              <div class="show-sm" style="font-size:.8rem; color:var(--color-span, #777);">
+                até <%= l(reserva.ends_at, format: :short) %>
+              </div>
+            </td>
+            <td><%= l(reserva.starts_at, format: :short) %></td>
+            <td class="hide-sm"><%= l(reserva.ends_at, format: :short) %></td>
+            <td class="hide-sm"><%= reserva.responsavel&.name || "-" %></td>
+            <td>
+              <%= link_to room_reservations_path(reserva.room), class: "btn-dash btn btn-sm btn-success", onclick: "event.stopPropagation();" do %>
+                <i class="fa-solid fa-eye"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+</div>

@@ -2,8 +2,12 @@
   <%= render "dashboard/kpis" %>
 <% end %>
 
+<% dashboard_hidden_cards = Array(@dashboard_hidden_cards).map(&:to_s) %>
+<% dashboard_ordered_cards = Array(@dashboard_card_order).map(&:to_s) %>
+
 <%= turbo_stream.replace "card-manutencoes" do %>
-  <section id="card-manutencoes" class="board-card col-12 col-6" data-card-id="manutencoes">
+  <% card_hidden = dashboard_hidden_cards.include?("manutencoes") %>
+  <section id="card-manutencoes" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="manutencoes" data-card-order-index="<%= dashboard_ordered_cards.index('manutencoes') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
     <%= render "dashboard/manutencoes",
           manutencoes: @manutencao_programadas,
           ack_ns: @ack_ns,
@@ -13,31 +17,72 @@
 <% end %>
 
 <%= turbo_stream.replace "card-chamados" do %>
-  <section id="card-chamados" class="board-card col-12 col-6" data-card-id="chamados">
+  <% card_hidden = dashboard_hidden_cards.include?("chamados") %>
+  <section id="card-chamados" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="chamados" data-card-order-index="<%= dashboard_ordered_cards.index('chamados') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
     <%= render "dashboard/chamados", chamados: @chamados %>
+  </section>
+<% end %>
+
+<%= turbo_stream.replace "card-minhas-reservas" do %>
+  <% card_hidden = dashboard_hidden_cards.include?("minhas_reservas") %>
+  <section id="card-minhas-reservas" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="minhas_reservas" data-card-order-index="<%= dashboard_ordered_cards.index('minhas_reservas') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
+    <%= render "dashboard/minhas_reservas", reservas: @minhas_reservas %>
   </section>
 <% end %>
 
 <% if current_user.admin? || current_user.role == "operador" %>
   <%= turbo_stream.replace "card-salas" do %>
-    <section id="card-salas" class="board-card col-12 col-6" data-card-id="salas">
+    <% card_hidden = dashboard_hidden_cards.include?("salas") %>
+    <section id="card-salas" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="salas" data-card-order-index="<%= dashboard_ordered_cards.index('salas') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
       <%= render "dashboard/salas", rooms: @rooms %>
     </section>
   <% end %>
 <% end %>
 
 <%= turbo_stream.replace "card-espacos" do %>
-  <section id="card-espacos" class="board-card col-12 col-6" data-card-id="espacos">
+  <% card_hidden = dashboard_hidden_cards.include?("espacos") %>
+  <section id="card-espacos" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="espacos" data-card-order-index="<%= dashboard_ordered_cards.index('espacos') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
     <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
   </section>
 <% end %>
 
+<% if dashboard_available_card_ids_for(current_user).include?("encomendas") %>
+  <%= turbo_stream.replace "card-encomendas" do %>
+    <% card_hidden = dashboard_hidden_cards.include?("encomendas") %>
+    <section id="card-encomendas" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="encomendas" data-card-order-index="<%= dashboard_ordered_cards.index('encomendas') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
+      <%= render "dashboard/encomendas", encomendas: @encomendas %>
+    </section>
+  <% end %>
+<% end %>
+
+<% if dashboard_available_card_ids_for(current_user).include?("objetos") %>
+  <%= turbo_stream.replace "card-objetos" do %>
+    <% card_hidden = dashboard_hidden_cards.include?("objetos") %>
+    <section id="card-objetos" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="objetos" data-card-order-index="<%= dashboard_ordered_cards.index('objetos') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
+      <%= render "dashboard/objetos", items: @items %>
+    </section>
+  <% end %>
+<% end %>
+
+<% if dashboard_available_card_ids_for(current_user).include?("formularios") %>
+  <%= turbo_stream.replace "card-formularios" do %>
+    <% card_hidden = dashboard_hidden_cards.include?("formularios") %>
+    <section id="card-formularios" class="board-card col-12 col-6 <%= 'is-dashboard-hidden' if card_hidden %>" data-card-id="formularios" data-card-order-index="<%= dashboard_ordered_cards.index('formularios') || 0 %>" data-dashboard-hidden="<%= card_hidden %>">
+      <%= render "dashboard/formularios", formularios: @formularios_pendentes %>
+    </section>
+  <% end %>
+<% end %>
+
 <% manut_last = @manutencao_programadas.map(&:updated_at).compact.max&.to_i || 0 %>
 <% cham_last  = @chamados.map(&:updated_at).compact.max&.to_i || 0 %>
+<% minhas_reservas_last = @minhas_reservas.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
 <% rooms_last = @rooms.map(&:updated_at).compact.max&.to_i || 0 %>
+<% encomendas_last = @encomendas.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
+<% items_last = @items.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
+<% formularios_last = @formularios_pendentes.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
 <% total_chamados = (@chamados_counts || {}).values.sum rescue 0 %>
 
 <%= turbo_stream.replace "dashboard-snapshot" do %>
   <div id="dashboard-snapshot"
-       data-hash="<%= [manut_last, cham_last, rooms_last, total_chamados].join('-') %>"></div>
+       data-hash="<%= [manut_last, cham_last, minhas_reservas_last, rooms_last, encomendas_last, items_last, formularios_last, total_chamados].join('-') %>"></div>
 <% end %>

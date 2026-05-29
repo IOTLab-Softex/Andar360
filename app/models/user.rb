@@ -62,8 +62,20 @@ end
 def normalized_dashboard_card_order(available_cards)
   allowed = Array(available_cards).map(&:to_s)
   saved = Array(dashboard_card_order).map(&:to_s)
+  ordered = saved & allowed
 
-  (saved & allowed) + (allowed - saved)
+  (allowed - ordered).each do |card_id|
+    desired_index = allowed.index(card_id) || ordered.length
+    insert_at = ordered.each_index.find { |index| (allowed.index(ordered[index]) || 0) > desired_index }
+    insert_at ? ordered.insert(insert_at, card_id) : ordered << card_id
+  end
+
+  ordered
+end
+
+def normalized_dashboard_hidden_cards(available_cards)
+  allowed = Array(available_cards).map(&:to_s)
+  Array(dashboard_hidden_cards).map(&:to_s) & allowed
 end
 
 

@@ -3,7 +3,11 @@ class DashboardQuery
   Result = Struct.new(
     :rooms,
     :chamados, :chamados_counts,
+    :minhas_reservas,
     :manutencoes, :avisos_manutencao, :avisos_tokens, :ack_ns,
+    :encomendas,
+    :items,
+    :formularios_pendentes,
     :kpis
   )
 
@@ -80,6 +84,8 @@ class DashboardQuery
       manutencoes_pendentes: manutencoes_scope.where("data_prevista >= ?", Date.current).count
     }
 
+    minhas_reservas = minhas_reservas_scope
+
     # últimos 7 dias (inclui hoje)
 inicio = 6.days.ago.to_date
 fim    = Date.current
@@ -113,9 +119,9 @@ end
 
 # --- KPIs: Formulário de Cadastros (admin = todos; client = só da empresa dele) ---
 fc_scope =
-  if @user&.admin? # (opcional: || @user&.operador? se quiser que operador veja tudo)
+  if @user&.admin?
     FormularioCadastro.all
-  elsif @user&.client?
+  elsif can_view_formularios_card?
     gid = @user.participant&.grupo_empresa_id
     gid.present? ? FormularioCadastro.where(grupo_empresa_id: gid) : FormularioCadastro.none
   else
@@ -148,10 +154,30 @@ end
 
 # Encomendas para a empresa do usuário (grupo_empresa)
 # Encomendas (empresa do usuário) OU (todas, se admin sem empresa)
-gid = @user.participant&.grupo_empresa_id
+formularios_pendentes = fc_scope
+  .where(status: "pendente")
+  .includes(:grupo_empresa)
+  .order(created_at: :desc)
+  .limit(8)
 
-if gid.present?
+gid = @user.participant&.grupo_empresa_id
+encomendas_scope = Encomenda.none
+items_scope = can_view_items_card? ? Item.order(updated_at: :desc).limit(8) : Item.none
+
+if @user&.admin?
+  encomendas_scope = Encomenda.includes(:destinatario).all
+  encomendas_pendentes = encomendas_scope.where(entregue: false).count
+  encomendas_7d        = encomendas_scope.where("created_at >= ?", 7.days.ago).count
+
+  kpis.merge!(
+    encomendas_pendentes: encomendas_pendentes,
+    encomendas_7d:        encomendas_7d,
+    encomendas_label:     "todas" # label para view
+  )
+
+elsif can_view_encomendas_card? && gid.present?
   encomendas_scope = Encomenda
+    .includes(:destinatario)
     .joins("INNER JOIN participants ON participants.id = encomendas.destinatario_id")
     .where("participants.grupo_empresa_id = ?", gid)
 
@@ -163,17 +189,6 @@ if gid.present?
     encomendas_7d:        encomendas_7d,
     encomendas_label:     "empresa" # label para view
   )
-
-elsif @user&.admin?
-  # Admin sem empresa: contar TUDO
-  encomendas_pendentes = Encomenda.where(entregue: false).count
-  encomendas_7d        = Encomenda.where("created_at >= ?", 7.days.ago).count
-
-  kpis.merge!(
-    encomendas_pendentes: encomendas_pendentes,
-    encomendas_7d:        encomendas_7d,
-    encomendas_label:     "todas" # label para view
-  )
 end
 
 
@@ -181,7 +196,11 @@ end
     Result.new(
       rooms,
       chamados_scope, chamados_counts,
+      minhas_reservas,
       manutencoes_scope, avisos_manutencao, avisos_tokens, ack_ns,
+      encomendas_scope.order(created_at: :desc).limit(8),
+      items_scope,
+      formularios_pendentes,
       kpis
     )
   end
@@ -190,5 +209,42 @@ end
 
   def admin_ou_operador?
     @user&.admin? || @user&.operador?
+  end
+
+  def minhas_reservas_scope
+    participant_id = @user&.participant_id
+    return Reservation.none unless participant_id
+
+    Reservation
+      .includes(:room, :solicitante, :responsavel)
+      .left_joins(:participants)
+      .where(cancelada_em: nil)
+      .where("reservations.ends_at > ?", Time.current)
+      .where(
+        "reservations.solicitante_id = :participant_id OR reservations.responsavel_id = :participant_id OR participants.id = :participant_id",
+        participant_id: participant_id
+      )
+      .distinct
+      .order(starts_at: :asc)
+      .limit(12)
+  end
+
+  def can_view_items_card?
+    @user&.admin? || subgrupo_permission_enabled?(:can_manage_items)
+  end
+
+  def can_view_encomendas_card?
+    @user&.admin? || subgrupo_permission_enabled?(:can_manage_encomendas)
+  end
+
+  def can_view_formularios_card?
+    @user&.admin? || subgrupo_permission_enabled?(:can_support_access)
+  end
+
+  def subgrupo_permission_enabled?(permission)
+    participant = @user&.participant
+    return false unless participant&.sub_grupo_empresa_id
+
+    SubGrupoEmpresa.where(id: participant.sub_grupo_empresa_id, permission => true).exists?
   end
 end

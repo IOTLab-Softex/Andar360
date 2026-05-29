@@ -53,6 +53,7 @@ class SubGrupoEmpresasController < ApplicationController
         :can_approve_purchase,
         :can_buy,
         :can_view_monitoring,
+        :can_manage_import_backup,
         :can_support_access,
         :can_manage_items,
         :can_manage_encomendas

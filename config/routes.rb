@@ -9,6 +9,9 @@ resources :settings, only: [:index, :edit, :update] do
   end
 end
 
+post "ai_agent/chat", to: "ai_agent#chat"
+post "ai_agent/speech", to: "ai_agent#speech"
+
 
 
 # /settings -> index -> redireciona para /settings/:id/edit
@@ -169,7 +172,7 @@ end
 
   resources :grupo_empresas, only: [:index, :new, :create]
   resources :grupo_empresas
-  resources :sub_grupo_empresas, only: [:create, :destroy]
+  resources :sub_grupo_empresas, only: [:create, :update, :destroy]
 
   delete "participants/delete_all", to: "participants#delete_all", as: :delete_all_participants
 

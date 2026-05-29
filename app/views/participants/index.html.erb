@@ -766,10 +766,15 @@
               <% end %>
               <%= button_to participant_path(participant),
                     method: :delete,
-                    data: { confirm: "Tem certeza que deseja excluir este participante? Esta ação não poderá ser desfeita!" },
                     class: "btn btn-warning",
                     title: "Excluir",
-                    form: { style: "display: contents;" } do %>
+                    form: {
+                      style: "display: contents;",
+                      data: {
+                        permanent_delete: "1",
+                        participant_name: participant.name
+                      }
+                    } do %>
                 <i class="fa-solid fa-user-xmark"></i><div class="hide-sm">Excluir</div>
               <% end %>
             <% else %>
@@ -1548,6 +1553,34 @@ document.addEventListener('turbo:before-cache', () => {
 
 document.addEventListener("submit", async function(e) {
   const form = e.target;
+  if (!form.dataset.permanentDelete) return;
+
+  e.preventDefault();
+
+  const participantName = form.dataset.participantName || "este participante";
+
+  if (!window.Swal) {
+    if (confirm(`Tem certeza que deseja excluir definitivamente "${participantName}"? Esta acao nao podera ser desfeita.`)) form.submit();
+    return;
+  }
+
+  const result = await Swal.fire({
+    title: "Excluir definitivamente?",
+    text: `Tem certeza que deseja excluir definitivamente "${participantName}"? Esta ação não poderá ser desfeita.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sim, excluir",
+    confirmButtonColor: "#d33",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+    focusCancel: true
+  });
+
+  if (result.isConfirmed) form.submit();
+});
+
+document.addEventListener("submit", async function(e) {
+  const form = e.target;
   if (!form.dataset.smartDelete) return;
 
   e.preventDefault();
@@ -1573,7 +1606,7 @@ document.addEventListener("submit", async function(e) {
 
   if (!deps.has_dependencies) {
     const result = await Swal.fire({
-      title: "Excluir participante?",
+      title: "Excluir Usuário?",
       text: `Tem certeza que deseja excluir "${participantName}"?`,
       icon: "question",
       showCancelButton: true,

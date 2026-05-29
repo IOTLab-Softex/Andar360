@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_13_120000) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_29_124855) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -525,6 +525,11 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_13_120000) do
     t.string "login_weather_city", default: "Recife"
     t.decimal "login_weather_latitude", precision: 10, scale: 6, default: "-8.047562"
     t.decimal "login_weather_longitude", precision: 10, scale: 6, default: "-34.877003"
+    t.boolean "ai_agent_enabled", default: false, null: false
+    t.text "ai_agent_api_token"
+    t.string "ai_agent_model", default: "gpt-4o-mini"
+    t.text "ai_agent_prompt"
+    t.string "ai_agent_voice", default: "coral"
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|
@@ -581,6 +586,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_13_120000) do
     t.boolean "can_support_access", default: false, null: false
     t.boolean "can_manage_items", default: false, null: false
     t.boolean "can_manage_encomendas", default: false, null: false
+    t.boolean "can_manage_import_backup", default: false, null: false
     t.index ["grupo_empresa_id"], name: "index_sub_grupo_empresas_on_grupo_empresa_id"
   end
 
@@ -604,6 +610,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_13_120000) do
     t.string "last_sign_in_ip"
     t.boolean "blocked", default: false, null: false
     t.jsonb "dashboard_card_order", default: [], null: false
+    t.jsonb "dashboard_hidden_cards", default: [], null: false
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true

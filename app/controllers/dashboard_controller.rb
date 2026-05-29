@@ -34,10 +34,14 @@ class DashboardController < ApplicationController
     @rooms                  = data.rooms
     @chamados               = data.chamados
     @chamados_counts        = data.chamados_counts
+    @minhas_reservas        = data.minhas_reservas
     @manutencao_programadas = data.manutencoes
     @avisos_manutencao      = data.avisos_manutencao
     @avisos_tokens          = data.avisos_tokens
     @ack_ns                 = data.ack_ns
+    @encomendas             = data.encomendas
+    @items                  = data.items
+    @formularios_pendentes  = data.formularios_pendentes
     @kpis                   = data.kpis
   end
   
@@ -47,11 +51,17 @@ class DashboardController < ApplicationController
     @rooms                  = data.rooms
     @chamados               = data.chamados
     @chamados_counts        = data.chamados_counts
+    @minhas_reservas        = data.minhas_reservas
     @manutencao_programadas = data.manutencoes
     @avisos_manutencao      = data.avisos_manutencao
     @avisos_tokens          = data.avisos_tokens
     @ack_ns                 = data.ack_ns
+    @encomendas             = data.encomendas
+    @items                  = data.items
+    @formularios_pendentes  = data.formularios_pendentes
     @kpis                   = data.kpis
+    @dashboard_hidden_cards = helpers.hidden_dashboard_card_ids_for(current_user)
+    @dashboard_card_order   = helpers.ordered_dashboard_card_ids_for(current_user)
 
     respond_to do |format|
       format.turbo_stream
@@ -61,11 +71,13 @@ class DashboardController < ApplicationController
   def update_card_order
     available_cards = helpers.dashboard_available_card_ids_for(current_user)
     requested_order = Array(params[:order]).map(&:to_s)
+    requested_hidden_cards = Array(params[:hidden_cards]).map(&:to_s)
     normalized_order = (requested_order & available_cards) + (available_cards - requested_order)
+    normalized_hidden_cards = requested_hidden_cards & available_cards
 
-    current_user.update!(dashboard_card_order: normalized_order)
+    current_user.update!(dashboard_card_order: normalized_order, dashboard_hidden_cards: normalized_hidden_cards)
 
-    render json: { ok: true, order: normalized_order }
+    render json: { ok: true, order: normalized_order, hidden_cards: normalized_hidden_cards }
   rescue ActiveRecord::ActiveRecordError
     render json: { ok: false, message: "Nao foi possivel salvar a ordem do dashboard." }, status: :unprocessable_entity
   end
@@ -74,5 +86,6 @@ class DashboardController < ApplicationController
 
   def set_dashboard_card_order
     @dashboard_card_order = helpers.ordered_dashboard_card_ids_for(current_user)
+    @dashboard_hidden_cards = helpers.hidden_dashboard_card_ids_for(current_user)
   end
 end

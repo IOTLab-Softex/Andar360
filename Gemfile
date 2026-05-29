@@ -35,8 +35,8 @@ gem "propshaft"
 # Use sqlite3 as the database for Active Record
 #gem "sqlite3", ">= 2.1"
 gem 'pg'
-# Use Puma on MRI Unix-like environments; on Windows we fall back to WEBrick
-gem "puma", ">= 5.0", platforms: :mri
+# Use Puma when HTTPS/local SSL is needed.
+gem "puma", ">= 5.0"
 gem "webrick", platforms: %i[ mingw x64_mingw mswin ]
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"

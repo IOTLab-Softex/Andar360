@@ -65,7 +65,7 @@ html  { zoom: var(--zoom); }
   .logo-title {
       position: absolute;
     left: 80px;
-    height: 114%;
+    height: 93%;
     /* margin-left: 20px; */
     top: 0;
     z-index: 5;

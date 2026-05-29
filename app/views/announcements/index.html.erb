@@ -25,13 +25,13 @@
             <th>#</th>
             <th>Título</th>
             <th>Mídia</th>
-            <th>Status</th>
+            <th class="hide-sm">Status</th>
             <th>Período</th>
-            <th style="min-width:80px;">Visualizações</th>
+            <th class="hide-sm" style="min-width:80px;">Visualizações</th>
             <th>Empresas</th>
-            <th>Criado por</th>
-            <th>Data</th>
-            <th></th>
+            <th class="hide-sm">Criado por</th>
+            <th class="hide-sm">Data</th>
+            <th>Ação</th>
           </tr>
         </thead>
         <tbody id="ann-tbody">
@@ -91,7 +91,7 @@
               </td>
 
               <%# ── Status ── %>
-              <td>
+              <td class="hide-sm">
                 <% if ann.active? %>
                   <span class="badge bg-success">Ativo</span>
                 <% else %>
@@ -132,7 +132,7 @@
               </td>
 
               <%# ── Visualizações ── %>
-              <td style="text-align:center;">
+              <td style="text-align:center;" class="hide-sm">
                 <span style="font-size:1.05rem; font-weight:700;"><%= ann.announcement_views.size %></span>
                 <br><small class="text-muted" style="font-size:.72rem;">usuário<%= ann.announcement_views.size == 1 ? "" : "s" %></small>
               </td>
@@ -154,18 +154,22 @@
                 <% end %>
               </td>
 
-              <td><%= ann.created_by&.email || "—" %></td>
-              <td><%= ann.created_at.strftime("%d/%m/%Y") %></td>
-              <td class="d-flex gap-1">
-                <%= link_to edit_announcement_path(ann), class: "btn btn-sm edit", title: "Editar" do %>
-                  <i class="fa-solid fa-pen-to-square"></i>
-                <% end %>
-                <%= button_to announcement_path(ann), method: :delete,
-                      class: "btn btn-sm btn-warning",
-                      title: "Excluir",
-                      data: { turbo_confirm: "Excluir este anúncio?" } do %>
-                  <i class="fa-solid fa-trash"></i>
-                <% end %>
+              <td class="hide-sm"><%= ann.created_by&.email || "—" %></td>
+              <td class="hide-sm"><%= ann.created_at.strftime("%d/%m/%Y") %></td>
+              <td class="ann-actions">
+                <div class="ann-actions-wrap d-flex">
+                  <%= link_to edit_announcement_path(ann), class: "btn btn-edit", title: "Editar" do %>
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span class="ann-action-text">Editar</span>
+                  <% end %>
+                  <%= button_to announcement_path(ann), method: :delete,
+                        class: "btn btn-warning",
+                        title: "Excluir",
+                        data: { turbo_confirm: "Excluir este anúncio?" } do %>
+                    <i class="fa-solid fa-trash"></i>
+                    <span class="ann-action-text">Excluir</span>
+                  <% end %>
+                </div>
               </td>
             </tr>
           <% end %>
@@ -184,6 +188,47 @@
 .ann-thumb-video-wrap:hover .overlay-eye,
 .ann-thumb-img-wrap:hover .overlay-eye {
   opacity: 1;
+}
+.ann-actions {
+  width: 1%;
+}
+.ann-actions-wrap {
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.ann-actions-wrap form {
+  display: inline-flex;
+  flex: 0 0 auto;
+  margin: 0;
+}
+.ann-actions-wrap .btn {
+  width: auto !important;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center !important;
+  gap: 5px !important;
+  white-space: nowrap;
+  font-size: 0.78rem !important;
+}
+.ann-action-text {
+  font-size: 0.78rem;
+  line-height: 1;
+}
+@media (max-width: 768px) {
+  .ann-actions-wrap .btn {
+    width: 32px;
+    min-width: 32px;
+    padding: 0;
+  }
+  .ann-action-text {
+    display: none;
+  }
 }
 </style>
 

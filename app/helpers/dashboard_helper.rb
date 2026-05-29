@@ -1,11 +1,21 @@
 # app/helpers/dashboard_helper.rb
 module DashboardHelper
-  DASHBOARD_CARD_IDS = %w[chamados manutencoes salas espacos].freeze
+  DASHBOARD_CARD_IDS = %w[chamados minhas_reservas manutencoes salas espacos].freeze
 
   def dashboard_available_card_ids_for(user)
-    cards = %w[chamados manutencoes espacos]
-    cards.insert(2, "salas") if user&.admin? || user&.role == "operador"
+    cards = %w[chamados minhas_reservas manutencoes espacos]
+    cards.insert(3, "salas") if user&.admin? || user&.role == "operador"
+    cards << "encomendas" if user&.admin? || dashboard_subgrupo_permission_enabled?(user, :can_manage_encomendas)
+    cards << "objetos" if user&.admin? || dashboard_subgrupo_permission_enabled?(user, :can_manage_items)
+    cards << "formularios" if user&.admin? || dashboard_subgrupo_permission_enabled?(user, :can_support_access)
     cards
+  end
+
+  def dashboard_subgrupo_permission_enabled?(user, permission)
+    subgrupo = user&.participant&.sub_grupo_empresa
+    return false unless subgrupo&.respond_to?(permission)
+
+    !!subgrupo.public_send(permission)
   end
 
   def ordered_dashboard_card_ids_for(user)
@@ -15,14 +25,23 @@ module DashboardHelper
     user.normalized_dashboard_card_order(available)
   end
 
+  def hidden_dashboard_card_ids_for(user)
+    available = dashboard_available_card_ids_for(user)
+    return [] unless user&.respond_to?(:normalized_dashboard_hidden_cards)
+
+    user.normalized_dashboard_hidden_cards(available)
+  end
+
   def kpi_card(icon_class, label, value, subtitle = nil, opts = {})
     sparkline = opts[:sparkline]
     url       = opts[:url]
+    tone      = opts[:tone].presence || "blue"
+    classes   = ["kpi-card", "kpi-card--#{tone}"]
+    classes << "kpi-card--link" if url.present?
 
     builder = proc do
       concat(sparkline_svg(sparkline)) if sparkline.present?
 
-      concat content_tag(:div, content_tag(:i, "", class: icon_class), class: "kpi-icon")
       concat content_tag(:div, class: "kpi-meta") {
         safe_join([
           content_tag(:div, label, class: "kpi-label"),
@@ -30,15 +49,16 @@ module DashboardHelper
           (subtitle.present? ? content_tag(:div, subtitle, class: "kpi-subtitle") : "".html_safe)
         ])
       }
+      concat content_tag(:div, content_tag(:i, "", class: icon_class), class: "kpi-icon")
     end
 
     if url.present?
       # âncora com aparência de card
-      link_to url, class: "kpi-card kpi-card--link" do
+      link_to url, class: classes.join(" ") do
         builder.call
       end
     else
-      content_tag :div, class: "kpi-card" do
+      content_tag :div, class: classes.join(" ") do
         builder.call
       end
     end

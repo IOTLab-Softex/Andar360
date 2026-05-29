@@ -49,6 +49,10 @@
           <%= link_to edit_item_path(item), class: "btn edit" do %>
             <i class="fa-solid fa-pen-to-square"></i> <div class="hide-sm"> Editar </div>
             <% end %>
+
+            <button type="button" class="btn btn-info" onclick="abrirModal('modal-historico-<%= item.id %>')">
+              <i class="fa-solid fa-clock-rotate-left"></i> <div class="hide-sm"> Histórico </div>
+            </button>
           
             <%= button_to item_path(item), method: :delete, data: { confirm: 'Tem certeza que deseja excluir este item?' }, class: "btn btn-warning", style:" width: -webkit-fill-available" do %>
               <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir </div>
@@ -136,6 +140,51 @@
     </div>
   </div>
 <% end %>
+<% @items.each do |item| %>
+  <div class="modal-custom modal-historico" id="modal-historico-<%= item.id %>">
+    <div class="modal-content">
+      <button type="button" class="close-modal" onclick="fecharModal('modal-historico-<%= item.id %>')">&times;</button>
+      <h5 class="mb-3">Histórico de Movimentações: <%= item.nome %></h5>
+
+      <% if item.item_movimentacoes.any? %>
+        <div class="historico-table-wrap">
+          <table class="table table-salas mt-3">
+            <thead class="table-secondary text-dark">
+              <tr>
+                <th>Data</th>
+                <th>Empresa</th>
+                <th>Responsável</th>
+                <th>Descrição</th>
+                <th>Tipo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% item.item_movimentacoes.sort_by(&:created_at).reverse_each do |mov| %>
+                <tr>
+                  <td><%= l mov.created_at, format: :short %></td>
+                  <td><%= mov.empresa %></td>
+                  <td><%= mov.responsavel %></td>
+                  <td><%= mov.descricao %></td>
+                  <td>
+                    <% if mov.tipo == "retirada" %>
+                      <span class="text-success">Retirada</span>
+                    <% elsif mov.tipo == "devolucao" %>
+                      <span class="text-secondary">Devolução</span>
+                    <% else %>
+                      <span class="text-muted">-</span>
+                    <% end %>
+                  </td>
+                </tr>
+              <% end %>
+            </tbody>
+          </table>
+        </div>
+      <% else %>
+        <p class="text-muted mt-3">Nenhuma movimentação registrada para este item.</p>
+      <% end %>
+    </div>
+  </div>
+<% end %>
 <div id="modal-image-viewer" onclick="hideModal()">
   <span class="close-modal">&times;</span>
   <img src="" alt="Visualização">
@@ -163,6 +212,42 @@
     width: 100%;
     max-width: 500px;
     position: relative;
+}
+
+.modal-custom.modal-historico .modal-content {
+    background: var(--color-modal-bg, var(--color-card, #fff));
+    color: var(--color-text, #111);
+    border: 1px solid var(--color-borde-tabela, rgba(0,0,0,.15));
+    max-width: 900px;
+}
+
+.historico-table-wrap {
+    max-height: 60vh;
+    overflow: auto;
+}
+
+.modal-historico .table-salas {
+    background: var(--color-bg-table-salas, #f9f9f9);
+    color: var(--color-text, #111);
+}
+
+.modal-historico .table-salas thead,
+.modal-historico .table-salas thead.table-secondary,
+.modal-historico .table-salas thead th {
+    background: var(--color-bg-table-salas-thead, #fff) !important;
+    color: var(--color-text-table-salas-thead, #335570) !important;
+}
+
+.modal-historico .table-salas td {
+    color: var(--color-text, #111);
+}
+
+.modal-historico .text-muted {
+    color: var(--color-span, var(--color-muted, #666)) !important;
+}
+
+.modal-historico .close-modal {
+    color: var(--color-text, #111);
 }
 
 .modal-custom .close-modal {

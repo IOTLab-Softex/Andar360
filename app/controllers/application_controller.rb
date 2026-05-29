@@ -6,10 +6,14 @@ class ApplicationController < ActionController::Base
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
 
- helper_method :can_view_monitoring?, :can_manage_items?, :can_manage_encomendas?, :can_access_portaria?
+ helper_method :can_view_monitoring?, :can_manage_import_backup?, :can_manage_items?, :can_manage_encomendas?, :can_access_portaria?
 
   def can_view_monitoring?
     subgrupo_permission_enabled?(:can_view_monitoring)
+  end
+
+  def can_manage_import_backup?
+    subgrupo_permission_enabled?(:can_manage_import_backup)
   end
 
   def can_manage_items?

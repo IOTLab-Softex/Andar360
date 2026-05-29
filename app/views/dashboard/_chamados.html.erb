@@ -2,8 +2,9 @@
 <% chamados_abertos = chamados.reject { |c| c.status.to_s.downcase == "concluído" } %>
 
 <h2 class="subtitle collapsed" onclick="toggleSection('chamados-section', this)">
+  <i class="fa-solid fa-clipboard"></i>
   <%= (current_user.admin? || current_user.role == "operador") ? "CHAMADOS" : "MEUS CHAMADOS" %>
-  <i class="fa-solid fa-angle-down"></i>
+  <i class="fa-solid fa-angle-down dashboard-card-toggle"></i>
 
   <% if chamados_abertos.any? && chamados_abertos.any? { |m| m.atualizada_recentemente? && !visualizado_pelo_usuario?("chamado", m) } %>
     <span class="dot-ativo" title="Há atualizações não visualizadas"></span>

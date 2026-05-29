@@ -896,6 +896,7 @@ display: flex !important;
       display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: 0.5rem;
     cursor: pointer;
     user-select: none;
     font-size: 1.3rem;
@@ -909,13 +910,39 @@ display: flex !important;
 
 
 
-.subtitle i {
+.subtitle .dashboard-card-toggle {
   margin-left: 0.5rem;
   transition: transform 0.3s ease;
+  position: relative;
 }
 
-.subtitle.collapsed i {
+.subtitle .dashboard-card-toggle::after {
+  display: none;
+}
+
+.subtitle.collapsed .dashboard-card-toggle {
   transform: rotate(-90deg);
+}
+
+/* Badge de quantidade de itens - apenas quando colapsado */
+.subtitle.collapsed .dashboard-card-toggle::after {
+  content: attr(data-item-count);
+  position: absolute;
+  top: 50%;
+  right: -32px;
+  transform: translateY(-50%);
+  background: var(--color-btn);
+  color: var(--color-btn--text);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+  font-weight: bold;
+  line-height: 1;
+  white-space: nowrap;
+  z-index: 1;
 }
 
 
@@ -2294,9 +2321,10 @@ background-color: var(--color-bg-table-salas-thead);
 }
 
 .table-salas th, .table-salas td {
-      padding: 12px 7px;
-  text-align: left;
-  border-bottom: 1px solid #333;
+    padding: 12px 7px;
+    text-align: left;
+    border-bottom: 1px solid #333;
+    gap: 10px;
 }
 
 
@@ -2517,6 +2545,35 @@ position: absolute;
 
 /* feedback */
 
+/* FAB Stack Container - organiza todos os FABs em coluna sem sobreposição */
+.fab-stack {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0;
+  z-index: 1000;
+  align-items: center;
+  justify-content: flex-end;
+  pointer-events: none; /* permite clicks nos botões filhos */
+}
+
+.fab-stack button,
+.fab-stack [id$="-fab"] {
+  pointer-events: auto; /* reactiva cliques nos FABs */
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+@media (max-width: 768px) {
+  .fab-stack {
+    bottom: 16px;
+    right: 16px;
+    gap: 12px;
+  }
+}
+
 .feedback-fab {
   display: grid;
   place-items: center;
@@ -2526,10 +2583,12 @@ position: absolute;
   background: var(--color-accent);
   color: #fff;
   box-shadow: 0 10px 25px rgba(0,0,0,.25);
-  position: fixed;
-  bottom: 26px;
-  right: 25px;
+  position: relative;
+  bottom: auto;
+  right: auto;
   border: none;
+  margin: 0;
+  padding: 0;
 
   /* 🔑 estado inicial e animação suave */
   transform: translateY(0) scale(1);
@@ -2726,14 +2785,14 @@ body.noscroll { overflow:hidden; }
 /* aparência do gráfico: usa a cor atual do card */
 .kpi-sparkline-area {
   fill: currentColor;
-  opacity: 0.08;
+  opacity: 0.50;
 }
 
 .kpi-sparkline-line {
   stroke: currentColor;
   stroke-width: 2;
   fill: none;
-  opacity: 0.10;
+  opacity: 0.70;
 }
 
 /* onde já estão seus estilos */
@@ -2746,6 +2805,140 @@ body.noscroll { overflow:hidden; }
 .kpi-card--link:hover {
   /*transform: translateY(-1px);*/
   box-shadow: 0 6px 18px rgba(0,0,0,.12);
+}
+
+/* KPI cards - estilo compacto com acento no canto */
+.kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(184px, 1fr)) !important;
+  gap: 12px !important;
+  margin: 14px 0 18px !important;
+  padding: 0 6px !important;
+}
+
+.kpi-card {
+  --kpi-accent: #4f7cff;
+  --kpi-soft: #dfe8ff;
+  position: relative !important;
+  min-height: 114px !important;
+  padding: 20px 54px 16px 18px !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  overflow: hidden !important;
+  border: 1px solid rgba(92, 107, 129, .22) !important;
+  border-radius: 18px !important;
+  background: color-mix(in srgb, var(--color-header, #fff) 92%, #fff 8%) !important;
+  box-shadow: 0 10px 24px rgba(18, 30, 50, .09) !important;
+  color: var(--color-text, #0b1634) !important;
+}
+
+.kpi-card::before {
+  content: "";
+  position: absolute;
+  top: -38px;
+  right: -28px;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: var(--kpi-soft);
+  opacity: .5;
+}
+
+.kpi-card .kpi-meta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.kpi-card .kpi-icon {
+  position: absolute !important;
+  z-index: 2;
+  top: 20px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: var(--kpi-soft);
+  color: var(--kpi-accent);
+}
+
+.kpi-card .kpi-icon i {
+  font-size: 1rem !important;
+}
+
+.kpi-card .kpi-label {
+  max-width: 100%;
+  color: color-mix(in srgb, var(--color-text, #0b1634) 68%, #52647a 32%) !important;
+  font-size: .7rem !important;
+  font-weight: 900;
+  letter-spacing: .06em;
+  line-height: 1.2 !important;
+  text-transform: uppercase;
+}
+
+.kpi-card .kpi-value {
+  margin-top: 16px;
+  color: var(--color-text, #061236) !important;
+  font-size: clamp(1.7rem, 2.4vw, 2.25rem) !important;
+  font-weight: 950 !important;
+  line-height: .9 !important;
+}
+
+.kpi-card .kpi-subtitle {
+  margin-top: 9px !important;
+  color: color-mix(in srgb, var(--color-text, #0b1634) 70%, #65768c 30%) !important;
+  font-size: .72rem !important;
+  font-weight: 600;
+  line-height: 1.2;
+  opacity: 1 !important;
+}
+
+.kpi-card .kpi-sparkline {
+  inset: auto 0 0 0 !important;
+  height: 74px !important;
+  opacity: .55;
+  width: -webkit-fill-available;
+  width: 100%;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+}
+
+.kpi-card--amber { --kpi-accent: #f59f00; --kpi-soft: #fff0d0; }
+.kpi-card--blue { --kpi-accent: #3d6df6; --kpi-soft: #dee7ff; }
+.kpi-card--green { --kpi-accent: #18a957; --kpi-soft: #d9f6e4; }
+.kpi-card--cyan { --kpi-accent: #17a7bd; --kpi-soft: #d8f3f7; }
+.kpi-card--purple { --kpi-accent: var(--color-accent, #7014f1); --kpi-soft: #eadcff; }
+
+:root[data-theme="dark"] .kpi-card {
+  background: color-mix(in srgb, var(--color-card, #232323) 88%, #fff 12%) !important;
+  border-color: rgba(255,255,255,.12) !important;
+  box-shadow: 0 12px 28px rgba(0,0,0,.24) !important;
+}
+
+:root[data-theme="dark"] .kpi-card .kpi-value {
+  color: #fff !important;
+}
+
+:root[data-theme="dark"] .kpi-card .kpi-label,
+:root[data-theme="dark"] .kpi-card .kpi-subtitle {
+  color: rgba(255,255,255,.74) !important;
+}
+
+@media (max-width: 800px) {
+  .kpi-grid > * {
+    flex-basis: 210px !important;
+  }
+
+  .kpi-card {
+    min-height: 108px !important;
+    padding: 18px 50px 14px 16px !important;
+  }
 }
 
 .btn-icon i {

@@ -1,0 +1,64 @@
+<% objetos_em_uso = items.select { |item| item.status.to_s == "em uso" } %>
+
+<h2 class="subtitle collapsed" onclick="toggleSection('objetos-section', this)">
+  <i class="fa-solid fa-key"></i>
+  CONTROLE DE OBJETOS
+  <i class="fa-solid fa-angle-down dashboard-card-toggle"></i>
+</h2>
+
+<div id="objetos-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Objeto</th>
+        <th>Status</th>
+        <th class="hide-sm">Descricao</th>
+        <th>Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if items.blank? %>
+        <tr class="show-sm">
+          <td colspan="3" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhum objeto cadastrado.
+          </td>
+        </tr>
+        <tr class="hide-sm">
+          <td colspan="4" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhum objeto cadastrado.
+          </td>
+        </tr>
+      <% else %>
+        <% items.each do |item| %>
+          <tr id="objeto-<%= item.id %>">
+            <td><%= item.nome.presence || "-" %></td>
+            <td>
+              <% if item.status.to_s == "em uso" %>
+                <span class="badge" style="background:#f59e0b;">
+                  <i class="fa-solid fa-hand-holding"></i> Em uso
+                </span>
+              <% else %>
+                <span class="badge bg-success">
+                  <i class="fa-solid fa-check"></i> Disponivel
+                </span>
+              <% end %>
+            </td>
+            <td class="hide-sm"><%= item.descricao.presence || "-" %></td>
+            <td class="td-acoes">
+              <%= link_to edit_item_path(item), class: "btn-dash btn btn-success" do %>
+                <i class="fa-solid fa-pen-to-square"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+
+  <div class="dashboard-card-footer">
+    <%= link_to items_path, class: "btn btn-success" do %>
+      <i class="fa-solid fa-boxes-stacked"></i>
+      <%= objetos_em_uso.any? ? "Ver objetos em uso" : "Gerenciar objetos" %>
+    <% end %>
+  </div>
+</div>

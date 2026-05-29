@@ -26,6 +26,9 @@
       <button class="tab-link" data-tab="tab-participantes" role="tab" aria-selected="false">
         <i class="fa-solid fa-users"></i> Participantes
       </button>
+      <button class="tab-link" data-tab="tab-ai-agent" role="tab" aria-selected="false">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Agente IA
+      </button>
     </div>
 
     <div class="tabs-panels settings-form">
@@ -369,6 +372,69 @@
         <button type="button" id="btn-delete-all-participants" class="btn btn-danger">
           <i class="fa-solid fa-trash me-2"></i> Excluir todos os participantes
         </button>
+      </section>
+
+      <section id="tab-ai-agent" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-1 mb-3"><i class="fa-solid fa-wand-magic-sparkles me-2"></i> Agente IA</h2>
+
+        <div class="form-check form-group mb-3">
+          <%= f.check_box :ai_agent_enabled, class: "form-check-input", id: "setting_ai_agent_enabled" %>
+          <label class="form-check-label" for="setting_ai_agent_enabled">
+            Ativar agente IA
+          </label>
+          <small class="form-text text-muted d-block">
+            Quando ativado, usuários logados poderão abrir o chat do agente pelo botão flutuante.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-key me-2"></i> Token da API</label>
+          <%= f.password_field :ai_agent_api_token,
+                class: "form-control",
+                placeholder: @setting.ai_agent_api_token.present? ? "Token já configurado. Deixe em branco para manter." : "Cole o token da API" %>
+          <small class="form-text text-muted">
+            O token é usado no servidor para consultar a API da OpenAI. Deixe em branco para manter o token atual.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-microchip me-2"></i> Modelo</label>
+          <%= f.text_field :ai_agent_model,
+                class: "form-control",
+                value: @setting.ai_agent_model_or_default,
+                placeholder: "gpt-4o-mini" %>
+          <small class="form-text text-muted">
+            Informe o modelo configurado na sua conta. Exemplo: <code>gpt-4o-mini</code>.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-volume-high me-2"></i> Voz da OpenAI</label>
+          <div class="d-flex gap-2 align-items-center">
+            <%= f.select :ai_agent_voice,
+                  options_for_select(Setting::AI_AGENT_VOICES.map { |voice| [voice.titleize, voice] }, @setting.ai_agent_voice_or_default),
+                  {},
+                  class: "form-control",
+                  id: "setting_ai_agent_voice" %>
+            <button type="button" id="preview-ai-agent-voice" class="btn btn-outline-secondary" title="Ouvir previa da voz">
+              <i class="fa-solid fa-play me-1"></i> Previa
+            </button>
+          </div>
+          <small class="form-text text-muted">
+            Usada no modo conversa para ler as respostas do agente com voz da OpenAI.
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-scroll me-2"></i> Prompt do agente</label>
+          <%= f.text_area :ai_agent_prompt,
+                class: "form-control",
+                rows: 10,
+                value: @setting.ai_agent_prompt_or_default %>
+          <small class="form-text text-muted">
+            Este prompt orienta o comportamento do agente. A ferramenta inicial disponível é: cadastrar reserva de sala.
+          </small>
+        </div>
       </section>
 
     </div>
@@ -748,6 +814,63 @@
         const prev = links[(idx-1+links.length)%links.length];
         prev.focus(); activate(prev.dataset.tab);
       }
+    });
+  })();
+
+  (function(){
+    const button = document.getElementById('preview-ai-agent-voice');
+    const select = document.getElementById('setting_ai_agent_voice');
+    let audio = null;
+
+    if (!button || !select) return;
+
+    button.addEventListener('click', function(){
+      const originalHtml = button.innerHTML;
+      const voice = select.value;
+
+      if (audio) {
+        audio.pause();
+        audio = null;
+      }
+
+      button.disabled = true;
+      button.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Gerando...';
+
+      fetch('/ai_agent/speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'audio/mpeg',
+          'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content || ''
+        },
+        body: JSON.stringify({
+          voice: voice,
+          text: 'Ola, eu sou o agente IA do Andar360. Esta e uma previa da voz selecionada.'
+        })
+      })
+        .then(function(response){
+          if (!response.ok) throw new Error('speech_failed');
+          return response.blob();
+        })
+        .then(function(blob){
+          const url = URL.createObjectURL(blob);
+          audio = new Audio(url);
+          audio.onended = function(){
+            URL.revokeObjectURL(url);
+            button.disabled = false;
+            button.innerHTML = originalHtml;
+          };
+          audio.onerror = function(){
+            URL.revokeObjectURL(url);
+            throw new Error('audio_play_failed');
+          };
+          return audio.play();
+        })
+        .catch(function(){
+          button.disabled = false;
+          button.innerHTML = originalHtml;
+          alert('Nao foi possivel gerar a previa da voz. Verifique o token da API do Agente IA.');
+        });
     });
   })();
 

@@ -1,0 +1,56 @@
+<h2 class="subtitle collapsed" onclick="toggleSection('formularios-section', this)">
+  <i class="fa-solid fa-hourglass-half"></i>
+  AGUARDANDO APROVACAO
+  <i class="fa-solid fa-angle-down dashboard-card-toggle"></i>
+</h2>
+
+<div id="formularios-section" class="rooms collapsed">
+  <table class="table table-salas">
+    <thead class="table-secondary text-dark">
+      <tr>
+        <th>Nome</th>
+        <th class="hide-sm">Empresa</th>
+        <th class="hide-sm">Telefone</th>
+        <th>Enviado em</th>
+        <th>Acoes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if formularios.blank? %>
+        <tr class="show-sm">
+          <td colspan="3" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhum pre-cadastro aguardando aprovacao.
+          </td>
+        </tr>
+        <tr class="hide-sm">
+          <td colspan="5" style="text-align:center; padding:1rem; font-style:italic; color:#888;">
+            Nenhum pre-cadastro aguardando aprovacao.
+          </td>
+        </tr>
+      <% else %>
+        <% formularios.each do |formulario| %>
+          <tr id="formulario-cadastro-<%= formulario.id %>">
+            <td><%= formulario.nome.presence || "-" %></td>
+            <td class="hide-sm"><%= formulario.grupo_empresa&.nome || "-" %></td>
+            <td class="hide-sm"><%= formulario.telefone.presence || "-" %></td>
+            <td><%= formulario.created_at.strftime("%d/%m/%Y") %></td>
+            <td class="td-acoes">
+              <%= link_to participants_path(tab: "aprovacoes"), class: "btn-dash btn btn-success" do %>
+                <i class="fa-solid fa-eye"></i>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+    </tbody>
+  </table>
+
+  <% if formularios.any? %>
+    <div class="dashboard-card-footer">
+      <%= link_to participants_path(tab: "aprovacoes"), class: "btn btn-success" do %>
+        <i class="fa-solid fa-hourglass-half"></i>
+        Ver aprovacoes
+      <% end %>
+    </div>
+  <% end %>
+</div>

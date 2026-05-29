@@ -24,37 +24,64 @@
 <div id="dashboard-page-marker"></div>
 <% manut_last = @manutencao_programadas.map(&:updated_at).compact.max&.to_i || 0 %>
 <% cham_last  = @chamados.map(&:updated_at).compact.max&.to_i || 0 %>
+<% minhas_reservas_last = @minhas_reservas.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
 <% rooms_last = @rooms.map(&:updated_at).compact.max&.to_i || 0 %>
+<% encomendas_last = @encomendas.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
+<% items_last = @items.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
+<% formularios_last = @formularios_pendentes.to_a.map(&:updated_at).compact.max&.to_i || 0 %>
 <% total_chamados = (@chamados_counts || {}).values.sum rescue 0 %>
 <div id="dashboard-snapshot"
-     data-hash="<%= [manut_last, cham_last, rooms_last, total_chamados].join('-') %>"></div>
+     data-hash="<%= [manut_last, cham_last, minhas_reservas_last, rooms_last, encomendas_last, items_last, formularios_last, total_chamados].join('-') %>"></div>
 <%= audio_tag "notify_new.mp3",
       id: "notify-new",
       preload: "auto",
       style: "display:none;" %>
 <%= render "dashboard/kpis" %>
 <div class="board-grid" id="dashboard-board-grid" data-save-url="<%= update_dashboard_card_order_path %>">
-  <% Array(@dashboard_card_order).each do |card_id| %>
+  <% dashboard_hidden_cards = Array(@dashboard_hidden_cards).map(&:to_s) %>
+  <% dashboard_ordered_cards = Array(@dashboard_card_order).map(&:to_s) %>
+  <% dashboard_render_cards = (dashboard_ordered_cards - dashboard_hidden_cards) + (dashboard_ordered_cards & dashboard_hidden_cards) %>
+  <% dashboard_render_cards.each do |card_id| %>
+    <% card_hidden = dashboard_hidden_cards.include?(card_id) %>
+    <% card_classes = ["board-card", "col-12", "col-6"] %>
+    <% card_classes << "is-dashboard-hidden" if card_hidden %>
+    <% card_order_index = dashboard_ordered_cards.index(card_id) || 0 %>
     <% case card_id %>
     <% when "chamados" %>
-      <section id="card-chamados" class="board-card col-12 col-6" data-card-id="chamados">
+      <section id="card-chamados" class="<%= card_classes.join(' ') %>" data-card-id="chamados" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
         <%= render "dashboard/chamados", chamados: @chamados %>
       </section>
+    <% when "minhas_reservas" %>
+      <section id="card-minhas-reservas" class="<%= card_classes.join(' ') %>" data-card-id="minhas_reservas" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
+        <%= render "dashboard/minhas_reservas", reservas: @minhas_reservas %>
+      </section>
     <% when "manutencoes" %>
-      <section id="card-manutencoes" class="board-card col-12 col-6" data-card-id="manutencoes">
+      <section id="card-manutencoes" class="<%= card_classes.join(' ') %>" data-card-id="manutencoes" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
         <%= render "dashboard/manutencoes",
               manutencoes: @manutencao_programadas,
               ack_ns: @ack_ns, avisos_tokens: @avisos_tokens, avisos: @avisos_manutencao %>
       </section>
     <% when "salas" %>
       <% if current_user.admin? || current_user.role == "operador" %>
-        <section id="card-salas" class="board-card col-12 col-6" data-card-id="salas">
+        <section id="card-salas" class="<%= card_classes.join(' ') %>" data-card-id="salas" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
           <%= render "dashboard/salas", rooms: @rooms %>
         </section>
       <% end %>
     <% when "espacos" %>
-      <section id="card-espacos" class="board-card col-12 col-6" data-card-id="espacos">
+      <section id="card-espacos" class="<%= card_classes.join(' ') %>" data-card-id="espacos" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
         <%= render "dashboard/espacos_comuns", rooms: @rooms.select(&:espaco_comun?) %>
+      </section>
+    <% when "encomendas" %>
+      <section id="card-encomendas" class="<%= card_classes.join(' ') %>" data-card-id="encomendas" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
+        <%= render "dashboard/encomendas", encomendas: @encomendas %>
+      </section>
+    <% when "objetos" %>
+      <section id="card-objetos" class="<%= card_classes.join(' ') %>" data-card-id="objetos" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
+        <%= render "dashboard/objetos", items: @items %>
+      </section>
+    <% when "formularios" %>
+      <section id="card-formularios" class="<%= card_classes.join(' ') %>" data-card-id="formularios" data-card-order-index="<%= card_order_index %>" data-dashboard-hidden="<%= card_hidden %>">
+        <%= render "dashboard/formularios", formularios: @formularios_pendentes %>
       </section>
     <% end %>
   <% end %>
@@ -192,6 +219,18 @@ data-ns="<%= @ack_ns %>">
     outline: 2px dashed rgba(124, 58, 237, .75);
     outline-offset: -6px;
   }
+  .board-card.is-dashboard-hidden{
+    display: none;
+  }
+  .board-grid.is-layout-editing .board-card.is-dashboard-hidden{
+    display: block;
+    opacity: .52;
+    filter: grayscale(.95);
+    background: color-mix(in srgb, var(--color-card) 68%, #000 32%);
+  }
+  .board-grid.is-layout-editing .board-card.is-dashboard-hidden .rooms{
+    pointer-events: none;
+  }
   /* Faz o h2 do partial parecer cabeçalho do card */
   .board-card .subtitle {
     display: flex;
@@ -224,6 +263,32 @@ data-ns="<%= @ack_ns %>">
     flex-shrink: 0;
     line-height: 1;
   }
+  .board-card .card-visibility-toggle{
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-left: auto;
+    padding: 0 10px;
+    min-height: 34px;
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--color-card) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--color-text) 18%, transparent);
+    color: var(--color-text);
+    font-size: .78rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .board-card .card-visibility-toggle input{
+    margin: 0;
+    accent-color: var(--color-accent, #7014f1);
+  }
+  .board-grid.is-layout-editing .card-visibility-toggle{
+    display: inline-flex;
+  }
+  .board-grid.is-layout-editing .card-visibility-toggle + .card-drag-handle{
+    margin-left: 8px;
+  }
   .board-grid:not(.is-layout-editing) .card-drag-handle{
     opacity: 0;
     pointer-events: none;
@@ -234,17 +299,21 @@ data-ns="<%= @ack_ns %>">
     border: 0;
     overflow: hidden;
   }
-  .board-grid.is-layout-editing .card-drag-handle{
+ .board-grid.is-layout-editing .card-drag-handle {
     opacity: 1;
     pointer-events: auto;
     color: var(--color-btn--text);
-    background: color-mix(in srgb, var(--color-btn) 26%, var(--color-card));
-    border-color: color-mix(in srgb, var(--color-btn) 52%, transparent);
-    box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-btn) 22%, transparent),
-                0 0 14px color-mix(in srgb, var(--color-btn) 24%, transparent);
-                    display: flex;
-    justify-content: space-between;
-  }
+    background: 
+color-mix(in srgb, var(--color-btn) 26%, var(--color-card));
+    border-color: 
+color-mix(in srgb, var(--color-btn) 52%, transparent);
+    box-shadow: 0 0 0 1px 
+color-mix(in srgb, var(--color-btn) 22%, transparent), 0 0 14px 
+color-mix(in srgb, var(--color-btn) 24%, transparent);
+    display: flex;
+    justify-content: space-around;
+}
+
   .board-card .card-drag-handle:hover{
     color: var(--color-btn);
     background: color-mix(in srgb, var(--color-btn) 18%, var(--color-card));
@@ -292,6 +361,11 @@ data-ns="<%= @ack_ns %>">
     pointer-events: none;
   }
   .board-card .rooms{ padding: 12px; }
+  .dashboard-card-footer {
+    display: flex;
+    justify-content: center;
+    padding-top: 10px;
+  }
 
   /* Não esticar os itens do grid: cada card fica só com a própria altura */
   .board-grid { align-items: start; }
@@ -431,12 +505,51 @@ data-ns="<%= @ack_ns %>">
 
   // marca que já inicializou uma vez
   document.body.dataset.roomsInitialized = "1";
+
+  // Atualizar badges de contagem
+  if (window.initItemCountBadges) {
+    window.initItemCountBadges();
+  }
   };
 
 
   // roda ao carregar a página normalmente e com Turbo
   document.addEventListener("DOMContentLoaded", window.initDashboardRooms);
   document.addEventListener("turbo:load", window.initDashboardRooms);
+
+  // Função para contar itens nas tabelas e atualizar o badge
+  window.initItemCountBadges = function() {
+    document.querySelectorAll(".rooms").forEach((section) => {
+      const header = document.querySelector(`h2[onclick*="${section.id}"]`);
+      if (!header) return;
+
+      const icon = header.querySelector(".dashboard-card-toggle");
+      if (!icon) return;
+
+      // Contar linhas da tabela (excluindo header)
+      const table = section.querySelector("table");
+      if (!table) return;
+
+      const rows = table.querySelectorAll("tbody tr");
+      let itemCount = 0;
+
+      // Contar apenas as linhas que não têm "nenhum" ou estão vazias
+      rows.forEach((row) => {
+        const content = row.textContent.toLowerCase();
+        if (!content.includes("nenhum") && !content.includes("nenhuma")) {
+          itemCount++;
+        }
+      });
+
+      // Atualizar o atributo data-item-count
+      icon.setAttribute("data-item-count", itemCount);
+    });
+  };
+
+  // Inicializar badges ao carregar
+  document.addEventListener("DOMContentLoaded", window.initItemCountBadges);
+  document.addEventListener("turbo:load", window.initItemCountBadges);
+
 
 
   // helper global de cookie
@@ -536,10 +649,33 @@ data-ns="<%= @ack_ns %>">
     let ghostCurrentY = 0;
     let ghostAnimationFrame = null;
 
+    function updateCardOrderIndices(order) {
+      order.forEach((cardId, index) => {
+        const card = grid.querySelector(`.board-card[data-card-id="${cardId}"]`);
+        if (card) card.dataset.cardOrderIndex = String(index);
+      });
+    }
+
     function saveOrder() {
-      const order = Array.from(grid.querySelectorAll(".board-card[data-card-id]"))
-        .map((card) => card.dataset.cardId)
-        .filter(Boolean);
+      const cards = Array.from(grid.querySelectorAll(".board-card[data-card-id]"));
+      const activeCards = cards.filter((card) => card.dataset.dashboardHidden !== "true");
+      const hiddenCards = cards.filter((card) => card.dataset.dashboardHidden === "true");
+      const orderWithSlots = activeCards.map((card) => card.dataset.cardId).filter(Boolean);
+
+      hiddenCards
+        .slice()
+        .sort((a, b) => Number(a.dataset.cardOrderIndex || 999) - Number(b.dataset.cardOrderIndex || 999))
+        .forEach((card) => {
+          const cardId = card.dataset.cardId;
+          if (!cardId) return;
+
+          const desiredIndex = Math.max(0, Number(card.dataset.cardOrderIndex || orderWithSlots.length));
+          orderWithSlots.splice(Math.min(desiredIndex, orderWithSlots.length), 0, cardId);
+        });
+
+      const order = [...new Set(orderWithSlots)];
+      const hidden_cards = hiddenCards.map((card) => card.dataset.cardId).filter(Boolean);
+      updateCardOrderIndices(order);
 
       fetch(grid.dataset.saveUrl, {
         method: "PATCH",
@@ -549,8 +685,13 @@ data-ns="<%= @ack_ns %>">
           "X-CSRF-Token": csrfToken
         },
         credentials: "same-origin",
-        body: JSON.stringify({ order: order })
+        body: JSON.stringify({ order: order, hidden_cards: hidden_cards })
       }).catch(() => {});
+    }
+
+    function moveHiddenCardsToEnd() {
+      Array.from(grid.querySelectorAll(".board-card.is-dashboard-hidden[data-card-id]"))
+        .forEach((card) => grid.appendChild(card));
     }
 
     function pointerPosition(event) {
@@ -590,7 +731,7 @@ data-ns="<%= @ack_ns %>">
     function reorderFromPointer(clientY) {
       if (!draggedCard) return;
 
-      const otherCards = Array.from(grid.querySelectorAll(".board-card[data-card-id]"))
+      const otherCards = Array.from(grid.querySelectorAll('.board-card[data-card-id][data-dashboard-hidden="false"]'))
         .filter((card) => card !== draggedCard);
 
       let targetCard = null;
@@ -632,6 +773,7 @@ data-ns="<%= @ack_ns %>">
         ghostAnimationFrame = null;
       }
       draggedCard = null;
+      moveHiddenCardsToEnd();
       saveOrder();
       document.removeEventListener("mousemove", handlePointerMove);
       document.removeEventListener("mouseup", handlePointerUp);
@@ -658,6 +800,38 @@ data-ns="<%= @ack_ns %>">
 
       const subtitle = card.querySelector(".subtitle");
       if (subtitle && !subtitle.querySelector(".card-drag-handle")) {
+        const visibilityLabel = document.createElement("label");
+        visibilityLabel.className = "card-visibility-toggle";
+        visibilityLabel.title = "Mostrar ou ocultar este card";
+
+        const visibilityInput = document.createElement("input");
+        visibilityInput.type = "checkbox";
+        visibilityInput.checked = card.dataset.dashboardHidden !== "true";
+        visibilityInput.setAttribute("aria-label", "Exibir card");
+
+        const visibilityText = document.createElement("span");
+        visibilityText.textContent = "Exibir";
+
+        visibilityLabel.appendChild(visibilityInput);
+        visibilityLabel.appendChild(visibilityText);
+        visibilityLabel.addEventListener("click", (event) => event.stopPropagation());
+        visibilityInput.addEventListener("change", () => {
+          const hidden = !visibilityInput.checked;
+          card.dataset.dashboardHidden = hidden ? "true" : "false";
+          card.classList.toggle("is-dashboard-hidden", hidden);
+          if (hidden) {
+            grid.appendChild(card);
+          } else {
+            const desiredIndex = Number(card.dataset.cardOrderIndex || 0);
+            const activeCards = Array.from(grid.querySelectorAll('.board-card[data-card-id][data-dashboard-hidden="false"]'))
+              .filter((item) => item !== card);
+            const target = activeCards.find((item) => Number(item.dataset.cardOrderIndex || 0) > desiredIndex);
+            target ? target.insertAdjacentElement("beforebegin", card) : grid.insertBefore(card, grid.querySelector('.board-card[data-dashboard-hidden="true"]'));
+          }
+          moveHiddenCardsToEnd();
+          saveOrder();
+        });
+
         const handle = document.createElement("button");
         handle.type = "button";
         handle.className = "card-drag-handle";
@@ -673,6 +847,7 @@ data-ns="<%= @ack_ns %>">
         handle.addEventListener("mousedown", (event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (card.dataset.dashboardHidden === "true") return;
           const rect = card.getBoundingClientRect();
           const handleRect = handle.getBoundingClientRect();
           const { x, y } = pointerPosition(event);
@@ -700,6 +875,7 @@ data-ns="<%= @ack_ns %>">
         handle.addEventListener("touchstart", (event) => {
           event.preventDefault();
           event.stopPropagation();
+          if (card.dataset.dashboardHidden === "true") return;
           const rect = card.getBoundingClientRect();
           const handleRect = handle.getBoundingClientRect();
           const { x, y } = pointerPosition(event);
@@ -725,11 +901,13 @@ data-ns="<%= @ack_ns %>">
           document.addEventListener("touchcancel", handlePointerUp);
         });
 
+        subtitle.appendChild(visibilityLabel);
         subtitle.appendChild(handle);
       }
     }
 
     grid.querySelectorAll(".board-card[data-card-id]").forEach(bindCard);
+    moveHiddenCardsToEnd();
   };
 
   document.addEventListener("DOMContentLoaded", window.initDashboardCardOrdering);

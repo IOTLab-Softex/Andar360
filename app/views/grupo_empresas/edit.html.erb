@@ -1,6 +1,20 @@
 <%= form_with model: @grupo_empresa, local: true do |form| %>
 <% readonly_for_client = current_user && current_user.role == "client" %>
 
+<div class="form-group-fixed" style="display:flex; justify-content:center; gap:0.75rem;">
+  <div class="mt-3 text-center">
+    <%= link_to "Cancelar", grupo_empresas_path, class: "btn btn-warning" %>
+  </div>
+  <div class="mt-3 text-center">
+    <%= form.button type: "submit", class: "btn btn-success" do %>
+      <i class="fa-solid fa-floppy-disk"></i>
+      Salvar alterações
+    <% end %>
+  </div>
+</div>
+
+<br>
+
 <div class="form-group">
   <%= form.label :nome %>
   <%= form.text_field :nome,
@@ -61,6 +75,7 @@
               :can_approve_purchase,
               :can_buy,
               :can_view_monitoring,
+              :can_manage_import_backup,
               :can_support_access,
               :can_manage_items,
               :can_manage_encomendas)
@@ -72,7 +87,6 @@
 
 </div>
 
-  <%= form.submit "Salvar alterações", class: "btn btn-primary" %>
 <% end %>
 
 
@@ -87,6 +101,7 @@
                   url: sub_grupo_empresas_path,
                   method: :post,
                   local: true,
+                  authenticity_token: form_authenticity_token,
                   html: { id: "form-subgrupo" } do |f| %>
 
       <!-- vamos controlar esse _method via JS: "post" p/ criar, "patch" p/ editar -->
@@ -139,6 +154,12 @@
                       id: "sub_grupo_empresa_can_support_access" %>
       Suporte de acesso
     </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_manage_import_backup,
+                      id: "sub_grupo_empresa_can_manage_import_backup" %>
+      Importação/Backup
+    </label>
   </div>
 </fieldset>
 
@@ -179,6 +200,14 @@
 
 
 <script>
+  function atualizarTokenSubgrupo() {
+    const form = document.getElementById('form-subgrupo');
+    const token = document.querySelector('meta[name="csrf-token"]')?.content;
+    const tokenInput = form?.querySelector('input[name="authenticity_token"]');
+
+    if (token && tokenInput) tokenInput.value = token;
+  }
+
   function abrirModalSubgrupo() {
     // modo CRIAR
     const modal = document.getElementById('modal-subgrupo');
@@ -189,6 +218,7 @@
     // volta para rota de create
     form.action = '/sub_grupo_empresas';
     methodInput.value = 'post';
+    atualizarTokenSubgrupo();
 
     // limpa campos
     document.getElementById('sub_grupo_empresa_nome').value = '';
@@ -200,6 +230,8 @@ const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monito
   if (chkMonitoring) chkMonitoring.checked = false;
 const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
   if (chkSupportAccess) chkSupportAccess.checked = false;
+const chkImportBackup = document.getElementById('sub_grupo_empresa_can_manage_import_backup');
+  if (chkImportBackup) chkImportBackup.checked = false;
 const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_items');
   if (chkManageItems) chkManageItems.checked = false;
 const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');
@@ -235,6 +267,7 @@ const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manag
     // modo EDITAR
     form.action = `/sub_grupo_empresas/${sg.id}`;
     methodInput.value = 'patch';
+    atualizarTokenSubgrupo();
 
     // preenche campos
     document.getElementById('sub_grupo_empresa_nome').value = sg.nome || '';
@@ -246,6 +279,8 @@ const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monito
 if (chkMonitoring) chkMonitoring.checked = !!sg.can_view_monitoring;
 const chkSupportAccess = document.getElementById('sub_grupo_empresa_can_support_access');
 if (chkSupportAccess) chkSupportAccess.checked = !!sg.can_support_access;
+const chkImportBackup = document.getElementById('sub_grupo_empresa_can_manage_import_backup');
+if (chkImportBackup) chkImportBackup.checked = !!sg.can_manage_import_backup;
 const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_items');
 if (chkManageItems) chkManageItems.checked = !!sg.can_manage_items;
 const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');

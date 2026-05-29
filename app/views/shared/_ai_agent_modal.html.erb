@@ -1,0 +1,1383 @@
+<div id="ai-agent-modal" class="ai-agent-modal" aria-hidden="true" style="display:none;">
+  <div class="ai-agent-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="ai-agent-title">
+    <button type="button" class="ai-agent-modal__close" aria-label="Fechar agente IA">&times;</button>
+
+    <header class="ai-agent-modal__header">
+      <span class="ai-agent-modal__icon"><%= image_tag "icones/icons_custom/solid/estrela_icone.svg", alt: "" %></span>
+      <div>
+        <h3 id="ai-agent-title">Agente IA</h3>
+        <p>Converse com o assistente sobre dúvidas e tarefas do sistema.</p>
+        <p class="ai-agent-modal__hint">Use <strong>@</strong> para inserir salas, horarios ou pessoas.</p>
+      </div>
+    </header>
+
+    <div id="ai-agent-messages" class="ai-agent-chat" aria-live="polite">
+      <div class="ai-agent-message ai-agent-message--bot">
+        Olá! Sou o agente IA. Me diga o que você precisa fazer e eu te ajudo a encontrar o caminho.
+      </div>
+    </div>
+
+    <form id="ai-agent-form" class="ai-agent-form">
+      <div class="ai-agent-input-wrap">
+        <textarea id="ai-agent-input" rows="1" wrap="soft" autocomplete="off" placeholder="Digite sua mensagem..." aria-label="Mensagem para o agente IA"></textarea>
+        <div id="ai-agent-mentions" class="ai-agent-mentions" hidden></div>
+      </div>
+      <button type="button" id="ai-agent-voice" class="ai-agent-form__voice" title="Falar" aria-label="Falar com o agente">
+        <i class="fa-solid fa-microphone"></i>
+      </button>
+      <button type="button" id="ai-agent-conversation" class="ai-agent-form__conversation" title="Modo conversa" aria-label="Ativar modo conversa" aria-pressed="false">
+        <i class="fa-solid fa-headphones"></i>
+      </button>
+      <button type="submit" title="Enviar" aria-label="Enviar mensagem">
+        <i class="fa-solid fa-paper-plane"></i>
+      </button>
+    </form>
+  </div>
+</div>
+
+<style>
+.ai-agent-modal,
+.ai-agent-fab {
+  --ai-agent-surface: var(--color-header, #ffffff);
+  --ai-agent-surface-2: var(--color-card, #f3f4f6);
+  --ai-agent-text: var(--color-text, #111827);
+  --ai-agent-muted: var(--color-muted, #667085);
+  --ai-agent-border: rgba(15,23,42,.14);
+  --ai-agent-overlay: rgba(15,18,24,.35);
+  --ai-agent-bot-bg: rgba(15,23,42,.08);
+  --ai-agent-input-bg: rgba(15,23,42,.04);
+  --ai-agent-accent: var(--color-accent, #7014f1);
+  --ai-agent-accent-hover: var(--color-accent-hover, #5712b9);
+  --ai-agent-accent-text: #ffffff;
+}
+
+:root[data-theme="dark"] .ai-agent-modal,
+:root[data-theme="dark"] .ai-agent-fab {
+  --ai-agent-surface: #262528;
+  --ai-agent-surface-2: #343236;
+  --ai-agent-text: #f5f5f5;
+  --ai-agent-muted: rgba(255,255,255,.72);
+  --ai-agent-border: rgba(255,255,255,.12);
+  --ai-agent-overlay: rgba(15,18,24,.55);
+  --ai-agent-bot-bg: rgba(255,255,255,.08);
+  --ai-agent-input-bg: rgba(255,255,255,.06);
+  --ai-agent-accent: var(--color-accent, #7014f1);
+  --ai-agent-accent-hover: var(--color-accent-hover, #5712b9);
+  --ai-agent-accent-text: #ffffff;
+}
+
+.ai-agent-fab {
+  --ai-agent-rainbow: conic-gradient(from 18deg, #7c4dff, #38f8ff, #14f195, #ffc107, #ff3d81, #9d6bff, #7c4dff);
+  display: grid;
+  place-items: center;
+  width: 75px;
+  height: 75px;
+  border-radius: 50%;
+  background: #3c1771;
+  color: #fff;
+  box-shadow: 0 10px 25px rgba(0,0,0,.25);
+  position: relative;
+  bottom: auto;
+  right: auto;
+  border: 0;
+  cursor: pointer;
+  font-size: 1.35rem;
+  margin: 0;
+  padding: 0;
+  transform: translateY(0) scale(1);
+  transform-origin: center;
+  transition: transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s cubic-bezier(.2,.8,.2,1);
+  will-change: transform;
+  backface-visibility: hidden;
+  z-index: 10;
+}
+
+.ai-agent-fab::before {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--ai-agent-rainbow);
+  padding: 4px;
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: aiAgentBorderSpin 3.8s linear infinite;
+}
+
+.ai-agent-fab img {
+  width: 42px;
+  height: 42px;
+  display: block;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  pointer-events: none;
+}
+
+.ai-agent-fab__tip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 14px);
+  width: min(280px, calc(100vw - 38px));
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--ai-agent-surface);
+  border: 1px solid var(--ai-agent-border);
+  color: var(--ai-agent-text);
+  box-shadow: 0 16px 34px rgba(0,0,0,.24);
+  font-size: .88rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: left;
+  opacity: 0;
+  transform: translateY(8px) scale(.98);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.ai-agent-fab__tip::after {
+  content: "";
+  position: absolute;
+  right: 24px;
+  top: 100%;
+  border: 8px solid transparent;
+  border-top-color: var(--ai-agent-surface);
+}
+
+.ai-agent-fab__tip.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.ai-agent-fab:hover {
+  transform: translateY(-2px) scale(1.06);
+  box-shadow: 0 14px 32px rgba(0,0,0,.30);
+}
+
+.ai-agent-fab:active {
+  transform: translateY(0) scale(.98);
+  box-shadow: 0 8px 20px rgba(0,0,0,.22);
+}
+
+.ai-agent-fab:focus-visible {
+  outline: 3px solid rgba(255,255,255,.9);
+  outline-offset: 3px;
+}
+
+.ai-agent-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 12010;
+  background: var(--ai-agent-overlay);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.ai-agent-modal__dialog {
+  width: min(680px, 96%);
+  max-height: min(88svh, 820px);
+  margin: clamp(32px, 8vh, 90px) auto;
+  background: var(--ai-agent-surface);
+  border: 1px solid var(--ai-agent-border);
+  border-radius: 16px;
+  color: var(--ai-agent-text);
+  box-shadow: 0 24px 60px rgba(0,0,0,.35);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] .ai-agent-modal__dialog {
+  color-scheme: dark;
+}
+
+.ai-agent-modal__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid var(--ai-agent-border);
+  background: var(--ai-agent-bot-bg);
+  color: var(--ai-agent-text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.ai-agent-modal__header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  padding: 18px 56px 14px 18px;
+  border-bottom: 1px solid var(--ai-agent-border);
+}
+
+.ai-agent-modal__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--ai-agent-accent);
+  color: var(--ai-agent-accent-text);
+  overflow: hidden;
+}
+
+.ai-agent-modal__icon img {
+  width: 25px;
+  height: 25px;
+  display: block;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.ai-agent-modal__header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.ai-agent-modal__header p {
+  margin: 4px 0 0;
+  color: var(--ai-agent-muted);
+  font-size: .9rem;
+}
+
+.ai-agent-modal__hint {
+  font-size: .78rem !important;
+}
+
+.ai-agent-chat {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  min-height: 340px;
+}
+
+.ai-agent-message {
+  max-width: 88%;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: .94rem;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ai-agent-message--bot {
+  align-self: flex-start;
+  background: var(--ai-agent-bot-bg);
+  color: var(--ai-agent-text);
+}
+
+.ai-agent-message--user {
+  align-self: flex-end;
+  background: var(--ai-agent-accent);
+  color: var(--ai-agent-accent-text);
+  font-weight: 600;
+}
+
+.ai-agent-message--with-cards {
+  max-width: min(96%, 560px);
+  width: min(96%, 560px);
+}
+
+.ai-agent-reservation-carousel {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 0 2px;
+  scroll-snap-type: x mandatory;
+}
+
+.ai-agent-reservation-card {
+  flex: 0 0 min(260px, 82%);
+  scroll-snap-align: start;
+  background: var(--ai-agent-surface-2);
+  border: 1px solid var(--ai-agent-border);
+  border-radius: 8px;
+  padding: 12px;
+  color: var(--ai-agent-text);
+}
+
+.ai-agent-reservation-card strong {
+  display: block;
+  font-size: .95rem;
+  margin-bottom: 8px;
+}
+
+.ai-agent-reservation-card span {
+  display: block;
+  color: var(--ai-agent-muted);
+  font-size: .84rem;
+  line-height: 1.35;
+}
+
+.ai-agent-reservation-card button {
+  margin-top: 10px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 8px;
+  padding: 0 12px;
+  background: var(--ai-agent-accent);
+  color: var(--ai-agent-accent-text);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.ai-agent-room-carousel {
+  width: 100%;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 0 2px;
+  scroll-snap-type: x mandatory;
+}
+
+.ai-agent-room-card {
+  position: relative;
+  flex: 0 0 min(240px, 82%);
+  min-height: 150px;
+  padding: 0;
+  scroll-snap-align: start;
+  overflow: hidden;
+  border: 1px solid var(--ai-agent-border);
+  border-radius: 10px;
+  background: var(--ai-agent-surface-2);
+  color: #fff;
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 12px 24px rgba(0,0,0,.16);
+  text-align: left;
+}
+
+.ai-agent-room-card__photo {
+  position: absolute;
+  inset: 0;
+  background-color: #25163f;
+  background-position: center;
+  background-size: cover;
+  transform: scale(1);
+  transition: transform .18s ease;
+}
+
+.ai-agent-room-card:hover .ai-agent-room-card__photo {
+  transform: scale(1.04);
+}
+
+.ai-agent-room-card__photo::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.18), rgba(0,0,0,.72));
+}
+
+.ai-agent-room-card__body {
+  position: absolute;
+  inset: auto 0 0;
+  z-index: 1;
+  padding: 12px;
+}
+
+.ai-agent-room-card strong {
+  display: block;
+  font-size: .94rem;
+  line-height: 1.25;
+  text-transform: uppercase;
+}
+
+.ai-agent-room-card span {
+  display: block;
+  margin-top: 5px;
+  color: rgba(255,255,255,.82);
+  font-size: .78rem;
+}
+
+.ai-agent-room-card em {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  margin-top: 10px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--ai-agent-accent);
+  color: var(--ai-agent-accent-text);
+  font-size: .72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.ai-agent-form {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  align-items: end;
+  gap: 8px;
+  padding: 12px 18px 18px;
+  border-top: 1px solid var(--ai-agent-border);
+}
+
+.ai-agent-input-wrap {
+  position: relative;
+  min-width: 0;
+}
+
+.ai-agent-form textarea {
+  width: 100%;
+  min-height: 42px;
+  max-height: 120px;
+  border-radius: 10px;
+  border: 1px solid var(--ai-agent-border);
+  background: var(--ai-agent-input-bg);
+  color: var(--ai-agent-text);
+  padding: 10px 12px;
+  resize: none;
+  line-height: 1.35;
+  overflow-y: auto;
+  box-sizing: border-box;
+  font: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ai-agent-mentions {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 2;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--ai-agent-surface);
+  border: 1px solid var(--ai-agent-border);
+  box-shadow: 0 14px 34px rgba(0,0,0,.22);
+}
+
+.ai-agent-mentions__title {
+  padding: 2px 4px 8px;
+  color: var(--ai-agent-muted);
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.ai-agent-form .ai-agent-mention-option {
+  width: 100%;
+  height: auto;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  margin: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ai-agent-text);
+  text-align: left;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.ai-agent-form .ai-agent-mention-option:hover,
+.ai-agent-form .ai-agent-mention-option.is-active {
+  background: var(--ai-agent-bot-bg);
+}
+
+.ai-agent-form .ai-agent-mention-option small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--ai-agent-surface-2);
+  color: var(--ai-agent-muted);
+  font-size: .72rem;
+  font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.ai-agent-form .ai-agent-mention-option span {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: .9rem;
+  font-weight: 700;
+}
+
+.ai-agent-form button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--ai-agent-accent);
+  color: var(--ai-agent-accent-text);
+  cursor: pointer;
+}
+
+.ai-agent-form__voice {
+  background: var(--ai-agent-bot-bg) !important;
+  color: var(--ai-agent-text) !important;
+  border: 1px solid var(--ai-agent-border) !important;
+}
+
+.ai-agent-form__conversation {
+  background: var(--ai-agent-bot-bg) !important;
+  color: var(--ai-agent-text) !important;
+  border: 1px solid var(--ai-agent-border) !important;
+}
+
+.ai-agent-form__conversation.is-active {
+  background: #14f195 !important;
+  border-color: #14f195 !important;
+  color: #102018 !important;
+  box-shadow: 0 0 0 3px rgba(20,241,149,.2);
+}
+
+.ai-agent-form__voice.is-listening {
+  background: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: #fff !important;
+}
+
+.ai-agent-form__voice.is-waiting {
+  animation: aiAgentVoicePulse 1s ease-in-out infinite;
+}
+
+.ai-agent-form__voice.is-understanding {
+  animation: aiAgentVoiceGlow .55s ease-in-out infinite alternate;
+}
+
+@media (max-width: 640px) {
+  .ai-agent-fab {
+    width: 62px;
+    height: 62px;
+    bottom: auto;
+    right: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-agent-fab { transition: none; animation: none; }
+  .ai-agent-fab::before { animation: none; }
+}
+
+@keyframes aiAgentBorderSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes aiAgentVoicePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, .45); }
+  50% { box-shadow: 0 0 0 7px rgba(255, 193, 7, 0); }
+}
+
+@keyframes aiAgentVoiceGlow {
+  from { box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 0 10px rgba(220,53,69,.35); }
+  to { box-shadow: 0 0 0 4px rgba(255,255,255,.24), 0 0 18px rgba(220,53,69,.7); }
+}
+</style>
+
+<script>
+(function () {
+  function bindAiAgent() {
+    const fab = document.getElementById("ai-agent-fab");
+    const modal = document.getElementById("ai-agent-modal");
+    const closeBtn = modal?.querySelector(".ai-agent-modal__close");
+    const form = document.getElementById("ai-agent-form");
+    const input = document.getElementById("ai-agent-input");
+    const voiceBtn = document.getElementById("ai-agent-voice");
+    const conversationBtn = document.getElementById("ai-agent-conversation");
+    const mentions = document.getElementById("ai-agent-mentions");
+    const messages = document.getElementById("ai-agent-messages");
+    const fabTip = fab?.querySelector(".ai-agent-fab__tip");
+
+    if (!fab || !modal || !form || !input || !messages || fab.dataset.bound === "1") return;
+    fab.dataset.bound = "1";
+    const fabTipStorageKey = "andar360AiAgentFabTipSeen";
+
+    const mentionData = {
+      rooms: <%= raw(Room.where(espaco_comun: true).order(:name).limit(100).pluck(:name).to_json) %>,
+      participants: <%= raw((current_user&.admin? || current_user&.operador? ? Participant.ativos.order(:name).limit(150) : Participant.ativos.where(grupo_empresa_id: current_user&.participant&.grupo_empresa_id).order(:name).limit(150)).pluck(:name).to_json) %>,
+      times: ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
+    };
+
+    const mentionCategories = [
+      { key: "salas", label: "Salas", helper: "Escolher sala" },
+      { key: "participantes", label: "Participantes", helper: "Adicionar pessoas" },
+      { key: "horario_inicio", label: "Horario inicio", helper: "Definir inicio" },
+      { key: "horario_fim", label: "Horario fim", helper: "Definir fim" },
+      { key: "responsavel", label: "Responsavel", helper: "Definir responsavel" },
+      { key: "solicitante", label: "Solicitante", helper: "Definir solicitante" }
+    ];
+
+    let mentionState = { start: -1, end: -1, options: [], active: 0 };
+
+    function openModal() {
+      markFabTipSeen();
+      modal.style.display = "block";
+      modal.setAttribute("aria-hidden", "false");
+      setTimeout(() => input.focus(), 0);
+    }
+
+    function closeModal() {
+      modal.style.display = "none";
+      modal.setAttribute("aria-hidden", "true");
+      setConversationMode(false);
+      resetVoiceState();
+    }
+
+    function showFabTipIfNeeded() {
+      if (!fabTip) return;
+
+      try {
+        if (window.localStorage.getItem(fabTipStorageKey) === "1") return;
+      } catch (_error) {}
+
+      window.setTimeout(() => {
+        if (modal.getAttribute("aria-hidden") === "false") return;
+        fabTip.classList.add("is-visible");
+      }, 650);
+    }
+
+    function markFabTipSeen() {
+      if (!fabTip) return;
+
+      fabTip.classList.remove("is-visible");
+      try {
+        window.localStorage.setItem(fabTipStorageKey, "1");
+      } catch (_error) {}
+    }
+
+    function addMessage(text, type) {
+      const message = document.createElement("div");
+      message.className = `ai-agent-message ai-agent-message--${type}`;
+      message.textContent = text;
+      messages.appendChild(message);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function normalizeMention(value) {
+      return (value || "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9_ ]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function currentMentionToken() {
+      const cursor = input.selectionStart || 0;
+      const before = input.value.slice(0, cursor);
+      const start = before.lastIndexOf("@");
+      if (start < 0) return null;
+
+      const token = before.slice(start + 1);
+      if (token.includes("\n")) return null;
+
+      return { start: start, end: cursor, value: token };
+    }
+
+    function categoryItems(category) {
+      if (category.key === "salas") {
+        return mentionData.rooms.map((name) => ({ label: name, helper: "Sala", insert: `sala ${name}` }));
+      }
+
+      if (["participantes", "responsavel", "solicitante"].includes(category.key)) {
+        const prefix = category.key === "responsavel" ? "responsavel" : category.key === "solicitante" ? "solicitante" : "participante";
+        return mentionData.participants.map((name) => ({ label: name, helper: category.label, insert: `${prefix} ${name}` }));
+      }
+
+      if (category.key === "horario_inicio") {
+        return mentionData.times.map((time) => ({ label: time, helper: "Inicio", insert: `horario de inicio ${time}` }));
+      }
+
+      if (category.key === "horario_fim") {
+        return mentionData.times.map((time) => ({ label: time, helper: "Fim", insert: `horario de fim ${time}` }));
+      }
+
+      return [];
+    }
+
+    function mentionOptions(token) {
+      const raw = normalizeMention(token.value);
+      const category = mentionCategories.find((item) => raw === normalizeMention(item.label) || raw.startsWith(`${normalizeMention(item.label)} `) || raw === item.key);
+
+      if (category) {
+        const remainder = raw.replace(normalizeMention(category.label), "").replace(category.key, "").trim();
+        return categoryItems(category)
+          .filter((item) => normalizeMention(item.label).includes(remainder))
+          .slice(0, 12);
+      }
+
+      return mentionCategories
+        .filter((item) => normalizeMention(item.label).includes(raw) || item.key.includes(raw))
+        .map((item) => ({ label: item.label, helper: item.helper, category: item }))
+        .slice(0, 12);
+    }
+
+    function hideMentions() {
+      if (!mentions) return;
+
+      mentions.hidden = true;
+      mentions.innerHTML = "";
+      mentionState = { start: -1, end: -1, options: [], active: 0 };
+    }
+
+    function renderMentions() {
+      if (!mentions) return;
+
+      const token = currentMentionToken();
+      if (!token) {
+        hideMentions();
+        return;
+      }
+
+      const options = mentionOptions(token);
+      if (!options.length) {
+        hideMentions();
+        return;
+      }
+
+      mentionState = { start: token.start, end: token.end, options: options, active: Math.min(mentionState.active || 0, options.length - 1) };
+      mentions.innerHTML = "";
+
+      const title = document.createElement("div");
+      title.className = "ai-agent-mentions__title";
+      title.textContent = options[0]?.category ? "Complete o comando" : "Comandos rapidos";
+      mentions.appendChild(title);
+
+      options.forEach((option, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = `ai-agent-mention-option${index === mentionState.active ? " is-active" : ""}`;
+
+        const label = document.createElement("span");
+        label.textContent = option.label;
+
+        const helper = document.createElement("small");
+        helper.textContent = option.helper || "";
+
+        button.appendChild(label);
+        button.appendChild(helper);
+        button.addEventListener("mousedown", (event) => {
+          event.preventDefault();
+          applyMentionOption(option);
+        });
+        mentions.appendChild(button);
+      });
+
+      mentions.hidden = false;
+    }
+
+    function applyMentionOption(option) {
+      if (mentionState.start < 0) return;
+
+      if (option.category) {
+        const value = `@${option.label} `;
+        input.value = `${input.value.slice(0, mentionState.start)}${value}${input.value.slice(mentionState.end)}`;
+        const cursor = mentionState.start + value.length;
+        input.setSelectionRange(cursor, cursor);
+        resizeInput();
+        renderMentions();
+        input.focus();
+        return;
+      }
+
+      const value = `${option.insert} `;
+      input.value = `${input.value.slice(0, mentionState.start)}${value}${input.value.slice(mentionState.end)}`;
+      const cursor = mentionState.start + value.length;
+      input.setSelectionRange(cursor, cursor);
+      resizeInput();
+      hideMentions();
+      input.focus();
+    }
+
+    function resizeInput() {
+      input.style.height = "auto";
+      input.style.height = `${Math.min(input.scrollHeight, 120)}px`;
+    }
+
+    function buildReservationCards(reservations) {
+      if (!Array.isArray(reservations) || reservations.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-reservation-carousel";
+
+      reservations.forEach(function (reservation) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-reservation-card";
+
+        const room = document.createElement("strong");
+        room.textContent = reservation.room || "Sala";
+
+        const time = document.createElement("span");
+        time.textContent = `${reservation.starts_at_label || reservation.starts_at} ate ${reservation.ends_at_label || reservation.ends_at}`;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Cancelar esta";
+        button.addEventListener("click", function () {
+          sendMessage(`Cancelar reserva ID ${reservation.id}`);
+        });
+
+        card.appendChild(room);
+        card.appendChild(time);
+        card.appendChild(button);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachReservationCards(messageElement, reservations) {
+      const carousel = buildReservationCards(reservations);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function buildRoomCards(rooms) {
+      if (!Array.isArray(rooms) || rooms.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-room-carousel";
+
+      rooms.forEach(function (room) {
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "ai-agent-room-card";
+        card.addEventListener("click", function () {
+          selectRoomFromCard(room);
+        });
+
+        const photo = document.createElement("div");
+        photo.className = "ai-agent-room-card__photo";
+        if (room.photo_url) photo.style.backgroundImage = `url('${room.photo_url}')`;
+
+        const body = document.createElement("div");
+        body.className = "ai-agent-room-card__body";
+
+        const name = document.createElement("strong");
+        name.textContent = room.name || "Sala";
+
+        const details = document.createElement("span");
+        details.textContent = [room.group, room.floor && `Andar ${room.floor}`, room.capacity && `${room.capacity} pessoas`].filter(Boolean).join(" • ") || "Disponivel";
+
+        const action = document.createElement("em");
+        action.textContent = "Selecionar sala";
+
+        body.appendChild(name);
+        body.appendChild(details);
+        body.appendChild(action);
+        card.appendChild(photo);
+        card.appendChild(body);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function selectRoomFromCard(room) {
+      const roomName = room?.name;
+      if (!roomName) return;
+
+      const selectedText = `sala ${roomName}`;
+      const currentText = input.value.trim();
+      input.value = currentText ? `${currentText}\n${selectedText}` : selectedText;
+      resizeInput();
+      hideMentions();
+      input.focus();
+      input.setSelectionRange(input.value.length, input.value.length);
+    }
+
+    function attachRoomCards(messageElement, rooms) {
+      const carousel = buildRoomCards(rooms);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    let resetVoiceState = function () {
+      input.value = "";
+      resizeInput();
+    };
+    let startVoiceCapture = async function () {};
+    let startBargeInCapture = async function () {};
+    let conversationMode = false;
+    let openAiAudio = null;
+    let agentSpeechInterrupted = false;
+
+    function setConversationMode(active) {
+      conversationMode = active;
+      conversationBtn?.classList.toggle("is-active", active);
+      conversationBtn?.setAttribute("aria-pressed", active ? "true" : "false");
+      conversationBtn?.setAttribute("aria-label", active ? "Desativar modo conversa" : "Ativar modo conversa");
+      conversationBtn && (conversationBtn.title = active ? "Modo conversa ativo" : "Modo conversa");
+
+      if (!active) {
+        resetVoiceState();
+        stopAgentSpeech();
+      }
+    }
+
+    function speakWithBrowser(text) {
+      if (!window.speechSynthesis || !text) return;
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = "pt-BR";
+      utterance.rate = 1;
+      utterance.pitch = 1;
+      utterance.onend = function () {
+        if (agentSpeechInterrupted) return;
+        if (conversationMode) startVoiceCapture();
+      };
+
+      agentSpeechInterrupted = false;
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(utterance);
+      if (conversationMode) startBargeInCapture();
+    }
+
+    function speakBotMessage(text) {
+      if (!conversationMode || !text) return;
+
+      fetch("/ai_agent/speech", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+        },
+        body: JSON.stringify({ text: text })
+      })
+        .then((response) => {
+          if (!response.ok) throw new Error("speech_failed");
+          return response.blob();
+        })
+        .then((blob) => {
+          if (!conversationMode) return;
+
+          const url = URL.createObjectURL(blob);
+          if (openAiAudio) openAiAudio.pause();
+
+          openAiAudio = new Audio(url);
+          openAiAudio.onended = function () {
+            URL.revokeObjectURL(url);
+            openAiAudio = null;
+            if (agentSpeechInterrupted) return;
+            if (conversationMode) startVoiceCapture();
+          };
+          openAiAudio.onerror = function () {
+            URL.revokeObjectURL(url);
+            openAiAudio = null;
+            speakWithBrowser(text);
+          };
+          agentSpeechInterrupted = false;
+          openAiAudio.play().then(function () {
+            if (conversationMode) startBargeInCapture();
+          }).catch(function () {
+            URL.revokeObjectURL(url);
+            openAiAudio = null;
+            speakWithBrowser(text);
+          });
+        })
+        .catch(function () {
+          speakWithBrowser(text);
+        });
+    }
+
+    function stopAgentSpeech() {
+      agentSpeechInterrupted = true;
+      if (openAiAudio) {
+        openAiAudio.pause();
+        openAiAudio = null;
+      }
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function sendMessage(text) {
+      addMessage(text, "user");
+      resetVoiceState();
+      input.value = "";
+      form.reset();
+      resizeInput();
+      if (conversationMode) setTimeout(function () { startVoiceCapture(); }, 120);
+
+      const pending = document.createElement("div");
+      pending.className = "ai-agent-message ai-agent-message--bot";
+      pending.textContent = "Pensando...";
+      messages.appendChild(pending);
+      messages.scrollTop = messages.scrollHeight;
+
+      fetch("/ai_agent/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+        },
+        body: JSON.stringify({ message: text })
+      })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+          const botText = data.message || (ok ? "Pronto." : "Nao consegui concluir a solicitacao.");
+          pending.textContent = botText;
+          attachReservationCards(pending, data.reservations);
+          attachRoomCards(pending, data.rooms);
+          speakBotMessage(botText);
+        })
+        .catch(() => {
+          pending.textContent = "Nao consegui falar com o agente agora. Tente novamente em instantes.";
+        })
+        .finally(() => {
+          messages.scrollTop = messages.scrollHeight;
+        });
+    }
+
+    function setupVoiceInput() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!voiceBtn || !SpeechRecognition) {
+        voiceBtn?.setAttribute("hidden", "hidden");
+        return;
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = true;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+      let isListening = false;
+      let shouldKeepListening = false;
+      let submitAfterStop = false;
+      let finalTranscript = "";
+      let voiceErrorVisible = false;
+      let silenceTimer = null;
+      let bargeInMode = false;
+
+      function resetTranscript() {
+        finalTranscript = "";
+        input.value = "";
+        resizeInput();
+      }
+
+      function clearSilenceTimer() {
+        if (!silenceTimer) return;
+
+        clearTimeout(silenceTimer);
+        silenceTimer = null;
+      }
+
+      function scheduleConversationSubmit() {
+        if (!conversationMode || !input.value.trim()) return;
+
+        clearSilenceTimer();
+        silenceTimer = setTimeout(function () {
+          if (!conversationMode || !input.value.trim()) return;
+
+          shouldKeepListening = false;
+          submitAfterStop = true;
+          if (isListening) {
+            recognition.stop();
+          } else {
+            const text = input.value.trim();
+            resetTranscript();
+            if (text) sendMessage(text);
+          }
+        }, 1200);
+      }
+
+      function setVoiceIdle() {
+        voiceBtn.classList.remove("is-listening", "is-waiting", "is-understanding");
+        voiceBtn.setAttribute("aria-label", "Falar com o agente");
+        voiceBtn.title = "Falar";
+      }
+
+      function setVoiceWaiting() {
+        voiceBtn.classList.add("is-waiting");
+        voiceBtn.classList.remove("is-understanding");
+        voiceBtn.setAttribute("aria-label", "Preparando microfone");
+        voiceBtn.title = "Preparando...";
+      }
+
+      function setVoiceUnderstanding() {
+        voiceBtn.classList.add("is-understanding");
+        voiceBtn.classList.remove("is-waiting");
+        voiceBtn.title = "Entendendo...";
+      }
+
+      function startRecognition() {
+        try {
+          recognition.start();
+        } catch (error) {
+          if (error.name !== "InvalidStateError") showVoiceError("Nao consegui iniciar o microfone. Tente novamente.");
+        }
+      }
+
+      function showVoiceError(message) {
+        if (voiceErrorVisible) return;
+
+        voiceErrorVisible = true;
+        shouldKeepListening = false;
+        submitAfterStop = false;
+        setVoiceIdle();
+        addMessage(message, "bot");
+
+        setTimeout(function () {
+          voiceErrorVisible = false;
+        }, 2500);
+      }
+
+      async function canUseMicrophone() {
+        if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+          showVoiceError("Para usar o microfone, acesse o sistema por HTTPS ou localhost.");
+          return false;
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) return true;
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream.getTracks().forEach(function (track) { track.stop(); });
+          return true;
+        } catch (_) {
+          showVoiceError("Permita o acesso ao microfone no navegador e tente de novo.");
+          return false;
+        }
+      }
+
+      resetVoiceState = function () {
+        shouldKeepListening = false;
+        submitAfterStop = false;
+        bargeInMode = false;
+        clearSilenceTimer();
+        resetTranscript();
+        setVoiceIdle();
+        if (isListening) recognition.abort();
+      };
+
+      startVoiceCapture = async function () {
+        if (shouldKeepListening || isListening) return;
+        if (!(await canUseMicrophone())) return;
+
+        resetTranscript();
+        submitAfterStop = false;
+        bargeInMode = false;
+        shouldKeepListening = true;
+        setVoiceWaiting();
+        startRecognition();
+      };
+
+      startBargeInCapture = async function () {
+        if (shouldKeepListening || isListening) {
+          bargeInMode = true;
+          return;
+        }
+        if (!(await canUseMicrophone())) return;
+
+        submitAfterStop = false;
+        bargeInMode = true;
+        shouldKeepListening = true;
+        setVoiceWaiting();
+        startRecognition();
+      };
+
+      recognition.addEventListener("start", function () {
+        isListening = true;
+        voiceBtn.classList.add("is-listening");
+        voiceBtn.classList.remove("is-understanding");
+        voiceBtn.classList.add("is-waiting");
+        voiceBtn.setAttribute("aria-label", "Parar gravacao");
+        voiceBtn.title = "Ouvindo...";
+      });
+
+      recognition.addEventListener("end", function () {
+        isListening = false;
+        if (shouldKeepListening) {
+          setTimeout(function () {
+            if (shouldKeepListening && !isListening) startRecognition();
+          }, 80);
+        } else {
+          setVoiceIdle();
+          if (submitAfterStop) {
+            submitAfterStop = false;
+            bargeInMode = false;
+            const text = input.value.trim();
+            resetTranscript();
+            if (text) sendMessage(text);
+          }
+        }
+      });
+
+      recognition.addEventListener("result", function (event) {
+        let interimTranscript = "";
+
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const transcript = event.results[index][0].transcript;
+          if (event.results[index].isFinal) {
+            finalTranscript = `${finalTranscript} ${transcript}`.trim();
+          } else {
+            interimTranscript += transcript;
+          }
+        }
+
+        const transcribedText = `${finalTranscript} ${interimTranscript}`.trim();
+        if (transcribedText && transcribedText !== input.value) {
+          stopAgentSpeech();
+        }
+
+        input.value = transcribedText;
+        resizeInput();
+        if (input.value) {
+          bargeInMode = false;
+          setVoiceUnderstanding();
+          scheduleConversationSubmit();
+        }
+      });
+
+      recognition.addEventListener("error", function (event) {
+        if (["no-speech", "aborted"].includes(event.error)) return;
+
+        if (["not-allowed", "service-not-allowed"].includes(event.error)) {
+          showVoiceError("Permita o acesso ao microfone no navegador e tente de novo.");
+        } else if (event.error === "audio-capture") {
+          shouldKeepListening = false;
+          submitAfterStop = false;
+          setVoiceIdle();
+          voiceBtn.title = "Microfone indisponivel";
+        } else {
+          showVoiceError("Nao consegui ouvir o audio. Verifique o microfone e tente de novo.");
+        }
+      });
+
+      voiceBtn.addEventListener("click", async function () {
+        if (shouldKeepListening || isListening) {
+          shouldKeepListening = false;
+          submitAfterStop = true;
+          bargeInMode = false;
+          clearSilenceTimer();
+          recognition.stop();
+          setVoiceIdle();
+        } else {
+          startVoiceCapture();
+        }
+      });
+    }
+
+    fab.addEventListener("click", openModal);
+    closeBtn?.addEventListener("click", closeModal);
+    modal.addEventListener("click", function (event) {
+      if (event.target === modal) closeModal();
+    });
+    showFabTipIfNeeded();
+
+    setupVoiceInput();
+
+    conversationBtn?.addEventListener("click", function () {
+      setConversationMode(!conversationMode);
+      if (conversationMode) startVoiceCapture();
+    });
+
+    input.addEventListener("input", function () {
+      resizeInput();
+      renderMentions();
+    });
+
+    input.addEventListener("keydown", function (event) {
+      if (!mentions || mentions.hidden || mentionState.options.length === 0) return;
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        mentionState.active = (mentionState.active + 1) % mentionState.options.length;
+        renderMentions();
+      } else if (event.key === "ArrowUp") {
+        event.preventDefault();
+        mentionState.active = (mentionState.active - 1 + mentionState.options.length) % mentionState.options.length;
+        renderMentions();
+      } else if (event.key === "Enter" || event.key === "Tab") {
+        event.preventDefault();
+        applyMentionOption(mentionState.options[mentionState.active]);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        hideMentions();
+      }
+    });
+
+    document.addEventListener("click", function (event) {
+      if (!mentions || mentions.hidden) return;
+      if (event.target === input || mentions.contains(event.target)) return;
+
+      hideMentions();
+    });
+
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+
+      resetVoiceState();
+      addMessage(text, "user");
+      input.value = "";
+      form.reset();
+      resizeInput();
+
+      const pending = document.createElement("div");
+      pending.className = "ai-agent-message ai-agent-message--bot";
+      pending.textContent = "Pensando...";
+      messages.appendChild(pending);
+      messages.scrollTop = messages.scrollHeight;
+
+      fetch("/ai_agent/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+        },
+        body: JSON.stringify({ message: text })
+      })
+        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+        .then(({ ok, data }) => {
+          const botText = data.message || (ok ? "Pronto." : "Nao consegui concluir a solicitacao.");
+          pending.textContent = botText;
+          attachReservationCards(pending, data.reservations);
+          attachRoomCards(pending, data.rooms);
+          speakBotMessage(botText);
+        })
+        .catch(() => {
+          pending.textContent = "Não consegui falar com o agente agora. Tente novamente em instantes.";
+        })
+        .finally(() => {
+          messages.scrollTop = messages.scrollHeight;
+        });
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", bindAiAgent);
+  document.addEventListener("turbo:load", bindAiAgent);
+})();
+</script>

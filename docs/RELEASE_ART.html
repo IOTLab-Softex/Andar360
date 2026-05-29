@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Andar360 — Novidades</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background: #07050f;
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px;
+  min-height: 100vh;
+}
+
+/* ═══════════════════════════════════════════ POSTER */
+.poster {
+  width: 1080px;
+  background: #0c0a1e;
+  border-radius: 36px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid rgba(120,60,250,.2);
+  box-shadow: 0 48px 140px rgba(0,0,0,.85), 0 0 0 1px rgba(120,60,250,.08);
+}
+
+/* bg glow blobs */
+.poster::before {
+  content: "";
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 10% -5%,  rgba(112,40,245,.18) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 95% 85%,  rgba(6,182,212,.1)   0%, transparent 55%),
+    radial-gradient(ellipse 40% 35% at 50% 110%, rgba(236,72,153,.07) 0%, transparent 55%);
+  pointer-events: none; z-index: 0;
+}
+/* subtle grid */
+.poster::after {
+  content: "";
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(120,60,250,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,60,250,.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none; z-index: 0;
+}
+.z { position: relative; z-index: 2; }
+
+/* ── rainbow top bar */
+.topbar {
+  height: 4px;
+  background: linear-gradient(90deg, #7c3aed, #818cf8, #06b6d4, #10b981, #f59e0b, #ec4899, #7c3aed);
+  background-size: 300%;
+  animation: shift 8s linear infinite;
+}
+@keyframes shift { to { background-position: 300% 0; } }
+
+/* ═══════════════════════════════════════════ HERO */
+.hero {
+  padding: 52px 68px 44px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.hero-left { max-width: 520px; }
+
+.brand { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; }
+.brand-icon {
+  width: 52px; height: 52px; border-radius: 15px;
+  background: linear-gradient(135deg, #3b0d8c, #7c3aed);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem;
+  box-shadow: 0 6px 24px rgba(124,58,237,.5);
+}
+.brand-name { font-size: 1.45rem; font-weight: 800; color: #ede9fe; letter-spacing: -.02em; }
+.brand-sub  { font-size: .72rem; color: #6b5fa8; font-weight: 500; letter-spacing: .05em; margin-top: 2px; }
+
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  background: rgba(124,58,237,.15);
+  border: 1px solid rgba(167,139,250,.3);
+  border-radius: 999px;
+  padding: 5px 14px;
+  font-size: .72rem; font-weight: 700; color: #c4b5fd;
+  letter-spacing: .06em; text-transform: uppercase;
+  margin-bottom: 18px;
+}
+.dot-live {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: blink 1.8s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.hero-title {
+  font-size: 3.6rem; font-weight: 900;
+  line-height: 1.04; letter-spacing: -.04em;
+  color: #ede9fe; margin-bottom: 20px;
+}
+.hero-title .grad {
+  background: linear-gradient(90deg, #a78bfa, #c4b5fd, #67e8f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+
+.hero-desc {
+  font-size: 1rem; color: #7c6fa8; line-height: 1.7; font-weight: 400;
+}
+
+/* hero right — version + stats */
+.hero-right { flex-shrink: 0; text-align: right; padding-top: 8px; }
+.ver-pill {
+  display: inline-block;
+  background: linear-gradient(135deg, rgba(60,20,140,.6), rgba(124,58,237,.3));
+  border: 1px solid rgba(167,139,250,.45);
+  border-radius: 999px; padding: 10px 26px;
+  font-size: 1.1rem; font-weight: 900; color: #c4b5fd;
+  letter-spacing: .04em; margin-bottom: 8px;
+}
+.rel-date { font-size: .72rem; color: #4a3f70; font-weight: 500; letter-spacing: .04em; }
+
+.kpi-row { display: flex; gap: 16px; margin-top: 24px; justify-content: flex-end; }
+.kpi {
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 14px; padding: 14px 18px; text-align: center; min-width: 76px;
+}
+.kpi-num { font-size: 1.8rem; font-weight: 900; line-height: 1; }
+.kpi-lbl { font-size: .6rem; color: #4a3f70; margin-top: 5px; text-transform: uppercase; letter-spacing: .07em; font-weight: 600; }
+
+/* ═══════════════════════════════════════════ SEPARATOR */
+.sep {
+  height: 1px; margin: 0 68px;
+  background: linear-gradient(90deg, transparent, rgba(124,58,237,.4) 25%, rgba(124,58,237,.4) 75%, transparent);
+}
+
+/* ═══════════════════════════════════════════ SECTION LABEL */
+.section-lbl {
+  display: flex; align-items: center; gap: 12px;
+  padding: 30px 68px 16px;
+  font-size: .7rem; font-weight: 700; color: #5a4d80;
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.section-lbl::after {
+  content: ""; flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(124,58,237,.3), transparent);
+}
+
+/* ═══════════════════════════════════════════ FEATURES GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 0 68px 28px;
+}
+.grid.two { grid-template-columns: repeat(2, 1fr); }
+
+.card {
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(255,255,255,.065);
+  border-radius: 22px;
+  padding: 26px 28px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .25s, border-color .25s, box-shadow .25s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(124,58,237,.35);
+  box-shadow: 0 12px 40px rgba(124,58,237,.12);
+}
+.card::before {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(145deg, rgba(124,58,237,.05) 0%, transparent 55%);
+  pointer-events: none;
+}
+.card.span2 { grid-column: span 2; }
+.card.featured {
+  background: linear-gradient(145deg, rgba(124,58,237,.14), rgba(99,102,241,.06));
+  border-color: rgba(124,58,237,.3);
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .63rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 999px; margin-bottom: 10px;
+}
+.cp { background: rgba(124,58,237,.18); color: #c4b5fd; border: 1px solid rgba(124,58,237,.3); }
+.cc { background: rgba(6,182,212,.12);  color: #67e8f9; border: 1px solid rgba(6,182,212,.25); }
+.cg { background: rgba(16,185,129,.12); color: #6ee7b7; border: 1px solid rgba(16,185,129,.25); }
+.cy { background: rgba(245,158,11,.12); color: #fde68a; border: 1px solid rgba(245,158,11,.25); }
+.cpk{ background: rgba(236,72,153,.12); color: #f9a8d4; border: 1px solid rgba(236,72,153,.25); }
+.ci { background: rgba(99,102,241,.14); color: #a5b4fc; border: 1px solid rgba(99,102,241,.3);  }
+
+.c-icon {
+  width: 46px; height: 46px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; margin-bottom: 14px;
+}
+.ic-p  { background: rgba(124,58,237,.2); border: 1px solid rgba(124,58,237,.3); }
+.ic-c  { background: rgba(6,182,212,.15); border: 1px solid rgba(6,182,212,.25); }
+.ic-g  { background: rgba(16,185,129,.15);border: 1px solid rgba(16,185,129,.25); }
+.ic-y  { background: rgba(245,158,11,.15);border: 1px solid rgba(245,158,11,.25); }
+.ic-pk { background: rgba(236,72,153,.15);border: 1px solid rgba(236,72,153,.25); }
+.ic-i  { background: rgba(99,102,241,.15);border: 1px solid rgba(99,102,241,.3);  }
+
+.c-title { font-size: 1.05rem; font-weight: 800; color: #ede9fe; letter-spacing: -.015em; margin-bottom: 8px; line-height: 1.2; }
+.c-desc  { font-size: .82rem; color: #6b5fa8; line-height: 1.65; }
+.c-desc strong { color: #b5a9e0; font-weight: 600; }
+
+/* ── mock elements ── */
+.mock {
+  margin-top: 18px;
+  background: rgba(0,0,0,.35);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.mock-bar {
+  background: rgba(124,58,237,.12);
+  padding: 9px 14px;
+  display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid rgba(124,58,237,.12);
+}
+.mock-badge {
+  background: #7c3aed; color: #fff;
+  font-size: .6rem; font-weight: 700; padding: 2px 9px;
+  border-radius: 999px; text-transform: uppercase; letter-spacing: .05em;
+}
+.mock-counter { font-size: .62rem; color: #4a3f70; margin-left: auto; }
+.mock-body { padding: 14px; }
+.mock-img {
+  width: 100%; height: 54px;
+  background: linear-gradient(135deg, #1e0748, #3b1098);
+  border-radius: 9px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; margin-bottom: 10px;
+}
+.mock-t { font-size: .7rem; font-weight: 700; color: #ede9fe; margin-bottom: 4px; }
+.mock-d { font-size: .63rem; color: #4a3f70; line-height: 1.5; }
+.mock-dots { display: flex; gap: 5px; justify-content: center; padding: 10px 0 6px; }
+.md { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.12); }
+.md.on { background: #7c3aed; }
+
+/* period boxes */
+.period-row { display: flex; gap: 8px; margin-top: 16px; }
+.pb {
+  flex: 1; border-radius: 10px; padding: 10px 12px; text-align: center;
+  background: rgba(0,0,0,.3); border: 1px solid rgba(255,255,255,.06);
+}
+.pb.on  { border-color: rgba(16,185,129,.3);  background: rgba(16,185,129,.07);  }
+.pb.off { border-color: rgba(248,113,113,.3); background: rgba(248,113,113,.07); }
+.pb-l { font-size: .58rem; text-transform: uppercase; letter-spacing: .07em; color: #4a3f70; margin-bottom: 4px; }
+.pb-v { font-size: .78rem; font-weight: 800; color: #ede9fe; }
+.pb-b {
+  display: inline-block; font-size: .58rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px; margin-top: 5px;
+}
+.pb-b.on  { background: rgba(16,185,129,.2);  color: #6ee7b7; }
+.pb-b.off { background: rgba(107,114,128,.2); color: #9ca3af; }
+.pb-b.pend{ background: rgba(245,158,11,.18); color: #fde68a; }
+
+/* company grid */
+.co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 14px; }
+.co {
+  border-radius: 9px; padding: 8px 11px;
+  font-size: .67rem; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid rgba(255,255,255,.07);
+  color: #4a3f70; background: rgba(0,0,0,.2);
+  transition: all .2s;
+}
+.co.sel {
+  background: #2d0870; border-color: #7c3aed;
+  color: #fff; box-shadow: 0 0 0 1.5px rgba(124,58,237,.4);
+}
+.co-d { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .5; flex-shrink:0; }
+.co.sel .co-d { opacity: 1; background: #c4b5fd; }
+
+/* search bar */
+.search-bar {
+  margin-top: 10px;
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 9px; padding: 8px 12px;
+  display: flex; align-items: center; gap: 7px;
+  font-size: .67rem; color: #4a3f70;
+}
+
+/* bell */
+.bell-wrap { display: flex; align-items: center; gap: 14px; margin-top: 16px; }
+.bell-ring {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.1);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; position: relative; flex-shrink: 0;
+}
+.bell-ring::before {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  border: 2px solid #f59e0b;
+  animation: rpulse 1.8s ease-out infinite; pointer-events: none;
+}
+@keyframes rpulse { 0%{transform:scale(.85);opacity:.9} 100%{transform:scale(1.65);opacity:0} }
+.bell-n {
+  width: 16px; height: 16px; background: #ef4444; border-radius: 50%;
+  color: #fff; font-size: .5rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  position: absolute; top: -2px; right: -2px;
+}
+.bell-bubble {
+  background: #f59e0b; color: #1a0f00;
+  font-size: .67rem; font-weight: 700; padding: 7px 12px;
+  border-radius: 9px; line-height: 1.4;
+}
+.bell-sub { font-size: .58rem; color: #4a3f70; margin-top: 4px; }
+
+/* delete impact */
+.impact {
+  margin-top: 14px;
+  background: rgba(245,158,11,.05);
+  border: 1px solid rgba(245,158,11,.18);
+  border-radius: 11px; padding: 13px 15px;
+}
+.imp-title { font-size: .68rem; font-weight: 700; color: #fde68a; margin-bottom: 9px; display: flex; align-items: center; gap: 6px; }
+.imp-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: .63rem; }
+.imp-row:last-child { margin-bottom: 0; }
+.imp-l { color: #4a3f70; }
+.del  { color: #fca5a5; font-weight: 700; }
+.safe { color: #6ee7b7; font-weight: 700; }
+
+/* video mock */
+.vid-box {
+  margin-top: 14px; height: 80px; border-radius: 11px;
+  background: linear-gradient(135deg, #0a0220, #22066a);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+  border: 1px solid rgba(99,102,241,.2);
+}
+.vid-play { font-size: 1.8rem; }
+.vid-label {
+  position: absolute; top: 7px; left: 8px;
+  background: rgba(99,102,241,.8); color: #fff;
+  font-size: .58rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 999px;
+}
+.vid-sound {
+  position: absolute; bottom: 7px; right: 8px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(0,0,0,.65); color: #fff;
+  font-size: .65rem; display: flex; align-items: center; justify-content: center;
+}
+
+/* expiry arrow */
+.exp-flow {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 16px; font-size: .68rem;
+}
+.ef-tag {
+  padding: 4px 12px; border-radius: 999px;
+  font-size: .63rem; font-weight: 700; flex-shrink: 0;
+}
+.ef-on  { background: rgba(16,185,129,.18); color: #6ee7b7; border: 1px solid rgba(16,185,129,.28); }
+.ef-off { background: rgba(107,114,128,.18); color: #9ca3af; border: 1px solid rgba(107,114,128,.25); }
+.ef-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(90deg, rgba(16,185,129,.5), rgba(248,113,113,.5));
+  position: relative;
+}
+.ef-line::after {
+  content: "▶"; position: absolute; right: -5px; top: -7px;
+  font-size: .55rem; color: #f87171;
+}
+.ef-sub { font-size: .62rem; color: #4a3f70; margin-top: 8px; display: flex; align-items: center; gap: 6px; }
+
+/* index table mini */
+.idx-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 7px; margin-top: 14px;
+}
+.idx-item {
+  background: rgba(0,0,0,.28);
+  border: 1px solid rgba(255,255,255,.06);
+  border-radius: 9px; padding: 9px 12px;
+  font-size: .65rem;
+}
+.idx-h { font-weight: 700; margin-bottom: 3px; }
+.idx-d { color: #4a3f70; }
+
+/* fixes list */
+.fix-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.fix-item { display: flex; align-items: flex-start; gap: 8px; font-size: .75rem; }
+.fix-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+.fix-dot.g { background: #10b981; }
+.fix-dot.y { background: #f59e0b; }
+.fix-dot.r { background: #ef4444; }
+.fix-txt { color: #6b5fa8; line-height: 1.5; }
+
+/* ═══════════════════════════════════════════ FOOTER */
+.footer {
+  padding: 22px 68px 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+.f-left { display: flex; gap: 10px; flex-wrap: wrap; }
+.f-tag {
+  font-size: .67rem; font-weight: 500; color: #4a3f70;
+  padding: 4px 13px; border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.07);
+}
+.f-right { text-align: right; font-size: .75rem; color: #4a3f70; line-height: 1.6; }
+.f-right strong { color: #c4b5fd; }
+</style>
+</head>
+<body>
+<div class="poster">
+  <div class="topbar"></div>
+
+  <!-- ══ HERO ══════════════════════════════════════════════════════════ -->
+  <div class="hero z">
+    <div class="hero-left">
+      <div class="brand">
+        <div class="brand-icon">🏢</div>
+        <div>
+          <div class="brand-name">Andar360</div>
+          <div class="brand-sub">Sistema de Reserva de Salas</div>
+        </div>
+      </div>
+      <div class="hero-eyebrow">
+        <div class="dot-live"></div>
+        Novidades da versão 1.1
+      </div>
+      <div class="hero-title">
+        Seu sistema<br>
+        <span class="grad">ainda mais</span><br>
+        completo.
+      </div>
+      <p class="hero-desc">
+        Novas ferramentas de comunicação interna, notificações mais inteligentes e mais controle sobre quem vê o quê — tudo para tornar a gestão do espaço mais eficiente e conectada.
+      </p>
+    </div>
+    <div class="hero-right">
+      <div class="ver-pill">Versão 1.1</div>
+      <div class="rel-date">📅 Maio de 2026</div>
+      <div class="kpi-row">
+        <div class="kpi">
+          <div class="kpi-num" style="color:#a78bfa;">7</div>
+          <div class="kpi-lbl">Novidades</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-num" style="color:#6ee7b7;">5</div>
+          <div class="kpi-lbl">Melhorias</div>
+        </div>
+        <div class="kpi">
+          <div class="kpi-num" style="color:#67e8f9;">100%</div>
+          <div class="kpi-lbl">Compatível</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sep z"></div>
+  <div class="section-lbl z">✦ Novas funcionalidades</div>
+
+  <!-- ══ GRID 1 — 3 colunas ════════════════════════════════════════════ -->
+  <div class="grid z">
+
+    <!-- Anúncios: hero card span 2 -->
+    <div class="card featured span2">
+      <div style="display:flex;gap:24px;align-items:flex-start;">
+        <div style="flex:1;">
+          <div class="chip cp">Comunicação</div>
+          <div class="c-icon ic-p">📢</div>
+          <div class="c-title">Anúncios internos com entrega garantida</div>
+          <div class="c-desc">
+            Crie comunicados que aparecem automaticamente para cada colaborador ao acessar o sistema. O Andar360 garante que <strong>ninguém perca um aviso importante</strong> — cada pessoa vê apenas o que ainda não leu, na ordem certa, com suporte a imagens e vídeos.
+          </div>
+          <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap;">
+            <div style="background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.22);border-radius:999px;padding:4px 12px;font-size:.67rem;font-weight:700;color:#6ee7b7;">✓ Imagens e vídeos</div>
+            <div style="background:rgba(124,58,237,.15);border:1px solid rgba(124,58,237,.3);border-radius:999px;padding:4px 12px;font-size:.67rem;font-weight:700;color:#c4b5fd;">✓ Múltiplos avisos em sequência</div>
+            <div style="background:rgba(6,182,212,.12);border:1px solid rgba(6,182,212,.22);border-radius:999px;padding:4px 12px;font-size:.67rem;font-weight:700;color:#67e8f9;">✓ Card público na tela de entrada</div>
+          </div>
+        </div>
+        <div style="width:186px;flex-shrink:0;">
+          <div class="mock">
+            <div class="mock-bar">
+              <span class="mock-badge">📣 Aviso</span>
+              <span class="mock-counter">2 de 3</span>
+            </div>
+            <div class="mock-body">
+              <div class="mock-img">🖼️</div>
+              <div class="mock-t">⭐ Novo horário de funcionamento</div>
+              <div class="mock-d">A partir desta semana o acesso estará disponível das 7h às 21h em todos os andares.</div>
+            </div>
+            <div class="mock-dots"><div class="md"></div><div class="md on"></div><div class="md"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vídeo -->
+    <div class="card">
+      <div class="chip ci">Mídia</div>
+      <div class="c-icon ic-i">🎬</div>
+      <div class="c-title">Anúncios em vídeo</div>
+      <div class="c-desc">Além de imagens, agora é possível enviar <strong>vídeos</strong> nos anúncios. O vídeo toca automaticamente e o colaborador pode ativar o som quando quiser.</div>
+      <div class="vid-box">
+        <div class="vid-play">▶️</div>
+        <div class="vid-label">🎬 Vídeo</div>
+        <div class="vid-sound">🔇</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ GRID 2 — 3 colunas ════════════════════════════════════════════ -->
+  <div class="grid z">
+
+    <!-- Período -->
+    <div class="card">
+      <div class="chip cy">Agendamento</div>
+      <div class="c-icon ic-y">📅</div>
+      <div class="c-title">Anúncios agendados</div>
+      <div class="c-desc">Defina <strong>data de início e encerramento</strong>. O aviso aparece automaticamente no período certo e some quando expira — sem precisar lembrar de desativar.</div>
+      <div class="period-row">
+        <div class="pb on"><div class="pb-l">Início</div><div class="pb-v">01/05</div><div class="pb-b on">Ativo</div></div>
+        <div class="pb"><div class="pb-l">Hoje</div><div class="pb-v">13/05</div><div class="pb-b pend">Em curso</div></div>
+        <div class="pb off"><div class="pb-l">Fim</div><div class="pb-v">20/05</div><div class="pb-b off">Expira</div></div>
+      </div>
+    </div>
+
+    <!-- Segmentação por empresa (tall) -->
+    <div class="card">
+      <div class="chip cc">Segmentação</div>
+      <div class="c-icon ic-c">🏢</div>
+      <div class="c-title">Anúncio só para a empresa certa</div>
+      <div class="c-desc">
+        Escolha quais <strong>empresas verão cada aviso</strong>. Se nenhuma for selecionada, todos recebem. Isso evita ruído e garante que cada empresa veja apenas o que é relevante para ela.
+      </div>
+      <div class="co-grid">
+        <div class="co sel"><div class="co-d"></div>Empresa Alpha</div>
+        <div class="co sel"><div class="co-d"></div>Empresa Beta</div>
+        <div class="co" style="opacity:.32;"><div class="co-d"></div>Empresa Gama</div>
+        <div class="co" style="opacity:.32;"><div class="co-d"></div>Empresa Delta</div>
+      </div>
+      <div class="search-bar">🔍 <span>Buscar empresa…</span></div>
+    </div>
+
+    <!-- Notificações -->
+    <div class="card">
+      <div class="chip cy">Notificações</div>
+      <div class="c-icon ic-y">🔔</div>
+      <div class="c-title">Alertas que não incomodam</div>
+      <div class="c-desc">O efeito de alerta no sino agora só aparece quando chegam <strong>notificações novas de verdade</strong>. Não pisca mais a cada vez que a página é recarregada.</div>
+      <div class="bell-wrap">
+        <div class="bell-ring">🔔<div class="bell-n">3</div></div>
+        <div>
+          <div class="bell-bubble">🔔 Você tem novidades!</div>
+          <div class="bell-sub">Só aparece quando há algo realmente novo</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ GRID 3 — 2 colunas ════════════════════════════════════════════ -->
+  <div class="grid two z" style="padding-bottom:18px;">
+
+    <!-- Smart Delete -->
+    <div class="card">
+      <div class="chip cpk">Gestão</div>
+      <div class="c-icon ic-pk">👤</div>
+      <div class="c-title">Exclusão de participante com segurança</div>
+      <div class="c-desc">Antes de excluir um participante, o sistema mostra <strong>exatamente o que será afetado</strong> — reservas, chamados, vínculos. O administrador decide com total clareza, sem surpresas.</div>
+      <div class="impact">
+        <div class="imp-title">⚠️ Resumo antes de confirmar</div>
+        <div class="imp-row"><span class="imp-l">Reservas vinculadas</span><span class="del">2 serão removidas</span></div>
+        <div class="imp-row"><span class="imp-l">Chamados abertos</span><span class="del">1 será removido</span></div>
+        <div class="imp-row"><span class="imp-l">Participações em eventos</span><span class="safe">Desvinculadas com segurança</span></div>
+      </div>
+    </div>
+
+    <!-- Melhorias gerais -->
+    <div class="card">
+      <div class="chip cg">Melhorias</div>
+      <div class="c-icon ic-g">✨</div>
+      <div class="c-title">Experiência mais refinada</div>
+      <div class="c-desc">Ajustes de usabilidade em várias partes do sistema para uma navegação mais fluida e visual mais agradável.</div>
+      <div class="fix-list">
+        <div class="fix-item">
+          <div class="fix-dot g"></div>
+          <div class="fix-txt">Formulários com botões sempre visíveis, sem precisar rolar a página</div>
+        </div>
+        <div class="fix-item">
+          <div class="fix-dot g"></div>
+          <div class="fix-txt">Visualizador de imagem em tela cheia com zoom ao passar o scroll</div>
+        </div>
+        <div class="fix-item">
+          <div class="fix-dot g"></div>
+          <div class="fix-txt">Carrossel de salas funcionando perfeitamente em celular</div>
+        </div>
+        <div class="fix-item">
+          <div class="fix-dot y"></div>
+          <div class="fix-txt">Alertas de confirmação com visual correto no modo escuro</div>
+        </div>
+        <div class="fix-item">
+          <div class="fix-dot y"></div>
+          <div class="fix-txt">Controle de acesso por módulo para colaboradores da portaria</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sep z"></div>
+
+  <!-- ══ FOOTER ══════════════════════════════════════════════════════════ -->
+  <div class="footer z">
+    <div class="f-left">
+      <span class="f-tag">📱 Responsivo</span>
+      <span class="f-tag">🌙 Modo escuro e claro</span>
+      <span class="f-tag">🔒 Controle de acesso por perfil</span>
+      <span class="f-tag">🌐 Acesso via navegador</span>
+    </div>
+    <div class="f-right">
+      Desenvolvido para <strong>Andar360</strong> · SRS Softex<br>
+      <span style="font-size:.62rem;opacity:.5;">Maio 2026</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
