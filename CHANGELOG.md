@@ -9,7 +9,6 @@
 * Agente IA com consulta de cadastros aguardando aprovação sem expor dados sensíveis.
 * Agente IA com controle de objetos por perfil: admin gerencia retirada/devolução/histórico, operador depende da permissão do subgrupo, cliente consulta apenas objetos em seu nome.
 * Verificação de dispositivo online antes de enviar comando de abertura de porta.
-* HTTPS local com Caddy para proxy em `https://localhost:3443`.
 
 ### Melhorado
 
