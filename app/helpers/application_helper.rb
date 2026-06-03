@@ -1,4 +1,12 @@
 module ApplicationHelper
+  def app_version
+    version_file = Rails.root.join("VERSION")
+    version = File.exist?(version_file) ? File.read(version_file).strip : nil
+    version.presence || (defined?(APP_VERSION) ? APP_VERSION : nil) || "0.0.1"
+  rescue StandardError
+    "0.0.1"
+  end
+
    def tela_de_alteracao_de_senha?
     devise_password_screen? || user_registration_password_screen?
   end

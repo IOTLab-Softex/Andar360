@@ -291,7 +291,7 @@
     50%{transform:scale(1.12); opacity:1;}
   }
 
-  /* Balão apontando para o sino */
+  /* BalÃ£o apontando para o sino */
   .notif-nudge {
     position: absolute;
     top: 65px;
@@ -314,7 +314,7 @@
   .notif-nudge::after{
       content: "";
     position: absolute;
-    top: -5px;           /* posiciona acima do balão */
+    top: -5px;           /* posiciona acima do balÃ£o */
     left: 149px;          /* centraliza horizontalmente (ajuste conforme precisar) */
     width: 0;
     height: 0;
@@ -341,7 +341,7 @@
     50%    { transform:translateY(-9px); }
   }
 
-  /* Responsivo: em telas pequenas, joga o balão para baixo do sino */
+  /* Responsivo: em telas pequenas, joga o balÃ£o para baixo do sino */
   @media (max-width: 520px){
     .notif-nudge {
         top: 66px;
@@ -371,7 +371,7 @@
 
   }
 
-  /* até 768px (celular): esconda o que marcar com .hide-sm */
+  /* atÃ© 768px (celular): esconda o que marcar com .hide-sm */
   @media (max-width: 768px) {
 .hide-sm {
   display: none !important;
@@ -389,7 +389,7 @@
     position: absolute;
   }
 
-/* Banner com transição suave */
+/* Banner com transiÃ§Ã£o suave */
 .banner, .user-info {
   transition:
     transform 0.45s ease,
@@ -405,12 +405,12 @@
  {
   transform: translateY(-120%);
   opacity: 0;
-  margin-bottom: -4rem; /* puxa o conteúdo pra cima */
+  margin-bottom: -4rem; /* puxa o conteÃºdo pra cima */
   pointer-events: none;
 }
 
 
-/* Ajusta o conteúdo pra ocupar o espaço do banner que sumiu */
+/* Ajusta o conteÃºdo pra ocupar o espaÃ§o do banner que sumiu */
 .monitoring-on-dashboard .page-shell {
   margin-top: 0rem;      /* antes era ~9rem */
   transition: margin-top 0.45s ease;
@@ -424,7 +424,7 @@
   }
   }
 
-  /* Botão flutuante de monitoramento (fica perto do feedback-fab) */
+  /* BotÃ£o flutuante de monitoramento (fica perto do feedback-fab) */
 #monitoring-fab {
     display: grid;
     place-items: center;
@@ -491,7 +491,7 @@
     <%= csp_meta_tag %>
     <%= javascript_include_tag "flash_notification", "data-turbo-track": "reload" %>
     <%= yield :head %>
-    <%# Ícones e PWA %>
+    <%# Ãcones e PWA %>
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="/icon.png">
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
@@ -499,7 +499,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <%= stylesheet_link_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" %>
-    <%# CSS da aplicação %>
+    <%# CSS da aplicaÃ§Ã£o %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= stylesheet_link_tag "choices.min", media: "all" %>
     
@@ -512,7 +512,7 @@
     <% login_screen = ["devise/sessions", "users/sessions"].include?(controller_path) %>
     <%#<div id="app-loader">
       <div class="app-loader-icon">
-        <img src="/loading.gif" alt="Carregando…" />
+        <img src="/loading.gif" alt="Carregandoâ€¦" />
       </div>
     </div>%>
         <% unless tela_de_alteracao_de_senha? || login_screen %>
@@ -543,7 +543,7 @@
               <% if notificacoes.any? %>
                 <div id="notifNudge" class="notif-nudge" role="status" aria-live="polite">
                   <i class="fa-solid fa-hand-point-right"></i>
-                  <span>Você tem <strong><%= notificacoes.count %></strong> notificações</span>
+                  <span>VocÃª tem <strong><%= notificacoes.count %></strong> notificaÃ§Ãµes</span>
                   <button type="button" class="notif-nudge-close" aria-label="Fechar dica">&times;</button>
                 </div>
               <% end %>
@@ -552,6 +552,9 @@
             <div class="hide-on-mobile user-name">
               Bem-vindo, <%= participant&.name || current_user.email %>
             </div>
+            <div class="hide-on-mobile app-version-badge" title="VersÃ£o do sistema">
+              v<%= File.read(Rails.root.join("VERSION")).strip rescue "0.0.1" %>
+            </div>
           <% end %>  <!-- fim do if user_signed_in? -->
         </div>       <!-- fim da div.user-info -->
 
@@ -559,7 +562,7 @@
           <div id="notificacoes-overlay" class="notificacoes-overlay" onclick="fecharSidebarNotificacoes(event)"></div>
           <div id="notificacoes-sidebar" class="notificacoes-sidebar">
             <div class="sidebar-header">
-              <h3>Notificações</h3>
+              <h3>NotificaÃ§Ãµes</h3>
               <%= button_to "Limpar todas",
                             marcar_todas_como_lidas_notifications_path,
                             method: :post,
@@ -577,7 +580,7 @@
                                 class="abrir-detalhe-notificacao"
                                 data-notification-id="<%= n.id %>"
                                 data-notification-url="<%= n.url.presence || '#' %>"
-                                data-destination-label="<%= n.url.to_s.include?('/chamados/') ? 'Ir até o chamado' : 'Ir até o detalhe' %>"
+                                data-destination-label="<%= n.url.to_s.include?('/chamados/') ? 'Ir atÃ© o chamado' : 'Ir atÃ© o detalhe' %>"
                                 data-titulo="<%= n.titulo %>"
                                 data-mensagem="<%= n.corpo %>"
                                 data-data="<%= l(n.created_at, format: :short) %>">
@@ -599,7 +602,7 @@
                   <% end %>
                 </ul>
               <% else %>
-                <div class="sem-notificacoes">Nenhuma notificação nova</div>
+                <div class="sem-notificacoes">Nenhuma notificaÃ§Ã£o nova</div>
               <% end %>
             </div>
           </div>
@@ -642,7 +645,7 @@
         </ul>
       </nav>
     <% end %>
-    <!-- 🔹 Aqui começa o “container” com margem lateral -->
+    <!-- ðŸ”¹ Aqui comeÃ§a o â€œcontainerâ€ com margem lateral -->
     <% if login_screen ||
      controller_path == "users/registrations" && %w[new edit].include?(action_name) ||
      controller_path == "devise/passwords" && %w[new edit].include?(action_name) %>
@@ -665,11 +668,11 @@
   font-weight: bold;
   display: none;
   z-index: 9999;">
-    ⏳ Backup em andamento...
+    â³ Backup em andamento...
     </div>
   <% end %>
-  <%# Notificação dinâmica com JS externo %>
-  <% access_alert = flash[:alert].to_s.match?(/acesso|permiss[aã]o|autorizado/i) %>
+  <%# NotificaÃ§Ã£o dinÃ¢mica com JS externo %>
+  <% access_alert = flash[:alert].to_s.match?(/acesso|permiss[aÃ£]o|autorizado/i) %>
   <% suppress_access_alert =
        access_alert &&
        (
@@ -736,7 +739,7 @@
       <div class="pmodal__dialog" role="document" aria-labelledby="user-profile-title">
         <div class="pmodal__header">
           <h5 id="user-profile-title">Perfil</h5>
-          <button type="button" class="pmodal__close" id="user-profile-close" aria-label="Fechar">✕</button>
+          <button type="button" class="pmodal__close" id="user-profile-close" aria-label="Fechar">âœ•</button>
         </div>
         <div class="pmodal__body">
           <div class="profile-row">
@@ -758,11 +761,11 @@
             <div class="zoom-title"><i class="fa-solid fa-magnifying-glass"></i> Ajuste de zoom</div>
             <div class="zoom-options" role="group" aria-label="Zoom">
               <button type="button" class="btn-chip" data-zoom="0.7">Pequeno</button>
-              <button type="button" class="btn-chip" data-zoom="0.8">Padrão</button>
-              <button type="button" class="btn-chip hide-md" data-zoom="1.0">Médio</button>
+              <button type="button" class="btn-chip" data-zoom="0.8">PadrÃ£o</button>
+              <button type="button" class="btn-chip hide-md" data-zoom="1.0">MÃ©dio</button>
               <button type="button" class="btn-chip hide-md" data-zoom="1.25">Grande</button>
             </div>
-            <small class="muted">Aplica no app (não muda o zoom do navegador).</small>
+            <small class="muted">Aplica no app (nÃ£o muda o zoom do navegador).</small>
           </div>
           <% if controller_name == "dashboard" && action_name == "index" %>
             <hr class="pmodal__divider">
@@ -797,7 +800,7 @@
     <p id="modal-mensagem"></p>
     <div class="modal-acoes">
       <button type="button" id="btn-ir-notificacao" class="btn btn-success" hidden>
-        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ir até a notificação
+        <i class="fa-solid fa-arrow-up-right-from-square"></i> Ir atÃ© a notificaÃ§Ã£o
       </button>
     </div>
   </div>
@@ -857,13 +860,13 @@
     const overlay = document.getElementById("notificacoes-overlay");
     const sidebar = document.getElementById("notificacoes-sidebar");
 
-    // Fecha o painel lateral com transição
+    // Fecha o painel lateral com transiÃ§Ã£o
     sidebar.classList.remove("aberta");
 
     // Esconde o overlay com fade
     overlay.classList.remove("visivel");
 
-    // Aguarda a transição do painel (deslizar) e então aplica display: none
+    // Aguarda a transiÃ§Ã£o do painel (deslizar) e entÃ£o aplica display: none
     sidebar.addEventListener("transitionend", function handleSidebarTransition(e) {
       if (e.propertyName === "right") {
         sidebar.style.display = "none";
@@ -871,22 +874,22 @@
       }
     });
 
-    // Após fade do overlay, oculta ele também
+    // ApÃ³s fade do overlay, oculta ele tambÃ©m
     setTimeout(() => {
       overlay.style.display = "none";
-    }, 300); // Tempo igual ao da transição no CSS
+    }, 300); // Tempo igual ao da transiÃ§Ã£o no CSS
   }
 
 
 
 
 
-   // Quando a página começar a carregar
+   // Quando a pÃ¡gina comeÃ§ar a carregar
     window.addEventListener("DOMContentLoaded", () => {
       document.querySelector(".menu")?.classList.add("fade-border");
     });
 
-    // Quando a página terminar de carregar tudo
+    // Quando a pÃ¡gina terminar de carregar tudo
     window.addEventListener("load", () => {
       setTimeout(() => {
         document.querySelector(".menu")?.classList.remove("fade-border");
@@ -1009,12 +1012,12 @@
 
           if (data.status === "executando") {
             progressDiv.style.display = "block";
-            progressDiv.innerHTML = `⏳ ${data.message}`;
+            progressDiv.innerHTML = `â³ ${data.message}`;
           } else if (data.status === "finalizado") {
-            progressDiv.innerHTML = `✅ ${data.message}`;
+            progressDiv.innerHTML = `âœ… ${data.message}`;
             setTimeout(() => progressDiv.style.display = "none", 5000);
           } else if (data.status === "erro") {
-            progressDiv.innerHTML = `❌ ${data.message}`;
+            progressDiv.innerHTML = `âŒ ${data.message}`;
             setTimeout(() => progressDiv.style.display = "none", 8000);
           } else {
             progressDiv.style.display = "none";
@@ -1048,14 +1051,14 @@
       dataEl.className = "modal-data";
       modal.querySelector(".modal-conteudo").appendChild(dataEl);
     }
-    dataEl.textContent = `📅 ${data}`;
+    dataEl.textContent = `ðŸ“… ${data}`;
 
     const actionBtn = document.getElementById("btn-ir-notificacao");
     if (actionBtn) {
       actionBtn.hidden = !notificationUrl || notificationUrl === "#";
       actionBtn.dataset.notificationId = notificationId || "";
       actionBtn.dataset.notificationUrl = notificationUrl || "";
-      actionBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> ${destinationLabel || "Ir até o detalhe"}`;
+      actionBtn.innerHTML = `<i class="fa-solid fa-arrow-up-right-from-square"></i> ${destinationLabel || "Ir atÃ© o detalhe"}`;
     }
 
     modal.style.display = "flex";
@@ -1082,7 +1085,7 @@
     }
 
     if (sidebarContent && items.length === 0 && !sidebarContent.querySelector(".sem-notificacoes")) {
-      sidebarContent.innerHTML = '<div class="sem-notificacoes">Nenhuma notificação nova</div>';
+      sidebarContent.innerHTML = '<div class="sem-notificacoes">Nenhuma notificaÃ§Ã£o nova</div>';
     }
   }
 
@@ -1124,7 +1127,7 @@
    document.addEventListener("DOMContentLoaded", function () {
     const token = document.querySelector('meta[name="csrf-token"]').content;
 
-    // Pega todos os formulários remotos
+    // Pega todos os formulÃ¡rios remotos
     document.querySelectorAll('form[data-remote="true"]').forEach(function(form) {
       if (!form.querySelector('input[name="authenticity_token"]')) {
         const hidden = document.createElement('input');
@@ -1167,7 +1170,7 @@
   const SHOW_CLASS = 'show';
   const ATT_CLASS  = 'attention';
 
-  // Lê o número de não lidas do badge
+  // LÃª o nÃºmero de nÃ£o lidas do badge
   function getUnreadCount() {
     const badge = bellBtn.querySelector('.badge');
     if (!badge) return 0;
@@ -1177,7 +1180,7 @@
 
   const unreadNow = getUnreadCount();
 
-  // 🔁 chave para guardar o valor anterior no navegador
+  // ðŸ” chave para guardar o valor anterior no navegador
   const LAST_COUNT_KEY = 'notif_last_unread_count';
   let lastCount = 0;
   try {
@@ -1187,7 +1190,7 @@
     lastCount = 0;
   }
 
-  // 🔊 som das notificações novas
+  // ðŸ”Š som das notificaÃ§Ãµes novas
   const notifSoundSrc = "<%= asset_path('notify_new.mp3') %>";
 
   function playNotifSound() {
@@ -1196,24 +1199,24 @@
       const audio = new Audio(notifSoundSrc);
       audio.volume = 0.9;
       audio.play().catch(() => {
-        // se o navegador bloquear autoplay, só ignora
+        // se o navegador bloquear autoplay, sÃ³ ignora
       });
     } catch(e) {}
   }
 
-  // 👉 Regra: só toca quando o número ATUAL for maior que o último salvo
+  // ðŸ‘‰ Regra: sÃ³ toca quando o nÃºmero ATUAL for maior que o Ãºltimo salvo
   if (unreadNow > lastCount) {
     playNotifSound();
   }
 
-  // Atualiza o valor salvo para o próximo request
+  // Atualiza o valor salvo para o prÃ³ximo request
   try {
     localStorage.setItem(LAST_COUNT_KEY, String(unreadNow));
   } catch(e) {}
 
-  // --------- VISUAL (sino piscando + balão) ---------
-  // Persiste quantas não lidas havia quando o usuário abriu o sino pela última vez.
-  // O efeito só aparece se chegaram notificações NOVAS desde então.
+  // --------- VISUAL (sino piscando + balÃ£o) ---------
+  // Persiste quantas nÃ£o lidas havia quando o usuÃ¡rio abriu o sino pela Ãºltima vez.
+  // O efeito sÃ³ aparece se chegaram notificaÃ§Ãµes NOVAS desde entÃ£o.
   const DISMISSED_AT_KEY = 'notif_dismissed_at_count';
   let dismissedAtCount = 0;
   try {
@@ -1226,7 +1229,7 @@
     if (nudge) nudge.classList.toggle(SHOW_CLASS, show);
   }
 
-  // Mostra efeito apenas se há mais não lidas do que quando o usuário abriu pela última vez
+  // Mostra efeito apenas se hÃ¡ mais nÃ£o lidas do que quando o usuÃ¡rio abriu pela Ãºltima vez
   applyVisual(unreadNow > dismissedAtCount);
 
   function dismiss() {
@@ -1235,10 +1238,10 @@
     applyVisual(false);
   }
 
-  // Clicar no sino → persiste a contagem atual e some o efeito
+  // Clicar no sino â†’ persiste a contagem atual e some o efeito
   bellBtn.addEventListener('click', dismiss);
 
-  // Clicar no X do balão → mesmo comportamento
+  // Clicar no X do balÃ£o â†’ mesmo comportamento
   nudge?.querySelector('.notif-nudge-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
     dismiss();
@@ -1263,7 +1266,7 @@
   const cancel  = overlay?.querySelector(".feedback-cancel");
 
   function openModal(){
-    // Preenche metadados da página
+    // Preenche metadados da pÃ¡gina
     document.getElementById("feedback_page_title").value = document.title || "";
     document.getElementById("feedback_page_path").value  = window.location.pathname || "";
     document.getElementById("feedback_page_url").value   = window.location.href || "";
@@ -1305,7 +1308,7 @@
   // ---- refs
   const trigger   = document.getElementById('user-avatar-trigger');
   const modal     = document.getElementById('user-profile-modal');
-  if (!modal || !trigger) return; // não logado ou sem avatar
+  if (!modal || !trigger) return; // nÃ£o logado ou sem avatar
 
   const backdrop  = document.getElementById('user-profile-backdrop');
   const closeBtn  = document.getElementById('user-profile-close');
@@ -1344,7 +1347,7 @@
   function getSavedZoom() {
   try {
     const v = parseFloat(localStorage.getItem('zoomScale'));
-    return Number.isFinite(v) ? v : 0.8; // ← inicia em Padrão (0.8)
+    return Number.isFinite(v) ? v : 0.8; // â† inicia em PadrÃ£o (0.8)
   } catch(e) { return 0.8; }
   }
 
@@ -1384,7 +1387,7 @@
   applyDashboardLayoutEditing(isDashboardLayoutEditing());
   syncDashboardLayoutButton();
 
-  // clique nas opções
+  // clique nas opÃ§Ãµes
   zoomBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       const scale = parseFloat(btn.dataset.zoom);
@@ -1407,23 +1410,23 @@
     const hide   = () => {
       if (!loader()) return;
       loader().classList.add('is-hidden');
-      // Remove do DOM após o fade
+      // Remove do DOM apÃ³s o fade
       loader().addEventListener('transitionend', (e)=>{
         if(e.propertyName==='opacity') loader()?.remove();
       }, { once:true });
     };
 
     // ------------- SEM Turbo (fallback)
-    window.addEventListener('load', hide);        // terminou de carregar → some
-    window.addEventListener('beforeunload', show);// ao sair/navegar → mostra
+    window.addEventListener('load', hide);        // terminou de carregar â†’ some
+    window.addEventListener('beforeunload', show);// ao sair/navegar â†’ mostra
 
     // ------------- COM Turbo (Rails 7+)
-    document.addEventListener('turbo:load', hide);        // após render
-    document.addEventListener('turbo:before-visit', show);// ao iniciar navegação
-    document.addEventListener('turbo:render', show);      // caso mude só o body
+    document.addEventListener('turbo:load', hide);        // apÃ³s render
+    document.addEventListener('turbo:before-visit', show);// ao iniciar navegaÃ§Ã£o
+    document.addEventListener('turbo:render', show);      // caso mude sÃ³ o body
     document.addEventListener('turbo:submit-start', show);// submits remotos
 
-    // se sua página inicial vier já pronta do cache, garanta exibição no boot
+    // se sua pÃ¡gina inicial vier jÃ¡ pronta do cache, garanta exibiÃ§Ã£o no boot
     document.addEventListener('DOMContentLoaded', show);
   })();
 
