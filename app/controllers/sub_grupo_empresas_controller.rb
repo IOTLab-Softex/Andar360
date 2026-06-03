@@ -56,7 +56,8 @@ class SubGrupoEmpresasController < ApplicationController
         :can_manage_import_backup,
         :can_support_access,
         :can_manage_items,
-        :can_manage_encomendas
+        :can_manage_encomendas,
+        :can_open_doors
       )
     else
       # 👤 Cliente comum: só pode mudar nome (e empresa, se fizer sentido)

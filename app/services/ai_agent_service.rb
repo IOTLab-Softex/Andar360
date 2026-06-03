@@ -17,25 +17,46 @@ class AiAgentService
     return failure("Agente IA desativado nas configurações.") unless @setting.ai_agent_enabled?
     return failure("Configure o token do Agente IA em Configurações > Agente IA.") if @setting.ai_agent_api_token.blank?
 
+    direct_maintenance_cancel = maintenance_cancel_from_context_if_possible
+    return normalize_result_message(direct_maintenance_cancel) if direct_maintenance_cancel
+
     direct_cancel = cancel_from_context_if_possible
-    return direct_cancel if direct_cancel
+    return normalize_result_message(direct_cancel) if direct_cancel
 
     direct_availability = availability_from_context_if_possible
-    return direct_availability if direct_availability
+    return normalize_result_message(direct_availability) if direct_availability
+    direct_open_door = open_door_from_context_if_possible
+    return normalize_result_message(direct_open_door) if direct_open_door
+
+    direct_package_query = package_from_context_if_possible
+    return normalize_result_message(direct_package_query) if direct_package_query
+
+    direct_registration_query = registration_from_context_if_possible
+    return normalize_result_message(direct_registration_query) if direct_registration_query
+
+    direct_item_query = item_from_context_if_possible
+    return normalize_result_message(direct_item_query) if direct_item_query
 
     response = create_response(initial_payload)
     return response if response[:ok] == false
 
     function_call = Array(response[:body]["output"]).find { |item| item["type"] == "function_call" }
-    return success(extract_text(response[:body]).presence || "Não consegui gerar uma resposta.") unless function_call
+    return success(clean_agent_message(extract_text(response[:body]).presence || "Não consegui gerar uma resposta.")) unless function_call
 
     tool_output = execute_tool(function_call)
     remember_cancelable_reservations(tool_output)
+    remember_cancelable_maintenances(tool_output)
 
     if tool_output[:ok]
       result = success(clean_agent_message(tool_output[:message].presence || "Operação concluída."))
       result[:reservations] = tool_output[:reservations] if tool_output[:reservations].present?
       result[:rooms] = tool_output[:rooms] if tool_output[:rooms].present?
+      result[:maintenances] = tool_output[:maintenances] if tool_output[:maintenances].present?
+      result[:packages] = tool_output[:packages] if tool_output[:packages].present?
+      result[:registrations] = tool_output[:registrations] if tool_output[:registrations].present?
+      result[:items] = tool_output[:items] if tool_output[:items].present?
+      result[:item_movements] = tool_output[:item_movements] if tool_output[:item_movements].present?
+      result[:cancelable_maintenances] = tool_output[:maintenances] if function_call["name"] == "listar_manutencoes_programadas" && tool_output[:maintenances].present?
       if function_call["name"] == "criar_reserva_sala" && tool_output[:reservation_id].present?
         reservation = Reservation.find_by(id: tool_output[:reservation_id])
         result[:cancelable_reservations] = [cancelable_reservation_payload(reservation)] if reservation
@@ -46,10 +67,10 @@ class AiAgentService
     if function_call["name"] == "cancelar_reserva_sala" && remembered_cancelable_reservations.present?
       fallback = fallback_cancel_from_remembered_cards
       return success(clean_agent_message(fallback[:message].presence || "Operação concluída.")) if fallback[:ok]
-      return fallback
+      return normalize_result_message(fallback)
     end
 
-    tool_output
+    normalize_result_message(tool_output)
   end
 
   private
@@ -87,10 +108,14 @@ class AiAgentService
     <<~TEXT
       #{@setting.ai_agent_prompt_or_default}
 
+      Responda sempre em português brasileiro com acentuação correta. Não remova acentos em palavras como "não", "você", "operação", "solicitação", "possível", "horário" e "áudio".
       Data e hora atual: #{now}.
       Salas disponiveis para reserva: #{rooms.presence || "nenhuma"}.
       Identidade do sistema: se o usuario perguntar quem desenvolveu, criou ou idealizou este sistema, responda que o Andar360 foi desenvolvido pela empresa Aponti por Atanael Lima do Nascimento, desde abril de 2025. Explique de forma natural que o sistema comecou como um software simples de reserva de salas em Python e evoluiu para se tornar um sistema mais completo.
       Participantes disponiveis: consulte apenas quando o usuario informar nomes no pedido. Nao exponha nem liste nomes, CPF, telefone ou dados pessoais de participantes.
+      Nao revele quais usuarios ou nomes tem permissao para executar acoes administrativas (por exemplo, abrir portas). Nao informe nomes, emails, cargos ou IDs de usuarios com permissao.
+      Se o usuario pedir para abrir uma porta e a sala tiver dispositivo, use a ferramenta "abrir_porta_sala" com room_id ou room_name.
+      So diga que a IA nao consegue abrir portas se realmente nao puder executar a operacao por falta de permissao ou dispositivo.
       Voce pode criar reservas em uma conversa por etapas ou quando o usuario mandar tudo de uma vez.
       Se o usuario pedir para criar uma reserva sem informar todos os dados, conduza a conversa perguntando apenas uma coisa por vez.
       Ordem preferida para perguntas: sala, data, horario de inicio, horario de fim, participantes.
@@ -119,6 +144,30 @@ class AiAgentService
       Para alterar chamado, identifique por ID, OS, titulo aproximado, sala/unidade ou dados que o usuario informar. Altere apenas os campos pedidos.
       Para cancelar chamado, nao exclua o registro; use cancelar_chamado para marcar como "Concluído" e registrar a observacao de cancelamento.
       Status validos de chamado: Pendente, Em andamento, Concluído. Prioridades validas: Muito Baixo, Baixo, Médio, Alto, Crítico.
+      Voce tambem pode criar, listar, cancelar e consultar status de manutencoes programadas.
+      Para criar manutencao programada, colete titulo e data prevista. Se faltar observacao, use uma descricao curta baseada no pedido. Se faltar categoria, use "Geral". Se faltar dias de aviso, use 1. Se faltar responsavel, use o usuario logado.
+      Para listar manutencoes programadas, use listar_manutencoes_programadas e deixe a interface mostrar os cards.
+      Para cancelar manutencao programada, identifique por ID, titulo, local ou data. Se houver mais de uma possivel, pergunte antes.
+      Para ver status de manutencao programada, use status_manutencao_programada.
+      Status calculados de manutencao: vencida, vence hoje, em periodo de aviso ou futura.
+      Voce tambem pode consultar encomendas na portaria.
+      Para saber se o usuario logado tem encomendas, use listar_encomendas_portaria sem destinatario.
+      Para consultar encomendas de outro usuario, use destinatario_name somente se o usuario pedir por um nome especifico.
+      Para ver status de uma encomenda, use status_encomenda_portaria por ID, codigo, transportadora, destinatario ou unidade.
+      Status validos de encomenda: pendente na portaria ou entregue.
+      Quando listar encomendas, responda curto e deixe a interface mostrar os cards. Nao exponha CPF, telefone ou dados pessoais.
+      Voce tambem pode consultar pre-cadastros aguardando aprovacao.
+      Para saber se existem cadastros aguardando aprovacao, use listar_cadastros_aprovacao.
+      Para visualizar/listar pre-cadastros, use listar_cadastros_aprovacao e deixe a interface mostrar os cards.
+      Para consultar status de um pre-cadastro, use status_cadastro_aprovacao por ID, nome, empresa ou status.
+      NUNCA envie nem exponha CPF, telefone, email, foto, observacao completa ou dados biometricos de pre-cadastros para a IA ou na resposta. Use somente ID, nome, empresa, cargo, status e data de envio.
+      Voce tambem pode consultar o controle de objetos.
+      Admin pode listar objetos, retirar, devolver e listar historico.
+      Operador so pode listar objetos, retirar, devolver e listar historico se o subgrupo tiver permissao de controle de objetos.
+      Cliente so pode consultar se existe objeto retirado em seu proprio nome; nao pode retirar, devolver nem ver historico geral.
+      Para cliente perguntando se tem objeto em seu nome, use listar_meus_objetos_retirados.
+      Para listar objetos use listar_objetos_controle. Para historico use listar_historico_objeto. Para retirada use retirar_objeto_controle. Para devolucao use devolver_objeto_controle.
+      Se faltar item para retirar/devolver/historico, pergunte qual objeto. Se faltar responsavel na retirada, use o usuario logado quando fizer sentido.
       Use datas em ISO 8601 no fuso do sistema. Se houver ambiguidade real, pergunte antes.
     TEXT
   end
@@ -165,6 +214,48 @@ class AiAgentService
     when "cancelar_chamado"
       args = JSON.parse(function_call["arguments"].presence || "{}")
       cancel_chamado(args)
+    when "criar_manutencao_programada"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      create_scheduled_maintenance(args)
+    when "listar_manutencoes_programadas"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_scheduled_maintenances(args)
+    when "cancelar_manutencao_programada"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      cancel_scheduled_maintenance(args)
+    when "status_manutencao_programada"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      scheduled_maintenance_status(args)
+    when "listar_encomendas_portaria"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_portaria_packages(args)
+    when "status_encomenda_portaria"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      portaria_package_status(args)
+    when "listar_cadastros_aprovacao"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_registration_approvals(args)
+    when "status_cadastro_aprovacao"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      registration_approval_status(args)
+    when "abrir_porta_sala"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      open_room_door(args)
+    when "listar_objetos_controle"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_control_items(args)
+    when "retirar_objeto_controle"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      checkout_control_item(args)
+    when "devolver_objeto_controle"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      return_control_item(args)
+    when "listar_historico_objeto"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_control_item_history(args)
+    when "listar_meus_objetos_retirados"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      list_my_checked_out_items(args)
     else
       { ok: false, message: "Ferramenta não suportada: #{function_call["name"]}" }
     end
@@ -373,6 +464,315 @@ class AiAgentService
     end
   end
 
+  def create_scheduled_maintenance(args)
+    return forbidden_maintenance_message unless can_manage_maintenance?
+
+    title = args["title"].presence || args["titulo"].presence
+    date = parse_time(args["data_prevista"] || args["date"])
+    observation = args["observacao"].presence || args["description"].presence
+
+    return { ok: false, message: "Qual e o titulo da manutencao programada?" } if title.blank?
+    return { ok: false, message: "Qual e a data prevista da manutencao?" } unless date
+
+    maintenance = ManutencaoProgramada.new(
+      titulo: title,
+      categoria: args["categoria"].presence || "Geral",
+      local: args["local"].presence,
+      responsavel: args["responsavel"].presence || @user.participant&.name || @user.email,
+      periodicidade: normalize_maintenance_periodicity(args["periodicidade"]),
+      data_prevista: date.to_date,
+      dias_para_aviso: args["dias_para_aviso"].presence || 1,
+      observacao: observation.presence || "Criada via Agente IA.",
+      exibir_no_app: args.key?("exibir_no_app") ? !!args["exibir_no_app"] : true
+    )
+
+    if maintenance.save
+      {
+        ok: true,
+        message: "Manutencao programada criada com sucesso: #{maintenance.titulo}, prevista para #{I18n.l(maintenance.data_prevista)}.",
+        maintenance_id: maintenance.id,
+        maintenances: [maintenance_payload(maintenance)]
+      }
+    else
+      { ok: false, message: maintenance.errors.full_messages.to_sentence.presence || "Nao foi possivel criar a manutencao programada." }
+    end
+  end
+
+  def list_scheduled_maintenances(args)
+    scope = maintenance_scope
+    scope = filter_maintenance_scope(scope, args)
+
+    limit = [[args["limit"].to_i, 1].max, 12].min
+    limit = 8 if args["limit"].blank?
+    maintenances = scope.order(:data_prevista, :titulo).limit(limit).to_a
+
+    return { ok: true, message: "Nao encontrei manutencoes programadas com esses filtros." } if maintenances.empty?
+
+    {
+      ok: true,
+      message: "Encontrei estas manutencoes programadas.",
+      maintenances: maintenances.map { |maintenance| maintenance_payload(maintenance) }
+    }
+  end
+
+  def cancel_scheduled_maintenance(args)
+    return forbidden_maintenance_message unless can_manage_maintenance?
+
+    match = find_scheduled_maintenance(args)
+    return match unless match[:ok]
+
+    maintenance = match[:maintenance]
+    title = maintenance.titulo
+    date = maintenance.data_prevista
+    maintenance.destroy!
+
+    {
+      ok: true,
+      message: "Manutencao programada cancelada com sucesso: #{title}#{date ? ", prevista para #{I18n.l(date)}" : ""}."
+    }
+  end
+
+  def scheduled_maintenance_status(args)
+    match = find_scheduled_maintenance(args)
+    return match unless match[:ok]
+
+    maintenance = match[:maintenance]
+    {
+      ok: true,
+      message: "Status da manutencao #{maintenance.titulo}: #{maintenance_status_text(maintenance)}. Prevista para #{I18n.l(maintenance.data_prevista)}.",
+      maintenances: [maintenance_payload(maintenance)]
+    }
+  end
+
+  def list_portaria_packages(args)
+    scope = package_scope.includes(:destinatario)
+    scope = filter_package_scope(scope, args)
+
+    limit = [[args["limit"].to_i, 1].max, 12].min
+    limit = 8 if args["limit"].blank?
+    packages = scope.order(entregue: :asc, created_at: :desc).limit(limit).to_a
+
+    return { ok: true, message: "Nao encontrei encomendas na portaria com esses filtros." } if packages.empty?
+
+    pending_count = packages.count { |package| !package.entregue? }
+    message =
+      if pending_count.positive?
+        "Encontrei #{pending_count} encomenda#{pending_count == 1 ? "" : "s"} pendente#{pending_count == 1 ? "" : "s"} na portaria."
+      else
+        "Encontrei encomendas, mas nenhuma pendente na portaria."
+      end
+
+    {
+      ok: true,
+      message: message,
+      packages: packages.map { |package| package_payload(package) }
+    }
+  end
+
+  def portaria_package_status(args)
+    match = find_package(args)
+    return match unless match[:ok]
+
+    package = match[:package]
+    {
+      ok: true,
+      message: "Status da encomenda #{package.codigo}: #{package_status_text(package)}.",
+      packages: [package_payload(package)]
+    }
+  end
+
+  def list_registration_approvals(args)
+    scope = registration_approval_scope.includes(:grupo_empresa)
+    scope = filter_registration_approval_scope(scope, args)
+
+    limit = [[args["limit"].to_i, 1].max, 12].min
+    limit = 8 if args["limit"].blank?
+    registrations = scope.order(created_at: :desc).limit(limit).to_a
+
+    return { ok: true, message: "Nao encontrei pre-cadastros aguardando aprovacao com esses filtros." } if registrations.empty?
+
+    pending_count = registrations.count(&:pendente?)
+    message =
+      if pending_count.positive?
+        "Encontrei #{pending_count} pre-cadastro#{pending_count == 1 ? "" : "s"} aguardando aprovacao."
+      else
+        "Encontrei pre-cadastros, mas nenhum aguardando aprovacao."
+      end
+
+    {
+      ok: true,
+      message: message,
+      registrations: registrations.map { |registration| registration_approval_payload(registration) }
+    }
+  end
+
+  def registration_approval_status(args)
+    match = find_registration_approval(args)
+    return match unless match[:ok]
+
+    registration = match[:registration]
+    {
+      ok: true,
+      message: "Status do pre-cadastro #{registration.nome}: #{registration_approval_status_text(registration)}.",
+      registrations: [registration_approval_payload(registration)]
+    }
+  end
+
+  def list_control_items(args)
+    return forbidden_items_message unless can_manage_control_items?
+
+    scope = filter_control_items_scope(Item.includes(:item_movimentacoes), args)
+    limit = [[args["limit"].to_i, 1].max, 12].min
+    limit = 8 if args["limit"].blank?
+    items = control_items_for_query(scope, args).first(limit)
+
+    return { ok: true, message: "Nao encontrei objetos com esses filtros." } if items.empty?
+
+    {
+      ok: true,
+      message: "Encontrei #{items.size} objeto#{items.one? ? "" : "s"} no controle.",
+      items: items.map { |item| control_item_payload(item) }
+    }
+  end
+
+  def checkout_control_item(args)
+    return forbidden_items_message unless can_manage_control_items?
+
+    match = find_control_item(args)
+    return match unless match[:ok]
+
+    item = match[:item]
+    return { ok: false, message: "#{item.nome} ja esta em uso." } if item.status.to_s == "em uso"
+
+    participant = find_participant(args["responsavel_name"]) || participant_mentioned_in_message || @user.participant
+    return { ok: false, message: "Nao consegui identificar o responsavel pela retirada." } unless participant
+
+    company = find_company(args["empresa"]) || company_mentioned_in_message || participant.grupo_empresa || @user.participant&.grupo_empresa
+    return { ok: false, message: "Nao consegui identificar a empresa da retirada." } unless company
+
+    item.item_movimentacoes.create!(
+      empresa: company.nome,
+      responsavel: participant.name,
+      descricao: args["descricao"].presence || args["description"].presence || "Retirada via Agente IA.",
+      tipo: "retirada"
+    )
+    item.update!(status: "em uso")
+
+    {
+      ok: true,
+      message: "Objeto #{item.nome} retirado com sucesso para #{participant.name}.",
+      items: [control_item_payload(item.reload)]
+    }
+  end
+
+  def return_control_item(args)
+    return forbidden_items_message unless can_manage_control_items?
+
+    match = find_control_item(args)
+    return match unless match[:ok]
+
+    item = match[:item]
+    return { ok: true, message: "#{item.nome} ja esta disponivel.", items: [control_item_payload(item)] } if item.status.to_s != "em uso"
+
+    last_checkout = latest_item_checkout(item)
+    participant = find_participant(args["responsavel_name"]) || participant_mentioned_in_message || find_participant(last_checkout&.responsavel) || @user.participant
+    company = find_company(args["empresa"]) || company_mentioned_in_message || find_company(last_checkout&.empresa) || participant&.grupo_empresa || @user.participant&.grupo_empresa
+
+    item.item_movimentacoes.create!(
+      empresa: company&.nome || last_checkout&.empresa,
+      responsavel: participant&.name || last_checkout&.responsavel || @user.participant&.name,
+      descricao: args["descricao"].presence || args["description"].presence || "Devolucao via Agente IA.",
+      tipo: "devolucao"
+    )
+    item.update!(status: "disponivel")
+
+    {
+      ok: true,
+      message: "Objeto #{item.nome} devolvido com sucesso.",
+      items: [control_item_payload(item.reload)]
+    }
+  end
+
+  def list_control_item_history(args)
+    return forbidden_items_message unless can_manage_control_items?
+
+    match = find_control_item(args)
+    return match unless match[:ok]
+
+    item = match[:item]
+    limit = [[args["limit"].to_i, 1].max, 20].min
+    limit = 10 if args["limit"].blank?
+    movements = item.item_movimentacoes.order(created_at: :desc).limit(limit).to_a
+
+    return { ok: true, message: "Esse objeto ainda nao tem historico.", items: [control_item_payload(item)] } if movements.empty?
+
+    {
+      ok: true,
+      message: "Historico recente do objeto #{item.nome}.",
+      items: [control_item_payload(item)],
+      item_movements: movements.map { |movement| item_movement_payload(movement) }
+    }
+  end
+
+  def list_my_checked_out_items(args)
+    participant = @user.participant
+    return { ok: false, message: "Nao consegui identificar seu participante para consultar objetos." } unless participant
+
+    args = args.merge(infer_control_item_args_from_message(args))
+    scope = Item.includes(:item_movimentacoes).where(status: "em uso")
+    items = control_items_for_query(scope, args)
+            .select { |item| same_person_name?(latest_item_checkout(item)&.responsavel, participant.name) }
+
+    return { ok: true, message: "Nao encontrei objetos retirados em seu nome." } if items.empty?
+
+    {
+      ok: true,
+      message: "Encontrei #{items.size} objeto#{items.one? ? "" : "s"} retirado#{items.one? ? "" : "s"} em seu nome.",
+      items: items.map { |item| control_item_payload(item) }
+    }
+  end
+
+  def check_my_item_return_status(args)
+    participant = @user.participant
+    return { ok: false, message: "Nao consegui identificar seu participante para consultar objetos." } unless participant
+
+    match = find_control_item(args)
+    return match unless match[:ok]
+
+    item = match[:item]
+    movements = item.item_movimentacoes.order(:created_at).to_a
+    user_movements = movements.select { |movement| same_person_name?(movement.responsavel, participant.name) }
+    last_checkout = user_movements.select { |movement| movement.tipo.to_s == "retirada" }.max_by(&:created_at)
+
+    unless last_checkout
+      return {
+        ok: true,
+        message: "Nao encontrei retirada de #{item.nome} em seu nome.",
+        items: [control_item_payload(item)]
+      }
+    end
+
+    last_return = user_movements
+                  .select { |movement| movement.tipo.to_s == "devolucao" && movement.created_at >= last_checkout.created_at }
+                  .max_by(&:created_at)
+
+    if last_return
+      {
+        ok: true,
+        message: "Sim, consta que voce devolveu #{item.nome} em #{I18n.l(last_return.created_at, format: :short)}.",
+        items: [control_item_payload(item)],
+        item_movements: [item_movement_payload(last_return)]
+      }
+    else
+      {
+        ok: true,
+        message: "Ainda nao consta devolucao de #{item.nome}. A ultima movimentacao em seu nome foi retirada em #{I18n.l(last_checkout.created_at, format: :short)}.",
+        items: [control_item_payload(item)],
+        item_movements: [item_movement_payload(last_checkout)]
+      }
+    end
+  end
+
   def create_reservation_tool
     {
       type: "function",
@@ -517,15 +917,289 @@ class AiAgentService
     }
   end
 
+  def create_scheduled_maintenance_tool
+    {
+      type: "function",
+      name: "criar_manutencao_programada",
+      description: "Cria uma manutencao programada quando titulo e data prevista estiverem claros.",
+      parameters: {
+        type: "object",
+        properties: {
+          title: { type: "string", description: "Titulo da manutencao." },
+          categoria: { type: "string", description: "Categoria da manutencao, como Eletrica, Hidraulica, Limpeza, Climatizacao ou Geral." },
+          local: { type: "string", description: "Local da manutencao." },
+          responsavel: { type: "string", description: "Responsavel pela manutencao." },
+          periodicidade: { type: "string", description: "Periodicidade: diario, semanal, quinzenal, mensal, bimestral, trimestral, quadrimestral, semestral, anual, bienal ou trienal." },
+          data_prevista: { type: "string", description: "Data prevista em ISO 8601." },
+          dias_para_aviso: { type: "integer", description: "Quantos dias antes avisar. Padrao 1." },
+          observacao: { type: "string", description: "Observacao ou descricao da manutencao." },
+          exibir_no_app: { type: "boolean", description: "Se deve aparecer no app." }
+        },
+        required: ["title", "data_prevista"],
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_scheduled_maintenances_tool
+    {
+      type: "function",
+      name: "listar_manutencoes_programadas",
+      description: "Lista manutencoes programadas, futuras ou por filtros, com cards para o usuario.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Titulo, local, categoria, responsavel ou texto aproximado." },
+          categoria: { type: "string", description: "Filtro por categoria." },
+          responsavel: { type: "string", description: "Filtro por responsavel." },
+          local: { type: "string", description: "Filtro por local." },
+          date: { type: "string", description: "Filtro por data em ISO 8601." },
+          status: { type: "string", description: "Filtro: futura, hoje, vencida ou aviso." },
+          limit: { type: "integer", description: "Quantidade maxima. Padrao 8." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def cancel_scheduled_maintenance_tool
+    {
+      type: "function",
+      name: "cancelar_manutencao_programada",
+      description: "Cancela/remova uma manutencao programada quando ela estiver identificada.",
+      parameters: {
+        type: "object",
+        properties: {
+          maintenance_id: { type: "integer", description: "ID tecnico da manutencao." },
+          query: { type: "string", description: "Titulo, local, categoria, responsavel ou texto aproximado." },
+          date: { type: "string", description: "Data prevista em ISO 8601." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def scheduled_maintenance_status_tool
+    {
+      type: "function",
+      name: "status_manutencao_programada",
+      description: "Consulta o status de uma manutencao programada identificada por ID, titulo, local ou data.",
+      parameters: {
+        type: "object",
+        properties: {
+          maintenance_id: { type: "integer", description: "ID tecnico da manutencao." },
+          query: { type: "string", description: "Titulo, local, categoria, responsavel ou texto aproximado." },
+          date: { type: "string", description: "Data prevista em ISO 8601." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_portaria_packages_tool
+    {
+      type: "function",
+      name: "listar_encomendas_portaria",
+      description: "Lista encomendas da portaria que o usuario logado pode visualizar. Use para perguntas como 'tenho encomenda na portaria?' ou 'tem encomenda para fulano?'.",
+      parameters: {
+        type: "object",
+        properties: {
+          destinatario_name: { type: "string", description: "Nome do destinatario quando o usuario pedir por uma pessoa especifica." },
+          status: { type: "string", description: "Filtro: pendente ou entregue." },
+          codigo: { type: "string", description: "Codigo da encomenda." },
+          transportadora: { type: "string", description: "Filtro por transportadora." },
+          unidade: { type: "string", description: "Filtro por unidade." },
+          query: { type: "string", description: "Codigo, transportadora, remetente, observacao ou texto aproximado." },
+          limit: { type: "integer", description: "Quantidade maxima. Padrao 8." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def portaria_package_status_tool
+    {
+      type: "function",
+      name: "status_encomenda_portaria",
+      description: "Consulta o status de uma encomenda da portaria identificada por ID, codigo, destinatario, unidade ou texto aproximado.",
+      parameters: {
+        type: "object",
+        properties: {
+          package_id: { type: "integer", description: "ID tecnico da encomenda." },
+          codigo: { type: "string", description: "Codigo da encomenda." },
+          destinatario_name: { type: "string", description: "Nome do destinatario." },
+          unidade: { type: "string", description: "Unidade da encomenda." },
+          query: { type: "string", description: "Transportadora, remetente, observacao ou texto aproximado." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_registration_approvals_tool
+    {
+      type: "function",
+      name: "listar_cadastros_aprovacao",
+      description: "Lista pre-cadastros que aguardam aprovacao, sem retornar CPF, telefone, email, foto ou outros dados sensiveis.",
+      parameters: {
+        type: "object",
+        properties: {
+          status: { type: "string", description: "Filtro opcional: pendente, aprovado ou reprovado. Omita para listar sem filtro de status." },
+          nome: { type: "string", description: "Filtro por nome aproximado." },
+          empresa: { type: "string", description: "Filtro por nome da empresa." },
+          cargo: { type: "string", description: "Filtro por cargo." },
+          limit: { type: "integer", description: "Quantidade maxima. Padrao 8." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def registration_approval_status_tool
+    {
+      type: "function",
+      name: "status_cadastro_aprovacao",
+      description: "Consulta o status de um pre-cadastro por ID, nome, empresa ou cargo, sem retornar dados sensiveis.",
+      parameters: {
+        type: "object",
+        properties: {
+          registration_id: { type: "integer", description: "ID tecnico do pre-cadastro." },
+          nome: { type: "string", description: "Nome aproximado." },
+          empresa: { type: "string", description: "Nome da empresa." },
+          cargo: { type: "string", description: "Cargo." },
+          status: { type: "string", description: "Status: pendente, aprovado ou reprovado." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def open_door_tool
+    {
+      type: "function",
+      name: "abrir_porta_sala",
+      description: "Abre a porta de uma sala (espaço comum) quando o usuário tiver permissão.",
+      parameters: {
+        type: "object",
+        properties: {
+          room_id: { type: "integer", description: "ID tecnico da sala." },
+          room_name: { type: "string", description: "Nome, numero ou descricao aproximada da sala." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_control_items_tool
+    {
+      type: "function",
+      name: "listar_objetos_controle",
+      description: "Lista objetos do controle de objetos. Somente admin ou operador com permissao de subgrupo.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "Nome ou descricao aproximada do objeto." },
+          status: { type: "string", description: "Filtro: disponivel ou em uso." },
+          limit: { type: "integer", description: "Quantidade maxima. Padrao 8." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def checkout_control_item_tool
+    {
+      type: "function",
+      name: "retirar_objeto_controle",
+      description: "Registra retirada de objeto. Somente admin ou operador com permissao de subgrupo.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "integer", description: "ID tecnico do objeto." },
+          query: { type: "string", description: "Nome ou descricao aproximada do objeto." },
+          responsavel_name: { type: "string", description: "Nome do responsavel pela retirada. Opcional; padrao usuario logado." },
+          empresa: { type: "string", description: "Empresa da retirada. Opcional; padrao empresa do responsavel." },
+          descricao: { type: "string", description: "Descricao/observacao da retirada." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def return_control_item_tool
+    {
+      type: "function",
+      name: "devolver_objeto_controle",
+      description: "Registra devolucao de objeto. Somente admin ou operador com permissao de subgrupo.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "integer", description: "ID tecnico do objeto." },
+          query: { type: "string", description: "Nome ou descricao aproximada do objeto." },
+          responsavel_name: { type: "string", description: "Nome de quem devolveu. Opcional." },
+          empresa: { type: "string", description: "Empresa da devolucao. Opcional." },
+          descricao: { type: "string", description: "Descricao/observacao da devolucao." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_control_item_history_tool
+    {
+      type: "function",
+      name: "listar_historico_objeto",
+      description: "Lista historico de movimentacoes de um objeto. Somente admin ou operador com permissao de subgrupo.",
+      parameters: {
+        type: "object",
+        properties: {
+          item_id: { type: "integer", description: "ID tecnico do objeto." },
+          query: { type: "string", description: "Nome ou descricao aproximada do objeto." },
+          limit: { type: "integer", description: "Quantidade maxima. Padrao 10." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
+  def list_my_checked_out_items_tool
+    {
+      type: "function",
+      name: "listar_meus_objetos_retirados",
+      description: "Lista objetos em uso retirados no nome do usuario logado. Permitido para cliente consultar apenas os proprios objetos.",
+      parameters: {
+        type: "object",
+        properties: {
+          limit: { type: "integer", description: "Quantidade maxima. Opcional." }
+        },
+        additionalProperties: false
+      }
+    }
+  end
+
   def agent_tools
     [
       create_reservation_tool,
       cancel_reservation_tool,
       list_cancelable_reservations_tool,
       available_rooms_tool,
+      open_door_tool,
+      list_control_items_tool,
+      checkout_control_item_tool,
+      return_control_item_tool,
+      list_control_item_history_tool,
+      list_my_checked_out_items_tool,
       create_chamado_tool,
       update_chamado_tool,
-      cancel_chamado_tool
+      cancel_chamado_tool,
+      create_scheduled_maintenance_tool,
+      list_scheduled_maintenances_tool,
+      cancel_scheduled_maintenance_tool,
+      scheduled_maintenance_status_tool,
+      list_portaria_packages_tool,
+      portaria_package_status_tool,
+      list_registration_approvals_tool,
+      registration_approval_status_tool
     ]
   end
 
@@ -538,12 +1212,90 @@ class AiAgentService
   end
 
   def clean_agent_message(message)
-    message.to_s
+    restore_agent_accents(message.to_s
       .gsub(/\s*Voc[eê] pode visualizar a reserva\s+\[[^\]]+\]\([^)]+\)\.?/i, "")
       .gsub(/\s*\[[^\]]+\]\((?:sandbox:)?\/[^)]+\)/i, "")
       .gsub(/\s*(?:sandbox:)?\/rooms\/\d+\/reservations\b/i, "")
       .squeeze(" ")
-      .strip
+      .strip)
+  end
+
+  def restore_agent_accents(message)
+    text = restore_mojibake_accents(message.to_s)
+
+    agent_accent_words.each do |plain, accented|
+      text = text.gsub(/\b#{Regexp.escape(plain)}\b/i) { |match| preserve_word_case(match, accented) }
+    end
+
+    text
+  end
+
+  def agent_accent_words
+    {
+      "acao" => "ação",
+      "acoes" => "ações",
+      "audio" => "áudio",
+      "concluida" => "concluída",
+      "concluido" => "concluído",
+      "configuracao" => "configuração",
+      "configuracoes" => "configurações",
+      "devolucao" => "devolução",
+      "disponivel" => "disponível",
+      "disponiveis" => "disponíveis",
+      "esta" => "está",
+      "historico" => "histórico",
+      "horario" => "horário",
+      "horarios" => "horários",
+      "identificacao" => "identificação",
+      "manutencao" => "manutenção",
+      "manutencoes" => "manutenções",
+      "nao" => "não",
+      "operacao" => "operação",
+      "pendencia" => "pendência",
+      "pendencias" => "pendências",
+      "possivel" => "possível",
+      "possiveis" => "possíveis",
+      "pre" => "pré",
+      "recepcao" => "recepção",
+      "responsavel" => "responsável",
+      "responsaveis" => "responsáveis",
+      "situacao" => "situação",
+      "solicitacao" => "solicitação",
+      "solicitacoes" => "solicitações",
+      "usuario" => "usuário",
+      "usuarios" => "usuários",
+      "voce" => "você"
+    }
+  end
+
+  def restore_mojibake_accents(text)
+    replacements = {
+      "Ã¡" => "á",
+      "Ã¢" => "â",
+      "Ã£" => "ã",
+      "Ãª" => "ê",
+      "Ã©" => "é",
+      "Ã­" => "í",
+      "Ã³" => "ó",
+      "Ã´" => "ô",
+      "Ãµ" => "õ",
+      "Ãº" => "ú",
+      "Ã§" => "ç",
+      "Ã�" => "Á",
+      "Ã‰" => "É",
+      "Ã“" => "Ó",
+      "Ãš" => "Ú"
+    }
+
+    replacements.each { |wrong, right| text = text.gsub(wrong, right) }
+    text
+  end
+
+  def preserve_word_case(source, replacement)
+    return replacement.upcase if source == source.upcase
+    return replacement.capitalize if source[0] == source[0].upcase
+
+    replacement
   end
 
   def available_rooms
@@ -583,7 +1335,7 @@ class AiAgentService
       return { ok: false, message: "Nao encontrei essa sala/unidade para o chamado." } if name.blank?
     end
 
-    matches = scored_room_matches(scope.includes(:room_group).to_a, name)
+    matches = unique_room_matches(scored_room_matches(scope.includes(:room_group).to_a, name))
     return { ok: false, message: "Nao encontrei sala/unidade parecida com \"#{name}\" para chamado." } if matches.empty?
 
     best = matches.first
@@ -694,8 +1446,7 @@ class AiAgentService
     "%04d" % (Chamado.order(:created_at).last&.id.to_i + 1)
   end
 
-  def find_room(id, name)
-    scope = available_rooms
+  def find_room(id, name, scope = available_rooms)
     if id.present?
       room = scope.find_by(id: id)
       return { ok: true, room: room } if room
@@ -704,7 +1455,12 @@ class AiAgentService
 
     return { ok: false, message: "Qual sala voce quer reservar?" } if name.blank?
 
-    matches = scored_room_matches(scope.includes(:room_group).to_a, name)
+    matches = unique_room_matches(scored_room_matches(scope.includes(:room_group).to_a, name))
+    begin
+      Rails.logger.info "[AI AGENT] find_room query=#{name.inspect} matches=#{matches.map { |m| "#{m[:room].id}:#{m[:room].name}=#{m[:score]}" }.join(', ')}"
+    rescue => e
+      Rails.logger.info "[AI AGENT] find_room logging failed: #{e.class} - #{e.message}"
+    end
     return { ok: false, message: "Nao encontrei sala parecida com \"#{name}\". Salas disponiveis: #{room_options_text}." } if matches.empty?
 
     best = matches.first
@@ -774,6 +1530,7 @@ class AiAgentService
 
   def cancel_from_context_if_possible
     return nil unless cancel_intent?
+    return nil if maintenance_intent?
     return nil if remembered_cancelable_reservations.blank?
 
     match = find_remembered_cancelable_reservation(infer_cancel_selection_from_message({}))
@@ -788,7 +1545,6 @@ class AiAgentService
 
   def availability_from_context_if_possible
     return nil unless availability_intent?
-
     if availability_now_intent?
       result = list_available_rooms({})
       return result.merge(message: clean_agent_message(result[:message])) if result[:ok]
@@ -796,6 +1552,19 @@ class AiAgentService
     end
 
     nil
+  end
+
+  def open_door_intent?
+    text = normalize_search_text(@message)
+    text.match?(/\babrir\b/) && text.match?(/\bporta\b/)
+  end
+
+  def open_door_from_context_if_possible
+    return nil unless open_door_intent?
+
+    result = open_room_door("room_name" => @message)
+    return success(clean_agent_message(result[:message])) if result[:ok]
+    result
   end
 
   def cancel_intent?
@@ -810,6 +1579,230 @@ class AiAgentService
 
   def availability_now_intent?
     normalize_search_text(@message).match?(/\b(agora|nesse horario|neste horario|esse horario|este horario)\b/)
+  end
+
+  def package_intent?
+    normalize_search_text(@message).match?(/\b(encomenda|encomendas|pacote|pacotes|portaria|recepcao)\b/)
+  end
+
+  def registration_approval_intent?
+    text = normalize_search_text(@message)
+    text.match?(/\b(cadastro|cadastros|pre cadastro|pre cadastros|aprovacao|aprovacoes)\b/) &&
+      text.match?(/\b(aguardando|pendente|pendentes|aprovar|aprovacao|aprovacoes|status|visualizar|listar|lista|ver)\b/)
+  end
+
+  def item_intent?
+    normalize_search_text(@message).match?(/\b(objeto|objetos|item|itens|controle de objeto|controle de objetos|chave|chaves|projetor|projetores|projeto|retirado|retirada|devolv\w*|devolu\w*|entreguei|retornei)\b/)
+  end
+
+  def item_return_status_intent?
+    normalize_search_text(@message).match?(/\b(devolv\w*|devolu\w*|entreguei|retornei)\b/)
+  end
+
+  def item_checkout_intent?
+    normalize_search_text(@message).match?(/\b(retirar|retirada|retire|pegar|peguei|buscar|emprestar|emprestimo)\b/)
+  end
+
+  def package_from_context_if_possible
+    return nil unless package_intent?
+
+    args = infer_package_args_from_message
+    result =
+      if normalize_search_text(@message).match?(/\b(status|situacao|entregue|retirada|codigo)\b/) || args["package_id"].present? || args["codigo"].present?
+        portaria_package_status(args)
+      else
+        list_portaria_packages(args)
+      end
+
+    response = success(clean_agent_message(result[:message])) if result[:ok]
+    response&.merge(packages: result[:packages]) || result
+  end
+
+  def infer_package_args_from_message
+    text = normalize_search_text(@message)
+    args = {}
+
+    if @message =~ /\bID\s*(\d+)\b/i || text =~ /\bid\s*(\d+)\b/i
+      args["package_id"] = Regexp.last_match(1).to_i
+    end
+
+    code_match = @message.match(/\b(?:codigo|c[oó]digo|cod)\s*[:#-]?\s*([A-Za-z0-9._-]+)/i)
+    args["codigo"] = code_match[1] if code_match
+
+    if text.match?(/\b(entregue|entregues|retirada|retirado)\b/)
+      args["status"] = "entregue"
+    elsif text.match?(/\b(pendente|pendentes|aguardando|portaria|tenho|tem)\b/)
+      args["status"] = "pendente"
+    end
+
+    participant = participant_mentioned_in_message
+    if participant
+      args["destinatario_name"] = participant.name
+    elsif text.match?(/\b(minha|minhas|meu|meus|pra mim|para mim|tenho)\b/) && @user.participant
+      args["destinatario_name"] = @user.participant.name
+    end
+
+    args
+  end
+
+  def participant_mentioned_in_message
+    message_text = normalize_search_text(@message)
+    return nil if message_text.blank?
+
+    available_participants.limit(500).to_a.find do |participant|
+      normalized_name = normalize_search_text(participant.name)
+      normalized_name.present? && message_text.include?(normalized_name)
+    end
+  end
+
+  def registration_from_context_if_possible
+    return nil unless registration_approval_intent?
+
+    args = infer_registration_approval_args_from_message
+    result =
+      if normalize_search_text(@message).match?(/\b(status|situacao|id)\b/) || args["registration_id"].present?
+        registration_approval_status(args)
+      else
+        list_registration_approvals(args)
+      end
+
+    response = success(clean_agent_message(result[:message])) if result[:ok]
+    response&.merge(registrations: result[:registrations]) || result
+  end
+
+  def item_from_context_if_possible
+    return nil unless item_intent?
+    return nil if can_manage_control_items?
+    return nil unless @user.client?
+
+    args = infer_control_item_args_from_message({})
+    result =
+      if item_checkout_intent?
+        {
+          ok: true,
+          message: "Para retirar um objeto novamente, procure a portaria ou o responsável pelo controle de objetos."
+        }
+      elsif item_return_status_intent?
+        check_my_item_return_status(args)
+      else
+        list_my_checked_out_items(args)
+      end
+    response = success(clean_agent_message(result[:message])) if result[:ok]
+    response&.merge(items: result[:items], item_movements: result[:item_movements]) || result
+  end
+
+  def infer_registration_approval_args_from_message
+    text = normalize_search_text(@message)
+    args = {}
+
+    if @message =~ /\bID\s*(\d+)\b/i || text =~ /\bid\s*(\d+)\b/i
+      args["registration_id"] = Regexp.last_match(1).to_i
+    end
+
+    unless text.match?(/\b(sem filtro|sem filtros|todos|todas|geral|qualquer status)\b/)
+      case text
+      when /\b(aprovado|aprovados|aprovada|aprovadas)\b/
+        args["status"] = "aprovado"
+      when /\b(reprovado|reprovados|reprovada|reprovadas)\b/
+        args["status"] = "reprovado"
+      when /\b(aguardando|pendente|pendentes|aprovar|aprovacao|aprovacoes)\b/
+        args["status"] = "pendente"
+      end
+    end
+
+    registration = registration_name_mentioned_in_message
+    args["nome"] = registration.nome if registration
+
+    company = company_mentioned_in_message
+    args["empresa"] = company.nome if company
+
+    args
+  end
+
+  def registration_name_mentioned_in_message
+    message_text = normalize_search_text(@message)
+    return nil if message_text.blank?
+
+    registration_approval_scope.limit(500).to_a.find do |registration|
+      normalized_name = normalize_search_text(registration.nome)
+      normalized_name.present? && message_text.include?(normalized_name)
+    end
+  end
+
+  def company_mentioned_in_message
+    message_text = normalize_search_text(@message)
+    return nil if message_text.blank?
+
+    GrupoEmpresa.limit(300).to_a.find do |company|
+      normalized_name = normalize_search_text(company.nome)
+      normalized_name.present? && message_text.include?(normalized_name)
+    end
+  end
+
+  def maintenance_intent?
+    normalize_search_text(@message).match?(/\b(manutencao|manutencoes|preventiva|programada|programadas)\b/)
+  end
+
+  def maintenance_cancel_from_context_if_possible
+    return nil unless cancel_intent? && maintenance_intent?
+    return nil if remembered_cancelable_maintenances.blank?
+
+    args = infer_maintenance_selection_from_message({})
+    return nil if args.blank?
+
+    result = cancel_scheduled_maintenance(args)
+    response = success(clean_agent_message(result[:message])) if result[:ok]
+    response || result
+  end
+
+  def infer_maintenance_selection_from_message(args)
+    inferred = {}
+    return inferred if args["maintenance_id"].present?
+
+    text = normalize_search_text(@message)
+    remembered = remembered_cancelable_maintenances
+
+    if @message =~ /\bID\s*(\d+)\b/i || text =~ /\bid\s*(\d+)\b/i
+      inferred["maintenance_id"] = Regexp.last_match(1).to_i
+      return inferred
+    end
+
+    if text =~ /\b(?:manutencao|manutencoes|programada)\s*(\d+)\b/i
+      inferred["maintenance_id"] = Regexp.last_match(1).to_i
+      return inferred
+    end
+
+    if remembered.present? && text =~ /\b(?:a|opcao|opcao numero|numero|primeira|segunda|terceira)\s*(\d+)?\b/i
+      index =
+        if text.include?("primeira")
+          0
+        elsif text.include?("segunda")
+          1
+        elsif text.include?("terceira")
+          2
+        else
+          Regexp.last_match(1).to_i - 1
+        end
+      maintenance = remembered[index]
+      inferred["maintenance_id"] = maintenance["id"] || maintenance[:id] if maintenance
+      return inferred
+    end
+
+    remembered.each do |maintenance|
+      title = normalize_search_text(maintenance["title"] || maintenance[:title])
+      local = normalize_search_text(maintenance["local"] || maintenance[:local])
+      next if title.blank? && local.blank?
+
+      if title.present? && text.include?(title)
+        inferred["query"] = maintenance["title"] || maintenance[:title]
+        break
+      elsif local.present? && text.include?(local)
+        inferred["query"] = maintenance["local"] || maintenance[:local]
+        break
+      end
+    end
+
+    inferred
   end
 
   def find_remembered_cancelable_reservation(args)
@@ -956,8 +1949,214 @@ class AiAgentService
       group: room.room_group&.name,
       capacity: room.capacidade,
       photo_url: room.photo.attached? ? helpers.rails_blob_path(room.photo, only_path: true) : nil,
-      url: helpers.room_reservations_path(room)
+      url: helpers.room_reservations_path(room),
+      can_open_door: room.device.present? && (
+        @user.admin? || @user.operador? || @user.participant&.sub_grupo_empresa&.can_open_doors?
+      ),
+      open_door_path: (helpers.open_door_room_path(room) if room.device.present?)
     }
+  end
+
+  def open_room_door(args)
+    # Debug logging to help diagnose permission issues (temporary)
+    begin
+      Rails.logger.info "[AI AGENT] open_room_door called by user_id=#{@user&.id} role=#{@user&.role} admin=#{@user&.admin?} operador=#{@user&.operador?} participant_id=#{@user&.participant&.id} sub_grupo_id=#{@user&.participant&.sub_grupo_empresa&.id} sub_can_open=#{@user&.participant&.sub_grupo_empresa&.can_open_doors? rescue 'unknown'}"
+    rescue => e
+      Rails.logger.info "[AI AGENT] open_room_door logging failed: #{e.class} - #{e.message}"
+    end
+
+    return { ok: false, message: "Desculpe, não consigo abrir portas." } unless (
+      @user.admin? || @user.operador? || @user.participant&.sub_grupo_empresa&.can_open_doors?
+    )
+
+    room_match = find_room(args["room_id"], args["room_name"], Room.where.not(device_id: nil))
+    return room_match unless room_match[:ok]
+
+    room = room_match[:room]
+    device = room.device
+    return { ok: false, message: "Dispositivo nao encontrado para essa sala." } unless device.present?
+    return { ok: false, message: "A sala #{room.name} esta offline. Nao enviei o comando para abrir a porta." } unless device_online_for_door?(device)
+
+    OpenDoorJob.perform_later(device.ip, device.user, device.password)
+
+    { ok: true, message: "Comando para abrir a porta enviado para #{room.name}." }
+  end
+
+  def device_online_for_door?(device)
+    device.status.to_s.downcase == "online"
+  end
+
+  def can_manage_control_items?
+    @user.admin? || (@user.operador? && @user.participant&.sub_grupo_empresa&.can_manage_items?)
+  end
+
+  def forbidden_items_message
+    { ok: false, message: "Voce nao tem permissao para gerenciar o controle de objetos." }
+  end
+
+  def filter_control_items_scope(scope, args)
+    scoped = scope
+
+    case normalize_search_text(args["status"])
+    when "disponivel", "disponiveis", "livre", "livres"
+      scoped = scoped.where(status: "disponivel")
+    when "em uso", "uso", "retirado", "retirada", "retirados"
+      scoped = scoped.where(status: "em uso")
+    end
+
+    scoped
+  end
+
+  def control_items_for_query(scope, args)
+    query = control_item_query(args)
+    items = scope.to_a
+    return items.sort_by { |item| [item.status.to_s == "em uso" ? 0 : 1, item.nome.to_s] } if query.blank?
+
+    matches = scored_control_item_matches(items, query)
+    matches.map { |match| match[:item] }
+  end
+
+  def control_item_query(args)
+    [
+      args["query"],
+      args["item_name"],
+      args["nome"]
+    ].find(&:present?).to_s
+  end
+
+  def scored_control_item_matches(items, query)
+    query_text = normalize_control_item_query(query)
+    query_tokens = search_tokens(query_text)
+    return [] if query_text.blank?
+
+    items.filter_map do |item|
+      fields = [item.nome, item.descricao, item.status]
+      normalized_fields = fields.map { |field| normalize_search_text(field) }.reject(&:blank?)
+      joined = normalized_fields.join(" ")
+      score = control_item_match_score(query_text, query_tokens, normalized_fields, joined)
+      score.positive? ? { item: item, score: score } : nil
+    end.sort_by { |match| -match[:score] }
+  end
+
+  def control_item_match_score(query_text, query_tokens, normalized_fields, joined)
+    score = 0
+    score += 140 if normalized_fields.include?(query_text)
+    score += 100 if normalized_fields.any? { |field| field.start_with?(query_text) }
+    score += 80 if normalized_fields.any? { |field| field.include?(query_text) }
+
+    matched_tokens = query_tokens.count { |token| joined.include?(token) }
+    score += matched_tokens * 25
+    score += 35 if query_tokens.any? && matched_tokens == query_tokens.size
+
+    query_numbers = query_text.scan(/\d+/)
+    field_numbers = joined.scan(/\d+/).to_set
+    score += (query_numbers & field_numbers.to_a).size * 40
+
+    score
+  end
+
+  def normalize_control_item_query(value)
+    text = normalize_search_text(value)
+    ignored = %w[
+      objeto objetos item itens controle retirar retirada retire devolvendo devolver devolucao devolva
+      devolvi devolvir devolveu devolvido devolvida devolvidos devolvidas entregue entreguei retornei
+      listar lista historico historial status ver veja verificar consultar consulta saber consta perguntar pergunte
+      para pra de da do das dos a o as os ao aos e ou se ja nao ainda
+      com em eu voce vc meu minha meus minhas nome responsavel empresa
+    ].to_set
+
+    text.split.reject { |token| ignored.include?(token) }.join(" ")
+  end
+
+  def infer_control_item_args_from_message(args)
+    inferred = {}
+    return inferred if args["item_id"].present?
+
+    text = normalize_search_text(@message)
+    if @message =~ /\bID\s*(\d+)\b/i || text =~ /\bid\s*(\d+)\b/i
+      inferred["item_id"] = Regexp.last_match(1).to_i
+      return inferred
+    end
+
+    return inferred if control_item_query(args).present?
+
+    query = normalize_control_item_query(@message)
+    inferred["query"] = query if query.present?
+    inferred
+  end
+
+  def find_control_item(args)
+    args = args.merge(infer_control_item_args_from_message(args))
+    scope = Item.includes(:item_movimentacoes)
+
+    if args["item_id"].present?
+      item = scope.find_by(id: args["item_id"])
+      return { ok: true, item: item } if item
+      return { ok: false, message: "Nao encontrei esse objeto." }
+    end
+
+    scoped = filter_control_items_scope(scope, args)
+    items = control_items_for_query(scoped, args).first(6)
+    return { ok: false, message: "Qual objeto voce quer usar? Informe ID ou nome." } if items.empty?
+    return { ok: true, item: items.first } if items.one?
+
+    options = items.map { |item| "ID #{item.id} - #{item.nome} (#{item.status.presence || "sem status"})" }
+    { ok: false, message: "Encontrei mais de um objeto: #{options.join("; ")}. Qual deles devo usar?" }
+  end
+
+  def latest_item_checkout(item)
+    item.item_movimentacoes
+        .select { |movement| movement.tipo.to_s == "retirada" }
+        .max_by(&:created_at)
+  end
+
+  def latest_item_movement(item)
+    item.item_movimentacoes.max_by(&:created_at)
+  end
+
+  def same_person_name?(left, right)
+    left_name = normalize_search_text(left)
+    right_name = normalize_search_text(right)
+    left_name.present? && right_name.present? && left_name == right_name
+  end
+
+  def control_item_payload(item)
+    last_checkout = latest_item_checkout(item)
+    last_movement = latest_item_movement(item)
+
+    {
+      id: item.id,
+      nome: item.nome,
+      descricao: item.descricao,
+      status: item.status.presence || "sem status",
+      em_uso: item.status.to_s == "em uso",
+      responsavel_atual: (last_checkout&.responsavel if item.status.to_s == "em uso"),
+      empresa_atual: (last_checkout&.empresa if item.status.to_s == "em uso"),
+      ultima_movimentacao: last_movement&.tipo,
+      ultima_movimentacao_em: last_movement&.created_at&.iso8601,
+      ultima_movimentacao_em_label: (I18n.l(last_movement.created_at, format: :short) if last_movement)
+    }
+  end
+
+  def item_movement_payload(movement)
+    {
+      id: movement.id,
+      item_id: movement.item_id,
+      item_nome: movement.item&.nome,
+      tipo: movement.tipo,
+      empresa: movement.empresa,
+      responsavel: movement.responsavel,
+      descricao: movement.descricao,
+      criado_em: movement.created_at&.iso8601,
+      criado_em_label: I18n.l(movement.created_at, format: :short)
+    }
+  end
+
+  def find_company(name)
+    return nil if name.blank?
+
+    GrupoEmpresa.where("LOWER(nome) = ?", name.to_s.downcase).first ||
+      GrupoEmpresa.where("nome ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(name.to_s)}%").first
   end
 
   def reservation_people_names(reservation)
@@ -973,6 +2172,308 @@ class AiAgentService
     return scope if @user.admin? || @user.operador?
 
     scope.where(grupo_empresa_id: @user.participant&.grupo_empresa_id)
+  end
+
+  def can_manage_packages?
+    @user.admin? || @user.operador? || !!@user.participant&.sub_grupo_empresa&.can_manage_encomendas
+  end
+
+  def package_scope
+    scope = Encomenda.all
+    return scope if can_manage_packages?
+
+    if @user.participant_id.present?
+      scope.where(destinatario_id: @user.participant_id)
+    else
+      Encomenda.none
+    end
+  end
+
+  def filter_package_scope(scope, args)
+    scoped = scope
+
+    if args["destinatario_name"].present?
+      participant = find_participant(args["destinatario_name"])
+      return Encomenda.none unless participant
+
+      scoped = scoped.where(destinatario_id: participant.id)
+    end
+
+    if args["codigo"].present?
+      scoped = scoped.where("codigo ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(args["codigo"].to_s)}%")
+    end
+
+    %w[transportadora unidade].each do |field|
+      next if args[field].blank?
+
+      scoped = scoped.where("#{field} ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(args[field].to_s)}%")
+    end
+
+    if args["query"].present?
+      like = "%#{ActiveRecord::Base.sanitize_sql_like(args["query"].to_s)}%"
+      scoped = scoped.left_outer_joins(:destinatario)
+                     .where("encomendas.codigo ILIKE :q OR encomendas.transportadora ILIKE :q OR encomendas.remetente ILIKE :q OR encomendas.observacao ILIKE :q OR encomendas.unidade ILIKE :q OR participants.name ILIKE :q", q: like)
+    end
+
+    case normalize_search_text(args["status"])
+    when "pendente", "pendentes", "na portaria", "aguardando", "nao entregue", "nao entregues"
+      scoped = scoped.where(entregue: [false, nil])
+    when "entregue", "entregues", "retirada", "retirado"
+      scoped = scoped.where(entregue: true)
+    end
+
+    scoped
+  end
+
+  def find_package(args)
+    scope = package_scope.includes(:destinatario)
+
+    if args["package_id"].present?
+      package = scope.find_by(id: args["package_id"])
+      return { ok: true, package: package } if package
+      return { ok: false, message: "Nao encontrei essa encomenda." }
+    end
+
+    scoped = filter_package_scope(scope, args)
+    packages = scoped.order(entregue: :asc, created_at: :desc).limit(6).to_a
+    return { ok: false, message: "Qual encomenda voce quer consultar? Informe ID, codigo, destinatario ou unidade." } if packages.empty?
+    return { ok: true, package: packages.first } if packages.one?
+
+    options = packages.map do |package|
+      "ID #{package.id} - #{package.codigo} - #{package.destinatario&.name || "sem destinatario"} (#{package_status_text(package)})"
+    end
+    { ok: false, message: "Encontrei mais de uma encomenda: #{options.join("; ")}. Qual delas devo consultar?" }
+  end
+
+  def package_status_text(package)
+    package.entregue? ? "entregue" : "pendente na portaria"
+  end
+
+  def package_payload(package)
+    {
+      id: package.id,
+      codigo: package.codigo,
+      transportadora: package.transportadora,
+      tipo: package.tipo,
+      tamanho: package.tamanho,
+      remetente: package.remetente,
+      unidade: package.unidade,
+      destinatario: package.destinatario&.name,
+      status: package_status_text(package),
+      entregue: package.entregue?,
+      entregue_em: package.entregue_em&.iso8601,
+      entregue_em_label: (I18n.l(package.entregue_em, format: :short) if package.entregue_em),
+      recebido_em_label: I18n.l(package.created_at, format: :short)
+    }
+  end
+
+  def registration_approval_scope
+    scope = FormularioCadastro.all
+    return scope if @user.admin? || @user.operador?
+
+    grupo_empresa_id = @user.participant&.grupo_empresa_id
+    return FormularioCadastro.none if grupo_empresa_id.blank?
+
+    scope.where(grupo_empresa_id: grupo_empresa_id)
+  end
+
+  def filter_registration_approval_scope(scope, args)
+    scoped = scope
+
+    status = normalize_search_text(args["status"])
+    case status
+    when "aprovado", "aprovados", "aprovada", "aprovadas"
+      scoped = scoped.where(status: "aprovado")
+    when "reprovado", "reprovados", "reprovada", "reprovadas"
+      scoped = scoped.where(status: "reprovado")
+    when "pendente", "pendentes", "aguardando", "aguardando aprovacao"
+      scoped = scoped.where(status: "pendente")
+    end
+
+    if args["nome"].present?
+      scoped = scoped.where("nome ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(args["nome"].to_s)}%")
+    end
+
+    if args["cargo"].present?
+      scoped = scoped.where("cargo ILIKE ?", "%#{ActiveRecord::Base.sanitize_sql_like(args["cargo"].to_s)}%")
+    end
+
+    if args["empresa"].present?
+      like = "%#{ActiveRecord::Base.sanitize_sql_like(args["empresa"].to_s)}%"
+      scoped = scoped.left_outer_joins(:grupo_empresa).where("grupo_empresas.nome ILIKE ?", like)
+    end
+
+    scoped
+  end
+
+  def find_registration_approval(args)
+    scope = registration_approval_scope.includes(:grupo_empresa)
+
+    if args["registration_id"].present?
+      registration = scope.find_by(id: args["registration_id"])
+      return { ok: true, registration: registration } if registration
+      return { ok: false, message: "Nao encontrei esse pre-cadastro." }
+    end
+
+    scoped = filter_registration_approval_scope(scope, args)
+    registrations = scoped.order(created_at: :desc).limit(6).to_a
+    return { ok: false, message: "Qual pre-cadastro voce quer consultar? Informe ID, nome ou empresa." } if registrations.empty?
+    return { ok: true, registration: registrations.first } if registrations.one?
+
+    options = registrations.map do |registration|
+      "ID #{registration.id} - #{registration.nome} - #{registration.grupo_empresa&.nome || "sem empresa"} (#{registration_approval_status_text(registration)})"
+    end
+    { ok: false, message: "Encontrei mais de um pre-cadastro: #{options.join("; ")}. Qual deles devo consultar?" }
+  end
+
+  def registration_approval_status_text(registration)
+    {
+      "pendente" => "aguardando aprovacao",
+      "aprovado" => "aprovado",
+      "reprovado" => "reprovado"
+    }[registration.status.to_s] || registration.status.to_s
+  end
+
+  def registration_approval_payload(registration)
+    {
+      id: registration.id,
+      nome: registration.nome,
+      empresa: registration.grupo_empresa&.nome,
+      cargo: registration.cargo,
+      status: registration_approval_status_text(registration),
+      status_key: registration.status,
+      enviado_em: registration.created_at&.iso8601,
+      enviado_em_label: I18n.l(registration.created_at, format: :short),
+      url: Rails.application.routes.url_helpers.participants_path(tab: "aprovacoes")
+    }
+  end
+
+  def can_manage_maintenance?
+    @user.admin? || @user.operador?
+  end
+
+  def forbidden_maintenance_message
+    { ok: false, message: "Voce nao tem permissao para criar ou cancelar manutencoes programadas." }
+  end
+
+  def maintenance_scope
+    scope = ManutencaoProgramada.all
+    return scope if can_manage_maintenance?
+
+    scope.where(exibir_no_app: true)
+  end
+
+  def filter_maintenance_scope(scope, args)
+    scoped = scope
+
+    if args["query"].present?
+      like = "%#{ActiveRecord::Base.sanitize_sql_like(args["query"].to_s)}%"
+      scoped = scoped.where("titulo ILIKE :q OR categoria ILIKE :q OR local ILIKE :q OR responsavel ILIKE :q OR observacao ILIKE :q", q: like)
+    end
+
+    %w[categoria responsavel local].each do |field|
+      next if args[field].blank?
+
+      like = "%#{ActiveRecord::Base.sanitize_sql_like(args[field].to_s)}%"
+      scoped = scoped.where("#{field} ILIKE ?", like)
+    end
+
+    if args["date"].present?
+      date = parse_time(args["date"])
+      scoped = scoped.where(data_prevista: date.to_date) if date
+    end
+
+    case normalize_search_text(args["status"])
+    when "vencida", "vencido", "atrasada", "atrasado"
+      scoped = scoped.where("data_prevista < ?", Date.current)
+    when "hoje", "vence hoje"
+      scoped = scoped.where(data_prevista: Date.current)
+    when "aviso", "periodo de aviso", "em aviso"
+      scoped = scoped.em_periodo_de_aviso
+    when "futura", "futuro", "proxima", "proximas"
+      scoped = scoped.where("data_prevista >= ?", Date.current)
+    end
+
+    scoped
+  end
+
+  def find_scheduled_maintenance(args)
+    args = args.merge(infer_maintenance_selection_from_message(args))
+    scope = maintenance_scope
+
+    if args["maintenance_id"].present?
+      maintenance = scope.find_by(id: args["maintenance_id"])
+      return { ok: true, maintenance: maintenance } if maintenance
+      return { ok: false, message: "Nao encontrei essa manutencao programada." }
+    end
+
+    scoped = filter_maintenance_scope(scope, args)
+    maintenances = scoped.order(:data_prevista, :titulo).limit(6).to_a
+    return { ok: false, message: "Qual manutencao programada voce quer usar? Informe ID, titulo, local ou data." } if maintenances.empty?
+    return { ok: true, maintenance: maintenances.first } if maintenances.one?
+
+    options = maintenances.map do |maintenance|
+      "ID #{maintenance.id} - #{maintenance.titulo} (#{maintenance.data_prevista ? I18n.l(maintenance.data_prevista) : "sem data"})"
+    end
+    { ok: false, message: "Encontrei mais de uma manutencao programada: #{options.join("; ")}. Qual delas devo usar?" }
+  end
+
+  def maintenance_status_text(maintenance)
+    date = maintenance.data_prevista
+    return "sem data prevista" unless date
+    return "vencida" if date < Date.current
+    return "vence hoje" if date == Date.current
+    return "em periodo de aviso" if maintenance_notice_period?(maintenance)
+
+    "futura"
+  end
+
+  def maintenance_notice_period?(maintenance)
+    date = maintenance.data_prevista
+    return false unless date
+
+    if maintenance.data_de_aviso.present?
+      return Date.current.between?(maintenance.data_de_aviso.to_date, date.to_date)
+    end
+
+    days = maintenance.dias_para_aviso.to_i
+    days.positive? && Date.current.between?(date.to_date - days, date.to_date)
+  end
+
+  def maintenance_payload(maintenance)
+    {
+      id: maintenance.id,
+      title: maintenance.titulo,
+      categoria: maintenance.categoria,
+      local: maintenance.local,
+      responsavel: maintenance.responsavel,
+      periodicidade: maintenance.periodicidade,
+      data_prevista: maintenance.data_prevista&.iso8601,
+      data_prevista_label: (I18n.l(maintenance.data_prevista) if maintenance.data_prevista),
+      status: maintenance_status_text(maintenance),
+      observacao: maintenance.observacao,
+      can_cancel: can_manage_maintenance?
+    }
+  end
+
+  def normalize_maintenance_periodicity(value)
+    text = normalize_search_text(value)
+    return nil if text.blank?
+
+    {
+      "diaria" => "diario",
+      "diario" => "diario",
+      "semanal" => "semanal",
+      "quinzenal" => "quinzenal",
+      "mensal" => "mensal",
+      "bimestral" => "bimestral",
+      "trimestral" => "trimestral",
+      "quadrimestral" => "quadrimestral",
+      "semestral" => "semestral",
+      "anual" => "anual",
+      "bienal" => "bienal",
+      "trienal" => "trienal"
+    }[text] || value.to_s.strip
   end
 
   def parse_time(value)
@@ -1017,6 +2518,8 @@ class AiAgentService
     normalized = { role: role.to_s, content: content.to_s.first(2000) }
     cancelable_reservations = entry["cancelable_reservations"].presence || entry[:cancelable_reservations].presence
     normalized[:cancelable_reservations] = cancelable_reservations if cancelable_reservations.present?
+    cancelable_maintenances = entry["cancelable_maintenances"].presence || entry[:cancelable_maintenances].presence
+    normalized[:cancelable_maintenances] = cancelable_maintenances if cancelable_maintenances.present?
     normalized
   end
 
@@ -1031,6 +2534,17 @@ class AiAgentService
     @history << { role: "assistant", content: tool_output[:message].to_s, cancelable_reservations: tool_output[:reservations] }
   end
 
+  def remembered_cancelable_maintenances
+    @history.reverse.find { |entry| entry[:role] == "assistant" && entry[:cancelable_maintenances].present? }
+      &.dig(:cancelable_maintenances) || []
+  end
+
+  def remember_cancelable_maintenances(tool_output)
+    return unless tool_output[:maintenances].present?
+
+    @history << { role: "assistant", content: tool_output[:message].to_s, cancelable_maintenances: tool_output[:maintenances] }
+  end
+
   def scored_room_matches(rooms, query)
     query_text = normalize_search_text(query)
     query_tokens = search_tokens(query_text)
@@ -1043,6 +2557,22 @@ class AiAgentService
       score = room_match_score(query_text, query_tokens, normalized_fields, joined)
       score.positive? ? { room: room, score: score } : nil
     end.sort_by { |match| -match[:score] }
+  end
+
+  def unique_room_matches(matches)
+    matches
+      .group_by { |match| normalize_search_text(match[:room].name) }
+      .map do |_name, grouped_matches|
+        grouped_matches.max_by do |match|
+          [
+            match[:score],
+            match[:room].device_id.present? ? 1 : 0,
+            match[:room].espaco_comun? ? 1 : 0,
+            -match[:room].id.to_i
+          ]
+        end
+      end
+      .sort_by { |match| -match[:score] }
   end
 
   def room_match_score(query_text, query_tokens, normalized_fields, joined)
@@ -1123,7 +2653,7 @@ class AiAgentService
   end
 
   def success(message)
-    { ok: true, message: message }
+    { ok: true, message: restore_agent_accents(message) }
   end
 
   def success_body(body)
@@ -1131,6 +2661,12 @@ class AiAgentService
   end
 
   def failure(message)
-    { ok: false, message: message }
+    { ok: false, message: restore_agent_accents(message) }
+  end
+
+  def normalize_result_message(result)
+    return result unless result.is_a?(Hash) && result.key?(:message)
+
+    result.merge(message: restore_agent_accents(result[:message]))
   end
 end

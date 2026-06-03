@@ -195,22 +195,34 @@ data-ns="<%= @ack_ns %>">
 
      /* GRID de cards (lado a lado no desktop, empilha no mobile) */
   .board-grid{
-    display:grid; gap:16px;
-    grid-template-columns: repeat(12, 1fr);
+    column-count: 1;
+    column-gap: 16px;
     margin-top: 1rem;
   }
-  .col-12{grid-column: span 12;}
-  @media (min-width: 992px){ .col-6{grid-column: span 6;} }
-  @media (min-width: 1400px){ .col-4{grid-column: span 4;} }
-
+  .col-12,
+  .col-6,
+  .col-4{ width: 100%; }
+  @media (min-width: 992px){
+    .board-grid{ column-count: 2; }
+  }
   .board-card{
-    background: var(--color-card);
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 14px;
-    box-shadow: 0 6px 18px rgba(0,0,0,.18);
+    background: color-mix(in srgb, var(--color-header, #fff) 92%, #fff 8%);
+    border: 1px solid rgba(92, 107, 129, .22);
+    border-radius: 18px;
+    box-shadow: 0 10px 24px rgba(18, 30, 50, .09);
     overflow: hidden;
     cursor: default;
+    display: inline-block;
+    width: 100%;
+    margin: 0 0 16px;
+    break-inside: avoid;
+    page-break-inside: avoid;
     transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+  }
+  :root[data-theme="dark"] .board-card{
+    background: color-mix(in srgb, var(--color-card, #232323) 88%, #fff 12%);
+    border-color: rgba(255,255,255,.12);
+    box-shadow: 0 12px 28px rgba(0,0,0,.24);
   }
   .board-card.dragging{
     opacity: .32;
@@ -285,6 +297,9 @@ data-ns="<%= @ack_ns %>">
   }
   .board-grid.is-layout-editing .card-visibility-toggle{
     display: inline-flex;
+  }
+  .board-grid.is-layout-editing .dashboard-card-count{
+    display: none !important;
   }
   .board-grid.is-layout-editing .card-visibility-toggle + .card-drag-handle{
     margin-left: 8px;
@@ -383,10 +398,12 @@ color-mix(in srgb, var(--color-btn) 24%, transparent);
 
   /* 1) Trilhas do grid encolhíveis (mantém 50/50 sempre) */
   .board-grid{
-  display: grid;
-  gap: 16px;
-  grid-template-columns: repeat(12, minmax(0, 1fr)); /* <- antes era 1fr puro */
+  column-count: 1;
+  column-gap: 16px;
   align-items: start;
+  }
+  @media (min-width: 992px){
+    .board-grid{ column-count: 2; }
   }
 
   /* 2) Cada card pode encolher sem empurrar a coluna vizinha */
@@ -523,14 +540,19 @@ color-mix(in srgb, var(--color-btn) 24%, transparent);
       const header = document.querySelector(`h2[onclick*="${section.id}"]`);
       if (!header) return;
 
-      const icon = header.querySelector(".dashboard-card-toggle");
-      if (!icon) return;
+      let countBadge = header.querySelector(".dashboard-card-count");
+      if (!countBadge) {
+        countBadge = document.createElement("span");
+        countBadge.className = "dashboard-card-count";
+        countBadge.setAttribute("aria-label", "Quantidade de itens");
+        header.appendChild(countBadge);
+      }
 
       // Contar linhas da tabela (excluindo header)
       const table = section.querySelector("table");
-      if (!table) return;
+      const fallbackCards = section.querySelectorAll(".common-stack-card, .room-card-link");
 
-      const rows = table.querySelectorAll("tbody tr");
+      const rows = table ? table.querySelectorAll("tbody tr") : fallbackCards;
       let itemCount = 0;
 
       // Contar apenas as linhas que não têm "nenhum" ou estão vazias
@@ -541,8 +563,7 @@ color-mix(in srgb, var(--color-btn) 24%, transparent);
         }
       });
 
-      // Atualizar o atributo data-item-count
-      icon.setAttribute("data-item-count", itemCount);
+      countBadge.textContent = itemCount;
     });
   };
 

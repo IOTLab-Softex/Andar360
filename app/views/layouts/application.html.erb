@@ -805,8 +805,6 @@
 
 <div class="fab-stack">
   <%= render "shared/feedback_fab" %>
-  <%= render "shared/feedback_modal" %>
-  <%= render "shared/announcement_modal" %>
 
   <% if controller_name == "dashboard" &&
         action_name == "index" &&
@@ -825,9 +823,18 @@
 
   <% if user_signed_in? %>
     <%= render "shared/ai_agent_fab" %>
-    <%= render "shared/ai_agent_modal" %>
   <% end %>
 </div>
+
+<%= render "shared/feedback_modal" %>
+
+<% unless user_signed_in? && request.path == edit_user_registration_path %>
+  <%= render "shared/announcement_modal" %>
+<% end %>
+
+<% if user_signed_in? %>
+  <%= render "shared/ai_agent_modal" %>
+<% end %>
 
 
 <%= javascript_include_tag "https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" %>

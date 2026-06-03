@@ -15,7 +15,8 @@ class AiAgentController < ApplicationController
       {
         "role" => "assistant",
         "content" => result[:message].to_s,
-        "cancelable_reservations" => result[:cancelable_reservations] || result[:reservations]
+        "cancelable_reservations" => result[:cancelable_reservations] || result[:reservations],
+        "cancelable_maintenances" => result[:cancelable_maintenances] || result[:maintenances]
       }.compact
     ].last(12)
 
@@ -41,7 +42,7 @@ class AiAgentController < ApplicationController
         model: "gpt-4o-mini-tts",
         voice: speech_voice(setting),
         input: text.first(1800),
-        instructions: "Fale em portugues brasileiro, com tom natural, claro e prestativo.",
+        instructions: "Fale em português brasileiro, com tom natural, claro e prestativo.",
         response_format: "mp3"
       }.to_json,
       timeout: 45

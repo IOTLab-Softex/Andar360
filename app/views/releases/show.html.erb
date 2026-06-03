@@ -1,80 +1,274 @@
 <style>
-.fx-card{
-  background: var(--fx-surface);
-  border:1px solid var(--fx-border);
-  border-radius:14px;
-  padding:16px;
+.release-page {
+  --release-bg: #f6f8fb;
+  --release-ink: #172033;
+  --release-muted: #667085;
+  --release-line: rgba(15, 23, 42, .12);
+  --release-panel: #ffffff;
+  --release-soft: #eef4ff;
+  --release-accent: #2563eb;
+  --release-good: #0f9f6e;
+  min-height: calc(100vh - 96px);
+  margin: -12px;
+  padding: clamp(18px, 3vw, 34px);
+  color: var(--release-ink);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, .08), transparent 34%),
+    linear-gradient(180deg, #ffffff 0, var(--release-bg) 260px);
 }
 
-.fx-changelog{
-  background: #0f172a;
+.release-shell {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.release-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: end;
+  padding: clamp(18px, 3vw, 30px) 0 24px;
+  border-bottom: 1px solid var(--release-line);
+}
+
+.release-kicker {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--release-accent);
+  font-weight: 800;
+  font-size: .78rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+
+.release-title {
+  margin: 10px 0 8px;
+  font-size: clamp(2rem, 5vw, 4.4rem);
+  line-height: .95;
+  letter-spacing: 0;
+}
+
+.release-subtitle {
+  margin: 0;
+  max-width: 760px;
+  color: var(--release-muted);
+  font-size: clamp(.98rem, 1.5vw, 1.12rem);
+  line-height: 1.55;
+}
+
+.release-version-card {
+  min-width: 230px;
+  padding: 16px;
+  border: 1px solid var(--release-line);
+  border-radius: 8px;
+  background: var(--release-panel);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, .08);
+}
+
+.release-version-card strong {
+  display: block;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.release-version-card span {
+  display: block;
+  margin-top: 8px;
+  color: var(--release-muted);
+  font-size: .9rem;
+}
+
+.release-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.release-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  border: 1px solid var(--release-line);
+  background: var(--release-panel);
+  color: var(--release-ink);
+  text-decoration: none;
+  font-weight: 800;
+}
+
+.release-btn--primary {
+  border-color: transparent;
+  background: var(--release-accent);
+  color: #fff;
+}
+
+.release-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.release-panel {
+  border: 1px solid var(--release-line);
+  border-radius: 8px;
+  background: var(--release-panel);
+  overflow: hidden;
+}
+
+.release-panel__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--release-line);
+  background: #fbfcff;
+}
+
+.release-panel__head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.release-changelog {
+  margin: 0;
+  min-height: 420px;
+  padding: 18px;
+  overflow: auto;
   color: #e5e7eb;
-  padding:14px;
-  border-radius:10px;
-  overflow:auto;
-  font-size:.9rem;
+  background: #101828;
+  font-size: .92rem;
+  line-height: 1.58;
+  white-space: pre-wrap;
 }
 
+.release-feedback-list {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+}
+
+.release-feedback {
+  padding: 12px;
+  border: 1px solid var(--release-line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.release-feedback__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  color: var(--release-muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.release-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--release-soft);
+  color: #1d4ed8;
+}
+
+.release-feedback p {
+  margin: 0;
+  color: var(--release-ink);
+  line-height: 1.45;
+}
+
+.release-empty {
+  padding: 28px 18px;
+  color: var(--release-muted);
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .release-hero,
+  .release-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .release-version-card {
+    min-width: 0;
+  }
+}
 </style>
-<section class="fx-page">
-  <header class="fx-head">
-    <div>
-      <h1 class="fx-title">
-        <i class="fa-solid fa-code-branch"></i>
-        Release <%= @release.version %>
-      </h1>
-      <p class="fx-sub">
-        <strong>Stage:</strong> <%= @release.stage %> •
-        <strong>Data:</strong>
-<%= @release.released_at.present? ? l(@release.released_at, format: :long) : "Em desenvolvimento" %>
 
-      </p>
-    </div>
+<section class="release-page">
+  <div class="release-shell">
+    <header class="release-hero">
+      <div>
+        <span class="release-kicker">
+          <i class="fa-solid fa-code-branch"></i>
+          Andar360 Release Notes
+        </span>
+        <h1 class="release-title">Versão <%= @release.version %></h1>
+        <p class="release-subtitle">
+          Atualização com melhorias no agente IA, dashboard, controle de objetos, voz, HTTPS e ajustes de usabilidade para operação diária.
+        </p>
+        <div class="release-actions">
+          <%= link_to export_changelog_release_path(@release), class: "release-btn release-btn--primary" do %>
+            <i class="fa-solid fa-download"></i> Exportar CHANGELOG
+          <% end %>
+          <%= link_to releases_path, class: "release-btn" do %>
+            <i class="fa-solid fa-list"></i> Ver releases
+          <% end %>
+        </div>
+      </div>
 
-    <div class="fx-actions-bar">
-      <%= link_to export_changelog_release_path(@release),
-          class: "btn btn-primary btn-soft" do %>
-        <i class="fa-solid fa-download"></i> Exportar CHANGELOG
-      <% end %>
-    </div>
-  </header>
-
-<% if @next_version.present? %>
-  <div class="alert alert-info" style="margin-bottom: 16px;">
-    Próxima versão sugerida:
-    <strong><%= @next_version %></strong>
-  </div>
-<% end %>
-
-  <!-- PREVIEW DO CHANGELOG -->
-  <div class="fx-card">
-    <h3><i class="fa-solid fa-file-lines"></i> CHANGELOG</h3>
-    <pre class="fx-changelog"><%= @changelog %></pre>
-  </div>
-
-  <!-- LISTA DETALHADA -->
-  <div class="fx-card">
-    <h3><i class="fa-regular fa-comments"></i> Feedbacks incluídos</h3>
-
-    <table class="fx-table">
-      <thead>
-        <tr>
-          <th>Categoria</th>
-          <th>Página</th>
-          <th>Mensagem</th>
-          <th>Resolvido por</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% @feedbacks.each do |fb| %>
-          <tr>
-            <td><span class="tag"><%= fb.category.humanize %></span></td>
-            <td><code><%= fb.page_path || "-" %></code></td>
-            <td><%= fb.message %></td>
-            <td><%= fb.resolved_by&.email || "-" %></td>
-          </tr>
+      <aside class="release-version-card">
+        <strong>v<%= @release.version %></strong>
+        <span><%= @release.stage.presence || "release" %></span>
+        <span><%= @release.released_at.present? ? l(@release.released_at, format: :long) : "Em desenvolvimento" %></span>
+        <% if @next_version.present? %>
+          <span>Próxima sugerida: <b><%= @next_version %></b></span>
         <% end %>
-      </tbody>
-    </table>
+      </aside>
+    </header>
+
+    <div class="release-grid">
+      <article class="release-panel">
+        <div class="release-panel__head">
+          <h2><i class="fa-solid fa-file-lines"></i> CHANGELOG</h2>
+          <span class="release-tag">v<%= @release.version %></span>
+        </div>
+        <pre class="release-changelog"><%= @changelog.presence || "Nenhum item registrado para esta versão." %></pre>
+      </article>
+
+      <aside class="release-panel">
+        <div class="release-panel__head">
+          <h2><i class="fa-regular fa-comments"></i> Feedbacks incluídos</h2>
+          <span class="release-tag"><%= @feedbacks.size %></span>
+        </div>
+
+        <% if @feedbacks.any? %>
+          <div class="release-feedback-list">
+            <% @feedbacks.each do |fb| %>
+              <div class="release-feedback">
+                <div class="release-feedback__meta">
+                  <span class="release-tag"><%= fb.category.to_s.humanize %></span>
+                  <span><%= fb.page_path.presence || "Sem página" %></span>
+                  <span><%= fb.resolved_by&.email || "Sem responsável" %></span>
+                </div>
+                <p><%= fb.message %></p>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <div class="release-empty">Nenhum feedback vinculado a esta release.</div>
+        <% end %>
+      </aside>
+    </div>
   </div>
 </section>

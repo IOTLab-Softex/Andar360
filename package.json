@@ -6,7 +6,7 @@
     "web-push": "^3.6.7"
   },
   "name": "reservas_salas",
-  "version": "1.0.0",
+  "version": "1.1.9",
   "description": "This README would normally document whatever steps are necessary to get the\r application up and running.",
   "main": "index.js",
   "directories": {

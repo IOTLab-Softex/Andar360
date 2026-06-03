@@ -1,4 +1,34 @@
 # Histórico de Versões
+
+## [1.1.9] release - 2026-06-03
+
+### Adicionado
+
+* Agente IA com suporte a manutenção programada: criar, cancelar, listar e consultar status.
+* Agente IA com consulta de encomendas na portaria.
+* Agente IA com consulta de cadastros aguardando aprovação sem expor dados sensíveis.
+* Agente IA com controle de objetos por perfil: admin gerencia retirada/devolução/histórico, operador depende da permissão do subgrupo, cliente consulta apenas objetos em seu nome.
+* Verificação de dispositivo online antes de enviar comando de abertura de porta.
+* HTTPS local com Caddy para proxy em `https://localhost:3443`.
+
+### Melhorado
+
+* Dashboard com cards mais estáveis ao expandir, contadores fixos e ocultos no modo personalizar.
+* `feedback-fab`, `monitoring-fab` e `ai-agent-fab` reorganizados com espaçamento mais consistente.
+* Cards do dashboard alinhados com a cor de fundo dos KPIs.
+* Campo do agente no desktop envia com Enter e quebra linha com Shift+Enter.
+* Voz do agente com ajustes de microfone, interrupção e acentuação nas respostas faladas.
+* Tela de release redesenhada para a versão 1.1.9.
+
+### Corrigido
+
+* Evita anúncios na tela `/users/edit`.
+* Evita duplicidade na seleção de salas ao abrir porta pelo agente.
+* Corrige consulta de objeto devolvido para o cliente saber se a chave/projetor foi devolvido.
+* Cliente que tentar retirar objeto pelo agente agora é orientado a procurar a portaria ou o responsável.
+
+---
+
 Primeiro digito → MAJOR
 Quebra de compatibilidade. Só muda para 2.x.x quando você fizer mudanças incompatíveis com versões anteriores (APIs removidas/alteradas de forma que quem usa quebre).
 

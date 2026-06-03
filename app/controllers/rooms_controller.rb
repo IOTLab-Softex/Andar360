@@ -1,8 +1,10 @@
 class RoomsController < ApplicationController
   before_action :authenticate_user!
 
-  # Operador OU Admin podem ver/listar/abrir formulário/criar/editar/abrir porta
- before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :open_door, :import]
+   # Operador OU Admin podem ver/listar/abrir formulário/criar/editar
+   before_action :authorize_admin_or_operator!, only: [:index, :show, :new, :create, :edit, :import]
+   # A abertura de porta é controlada por permissão do subgrupo (can_open_doors)
+   before_action :authorize_open_door!, only: [:open_door]
 
   # Apenas Admin nas demais ações (update/destroy, etc.)
   before_action :authorize_admin!, except: [:index, :show, :new, :create, :edit, :open_door, :import, :reservations_json, :rules]
@@ -13,9 +15,9 @@ class RoomsController < ApplicationController
 
   # GET /rooms or /rooms.json
   def index
-    
+
     @rooms = Room.with_attached_photo
-    
+
   end
 
   # GET /rooms/1 or /rooms/1.json
@@ -25,10 +27,10 @@ class RoomsController < ApplicationController
   # GET /rooms/new
  def new
   @room = Room.new
-  
+
   carregar_empresas
   @catalog_items = RoomItem.catalog.order(:name)
-  
+
 end
 
 
@@ -60,9 +62,13 @@ end
   def open_door
     room = Room.find(params[:id])
     device = room.device # Supondo que cada Room tem um Device associado
-    if device.present?
+    Rails.logger.info "[AI AGENT] RoomsController#open_door user_id=#{current_user&.id} role=#{current_user&.role} room_id=#{room.id} device_present=#{device.present?}"
+
+    if device.present? && device_online_for_door?(device)
       OpenDoorJob.perform_later(device.ip, device.user, device.password)
       flash[:notice] = "Comando para abrir a porta enviado!"
+    elsif device.present?
+      flash[:alert] = "A sala #{room.name} esta offline."
     else
       flash[:alert] = "Dispositivo não encontrado para essa sala."
     end
@@ -303,8 +309,14 @@ end
   unless current_user&.admin? || current_user&.operador?
     redirect_to root_path, alert: "Acesso não autorizado."
   end
-  
+
 end
+
+  def authorize_open_door!
+    unless current_user&.admin? || current_user&.operador? || subgrupo_permission_enabled?(:can_open_doors)
+      redirect_to root_path, alert: "Acesso não autorizado."
+    end
+  end
 
  def operador_ou_admin?
     current_user&.admin? || current_user&.respond_to?(:operador?) && current_user.operador?
@@ -315,6 +327,10 @@ end
     # Use callbacks to share common setup or constraints between actions.
     def set_room
        @room = Room.find(params[:id])
+    end
+
+    def device_online_for_door?(device)
+      device.status.to_s.downcase == "online"
     end
 
     # Only allow a list of trusted parameters through.
@@ -335,7 +351,7 @@ def detach_room_devices!(room)
 end
 
 
-    
-    
-    
+
+
+
 end

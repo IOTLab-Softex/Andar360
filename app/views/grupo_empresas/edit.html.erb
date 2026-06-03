@@ -78,7 +78,8 @@
               :can_manage_import_backup,
               :can_support_access,
               :can_manage_items,
-              :can_manage_encomendas)
+          :can_manage_encomendas,
+          :can_open_doors)
       .to_json %>">
 </div>
 
@@ -179,6 +180,12 @@
                       id: "sub_grupo_empresa_can_manage_encomendas" %>
       Encomendas
     </label>
+
+    <label style="display: flex; align-items: center; gap: .35rem;">
+      <%= f.check_box :can_open_doors,
+                      id: "sub_grupo_empresa_can_open_doors" %>
+      Permissão para abrir portas
+    </label>
   </div>
 </fieldset>
 
@@ -236,6 +243,8 @@ const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_ite
   if (chkManageItems) chkManageItems.checked = false;
 const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');
   if (chkManageEncomendas) chkManageEncomendas.checked = false;
+const chkOpenDoors = document.getElementById('sub_grupo_empresa_can_open_doors');
+  if (chkOpenDoors) chkOpenDoors.checked = false;
 
     title.textContent = 'Adicionar Subgrupo';
     modal.style.display = 'flex';
@@ -285,6 +294,8 @@ const chkManageItems = document.getElementById('sub_grupo_empresa_can_manage_ite
 if (chkManageItems) chkManageItems.checked = !!sg.can_manage_items;
 const chkManageEncomendas = document.getElementById('sub_grupo_empresa_can_manage_encomendas');
 if (chkManageEncomendas) chkManageEncomendas.checked = !!sg.can_manage_encomendas;
+const chkOpenDoors = document.getElementById('sub_grupo_empresa_can_open_doors');
+if (chkOpenDoors) chkOpenDoors.checked = !!sg.can_open_doors;
 
     title.textContent = 'Editar Subgrupo';
     modal.style.display = 'flex';

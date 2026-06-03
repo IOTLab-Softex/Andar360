@@ -40,3 +40,7 @@
 /config/master.key
 
 /config/credentials/production.key
+
+# Local HTTPS certificates generated for development.
+/config/ssl/*
+!/config/ssl/.keep

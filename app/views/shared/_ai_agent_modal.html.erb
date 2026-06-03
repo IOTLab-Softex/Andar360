@@ -296,7 +296,12 @@
   width: min(96%, 560px);
 }
 
-.ai-agent-reservation-carousel {
+.ai-agent-reservation-carousel,
+.ai-agent-maintenance-carousel,
+.ai-agent-package-carousel,
+.ai-agent-registration-carousel,
+.ai-agent-item-carousel,
+.ai-agent-item-movement-carousel {
   width: 100%;
   display: flex;
   gap: 10px;
@@ -305,7 +310,12 @@
   scroll-snap-type: x mandatory;
 }
 
-.ai-agent-reservation-card {
+.ai-agent-reservation-card,
+.ai-agent-maintenance-card,
+.ai-agent-package-card,
+.ai-agent-registration-card,
+.ai-agent-item-card,
+.ai-agent-item-movement-card {
   flex: 0 0 min(260px, 82%);
   scroll-snap-align: start;
   background: var(--ai-agent-surface-2);
@@ -315,20 +325,35 @@
   color: var(--ai-agent-text);
 }
 
-.ai-agent-reservation-card strong {
+.ai-agent-reservation-card strong,
+.ai-agent-maintenance-card strong,
+.ai-agent-package-card strong,
+.ai-agent-registration-card strong,
+.ai-agent-item-card strong,
+.ai-agent-item-movement-card strong {
   display: block;
   font-size: .95rem;
   margin-bottom: 8px;
 }
 
-.ai-agent-reservation-card span {
+.ai-agent-reservation-card span,
+.ai-agent-maintenance-card span,
+.ai-agent-package-card span,
+.ai-agent-registration-card span,
+.ai-agent-item-card span,
+.ai-agent-item-movement-card span {
   display: block;
   color: var(--ai-agent-muted);
   font-size: .84rem;
   line-height: 1.35;
 }
 
-.ai-agent-reservation-card button {
+.ai-agent-reservation-card button,
+.ai-agent-maintenance-card button,
+.ai-agent-package-card button,
+.ai-agent-registration-card button,
+.ai-agent-item-card button,
+.ai-agent-item-movement-card button {
   margin-top: 10px;
   min-height: 34px;
   border: 0;
@@ -859,6 +884,231 @@
       messages.scrollTop = messages.scrollHeight;
     }
 
+    function buildMaintenanceCards(maintenances) {
+      if (!Array.isArray(maintenances) || maintenances.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-maintenance-carousel";
+
+      maintenances.forEach(function (maintenance) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-maintenance-card";
+
+        const title = document.createElement("strong");
+        title.textContent = maintenance.title || "Manutencao programada";
+
+        const date = document.createElement("span");
+        date.textContent = `Data: ${maintenance.data_prevista_label || maintenance.data_prevista || "sem data"}`;
+
+        const status = document.createElement("span");
+        status.textContent = `Status: ${maintenance.status || "futura"}`;
+
+        const details = document.createElement("span");
+        details.textContent = [maintenance.categoria, maintenance.local, maintenance.responsavel].filter(Boolean).join(" - ");
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Cancelar esta";
+        button.addEventListener("click", function () {
+          sendMessage(`Cancelar manutencao programada ID ${maintenance.id}`);
+        });
+
+        card.appendChild(title);
+        card.appendChild(date);
+        card.appendChild(status);
+        if (details.textContent) card.appendChild(details);
+        if (maintenance.can_cancel) card.appendChild(button);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachMaintenanceCards(messageElement, maintenances) {
+      const carousel = buildMaintenanceCards(maintenances);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function buildPackageCards(packages) {
+      if (!Array.isArray(packages) || packages.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-package-carousel";
+
+      packages.forEach(function (packageItem) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-package-card";
+
+        const code = document.createElement("strong");
+        code.textContent = packageItem.codigo ? `Encomenda ${packageItem.codigo}` : "Encomenda";
+
+        const status = document.createElement("span");
+        status.textContent = `Status: ${packageItem.status || (packageItem.entregue ? "entregue" : "pendente na portaria")}`;
+
+        const carrier = document.createElement("span");
+        carrier.textContent = [packageItem.transportadora, packageItem.tipo, packageItem.tamanho].filter(Boolean).join(" - ");
+
+        const recipient = document.createElement("span");
+        recipient.textContent = [packageItem.destinatario, packageItem.unidade].filter(Boolean).join(" - ");
+
+        const receivedAt = document.createElement("span");
+        receivedAt.textContent = packageItem.entregue_em_label ? `Entregue em: ${packageItem.entregue_em_label}` : `Recebida em: ${packageItem.recebido_em_label || "-"}`;
+
+        card.appendChild(code);
+        card.appendChild(status);
+        if (carrier.textContent) card.appendChild(carrier);
+        if (recipient.textContent) card.appendChild(recipient);
+        card.appendChild(receivedAt);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachPackageCards(messageElement, packages) {
+      const carousel = buildPackageCards(packages);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function buildRegistrationCards(registrations) {
+      if (!Array.isArray(registrations) || registrations.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-registration-carousel";
+
+      registrations.forEach(function (registration) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-registration-card";
+
+        const name = document.createElement("strong");
+        name.textContent = registration.nome || "Pre-cadastro";
+
+        const status = document.createElement("span");
+        status.textContent = `Status: ${registration.status || "aguardando aprovacao"}`;
+
+        const details = document.createElement("span");
+        details.textContent = [registration.empresa, registration.cargo].filter(Boolean).join(" - ");
+
+        const sentAt = document.createElement("span");
+        sentAt.textContent = `Enviado em: ${registration.enviado_em_label || "-"}`;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.textContent = "Abrir aprovacoes";
+        button.addEventListener("click", function () {
+          if (registration.url) window.location.href = registration.url;
+        });
+
+        card.appendChild(name);
+        card.appendChild(status);
+        if (details.textContent) card.appendChild(details);
+        card.appendChild(sentAt);
+        if (registration.url) card.appendChild(button);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachRegistrationCards(messageElement, registrations) {
+      const carousel = buildRegistrationCards(registrations);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function buildItemCards(items) {
+      if (!Array.isArray(items) || items.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-item-carousel";
+
+      items.forEach(function (item) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-item-card";
+
+        const name = document.createElement("strong");
+        name.textContent = item.nome || "Objeto";
+
+        const status = document.createElement("span");
+        status.textContent = `Status: ${item.status || "sem status"}`;
+
+        const holder = document.createElement("span");
+        holder.textContent = [item.responsavel_atual, item.empresa_atual].filter(Boolean).join(" - ");
+
+        const movement = document.createElement("span");
+        movement.textContent = item.ultima_movimentacao_em_label ? `Ultima movimentacao: ${item.ultima_movimentacao || "-"} em ${item.ultima_movimentacao_em_label}` : "";
+
+        card.appendChild(name);
+        card.appendChild(status);
+        if (holder.textContent) card.appendChild(holder);
+        if (movement.textContent) card.appendChild(movement);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachItemCards(messageElement, items) {
+      const carousel = buildItemCards(items);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function buildItemMovementCards(movements) {
+      if (!Array.isArray(movements) || movements.length === 0) return;
+
+      const carousel = document.createElement("div");
+      carousel.className = "ai-agent-item-movement-carousel";
+
+      movements.forEach(function (movement) {
+        const card = document.createElement("div");
+        card.className = "ai-agent-item-movement-card";
+
+        const type = document.createElement("strong");
+        type.textContent = movement.tipo || "Movimentacao";
+
+        const date = document.createElement("span");
+        date.textContent = movement.criado_em_label ? `Data: ${movement.criado_em_label}` : "";
+
+        const holder = document.createElement("span");
+        holder.textContent = [movement.responsavel, movement.empresa].filter(Boolean).join(" - ");
+
+        const description = document.createElement("span");
+        description.textContent = movement.descricao || "";
+
+        card.appendChild(type);
+        if (date.textContent) card.appendChild(date);
+        if (holder.textContent) card.appendChild(holder);
+        if (description.textContent) card.appendChild(description);
+        carousel.appendChild(card);
+      });
+
+      return carousel;
+    }
+
+    function attachItemMovementCards(messageElement, movements) {
+      const carousel = buildItemMovementCards(movements);
+      if (!carousel || !messageElement) return;
+
+      messageElement.classList.add("ai-agent-message--with-cards");
+      messageElement.appendChild(carousel);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
     function buildRoomCards(rooms) {
       if (!Array.isArray(rooms) || rooms.length === 0) return;
 
@@ -892,6 +1142,41 @@
         body.appendChild(name);
         body.appendChild(details);
         body.appendChild(action);
+
+        if (room.can_open_door) {
+          const openBtn = document.createElement("button");
+          openBtn.type = "button";
+          openBtn.className = "ai-agent-room-open-btn";
+          openBtn.textContent = "Abrir porta";
+          openBtn.addEventListener("click", function (ev) {
+            ev.stopPropagation();
+            if (!room.open_door_path) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
+            fetch(room.open_door_path, {
+              method: "POST",
+              credentials: "same-origin",
+              headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "X-CSRF-Token": csrfToken
+              },
+              body: JSON.stringify({})
+            })
+              .then(function (resp) {
+                if (resp.ok) {
+                  addMessage("Comando para abrir a porta enviado.", "bot");
+                } else {
+                  addMessage("Falha ao enviar comando para abrir a porta.", "bot");
+                }
+              })
+              .catch(function () {
+                addMessage("Falha ao enviar comando para abrir a porta.", "bot");
+              });
+          });
+
+          body.appendChild(openBtn);
+        }
         card.appendChild(photo);
         card.appendChild(body);
         carousel.appendChild(card);
@@ -926,11 +1211,12 @@
       input.value = "";
       resizeInput();
     };
-    let startVoiceCapture = async function () {};
-    let startBargeInCapture = async function () {};
+    let startVoiceCapture = function () {};
+    let stopVoiceCapture = function () {};
     let conversationMode = false;
     let openAiAudio = null;
-    let agentSpeechInterrupted = false;
+    let agentSpeaking = false;
+    let waitingForAgentResponse = false;
 
     function setConversationMode(active) {
       conversationMode = active;
@@ -940,27 +1226,30 @@
       conversationBtn && (conversationBtn.title = active ? "Modo conversa ativo" : "Modo conversa");
 
       if (!active) {
+        waitingForAgentResponse = false;
         resetVoiceState();
-        stopAgentSpeech();
+        stopAgentPlayback();
       }
     }
 
     function speakWithBrowser(text) {
       if (!window.speechSynthesis || !text) return;
 
+      beginAgentSpeech();
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "pt-BR";
       utterance.rate = 1;
       utterance.pitch = 1;
       utterance.onend = function () {
-        if (agentSpeechInterrupted) return;
+        endAgentSpeech();
         if (conversationMode) startVoiceCapture();
       };
+      utterance.onerror = function () {
+        endAgentSpeech();
+      };
 
-      agentSpeechInterrupted = false;
       window.speechSynthesis.cancel();
       window.speechSynthesis.speak(utterance);
-      if (conversationMode) startBargeInCapture();
     }
 
     function speakBotMessage(text) {
@@ -985,24 +1274,24 @@
           const url = URL.createObjectURL(blob);
           if (openAiAudio) openAiAudio.pause();
 
+          beginAgentSpeech();
           openAiAudio = new Audio(url);
           openAiAudio.onended = function () {
             URL.revokeObjectURL(url);
             openAiAudio = null;
-            if (agentSpeechInterrupted) return;
+            endAgentSpeech();
             if (conversationMode) startVoiceCapture();
           };
           openAiAudio.onerror = function () {
             URL.revokeObjectURL(url);
             openAiAudio = null;
+            endAgentSpeech();
             speakWithBrowser(text);
           };
-          agentSpeechInterrupted = false;
-          openAiAudio.play().then(function () {
-            if (conversationMode) startBargeInCapture();
-          }).catch(function () {
+          openAiAudio.play().catch(function () {
             URL.revokeObjectURL(url);
             openAiAudio = null;
+            endAgentSpeech();
             speakWithBrowser(text);
           });
         })
@@ -1011,8 +1300,19 @@
         });
     }
 
-    function stopAgentSpeech() {
-      agentSpeechInterrupted = true;
+    function beginAgentSpeech() {
+      agentSpeaking = true;
+      stopVoiceCapture();
+      voiceBtn?.setAttribute("aria-label", "Interromper e falar");
+      if (voiceBtn) voiceBtn.title = "Interromper e falar";
+    }
+
+    function endAgentSpeech() {
+      agentSpeaking = false;
+    }
+
+    function stopAgentPlayback() {
+      endAgentSpeech();
       if (openAiAudio) {
         openAiAudio.pause();
         openAiAudio = null;
@@ -1026,7 +1326,7 @@
       input.value = "";
       form.reset();
       resizeInput();
-      if (conversationMode) setTimeout(function () { startVoiceCapture(); }, 120);
+      waitingForAgentResponse = conversationMode;
 
       const pending = document.createElement("div");
       pending.className = "ai-agent-message ai-agent-message--bot";
@@ -1045,14 +1345,21 @@
       })
         .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
         .then(({ ok, data }) => {
-          const botText = data.message || (ok ? "Pronto." : "Nao consegui concluir a solicitacao.");
+          const botText = data.message || (ok ? "Pronto." : "Não consegui concluir a solicitação.");
           pending.textContent = botText;
           attachReservationCards(pending, data.reservations);
           attachRoomCards(pending, data.rooms);
+          attachMaintenanceCards(pending, data.maintenances);
+          attachPackageCards(pending, data.packages);
+          attachRegistrationCards(pending, data.registrations);
+          attachItemCards(pending, data.items);
+          attachItemMovementCards(pending, data.item_movements);
+          waitingForAgentResponse = false;
           speakBotMessage(botText);
         })
         .catch(() => {
-          pending.textContent = "Nao consegui falar com o agente agora. Tente novamente em instantes.";
+          waitingForAgentResponse = false;
+          pending.textContent = "Não consegui falar com o agente agora. Tente novamente em instantes.";
         })
         .finally(() => {
           messages.scrollTop = messages.scrollHeight;
@@ -1068,21 +1375,54 @@
 
       const recognition = new SpeechRecognition();
       recognition.lang = "pt-BR";
-      recognition.continuous = true;
+      recognition.continuous = false;
       recognition.interimResults = true;
       recognition.maxAlternatives = 1;
       let isListening = false;
       let shouldKeepListening = false;
       let submitAfterStop = false;
-      let finalTranscript = "";
       let voiceErrorVisible = false;
       let silenceTimer = null;
-      let bargeInMode = false;
 
       function resetTranscript() {
-        finalTranscript = "";
         input.value = "";
         resizeInput();
+      }
+
+      function normalizeSpeechPart(value) {
+        return (value || "").replace(/\s+/g, " ").trim();
+      }
+
+      function mergeSpeechPart(currentText, nextText) {
+        const current = normalizeSpeechPart(currentText);
+        const next = normalizeSpeechPart(nextText);
+        if (!current) return next;
+        if (!next) return current;
+
+        const currentLower = current.toLowerCase();
+        const nextLower = next.toLowerCase();
+        if (nextLower.startsWith(currentLower)) return next;
+        if (currentLower.endsWith(nextLower)) return current;
+
+        const currentWords = current.split(" ");
+        const nextWords = next.split(" ");
+        const maxOverlap = Math.min(currentWords.length, nextWords.length);
+
+        for (let size = maxOverlap; size > 0; size -= 1) {
+          const currentTail = currentWords.slice(-size).join(" ").toLowerCase();
+          const nextHead = nextWords.slice(0, size).join(" ").toLowerCase();
+          if (currentTail === nextHead) {
+            return `${currentWords.join(" ")} ${nextWords.slice(size).join(" ")}`.trim();
+          }
+        }
+
+        return `${current} ${next}`.trim();
+      }
+
+      function mergeSpeechParts(parts) {
+        return parts.reduce(function (text, part) {
+          return mergeSpeechPart(text, part);
+        }, "");
       }
 
       function clearSilenceTimer() {
@@ -1093,22 +1433,7 @@
       }
 
       function scheduleConversationSubmit() {
-        if (!conversationMode || !input.value.trim()) return;
-
-        clearSilenceTimer();
-        silenceTimer = setTimeout(function () {
-          if (!conversationMode || !input.value.trim()) return;
-
-          shouldKeepListening = false;
-          submitAfterStop = true;
-          if (isListening) {
-            recognition.stop();
-          } else {
-            const text = input.value.trim();
-            resetTranscript();
-            if (text) sendMessage(text);
-          }
-        }, 1200);
+        return;
       }
 
       function setVoiceIdle() {
@@ -1152,55 +1477,41 @@
         }, 2500);
       }
 
-      async function canUseMicrophone() {
+      function canUseMicrophone() {
         if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
           showVoiceError("Para usar o microfone, acesse o sistema por HTTPS ou localhost.");
           return false;
         }
 
-        if (!navigator.mediaDevices?.getUserMedia) return true;
-
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          stream.getTracks().forEach(function (track) { track.stop(); });
-          return true;
-        } catch (_) {
-          showVoiceError("Permita o acesso ao microfone no navegador e tente de novo.");
-          return false;
-        }
+        return true;
       }
 
       resetVoiceState = function () {
         shouldKeepListening = false;
         submitAfterStop = false;
-        bargeInMode = false;
         clearSilenceTimer();
         resetTranscript();
         setVoiceIdle();
         if (isListening) recognition.abort();
       };
 
-      startVoiceCapture = async function () {
+      stopVoiceCapture = function () {
+        shouldKeepListening = false;
+        submitAfterStop = false;
+        clearSilenceTimer();
+        resetTranscript();
+        setVoiceIdle();
+        if (isListening) recognition.abort();
+      };
+
+      startVoiceCapture = function () {
+        if (agentSpeaking) return;
+        if (waitingForAgentResponse) return;
         if (shouldKeepListening || isListening) return;
-        if (!(await canUseMicrophone())) return;
+        if (!canUseMicrophone()) return;
 
         resetTranscript();
         submitAfterStop = false;
-        bargeInMode = false;
-        shouldKeepListening = true;
-        setVoiceWaiting();
-        startRecognition();
-      };
-
-      startBargeInCapture = async function () {
-        if (shouldKeepListening || isListening) {
-          bargeInMode = true;
-          return;
-        }
-        if (!(await canUseMicrophone())) return;
-
-        submitAfterStop = false;
-        bargeInMode = true;
         shouldKeepListening = true;
         setVoiceWaiting();
         startRecognition();
@@ -1217,50 +1528,73 @@
 
       recognition.addEventListener("end", function () {
         isListening = false;
-        if (shouldKeepListening) {
+        if (input.value.trim()) {
+          shouldKeepListening = false;
+          submitAfterStop = false;
+          const text = input.value.trim();
+          resetTranscript();
+          if (text) sendMessage(text);
+          return;
+        }
+
+        if (shouldKeepListening && conversationMode && !waitingForAgentResponse && !agentSpeaking) {
+          setVoiceWaiting();
           setTimeout(function () {
-            if (shouldKeepListening && !isListening) startRecognition();
-          }, 80);
-        } else {
-          setVoiceIdle();
-          if (submitAfterStop) {
-            submitAfterStop = false;
-            bargeInMode = false;
-            const text = input.value.trim();
-            resetTranscript();
-            if (text) sendMessage(text);
-          }
+            if (shouldKeepListening && !isListening && conversationMode && !waitingForAgentResponse && !agentSpeaking) startRecognition();
+          }, 250);
+          return;
+        }
+
+        shouldKeepListening = false;
+        setVoiceIdle();
+        if (submitAfterStop) {
+          submitAfterStop = false;
+          const text = input.value.trim();
+          resetTranscript();
+          if (text) sendMessage(text);
         }
       });
 
       recognition.addEventListener("result", function (event) {
+        const finalParts = [];
         let interimTranscript = "";
 
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
-          const transcript = event.results[index][0].transcript;
+        for (let index = 0; index < event.results.length; index += 1) {
+          const transcript = (event.results[index][0].transcript || "").trim();
+          if (!transcript) continue;
+
           if (event.results[index].isFinal) {
-            finalTranscript = `${finalTranscript} ${transcript}`.trim();
+            finalParts.push(transcript);
           } else {
-            interimTranscript += transcript;
+            interimTranscript = transcript;
           }
         }
 
-        const transcribedText = `${finalTranscript} ${interimTranscript}`.trim();
-        if (transcribedText && transcribedText !== input.value) {
-          stopAgentSpeech();
-        }
-
+        const transcribedText = mergeSpeechParts(interimTranscript ? finalParts.concat(interimTranscript) : finalParts);
         input.value = transcribedText;
         resizeInput();
         if (input.value) {
-          bargeInMode = false;
           setVoiceUnderstanding();
           scheduleConversationSubmit();
         }
       });
 
       recognition.addEventListener("error", function (event) {
-        if (["no-speech", "aborted"].includes(event.error)) return;
+        if (event.error === "aborted") return;
+
+        if (event.error === "no-speech") {
+          clearSilenceTimer();
+          if (conversationMode && shouldKeepListening && !waitingForAgentResponse && !agentSpeaking) {
+            setVoiceWaiting();
+            voiceBtn.title = "Ouvindo...";
+            return;
+          }
+
+          shouldKeepListening = false;
+          submitAfterStop = false;
+          setVoiceIdle();
+          return;
+        }
 
         if (["not-allowed", "service-not-allowed"].includes(event.error)) {
           showVoiceError("Permita o acesso ao microfone no navegador e tente de novo.");
@@ -1274,11 +1608,23 @@
         }
       });
 
+      function interruptAgentAndListen() {
+        stopAgentPlayback();
+        setVoiceWaiting();
+        setTimeout(function () {
+          startVoiceCapture();
+        }, 120);
+      }
+
       voiceBtn.addEventListener("click", async function () {
+        if (agentSpeaking) {
+          interruptAgentAndListen();
+          return;
+        }
+
         if (shouldKeepListening || isListening) {
           shouldKeepListening = false;
           submitAfterStop = true;
-          bargeInMode = false;
           clearSilenceTimer();
           recognition.stop();
           setVoiceIdle();
@@ -1308,22 +1654,25 @@
     });
 
     input.addEventListener("keydown", function (event) {
-      if (!mentions || mentions.hidden || mentionState.options.length === 0) return;
+      const hasMentionMenu = mentions && !mentions.hidden && mentionState.options.length > 0;
 
-      if (event.key === "ArrowDown") {
+      if (hasMentionMenu && event.key === "ArrowDown") {
         event.preventDefault();
         mentionState.active = (mentionState.active + 1) % mentionState.options.length;
         renderMentions();
-      } else if (event.key === "ArrowUp") {
+      } else if (hasMentionMenu && event.key === "ArrowUp") {
         event.preventDefault();
         mentionState.active = (mentionState.active - 1 + mentionState.options.length) % mentionState.options.length;
         renderMentions();
-      } else if (event.key === "Enter" || event.key === "Tab") {
+      } else if (hasMentionMenu && (event.key === "Enter" || event.key === "Tab")) {
         event.preventDefault();
         applyMentionOption(mentionState.options[mentionState.active]);
-      } else if (event.key === "Escape") {
+      } else if (hasMentionMenu && event.key === "Escape") {
         event.preventDefault();
         hideMentions();
+      } else if (event.key === "Enter" && !event.shiftKey && window.matchMedia("(pointer: fine)").matches) {
+        event.preventDefault();
+        form.requestSubmit();
       }
     });
 
@@ -1338,42 +1687,7 @@
       event.preventDefault();
       const text = input.value.trim();
       if (!text) return;
-
-      resetVoiceState();
-      addMessage(text, "user");
-      input.value = "";
-      form.reset();
-      resizeInput();
-
-      const pending = document.createElement("div");
-      pending.className = "ai-agent-message ai-agent-message--bot";
-      pending.textContent = "Pensando...";
-      messages.appendChild(pending);
-      messages.scrollTop = messages.scrollHeight;
-
-      fetch("/ai_agent/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-          "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
-        },
-        body: JSON.stringify({ message: text })
-      })
-        .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
-        .then(({ ok, data }) => {
-          const botText = data.message || (ok ? "Pronto." : "Nao consegui concluir a solicitacao.");
-          pending.textContent = botText;
-          attachReservationCards(pending, data.reservations);
-          attachRoomCards(pending, data.rooms);
-          speakBotMessage(botText);
-        })
-        .catch(() => {
-          pending.textContent = "Não consegui falar com o agente agora. Tente novamente em instantes.";
-        })
-        .finally(() => {
-          messages.scrollTop = messages.scrollHeight;
-        });
+      sendMessage(text);
     });
   }
 

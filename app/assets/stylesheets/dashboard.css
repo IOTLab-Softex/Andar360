@@ -548,6 +548,8 @@ width: -webkit-fill-available !important;
   --color-bg-green-20: #2da32d;
  --color-bg-sidebar: #360778;
   --btn-warning-hover: #ff4b5c;
+  --kpi-sparkline-area: rgb(112 20 241);
+--kpi-sparkline-line: rgb(112 20 241);
 }
 :root[data-theme="dark"] {
   --color-text-table-salas-thead:#fffffe;
@@ -582,7 +584,10 @@ width: -webkit-fill-available !important;
   --color-bg-green-20: #1e721e;
    --color-bg-sidebar: #360778;
     --btn-warning-hover: #ff4b5c;
-}
+    --kpi-sparkline-area: rgb(255 255 255);
+--kpi-sparkline-line: rgb(255 255 255);
+  }
+
 
 /* ===== Tokens da página de Feedbacks ===== */
 :root{
@@ -924,25 +929,26 @@ display: flex !important;
   transform: rotate(-90deg);
 }
 
-/* Badge de quantidade de itens - apenas quando colapsado */
-.subtitle.collapsed .dashboard-card-toggle::after {
-  content: attr(data-item-count);
-  position: absolute;
-  top: 50%;
-  right: -32px;
-  transform: translateY(-50%);
+.subtitle .dashboard-card-count {
+  margin-left: auto;
   background: var(--color-btn);
   color: var(--color-btn--text);
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  display: grid;
+  display: none;
   place-items: center;
   font-size: 0.75rem;
   font-weight: bold;
   line-height: 1;
   white-space: nowrap;
-  z-index: 1;
+  flex: 0 0 22px;
+  transform: none !important;
+}
+
+/* Badge de quantidade de itens - apenas quando colapsado */
+.subtitle.collapsed .dashboard-card-count {
+  display: grid;
 }
 
 
@@ -2552,16 +2558,17 @@ position: absolute;
   right: 20px;
   display: flex;
   flex-direction: column-reverse;
-  gap: 0;
+  gap: 8px;
   z-index: 1000;
   align-items: center;
   justify-content: flex-end;
   pointer-events: none; /* permite clicks nos botões filhos */
 }
 
-.fab-stack button,
-.fab-stack [id$="-fab"] {
+.fab-stack > button,
+.fab-stack > [id$="-fab"] {
   pointer-events: auto; /* reactiva cliques nos FABs */
+  flex: 0 0 auto;
   margin: 0 !important;
   padding: 0 !important;
 }
@@ -2570,7 +2577,7 @@ position: absolute;
   .fab-stack {
     bottom: 16px;
     right: 16px;
-    gap: 12px;
+    gap: 8px;
   }
 }
 
@@ -2784,15 +2791,15 @@ body.noscroll { overflow:hidden; }
 
 /* aparência do gráfico: usa a cor atual do card */
 .kpi-sparkline-area {
-  fill: currentColor;
-  opacity: 0.50;
+    fill: var(--kpi-sparkline-area);
+    opacity: 0.50;
 }
 
 .kpi-sparkline-line {
-  stroke: currentColor;
-  stroke-width: 2;
-  fill: none;
-  opacity: 0.70;
+    stroke: var(--kpi-sparkline-line);
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.70;
 }
 
 /* onde já estão seus estilos */
@@ -2856,7 +2863,7 @@ body.noscroll { overflow:hidden; }
 
 .kpi-card .kpi-icon {
   position: absolute !important;
-  z-index: 2;
+  z-index: 1;
   top: 20px;
   right: 18px;
   width: 34px;
