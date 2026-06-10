@@ -21,11 +21,16 @@ html  { zoom: var(--zoom); }
 /* overlay de tela toda */
 #app-loader{
   position:fixed; inset:0; z-index:100000;
-  display:grid; place-items:center;
+  display:none !important; place-items:center;
   background: #00000061; backdrop-filter:blur(10px);
-  opacity:1; transition:opacity .45s ease;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transition:opacity .25s ease, visibility 0s linear .25s;
 }
-#app-loader.is-hidden{ opacity:0; pointer-events:none }
+#app-loader.is-visible{
+  opacity:1; visibility:visible; pointer-events:auto;
+  transition:opacity .25s ease;
+}
+#app-loader.is-hidden{ opacity:0; visibility:hidden; pointer-events:none }
 
 /* sem máscara: mantém as cores originais */
 .app-loader-icon{

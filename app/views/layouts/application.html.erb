@@ -510,11 +510,11 @@
   </head>
   <body>
     <% login_screen = ["devise/sessions", "users/sessions"].include?(controller_path) %>
-    <%#<div id="app-loader">
+    <div id="app-loader">
       <div class="app-loader-icon">
         <img src="/loading.gif" alt="Carregandoâ€¦" />
       </div>
-    </div>%>
+    </div>
         <% unless tela_de_alteracao_de_senha? || login_screen %>
       <% unless (controller_path == "users/registrations" && action_name == "edit") || (controller_path == "devise/passwords" && %w[new edit].include?(action_name)) %>
         <div class="user-info">
@@ -551,9 +551,6 @@
 
             <div class="hide-on-mobile user-name">
               Bem-vindo, <%= participant&.name || current_user.email %>
-            </div>
-            <div class="hide-on-mobile app-version-badge" title="VersÃ£o do sistema">
-              v<%= File.read(Rails.root.join("VERSION")).strip rescue "0.0.1" %>
             </div>
           <% end %>  <!-- fim do if user_signed_in? -->
         </div>       <!-- fim da div.user-info -->
@@ -739,7 +736,7 @@
       <div class="pmodal__dialog" role="document" aria-labelledby="user-profile-title">
         <div class="pmodal__header">
           <h5 id="user-profile-title">Perfil</h5>
-          <button type="button" class="pmodal__close" id="user-profile-close" aria-label="Fechar">âœ•</button>
+          <button type="button" class="pmodal__close" id="user-profile-close" aria-label="Fechar">X</button>
         </div>
         <div class="pmodal__body">
           <div class="profile-row">
@@ -761,8 +758,8 @@
             <div class="zoom-title"><i class="fa-solid fa-magnifying-glass"></i> Ajuste de zoom</div>
             <div class="zoom-options" role="group" aria-label="Zoom">
               <button type="button" class="btn-chip" data-zoom="0.7">Pequeno</button>
-              <button type="button" class="btn-chip" data-zoom="0.8">PadrÃ£o</button>
-              <button type="button" class="btn-chip hide-md" data-zoom="1.0">MÃ©dio</button>
+              <button type="button" class="btn-chip" data-zoom="0.8">Padrão</button>
+              <button type="button" class="btn-chip hide-md" data-zoom="1.0">Médio</button>
               <button type="button" class="btn-chip hide-md" data-zoom="1.25">Grande</button>
             </div>
             <small class="muted">Aplica no app (nÃ£o muda o zoom do navegador).</small>
@@ -1405,29 +1402,54 @@
   });
 
   (function(){
+    const LOADER_DELAY = 2400;
+    let showTimer = null;
     const loader = () => document.getElementById('app-loader');
-    const show   = () => loader() && loader().classList.remove('is-hidden');
-    const hide   = () => {
-      if (!loader()) return;
-      loader().classList.add('is-hidden');
-      // Remove do DOM apÃ³s o fade
-      loader().addEventListener('transitionend', (e)=>{
-        if(e.propertyName==='opacity') loader()?.remove();
-      }, { once:true });
+
+    const show = () => {
+      const el = loader();
+      if (!el) return;
+      el.classList.remove('is-hidden');
+      el.classList.add('is-visible');
     };
 
-    // ------------- SEM Turbo (fallback)
-    window.addEventListener('load', hide);        // terminou de carregar â†’ some
-    window.addEventListener('beforeunload', show);// ao sair/navegar â†’ mostra
+    const cancelPendingShow = () => {
+      if (!showTimer) return;
+      clearTimeout(showTimer);
+      showTimer = null;
+    };
 
-    // ------------- COM Turbo (Rails 7+)
-    document.addEventListener('turbo:load', hide);        // apÃ³s render
-    document.addEventListener('turbo:before-visit', show);// ao iniciar navegaÃ§Ã£o
-    document.addEventListener('turbo:render', show);      // caso mude sÃ³ o body
-    document.addEventListener('turbo:submit-start', show);// submits remotos
+    const scheduleShow = () => {
+      cancelPendingShow();
+      showTimer = window.setTimeout(() => {
+        showTimer = null;
+        show();
+      }, LOADER_DELAY);
+    };
 
-    // se sua pÃ¡gina inicial vier jÃ¡ pronta do cache, garanta exibiÃ§Ã£o no boot
-    document.addEventListener('DOMContentLoaded', show);
+    const hide = () => {
+      cancelPendingShow();
+      const el = loader();
+      if (!el) return;
+      el.classList.remove('is-visible');
+      el.classList.add('is-hidden');
+    };
+
+    if (document.readyState === 'complete') {
+      hide();
+    } else {
+      scheduleShow();
+      window.addEventListener('load', hide, { once: true });
+    }
+
+    window.addEventListener('pageshow', hide);
+    window.addEventListener('beforeunload', scheduleShow);
+
+    document.addEventListener('turbo:load', hide);
+    document.addEventListener('turbo:before-visit', scheduleShow);
+    document.addEventListener('turbo:render', hide);
+    document.addEventListener('turbo:submit-start', scheduleShow);
+    document.addEventListener('turbo:submit-end', hide);
   })();
 
   async function urlBase64ToUint8Array(base64String) {

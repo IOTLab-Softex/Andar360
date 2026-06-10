@@ -115,6 +115,8 @@ class AiAgentService
       Participantes disponiveis: consulte apenas quando o usuario informar nomes no pedido. Nao exponha nem liste nomes, CPF, telefone ou dados pessoais de participantes.
       Nao revele quais usuarios ou nomes tem permissao para executar acoes administrativas (por exemplo, abrir portas). Nao informe nomes, emails, cargos ou IDs de usuarios com permissao.
       Se o usuario pedir para abrir uma porta e a sala tiver dispositivo, use a ferramenta "abrir_porta_sala" com room_id ou room_name.
+      Quando o usuario pedir para retirar um objeto ou chave, use a ferramenta "retirar_objeto_controle" se ele for admin ou operador com permissao de subgrupo.
+      Quando o usuario pedir para devolver um objeto, use a ferramenta "devolver_objeto_controle".
       So diga que a IA nao consegue abrir portas se realmente nao puder executar a operacao por falta de permissao ou dispositivo.
       Voce pode criar reservas em uma conversa por etapas ou quando o usuario mandar tudo de uma vez.
       Se o usuario pedir para criar uma reserva sem informar todos os dados, conduza a conversa perguntando apenas uma coisa por vez.
@@ -1600,7 +1602,7 @@ class AiAgentService
   end
 
   def item_checkout_intent?
-    normalize_search_text(@message).match?(/\b(retirar|retirada|retire|pegar|peguei|buscar|emprestar|emprestimo)\b/)
+    normalize_search_text(@message).match?(/\b(retirar|retirada|retire|tirar|pegar|peguei|buscar|emprestar|emprestimo)\b/)
   end
 
   def package_from_context_if_possible
@@ -1676,17 +1678,17 @@ class AiAgentService
     return nil unless @user.client?
 
     args = infer_control_item_args_from_message({})
-    result =
-      if item_checkout_intent?
-        {
-          ok: true,
-          message: "Para retirar um objeto novamente, procure a portaria ou o responsável pelo controle de objetos."
-        }
-      elsif item_return_status_intent?
-        check_my_item_return_status(args)
-      else
-        list_my_checked_out_items(args)
-      end
+    if item_checkout_intent?
+      return {
+        ok: true,
+        message: "Para retirar um objeto novamente, procure a portaria ou o responsável pelo controle de objetos."
+      }
+    elsif item_return_status_intent?
+      result = check_my_item_return_status(args)
+    else
+      result = list_my_checked_out_items(args)
+    end
+
     response = success(clean_agent_message(result[:message])) if result[:ok]
     response&.merge(items: result[:items], item_movements: result[:item_movements]) || result
   end

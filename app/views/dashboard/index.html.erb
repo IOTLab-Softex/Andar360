@@ -749,11 +749,43 @@ color-mix(in srgb, var(--color-btn) 24%, transparent);
       }
     }
 
-    function reorderFromPointer(clientY) {
+    function cardsInPointerColumn(cards, clientX) {
+      if (cards.length <= 1) return cards;
+
+      const columns = [];
+      cards
+        .map((card) => ({ card, rect: card.getBoundingClientRect() }))
+        .sort((a, b) => a.rect.left - b.rect.left)
+        .forEach((item) => {
+          const centerX = item.rect.left + item.rect.width / 2;
+          let column = columns.find((group) => Math.abs(group.centerX - centerX) < 80);
+          if (!column) {
+            column = { centerX, items: [] };
+            columns.push(column);
+          }
+          column.items.push(item);
+          column.centerX = column.items.reduce((sum, current) => {
+            return sum + current.rect.left + current.rect.width / 2;
+          }, 0) / column.items.length;
+        });
+
+      if (columns.length <= 1) return cards;
+
+      const pointerColumn = columns.reduce((closest, column) => {
+        return Math.abs(column.centerX - clientX) < Math.abs(closest.centerX - clientX) ? column : closest;
+      }, columns[0]);
+
+      return pointerColumn.items
+        .sort((a, b) => a.rect.top - b.rect.top)
+        .map((item) => item.card);
+    }
+
+    function reorderFromPointer(clientX, clientY) {
       if (!draggedCard) return;
 
-      const otherCards = Array.from(grid.querySelectorAll('.board-card[data-card-id][data-dashboard-hidden="false"]'))
+      const activeCards = Array.from(grid.querySelectorAll('.board-card[data-card-id][data-dashboard-hidden="false"]'))
         .filter((card) => card !== draggedCard);
+      const otherCards = cardsInPointerColumn(activeCards, clientX);
 
       let targetCard = null;
       for (const card of otherCards) {
@@ -808,7 +840,7 @@ color-mix(in srgb, var(--color-btn) 24%, transparent);
       if (event.cancelable) event.preventDefault();
       const { x, y } = pointerPosition(event);
       moveGhost(x, y);
-      reorderFromPointer(y);
+      reorderFromPointer(x, y);
     }
 
     function handlePointerUp() {
