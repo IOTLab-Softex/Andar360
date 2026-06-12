@@ -5,7 +5,7 @@ class Setting < ApplicationRecord
 
   PASSWORD_RECOVERY_DEFAULT_SUBJECT = "Recuperacao de senha - Andar360".freeze
   PASSWORD_RECOVERY_DEFAULT_TEST_HOST = "localhost:3000".freeze
-  PASSWORD_RECOVERY_DEFAULT_LIVE_HOST = "softexsrs.ddns.net".freeze
+  PASSWORD_RECOVERY_DEFAULT_LIVE_HOST = "andar360.ddns.net".freeze
   PASSWORD_RECOVERY_DEFAULT_PATH = "/users/password/edit".freeze
   PASSWORD_RECOVERY_DEFAULT_EXPIRATION_MINUTES = 360
   PASSWORD_RECOVERY_DEFAULT_EXPIRATION_UNIT = "minutes".freeze

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_05_29_124855) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_12_000000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -515,7 +515,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_29_124855) do
     t.string "camera_mesh_style"
     t.boolean "password_recovery_test_mode", default: true, null: false
     t.string "password_recovery_test_host", default: "localhost:3000"
-    t.string "password_recovery_live_host", default: "softexsrs.ddns.net"
+    t.string "password_recovery_live_host", default: "andar360.ddns.net"
     t.string "password_recovery_link_path", default: "/users/password/edit"
     t.string "password_recovery_email_subject"
     t.text "password_recovery_email_html"
@@ -587,6 +587,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_05_29_124855) do
     t.boolean "can_manage_items", default: false, null: false
     t.boolean "can_manage_encomendas", default: false, null: false
     t.boolean "can_manage_import_backup", default: false, null: false
+    t.boolean "can_open_doors", default: false, null: false
     t.index ["grupo_empresa_id"], name: "index_sub_grupo_empresas_on_grupo_empresa_id"
   end
 

@@ -246,8 +246,8 @@
           <div class="col-md-6">
             <div class="form-group">
               <label>Dominio em modo producao</label>
-              <%= f.text_field :password_recovery_live_host, class: "form-control", placeholder: "softexsrs.ddns.net" %>
-              <small class="form-text text-muted">Exemplo: <code>softexsrs.ddns.net</code> ou <code>https://softexsrs.ddns.net</code>.</small>
+              <%= f.text_field :password_recovery_live_host, class: "form-control", placeholder: "andar360.ddns.net" %>
+              <small class="form-text text-muted">Exemplo: <code>andar360.ddns.net</code> ou <code>https://andar360.ddns.net</code>.</small>
             </div>
           </div>
         </div>
@@ -992,7 +992,7 @@
 
     function normalizeHost(host, fallback, test) {
       const value = (host || fallback || '').trim().replace(/\/+$/, '');
-      if (!value) return test ? 'http://localhost:3000' : 'https://softexsrs.ddns.net';
+      if (!value) return test ? 'http://localhost:3000' : 'https://andar360.ddns.net';
       if (/^https?:\/\//i.test(value)) return value;
       return test ? `http://${value}` : `https://${value}`;
     }
@@ -1007,7 +1007,7 @@
       const usingTestMode = !!testMode.checked;
       const host = usingTestMode
         ? normalizeHost(testHost.value, 'localhost:3000', true)
-        : normalizeHost(liveHost.value, 'softexsrs.ddns.net', false);
+        : normalizeHost(liveHost.value, 'andar360.ddns.net', false);
       const path = normalizePath(pathField.value);
       preview.value = `${host}${path}?reset_password_token=__TOKEN__`;
     }
