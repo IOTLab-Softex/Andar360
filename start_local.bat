@@ -160,8 +160,11 @@ echo Gerando certificado para %DOMAIN%...
 echo Os arquivos serao salvos em:
 echo %DOMAIN_CERT_DIR%
 echo.
+echo Modo de validacao: TLS-ALPN-01 pela porta 443.
+echo Se aparecer "http-01 validation" no win-acme, este arquivo .bat esta desatualizado.
+echo.
 
-"%WIN_ACME_DIR%\wacs.exe" --target manual --host "%DOMAIN%" --validationmode tls-alpn-01 --validation selfhosting --validationport 443 --store pemfiles --pemfilespath "%DOMAIN_CERT_DIR%" --installation none --accepttos --emailaddress "%EMAIL%"
+"%WIN_ACME_DIR%\wacs.exe" --source manual --host "%DOMAIN%" --validation selfhosting --validationmode tls-alpn-01 --validationport 443 --store pemfiles --pemfilespath "%DOMAIN_CERT_DIR%" --installation none --accepttos --emailaddress "%EMAIL%"
 set WACS_EXIT=%errorlevel%
 set CERT_CHAIN=%DOMAIN_CERT_DIR%\%DOMAIN%-chain.pem
 set CERT_KEY=%DOMAIN_CERT_DIR%\%DOMAIN%-key.pem
@@ -264,8 +267,8 @@ echo ==========================
 echo Encerrando processos antigos...
 
 taskkill /IM nginx.exe /F >nul 2>&1
-taskkill /IM ruby.exe /F >nul 2>&1
 taskkill /IM rails.exe /F >nul 2>&1
+call :liberar_porta_rails
 
 if exist tmp\pids\server.pid del /f /q tmp\pids\server.pid
 
@@ -320,6 +323,21 @@ goto :eof
 :ok
 echo ==========================
 echo SISTEMA ONLINE
+goto :eof
+
+:: ==========================
+:: LIBERAR PORTA RAILS
+:: ==========================
+:liberar_porta_rails
+echo Verificando se a porta %PORT% ja esta em uso...
+
+for /f "tokens=5" %%a in ('netstat -ano ^| find ":%PORT%" ^| find "LISTENING"') do (
+    echo Encerrando processo que usa a porta %PORT%: PID %%a
+    taskkill /PID %%a /F >nul 2>&1
+)
+
+if exist tmp\pids\server.pid del /f /q tmp\pids\server.pid
+timeout /t 1 >nul
 goto :eof
 
 :: ==========================
