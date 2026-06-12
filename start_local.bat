@@ -15,6 +15,7 @@ set NGINX_CONF=C:\nginx-1.28.0\conf\nginx.conf
 set DEFAULT_DOMAIN=andar360.ddns.net
 set WIN_ACME_DIR=C:\win-acme
 set CERTS_DIR=%~dp0certs
+set NGINX_SSL_DIR=%NGINX_DIR%\ssl
 
 if not exist log mkdir log
 if not exist certs mkdir certs
@@ -100,8 +101,8 @@ echo Dominio padrao: %DEFAULT_DOMAIN%
 echo.
 echo IMPORTANTE:
 echo - O dominio precisa apontar para o IP publico deste servidor.
-echo - As portas 80 e 443 precisam estar liberadas no roteador/firewall.
-echo - O Nginx sera parado temporariamente para o win-acme validar na porta 80.
+echo - A porta 443 precisa estar liberada no roteador/firewall.
+echo - O Nginx sera parado temporariamente para o win-acme validar na porta 443.
 echo.
 
 set DOMAIN=%DEFAULT_DOMAIN%
@@ -122,13 +123,12 @@ echo.
 echo Verificando permissao de administrador...
 net session >nul 2>&1
 if not "%errorlevel%"=="0" (
-    echo AVISO: execute este .bat como Administrador para liberar firewall e usar porta 80.
+    echo AVISO: execute este .bat como Administrador para liberar firewall e usar porta 443.
     echo Clique com botao direito no arquivo e escolha "Executar como administrador".
     goto :eof
 )
 
-echo Liberando portas 80 e 443 no Firewall do Windows...
-netsh advfirewall firewall add rule name="Andar360 HTTP 80" dir=in action=allow protocol=TCP localport=80 >nul 2>&1
+echo Liberando porta 443 no Firewall do Windows...
 netsh advfirewall firewall add rule name="Andar360 HTTPS 443" dir=in action=allow protocol=TCP localport=443 >nul 2>&1
 
 echo.
@@ -151,7 +151,7 @@ if not exist "%WIN_ACME_DIR%\wacs.exe" (
 )
 
 echo.
-echo Parando Nginx temporariamente para validar o dominio...
+echo Parando Nginx temporariamente para validar o dominio pela porta 443...
 taskkill /IM nginx.exe /F >nul 2>&1
 timeout /t 2 >nul
 
@@ -161,20 +161,43 @@ echo Os arquivos serao salvos em:
 echo %DOMAIN_CERT_DIR%
 echo.
 
-"%WIN_ACME_DIR%\wacs.exe" --target manual --host "%DOMAIN%" --validation selfhosting --store pemfiles --pemfilespath "%DOMAIN_CERT_DIR%" --installation none --accepttos --emailaddress "%EMAIL%"
-if errorlevel 1 (
+"%WIN_ACME_DIR%\wacs.exe" --target manual --host "%DOMAIN%" --validationmode tls-alpn-01 --validation selfhosting --validationport 443 --store pemfiles --pemfilespath "%DOMAIN_CERT_DIR%" --installation none --accepttos --emailaddress "%EMAIL%"
+set WACS_EXIT=%errorlevel%
+set CERT_CHAIN=%DOMAIN_CERT_DIR%\%DOMAIN%-chain.pem
+set CERT_KEY=%DOMAIN_CERT_DIR%\%DOMAIN%-key.pem
+set CERT_FAILED=0
+
+if not "%WACS_EXIT%"=="0" set CERT_FAILED=1
+if not exist "%CERT_CHAIN%" set CERT_FAILED=1
+if not exist "%CERT_KEY%" set CERT_FAILED=1
+
+if "%CERT_FAILED%"=="1" (
     echo.
-    echo ERRO: o win-acme nao conseguiu gerar o certificado.
-    echo Confira se %DOMAIN% aponta para este servidor e se a porta 80 esta aberta.
+    echo ERRO: o certificado NAO foi gerado.
+    echo.
+    echo O win-acme nao criou os arquivos:
+    echo %CERT_CHAIN%
+    echo %CERT_KEY%
+    echo.
+    echo Confira se %DOMAIN% aponta para este servidor e se a porta 443 esta aberta.
+    echo Tambem confira o redirecionamento da porta 443 no roteador para este computador.
+    if exist "%NGINX_DIR%\nginx.exe" (
+        echo.
+        echo Reiniciando Nginx...
+        start "" /D "%NGINX_DIR%" nginx.exe -c "%NGINX_CONF%"
+    )
     goto :eof
 )
 
 echo.
 echo Certificado gerado/renovado com sucesso.
+if not exist "%NGINX_SSL_DIR%" mkdir "%NGINX_SSL_DIR%"
+copy /Y "%CERT_CHAIN%" "%NGINX_SSL_DIR%\server.crt" >nul
+copy /Y "%CERT_KEY%" "%NGINX_SSL_DIR%\server.key" >nul
 echo.
 echo Configure seu Nginx com estes caminhos:
-echo ssl_certificate     %DOMAIN_CERT_DIR%\%DOMAIN%-chain.pem;
-echo ssl_certificate_key %DOMAIN_CERT_DIR%\%DOMAIN%-key.pem;
+echo ssl_certificate     %NGINX_SSL_DIR%\server.crt;
+echo ssl_certificate_key %NGINX_SSL_DIR%\server.key;
 echo.
 echo Exemplo de bloco HTTPS foi salvo em:
 set NGINX_SAMPLE=%~dp0config\nginx\andar360_ssl.conf
@@ -190,8 +213,8 @@ echo server {
 echo     listen 443 ssl;
 echo     server_name %DOMAIN%;
 echo.
-echo     ssl_certificate     %DOMAIN_CERT_DIR:\=/%/%DOMAIN%-chain.pem;
-echo     ssl_certificate_key %DOMAIN_CERT_DIR:\=/%/%DOMAIN%-key.pem;
+echo     ssl_certificate     %NGINX_SSL_DIR:\=/%/server.crt;
+echo     ssl_certificate_key %NGINX_SSL_DIR:\=/%/server.key;
 echo.
 echo     location / {
 echo         proxy_pass http://127.0.0.1:%PORT%;
