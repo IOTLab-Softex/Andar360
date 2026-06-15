@@ -63,20 +63,20 @@
 
 <div id="password-recovery-modal" class="password-recovery-modal" hidden>
   <div class="password-recovery-modal__backdrop"></div>
-  <div class="password-recovery-modal__dialog" role="dialog" aria-modal="true" aria-label="RecuperaÃ§Ã£o de senha">
+  <div class="password-recovery-modal__dialog" role="dialog" aria-modal="true" aria-label="Recuperação de senha">
     <button type="button" id="close-recovery-modal" class="password-recovery-modal__close">&times;</button>
 
     <div id="recovery-step-chooser" class="password-recovery-step is-active">
       <h3>Recuperar acesso</h3>
-      <p>Escolha o mÃ©todo mais seguro para recuperar sua senha.</p>
+      <p>Escolha o método mais seguro para recuperar sua senha.</p>
 
       <div class="password-recovery-choice-grid">
         <button type="button" class="password-recovery-choice" data-recovery-step="support">
           <span class="password-recovery-choice__title">
             <i class="fa-solid fa-headset" aria-hidden="true"></i>
-            Enviar solicitacao ao suporte
+            Enviar solicitação ao suporte
           </span>
-          <span class="password-recovery-choice__text">Solicite ajuda do time responsavel pela redefinicao do acesso.</span>
+          <span class="password-recovery-choice__text">Solicite ajuda do time responsável pela redefinição do acesso.</span>
         </button>
 
         <button type="button" class="password-recovery-choice" data-recovery-step="facial">
@@ -91,14 +91,14 @@
 
     <div id="recovery-step-support" class="password-recovery-step">
       <h3>Solicitar suporte</h3>
-      <p>Confirme seu CPF para liberar o envio da solicitacao ao suporte da redefinicao.</p>
+      <p>Confirme seu CPF para liberar o envio da solicitação ao suporte da redefinição.</p>
       <div class="password-recovery-actions">
         <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
       </div>
     </div>
 
     <div id="recovery-step-facial" class="password-recovery-step">
-      <h3>LiberaÃ§Ã£o por reconhecimento facial</h3>
+      <h3>Liberação por reconhecimento facial</h3>
       <div class="password-recovery-steps-bar">
         <div class="password-recovery-step-chip is-active" data-flow-chip="cpf">1. CPF</div>
         <div class="password-recovery-step-chip" data-flow-chip="loading">2. Carregar</div>
@@ -117,13 +117,13 @@
 
       <div id="recovery-facial-stage-loading" class="password-recovery-flow-stage">
         <div id="recovery-facial-feedback" class="password-recovery-feedback is-pending">
-          <span>Informe seu CPF para iniciar a validaÃ§Ã£o.</span>
+          <span>Informe seu CPF para iniciar a validação.</span>
         </div>
       </div>
 
       <div id="recovery-facial-stage-camera" class="password-recovery-flow-stage">
         <div id="recovery-camera-feedback" class="password-recovery-feedback is-pending">
-          <span>Posicione o rosto para iniciar a validaÃ§Ã£o facial.</span>
+          <span>Posicione o rosto para iniciar a validação facial.</span>
         </div>
         <div id="recovery-camera-wrapper" class="password-recovery-camera">
           <iframe id="recovery-camera-frame" src="about:blank" data-camera-src="/camera?recovery=1" allow="camera *"></iframe>
@@ -133,13 +133,13 @@
 
       <div id="recovery-facial-stage-send" class="password-recovery-flow-stage">
         <div id="recovery-send-feedback" class="password-recovery-feedback is-success">
-          <span>ValidaÃ§Ã£o facial concluÃ­da. Agora envie o link seguro de redefiniÃ§Ã£o.</span>
+          <span>Validação facial concluída. Agora envie o link seguro de redefinição.</span>
         </div>
       </div>
 
       <div class="password-recovery-actions">
         <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
-        <button type="button" id="recovery-primary-action" class="password-recovery-primary">AvanÃ§ar</button>
+        <button type="button" id="recovery-primary-action" class="password-recovery-primary">Avançar</button>
       </div>
     </div>
   </div>
@@ -182,11 +182,11 @@
     if (supportStep) {
       supportStep.innerHTML = `
         <h3>Solicitar suporte</h3>
-        <p>Confirme seu CPF para liberar o envio da solicitacao ao suporte.</p>
+        <p>Confirme seu CPF para liberar o envio da solicitação ao suporte.</p>
         <div class="password-recovery-steps-bar">
           <div class="password-recovery-step-chip is-active" data-support-chip="cpf">1. CPF</div>
           <div class="password-recovery-step-chip" data-support-chip="loading">2. Carregar</div>
-          <div class="password-recovery-step-chip" data-support-chip="send">3. Enviar solicitacao ao suporte</div>
+          <div class="password-recovery-step-chip" data-support-chip="send">3. Enviar solicitação ao suporte</div>
         </div>
         <div id="recovery-support-stage-cpf" class="password-recovery-flow-stage is-active">
           <div class="password-recovery-form">
@@ -198,17 +198,17 @@
         </div>
         <div id="recovery-support-stage-loading" class="password-recovery-flow-stage">
           <div id="recovery-support-feedback" class="password-recovery-feedback is-pending">
-            <span>Informe seu CPF para iniciar a solicitacao.</span>
+            <span>Informe seu CPF para iniciar a solicitação.</span>
           </div>
         </div>
         <div id="recovery-support-stage-send" class="password-recovery-flow-stage">
           <div id="recovery-support-send-feedback" class="password-recovery-feedback is-success">
-            <span>CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.</span>
+            <span>CPF confirmado. Agora você já pode enviar a solicitação ao suporte da redefinição.</span>
           </div>
         </div>
         <div class="password-recovery-actions">
           <button type="button" class="password-recovery-secondary" data-recovery-back>Voltar</button>
-          <button type="button" id="support-primary-action" class="password-recovery-primary">Enviar solicitacao ao suporte</button>
+          <button type="button" id="support-primary-action" class="password-recovery-primary">Enviar solicitação ao suporte</button>
         </div>
       `;
     }
@@ -298,7 +298,7 @@
       if (facialValidated) {
         primaryActionBtn.hidden = false;
         primaryActionBtn.disabled = false;
-        primaryActionBtn.textContent = "Enviar link de redefiniÃ§Ã£o";
+        primaryActionBtn.textContent = "Enviar link de redefinição";
         return;
       }
 
@@ -308,7 +308,7 @@
       if (currentStage === "cpf") {
         primaryActionBtn.hidden = false;
         primaryActionBtn.disabled = false;
-        primaryActionBtn.textContent = "AvanÃ§ar";
+        primaryActionBtn.textContent = "Avançar";
         return;
       }
 
@@ -321,7 +321,7 @@
       if (supportValidated) {
         supportPrimaryActionBtn.hidden = false;
         supportPrimaryActionBtn.disabled = false;
-        supportPrimaryActionBtn.textContent = "Enviar solicitacao ao suporte";
+        supportPrimaryActionBtn.textContent = "Enviar solicitação ao suporte";
         return;
       }
 
@@ -331,7 +331,7 @@
       if (currentStage === "cpf") {
         supportPrimaryActionBtn.hidden = false;
         supportPrimaryActionBtn.disabled = false;
-        supportPrimaryActionBtn.textContent = "Avancar";
+        supportPrimaryActionBtn.textContent = "Avançar";
         return;
       }
 
@@ -353,10 +353,10 @@
       securityResult.className = "password-recovery-security";
       securityResult.hidden = true;
       securityResult.innerHTML = `
-        <div class="password-recovery-security__icon" aria-hidden="true">âœ“</div>
+        <div class="password-recovery-security__icon" aria-hidden="true">✓</div>
         <div class="password-recovery-security__content">
-          <strong id="recovery-security-badge" class="password-recovery-security__title">Validacao aprovada</strong>
-          <p id="recovery-security-summary" class="password-recovery-security__summary">Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperaÃ§Ã£o.</p>
+          <strong id="recovery-security-badge" class="password-recovery-security__title">Validação aprovada</strong>
+          <p id="recovery-security-summary" class="password-recovery-security__summary">Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.</p>
         </div>
       `;
 
@@ -369,10 +369,10 @@
       ensureSecurityResult();
       if (securityResult) securityResult.hidden = true;
       if (securityBadge) {
-        securityBadge.textContent = "Validacao aprovada";
+        securityBadge.textContent = "Validação aprovada";
         securityBadge.className = "password-recovery-security__title";
       }
-      if (securitySummary) securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperaÃ§Ã£o.";
+      if (securitySummary) securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.";
     }
 
     function renderSecurityResult(payload) {
@@ -384,7 +384,7 @@
         securityBadge.className = "password-recovery-security__title";
       }
       if (securitySummary) {
-        securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperaÃ§Ã£o.";
+        securitySummary.textContent = "Reconhecimento facial validado com sucesso. Clique em enviar para receber o link de recuperação.";
       }
     }
 
@@ -406,9 +406,9 @@
       serviceReady = false;
       cpfInput.value = "";
       setStage("cpf");
-      setFeedback(loadingFeedback, "Informe seu CPF para iniciar a validaÃ§Ã£o.", "pending");
-      setFeedback(cameraFeedback, "Posicione o rosto e capture uma foto para validaÃ§Ã£o facial.", "pending");
-      setFeedback(sendFeedback, "ValidaÃ§Ã£o facial concluÃ­da. Agora envie o link seguro de redefiniÃ§Ã£o.", "success");
+      setFeedback(loadingFeedback, "Informe seu CPF para iniciar a validação.", "pending");
+      setFeedback(cameraFeedback, "Posicione o rosto e capture uma foto para validação facial.", "pending");
+      setFeedback(sendFeedback, "Validação facial concluída. Agora envie o link seguro de redefinição.", "success");
       resetSecurityResult();
       if (cameraFrame) cameraFrame.src = "about:blank";
       frameReady = false;
@@ -419,8 +419,8 @@
       supportValidated = false;
       if (supportCpfInput) supportCpfInput.value = "";
       setSupportStage("cpf");
-      setFeedback(supportFeedback, "Informe seu CPF para iniciar a solicitacao.", "pending");
-      setFeedback(supportSendFeedback, "CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.", "success");
+      setFeedback(supportFeedback, "Informe seu CPF para iniciar a solicitação.", "pending");
+      setFeedback(supportSendFeedback, "CPF confirmado. Agora você já pode enviar a solicitação ao suporte da redefinição.", "success");
     }
 
     function closeModal() {
@@ -476,7 +476,7 @@
       for (let attempt = 1; attempt <= MAX_SERVICE_STATUS_ATTEMPTS; attempt += 1) {
         setFeedback(
           loadingFeedback,
-          attempt === 1 ? "Iniciando servico de reconhecimento facial..." : `Aguardando o servico de reconhecimento facial ficar online (${attempt}/${MAX_SERVICE_STATUS_ATTEMPTS})...`,
+          attempt === 1 ? "Iniciando serviço de reconhecimento facial..." : `Aguardando o serviço de reconhecimento facial ficar online (${attempt}/${MAX_SERVICE_STATUS_ATTEMPTS})...`,
           "pending",
           true
         );
@@ -502,7 +502,7 @@
       }
 
       serviceReady = false;
-      setFeedback(loadingFeedback, "O servico de reconhecimento facial nao ficou online a tempo. Tente novamente em instantes.", "error");
+      setFeedback(loadingFeedback, "O serviço de reconhecimento facial não ficou online a tempo. Tente novamente em instantes.", "error");
       return false;
     }
 
@@ -529,7 +529,7 @@
       const cpf = normalizedCpf(cpfInput.value);
       if (cpf.length !== 11) {
         setStage("loading");
-        setFeedback(loadingFeedback, "Informe um CPF vÃ¡lido para continuar.", "error");
+        setFeedback(loadingFeedback, "Informe um CPF válido para continuar.", "error");
         return;
       }
 
@@ -541,7 +541,7 @@
       lastRecoveryPhotoBase64 = null;
       lastRecoveryCaptureMeta = null;
       setStage("loading");
-      setFeedback(loadingFeedback, "Carregando perfil para validaÃ§Ã£o...", "pending", true);
+      setFeedback(loadingFeedback, "Carregando perfil para validação...", "pending", true);
 
       try {
         const response = await fetch("<%= facial_lookup_password_recovery_path %>", {
@@ -556,7 +556,7 @@
 
         const payload = await response.json();
         if (!response.ok || !payload.ok) {
-          setFeedback(loadingFeedback, payload.message || "NÃ£o foi possÃ­vel validar este CPF.", "error");
+          setFeedback(loadingFeedback, payload.message || "Não foi possível validar este CPF.", "error");
           return;
         }
 
@@ -566,10 +566,10 @@
 
         setStage("camera");
         ensureCameraFrameLoaded();
-        setFeedback(cameraFeedback, "Perfil carregado. Posicione o rosto e aguarde a captura automatica para validar.", "pending");
+        setFeedback(cameraFeedback, "Perfil carregado. Posicione o rosto e aguarde a captura automática para validar.", "pending");
         startRecoveryValidation();
       } catch (_error) {
-        setFeedback(loadingFeedback, "Falha ao consultar o perfil para recuperaÃ§Ã£o.", "error");
+        setFeedback(loadingFeedback, "Falha ao consultar o perfil para recuperação.", "error");
       } finally {
         syncPrimaryAction();
       }
@@ -579,7 +579,7 @@
       const cpf = normalizedCpf(supportCpfInput?.value);
       if (cpf.length !== 11) {
         setSupportStage("loading");
-        setFeedback(supportFeedback, "Informe um CPF valido para continuar.", "error");
+        setFeedback(supportFeedback, "Informe um CPF válido para continuar.", "error");
         return;
       }
 
@@ -587,7 +587,7 @@
       supportValidated = false;
       supportPayload = null;
       setSupportStage("loading");
-      setFeedback(supportFeedback, "Carregando perfil para solicitacao de suporte...", "pending", true);
+      setFeedback(supportFeedback, "Carregando perfil para solicitação de suporte...", "pending", true);
 
       try {
         const response = await fetch("<%= support_lookup_password_recovery_path %>", {
@@ -602,14 +602,14 @@
 
         const payload = await response.json();
         if (!response.ok || !payload.ok) {
-          setFeedback(supportFeedback, payload.message || "Nao foi possivel validar este CPF.", "error");
+          setFeedback(supportFeedback, payload.message || "Não foi possível validar este CPF.", "error");
           return;
         }
 
         supportPayload = payload;
         supportValidated = true;
         setSupportStage("send");
-        setFeedback(supportSendFeedback, payload.message || "CPF confirmado. Agora voce ja pode enviar a solicitacao ao suporte da redefinicao.", "success");
+        setFeedback(supportSendFeedback, payload.message || "CPF confirmado. Agora você já pode enviar a solicitação ao suporte da redefinição.", "success");
       } catch (_error) {
         setFeedback(supportFeedback, "Falha ao consultar o perfil para o suporte.", "error");
       } finally {
@@ -622,7 +622,7 @@
 
       if (primaryActionBtn) primaryActionBtn.disabled = true;
       setStage("send");
-      setFeedback(sendFeedback, "Enviando link seguro de redefiniÃ§Ã£o...", "pending", true);
+      setFeedback(sendFeedback, "Enviando link seguro de redefinição...", "pending", true);
 
       try {
         const response = await fetch("<%= facial_send_reset_password_recovery_path %>", {
@@ -636,7 +636,7 @@
         });
 
         const payload = await response.json();
-        setFeedback(sendFeedback, payload.message || "OperaÃ§Ã£o concluÃ­da.", response.ok ? "success" : "error");
+        setFeedback(sendFeedback, payload.message || "Operação concluída.", response.ok ? "success" : "error");
       } catch (_error) {
         setFeedback(sendFeedback, "Falha ao enviar o link seguro. Tente novamente.", "error");
       } finally {
@@ -649,7 +649,7 @@
 
       if (supportPrimaryActionBtn) supportPrimaryActionBtn.disabled = true;
       setSupportStage("send");
-      setFeedback(supportSendFeedback, "Enviando solicitacao ao suporte...", "pending", true);
+      setFeedback(supportSendFeedback, "Enviando solicitação ao suporte...", "pending", true);
 
       try {
         const response = await fetch("<%= support_request_password_recovery_path %>", {
@@ -663,9 +663,9 @@
         });
 
         const payload = await response.json();
-        setFeedback(supportSendFeedback, payload.message || "Operacao concluida.", response.ok ? "success" : "error");
+        setFeedback(supportSendFeedback, payload.message || "Operação concluída.", response.ok ? "success" : "error");
       } catch (_error) {
-        setFeedback(supportSendFeedback, "Falha ao enviar a solicitacao de suporte. Tente novamente.", "error");
+        setFeedback(supportSendFeedback, "Falha ao enviar a solicitação de suporte. Tente novamente.", "error");
       } finally {
         syncSupportAction();
       }
@@ -696,7 +696,7 @@
       const retrying = recoveryVerifyAttempts > 1;
       setFeedback(
         loadingFeedback,
-        retrying ? `Tentando novamente a validacao facial (${recoveryVerifyAttempts}/${MAX_RECOVERY_VERIFY_ATTEMPTS})...` : "Processando a validacao facial no servidor...",
+        retrying ? `Tentando novamente a validação facial (${recoveryVerifyAttempts}/${MAX_RECOVERY_VERIFY_ATTEMPTS})...` : "Processando a validação facial no servidor...",
         "pending",
         true
       );
@@ -715,27 +715,27 @@
 
         facialValidated = true;
         setStage("send");
-        setFeedback(sendFeedback, payload.message || "Validacao facial concluida. Agora envie o link seguro de redefinicao.", "success");
+        setFeedback(sendFeedback, payload.message || "Validação facial concluída. Agora envie o link seguro de redefinição.", "success");
         renderSecurityResult(payload);
       }).catch((payload) => {
         facialValidated = false;
 
         if (payload?.retryable && recoveryVerifyAttempts < MAX_RECOVERY_VERIFY_ATTEMPTS && lastRecoveryPhotoBase64) {
-          setFeedback(loadingFeedback, "Servico facial indisponivel no momento. Tentando novamente...", "pending", true);
+          setFeedback(loadingFeedback, "Serviço facial indisponível no momento. Tentando novamente...", "pending", true);
           setTimeout(() => verifyRecoveryPhoto(lastRecoveryPhotoBase64), 1500);
           return;
         }
 
         if (payload?.retryable) {
           setStage("loading");
-          setFeedback(loadingFeedback, payload?.message || "Servico facial temporariamente indisponivel. Tente novamente em instantes.", "error");
+          setFeedback(loadingFeedback, payload?.message || "Serviço facial temporariamente indisponível. Tente novamente em instantes.", "error");
           recoveryStageLocked = true;
           return;
         }
 
         recoveryStageLocked = false;
         setStage("camera");
-        setFeedback(cameraFeedback, payload?.message || "Nao foi possivel validar o rosto com seguranca. Posicione o rosto e tente novamente.", "error");
+        setFeedback(cameraFeedback, payload?.message || "Não foi possível validar o rosto com segurança. Posicione o rosto e tente novamente.", "error");
         unlockRecoveryCapture();
       }).finally(() => {
         verificationInFlight = false;
@@ -761,7 +761,7 @@
 
       if (event.data.type === "recovery-match-status") {
         setStage("camera");
-        setFeedback(cameraFeedback, event.data.message || "Preparando validaÃ§Ã£o facial...", event.data.matched ? "success" : "pending");
+        setFeedback(cameraFeedback, event.data.message || "Preparando validação facial...", event.data.matched ? "success" : "pending");
       }
 
     });

@@ -79,12 +79,13 @@
           <div class="fx-page-title"><%= @feedback.page_title.presence || "-" %></div>
           <div class="fx-page-path"><code><%= @feedback.page_path %></code></div>
 
-          <% if @feedback.page_url.present? %>
+          <% if @feedback.page_url.present? || @feedback.page_path.present? %>
+            <% feedback_url = current_host_feedback_url(@feedback) %>
             <div class="fx-url-row">
-              <a href="<%= @feedback.page_url %>" class="btn-link" target="_blank" rel="noopener">
+              <a href="<%= feedback_url %>" class="btn-link" target="_blank" rel="noopener">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> abrir página
               </a>
-              <button type="button" class="btn-icon" title="Copiar URL" data-copy="<%= @feedback.page_url %>">
+              <button type="button" class="btn-icon" title="Copiar URL" data-copy="<%= feedback_url %>">
                 <i class="fa-regular fa-copy"></i>
               </button>
             </div>

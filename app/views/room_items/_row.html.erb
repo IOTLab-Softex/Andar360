@@ -38,9 +38,15 @@
         class: "btn edit",
         data: { turbo_frame: "item-modal-frame", open_modal: true } %>
 
-    <%= link_to "Excluir",
-        room_item_path(k),
-        class: "btn btn-warning btn-excluir-item",
-        data: { turbo_method: :delete, turbo_confirm: "Excluir #{k.name}?" } %>
+    <%= button_to room_item_path(k),
+          method: :delete,
+          authenticity_token: true,
+          class: "btn btn-warning btn-excluir-item",
+          form: {
+            data: { turbo: false, turbo_confirm: "Excluir #{k.name}?" },
+            class: "inline-delete-form"
+          } do %>
+      <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir</div>
+    <% end %>
   </td>
 </tr>

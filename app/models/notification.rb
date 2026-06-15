@@ -7,9 +7,25 @@ class Notification < ApplicationRecord
 
   after_commit :send_web_push, on: :create
 
+  def preference_category
+    text = "#{titulo} #{corpo}".downcase
+
+    if text.match?(/conclu|finaliz|atendimento/)
+      "success"
+    elsif text.match?(/tecnico|técnico|caminho|prazo|atras/)
+      "warning"
+    elsif text.match?(/sistema|atualiza|versao|versão/)
+      "system"
+    else
+      "info"
+    end
+  end
+
   private
 
   def send_web_push
+    return unless user.receives_notification_category?(preference_category)
+
     WebPushService.send_to_user(
       user,
       title: titulo.presence || "Nova notificação",

@@ -72,14 +72,10 @@
       <%= f.hidden_field :url_params, id: "feedback_url_params" %>
 
       <footer class="fm-actions">
-
-
-<%= button_tag type: 'submit', class: 'btn btn-success btn-icon' do %>
-  <i class="fa-solid fa-arrow-right"></i> Enviar
-<% end %>
-
-
-
+        <%= button_tag type: "submit", class: "btn btn-success fm-submit" do %>
+          <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+          <span>Enviar</span>
+        <% end %>
       </footer>
     <% end %>
   </div>
@@ -202,10 +198,29 @@ ease-out;
 }
 
 .fm-actions{
-  display: flex; gap: 10px; justify-content: flex-end;
-  padding-top: 8px; border-top: 1px solid rgba(255,255,255,.08);
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255,255,255,.08);
 }
-.fm-submit{ min-width: 120px; }
+.fm-submit{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .45rem;
+  min-width: 118px;
+  min-height: 40px;
+  width: auto;
+  padding: .55rem .95rem;
+  white-space: nowrap;
+  line-height: 1.1;
+}
+
+.fm-submit i{
+  flex: 0 0 auto;
+}
 
 @media (prefers-reduced-motion: reduce){
   .feedback-modal{ animation: none; }
@@ -283,6 +298,65 @@ html:not([data-theme="dark"]) .fm-control.form-select optgroup {
 
 <script>
 (function () {
+  function bindFeedbackModal() {
+    const fab = document.getElementById("feedback-fab");
+    const overlay = document.getElementById("feedback-modal");
+    if (!fab || !overlay) return;
+    if (overlay.dataset.modalBound === "1") return;
+    overlay.dataset.modalBound = "1";
+
+    const closeBtn = overlay.querySelector(".feedback-modal-close");
+
+    function fillMetadata() {
+      document.getElementById("feedback_page_title").value = document.title || "";
+      document.getElementById("feedback_page_path").value = window.location.pathname || "";
+      document.getElementById("feedback_page_url").value = window.location.href || "";
+      document.getElementById("feedback_user_agent").value = navigator.userAgent || "";
+
+      try {
+        const params = Object.fromEntries(new URL(window.location.href).searchParams.entries());
+        document.getElementById("feedback_url_params").value = JSON.stringify(params || {});
+      } catch(e) {
+        document.getElementById("feedback_url_params").value = JSON.stringify({});
+      }
+
+      const sel = window.getSelection ? window.getSelection().toString() : "";
+      document.getElementById("feedback_selected_text").value = sel || "";
+    }
+
+    function openModal() {
+      fillMetadata();
+      overlay.style.display = "flex";
+      overlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("noscroll");
+      overlay.querySelector(".js-autogrow, textarea, select, input, button")?.focus();
+    }
+
+    function closeModal() {
+      overlay.style.display = "none";
+      overlay.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("noscroll");
+      fab.focus();
+    }
+
+    function isOpen() {
+      return overlay.getAttribute("aria-hidden") === "false" || overlay.style.display === "flex" || overlay.style.display === "block";
+    }
+
+    fab.addEventListener("click", openModal);
+    closeBtn?.addEventListener("click", closeModal);
+    overlay.addEventListener("click", (event) => {
+      if (event.target === overlay) closeModal();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isOpen()) {
+        event.preventDefault();
+        closeModal();
+      }
+    }, true);
+  }
+
   function bindFeedbackDrop() {
     const drop = document.getElementById("fm-drop");
     const fileInput = document.getElementById("feedback_attachments");
@@ -331,8 +405,14 @@ html:not([data-theme="dark"]) .fm-control.form-select optgroup {
   }
 
   // funciona com e sem Turbo
-  document.addEventListener("DOMContentLoaded", bindFeedbackDrop);
-  document.addEventListener("turbo:load", bindFeedbackDrop);
+  document.addEventListener("DOMContentLoaded", () => {
+    bindFeedbackModal();
+    bindFeedbackDrop();
+  });
+  document.addEventListener("turbo:load", () => {
+    bindFeedbackModal();
+    bindFeedbackDrop();
+  });
 })();
 </script>
 

@@ -15,28 +15,28 @@ class PasswordRecoveriesController < ApplicationController
     render json: {
       ok: true,
       online: true,
-      message: "Servico de reconhecimento facial online."
+      message: "Serviço de reconhecimento facial online."
     }
   rescue StandardError => e
     render json: {
       ok: false,
       online: false,
-      message: e.message.presence || "Servico de reconhecimento facial indisponivel."
+      message: e.message.presence || "Serviço de reconhecimento facial indisponível."
     }, status: :service_unavailable
   end
 
   def facial_lookup
     user = find_user_by_cpf(params[:cpf])
-    return render json: { ok: false, message: "CPF nao encontrado." }, status: :not_found unless user
+    return render json: { ok: false, message: "CPF não encontrado." }, status: :not_found unless user
 
     participant = user.participant
-    return render json: { ok: false, message: "Usuario sem participante vinculado." }, status: :unprocessable_entity unless participant
-    return render json: { ok: false, message: "Usuario sem foto cadastrada para validacao facial." }, status: :unprocessable_entity unless participant.photo.attached?
+    return render json: { ok: false, message: "Usuário sem participante vinculado." }, status: :unprocessable_entity unless participant
+    return render json: { ok: false, message: "Usuário sem foto cadastrada para validação facial." }, status: :unprocessable_entity unless participant.photo.attached?
 
     if user.email.blank?
       return render json: {
         ok: false,
-        message: "Este usuario nao possui e-mail cadastrado para recuperacao segura. Use a opcao de suporte.",
+        message: "Este usuário não possui e-mail cadastrado para recuperação segura. Use a opção de suporte.",
         support_only: true
       }, status: :unprocessable_entity
     end
@@ -52,37 +52,37 @@ class PasswordRecoveriesController < ApplicationController
       photo_url: view_context.url_for(participant.photo),
       photo_width: photo_dimensions[:width],
       photo_height: photo_dimensions[:height],
-      message: "Perfil localizado. Abra a camera para validacao facial segura."
+      message: "Perfil localizado. Abra a câmera para validação facial segura."
     }
   end
 
   def support_lookup
     user = find_user_by_cpf(params[:cpf])
-    return render json: { ok: false, message: "CPF nao encontrado." }, status: :not_found unless user
+    return render json: { ok: false, message: "CPF não encontrado." }, status: :not_found unless user
 
     session[SUPPORT_LOOKUP_SESSION_KEY] = normalized_cpf(params[:cpf])
 
     render json: {
       ok: true,
       cpf: normalized_cpf(params[:cpf]),
-      message: "CPF confirmado. Agora voce ja pode solicitar o suporte."
+      message: "CPF confirmado. Agora você já pode solicitar o suporte."
     }
   end
 
   def facial_verify
     cpf = normalized_cpf(params[:cpf])
-    return render json: { ok: false, message: "CPF invalido." }, status: :unprocessable_entity if cpf.blank?
-    return render json: { ok: false, message: "Sessao expirada. Informe o CPF novamente." }, status: :unprocessable_entity unless session[FACE_LOOKUP_SESSION_KEY] == cpf
+    return render json: { ok: false, message: "CPF inválido." }, status: :unprocessable_entity if cpf.blank?
+    return render json: { ok: false, message: "Sessão expirada. Informe o CPF novamente." }, status: :unprocessable_entity unless session[FACE_LOOKUP_SESSION_KEY] == cpf
 
     user = find_user_by_cpf(cpf)
-    return render json: { ok: false, message: "CPF nao encontrado." }, status: :not_found unless user
+    return render json: { ok: false, message: "CPF não encontrado." }, status: :not_found unless user
 
     participant = user.participant
-    return render json: { ok: false, message: "Usuario sem participante vinculado." }, status: :unprocessable_entity unless participant
-    return render json: { ok: false, message: "Usuario sem foto cadastrada para validacao facial." }, status: :unprocessable_entity unless participant.photo.attached?
+    return render json: { ok: false, message: "Usuário sem participante vinculado." }, status: :unprocessable_entity unless participant
+    return render json: { ok: false, message: "Usuário sem foto cadastrada para validação facial." }, status: :unprocessable_entity unless participant.photo.attached?
 
     probe_image_base64 = params[:photo_base64].to_s
-    return render json: { ok: false, message: "Nenhuma imagem recebida para validacao." }, status: :unprocessable_entity if probe_image_base64.blank?
+    return render json: { ok: false, message: "Nenhuma imagem recebida para validação." }, status: :unprocessable_entity if probe_image_base64.blank?
 
     reference_image_base64 = Base64.strict_encode64(participant.photo.download)
     comparison = FaceBackend::Client.verify(
@@ -107,7 +107,7 @@ class PasswordRecoveriesController < ApplicationController
     render json: {
       ok: false,
       matched: false,
-      message: comparison[:message].presence || "Nao foi possivel validar o rosto com seguranca.",
+      message: comparison[:message].presence || "Não foi possível validar o rosto com segurança.",
       reference_issue: comparison[:message].to_s.include?("foto cadastrada"),
       capture_issue: comparison[:message].to_s.include?("rosto capturado"),
       confidence: comparison[:confidence],
@@ -121,16 +121,16 @@ class PasswordRecoveriesController < ApplicationController
 
   def facial_send_reset
     user = find_user_by_cpf(params[:cpf])
-    return render json: { ok: false, message: "CPF nao encontrado." }, status: :not_found unless user
-    return render json: { ok: false, message: "E-mail nao cadastrado para este usuario." }, status: :unprocessable_entity if user.email.blank?
-    return render json: { ok: false, message: "Realize novamente a validacao facial para continuar." }, status: :unprocessable_entity unless facial_verified_recently?(normalized_cpf(params[:cpf]))
+    return render json: { ok: false, message: "CPF não encontrado." }, status: :not_found unless user
+    return render json: { ok: false, message: "E-mail não cadastrado para este usuário." }, status: :unprocessable_entity if user.email.blank?
+    return render json: { ok: false, message: "Realize novamente a validação facial para continuar." }, status: :unprocessable_entity unless facial_verified_recently?(normalized_cpf(params[:cpf]))
 
     cooldown_key = "password_recovery_reset_sent_at_#{normalized_cpf(params[:cpf])}"
     last_sent_at = session[cooldown_key]
     if last_sent_at.present? && Time.zone.parse(last_sent_at.to_s) > 1.minute.ago
       return render json: {
         ok: false,
-        message: "Ja enviamos um link recentemente. Aguarde um minuto para tentar novamente."
+        message: "Já enviamos um link recentemente. Aguarde um minuto para tentar novamente."
       }, status: :too_many_requests
     end
 
@@ -140,38 +140,38 @@ class PasswordRecoveriesController < ApplicationController
 
     render json: {
       ok: true,
-      message: "Enviamos um link seguro de redefinicao para #{masked_email(user.email)}."
+      message: "Enviamos um link seguro de redefinição para #{masked_email(user.email)}."
     }
   rescue Errno::ECONNREFUSED, SocketError, IOError, SystemCallError
     render json: {
       ok: false,
-      message: "Nao foi possivel conectar ao servidor de e-mail configurado. Revise as configuracoes SMTP."
+      message: "Não foi possível conectar ao servidor de e-mail configurado. Revise as configurações SMTP."
     }, status: :service_unavailable
   rescue Net::SMTPAuthenticationError, Net::SMTPServerBusy, Net::SMTPSyntaxError, Net::SMTPFatalError, Net::SMTPUnknownError => e
     render json: {
       ok: false,
-      message: "Falha no envio do e-mail de recuperacao: #{e.message}"
+      message: "Falha no envio do e-mail de recuperação: #{e.message}"
     }, status: :unprocessable_entity
   end
 
   def support_request
     cpf = normalized_cpf(params[:cpf])
-    return render json: { ok: false, message: "CPF invalido." }, status: :unprocessable_entity if cpf.blank?
+    return render json: { ok: false, message: "CPF inválido." }, status: :unprocessable_entity if cpf.blank?
     return render json: { ok: false, message: "Confirme o CPF antes de solicitar o suporte." }, status: :unprocessable_entity unless session[SUPPORT_LOOKUP_SESSION_KEY] == cpf
 
     user = find_user_by_cpf(cpf)
-    return render json: { ok: false, message: "CPF nao encontrado." }, status: :not_found unless user
+    return render json: { ok: false, message: "CPF não encontrado." }, status: :not_found unless user
 
     participant = user.participant
-    return render json: { ok: false, message: "Usuario sem participante vinculado." }, status: :unprocessable_entity unless participant
-    return render json: { ok: false, message: "Usuario sem empresa vinculada." }, status: :unprocessable_entity unless participant.grupo_empresa_id.present?
+    return render json: { ok: false, message: "Usuário sem participante vinculado." }, status: :unprocessable_entity unless participant
+    return render json: { ok: false, message: "Usuário sem empresa vinculada." }, status: :unprocessable_entity unless participant.grupo_empresa_id.present?
 
     cooldown_key = "password_recovery_support_sent_at_#{cpf}"
     last_sent_at = session[cooldown_key]
     if last_sent_at.present? && Time.zone.parse(last_sent_at.to_s) > 1.minute.ago
       return render json: {
         ok: false,
-        message: "Ja recebemos uma solicitacao recente. Aguarde um minuto para tentar novamente."
+        message: "Já recebemos uma solicitação recente. Aguarde um minuto para tentar novamente."
       }, status: :too_many_requests
     end
 
@@ -184,19 +184,19 @@ class PasswordRecoveriesController < ApplicationController
 
     return render json: {
       ok: false,
-      message: "Nao existe nenhum usuario de suporte de acesso configurado para essa empresa."
+      message: "Não existe nenhum usuário de suporte de acesso configurado para essa empresa."
     }, status: :unprocessable_entity if support_participants.empty?
 
     responsavel_participant = support_participants.find { |p| p.user.present? } || support_participants.first
     chamado = Chamado.create!(
-      titulo: "Recuperacao de senha - #{participant.name}",
-      prioridade: "Media",
+      titulo: "Recuperação de senha - #{participant.name}",
+      prioridade: "Média",
       status: "Pendente",
-      local: "Login / Recuperacao de senha",
+      local: "Login / Recuperação de senha",
       responsavel: responsavel_participant.name,
       password_recovery_support_request: true,
       observacao: <<~TEXT.strip,
-        Solicitacao aberta pelo fluxo de suporte da recuperacao de senha.
+        Solicitação aberta pelo fluxo de suporte da recuperação de senha.
         Nome: #{participant.name}
         CPF: #{participant.cpf}
         E-mail: #{user.email.presence || "-"}
@@ -224,7 +224,7 @@ class PasswordRecoveriesController < ApplicationController
 
     render json: {
       ok: true,
-      message: "Solicitacao enviada com sucesso. O chamado foi aberto e o suporte sera avisado.#{email_warning}"
+      message: "Solicitação enviada com sucesso. O chamado foi aberto e o suporte será avisado.#{email_warning}"
     }
   end
 

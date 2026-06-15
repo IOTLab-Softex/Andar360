@@ -44,10 +44,6 @@
 </div>
 
 <div id="items-section" class="rooms expanded" style="display: flow;">
-  <%= form_with url: bulk_destroy_room_items_path, method: :delete, local: true, id: "items-bulk-form" do %>
-    <%= hidden_field_tag :authenticity_token, form_authenticity_token %>
-
-
     <table class="table table-salas selection-table" id="items-table">
       <thead class="table-secondary text-dark">
         <tr>
@@ -105,8 +101,9 @@
 
 <%= button_to room_item_path(k),
               method: :delete,
+              authenticity_token: true,
               class: "btn btn-warning btn-excluir-item",
-              form: { data: { turbo_confirm: "Excluir #{k.name}?" },
+              form: { data: { turbo: false, turbo_confirm: "Excluir #{k.name}?" },
                       class: "inline-delete-form" } do %>
   <i class="fa-solid fa-trash"></i> <div class="hide-sm"> Excluir</div>
 <% end %>
@@ -118,7 +115,6 @@
         <% end %>
       </tbody>
     </table>
-  <% end %>
 </div>
 
 <!-- Modal reutilizável -->

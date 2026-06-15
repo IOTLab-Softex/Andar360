@@ -23,11 +23,13 @@ document.addEventListener("DOMContentLoaded", function(){
     const sel = window.getSelection ? window.getSelection().toString() : "";
     document.getElementById("feedback_selected_text").value = sel || "";
 
-    overlay.style.display = "block";
+    overlay.style.display = "flex";
+    overlay.setAttribute("aria-hidden", "false");
   }
 
   function closeModal(){
     overlay.style.display = "none";
+    overlay.setAttribute("aria-hidden", "true");
   }
 
   fab?.addEventListener("click", openModal);
@@ -37,6 +39,10 @@ document.addEventListener("DOMContentLoaded", function(){
   // Fechar ao clicar fora
   overlay?.addEventListener("click", function(e){
     if (e.target === overlay) closeModal();
+  });
+
+  document.addEventListener("keydown", function(e){
+    if (e.key === "Escape" && overlay?.getAttribute("aria-hidden") === "false") closeModal();
   });
 });
 

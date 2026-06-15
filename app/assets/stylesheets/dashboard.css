@@ -2736,6 +2736,17 @@ position: absolute;
   background:#2a2a2a; color:#f0f0f0; border:1px solid #3a3a3a; padding:.45rem .7rem; border-radius:999px; cursor:pointer;
 }
 .btn-chip.active { background:#3f9142; border-color:#3f9142; }
+@media (max-width: 768px) {
+  .pmodal .hide-md {
+    display: none !important;
+  }
+
+  .pmodal__dialog {
+    width: min(92vw, 399px);
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+  }
+}
 .btn-chip--wide {
   width: 100%;
   display: inline-flex;

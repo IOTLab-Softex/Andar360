@@ -78,6 +78,7 @@ get 'participants/por_empresa/:id', to: 'participants#por_empresa'
   resources :notifications, only: [] do
     post :marcar_como_lida, on: :member
     post :marcar_todas_como_lidas, on: :collection
+    patch :preferences, on: :collection
     
   end
   resources :encomendas

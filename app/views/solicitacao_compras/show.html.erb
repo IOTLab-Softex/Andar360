@@ -8,11 +8,11 @@
       </tr>
       <tr>
         <td class="label">Colaborador(a)</td>
-        <td><%= @solicitacao_compra.colaborador %></td>
+        <td><%= @solicitacao_compra.colaborador.presence || "Não informado" %></td>
       </tr>
       <tr>
         <td class="label">Setor</td>
-        <td><%= @solicitacao_compra.setor %></td>
+        <td><%= @solicitacao_compra.setor.presence || "Não informado" %></td>
       </tr>
     </table>
 
@@ -26,14 +26,25 @@
       <th style="width:15%">Valor Estimado</th>
       <th style="width:15%"></th>
     </tr>
-    <% @solicitacao_compra.itens.each do |item| %>
+    <% itens_documento = @solicitacao_compra.itens.to_a %>
+    <% data_item_documento = @solicitacao_compra.item_data || @solicitacao_compra.data_solicitacao || @solicitacao_compra.created_at&.to_date %>
+    <% if itens_documento.any? %>
+    <% itens_documento.each do |item| %>
   <tr>
-    <td><%= @solicitacao_compra.item_data&.strftime("%d/%m/%Y") %></td>
-    <td><%= item.descricao %></td>
-    <td><%= number_to_currency(item.valor_unitario * item.quantidade, unit: "R$ ") %></td>
+    <td><%= data_item_documento&.strftime("%d/%m/%Y") %></td>
+    <td><%= item.descricao.presence || @solicitacao_compra.item_descricao.presence || "Item não informado" %></td>
+    <td><%= number_to_currency(item.valor_total, unit: "R$ ") %></td>
     <td></td>
   </tr>
 <% end %>
+    <% else %>
+  <tr>
+    <td><%= data_item_documento&.strftime("%d/%m/%Y") %></td>
+    <td><%= @solicitacao_compra.item_descricao.presence || "Item não informado" %></td>
+    <td><%= number_to_currency((@solicitacao_compra.valor_estimado || 0).to_d, unit: "R$ ") %></td>
+    <td></td>
+  </tr>
+    <% end %>
 
     <% 4.times do %>
       <tr>
@@ -52,7 +63,7 @@
       <th>JUSTIFICATIVA PARA AQUISIÇÃO DO BEM OU CONTRATAÇÃO DO SERVIÇO</th>
     </tr>
     <tr>
-      <td style="height:80px; vertical-align:top;"><%= simple_format(@solicitacao_compra.justificativa) %></td>
+      <td style="height:80px; vertical-align:top;"><%= simple_format(@solicitacao_compra.justificativa.presence || "Justificativa não informada.") %></td>
     </tr>
   </table>
 
@@ -115,8 +126,15 @@
   /* conteúdo em cima do timbrado */
   .print-content {
     font-family: "Segoe UI", system-ui, sans-serif;
-    color:#000;
+    color:#000 !important;
     padding: 160px 60px 80px; /* ajusta pra não bater no topo/rodapé do timbrado */
+  }
+
+  .print-content,
+  .print-content * {
+    color:#000 !important;
+    opacity:1 !important;
+    text-shadow:none !important;
   }
 
   .print-content h1 {
@@ -137,6 +155,7 @@
     border:1px solid #000;
     padding:4px 6px;
     background: rgba(255,255,255,0.85); /* leve branco pra contraste sobre o timbrado */
+    color:#000 !important;
   }
 
   .box th {

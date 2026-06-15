@@ -1,4 +1,7 @@
 class User < ApplicationRecord
+  DEFAULT_NOTIFICATION_PREFERENCES = %w[info success warning system].freeze
+  NOTIFICATION_PREFERENCE_KEYS = DEFAULT_NOTIFICATION_PREFERENCES.freeze
+
   belongs_to :participant, optional: true
 has_many :notifications, dependent: :destroy
 has_many :push_subscriptions, dependent: :destroy
@@ -76,6 +79,28 @@ end
 def normalized_dashboard_hidden_cards(available_cards)
   allowed = Array(available_cards).map(&:to_s)
   Array(dashboard_hidden_cards).map(&:to_s) & allowed
+end
+
+def normalized_notification_preferences
+  raw_preferences = has_attribute?(:notification_preferences) ? self[:notification_preferences] : DEFAULT_NOTIFICATION_PREFERENCES
+  selected = Array(raw_preferences.presence || DEFAULT_NOTIFICATION_PREFERENCES).map(&:to_s)
+  selected & NOTIFICATION_PREFERENCE_KEYS
+end
+
+def notification_preferences_enabled
+  normalized = normalized_notification_preferences
+  normalized.presence || DEFAULT_NOTIFICATION_PREFERENCES
+end
+
+def receives_notification_category?(category)
+  notification_preferences_enabled.include?(category.to_s)
+end
+
+def update_notification_preferences!(values)
+  return false unless has_attribute?(:notification_preferences)
+
+  normalized = Array(values).map(&:to_s) & NOTIFICATION_PREFERENCE_KEYS
+  update!(notification_preferences: normalized)
 end
 
 

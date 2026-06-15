@@ -9,7 +9,7 @@ class Users::SessionsController < Devise::SessionsController
     self.resource = resource_class.find_for_database_authentication(cpf: cpf)
 
     if resource&.valid_password?(password) && resource.active_for_authentication?
-      remember_me(resource) if remember
+      resource.remember_me = remember if resource.respond_to?(:remember_me=)
       set_flash_message!(:notice, :signed_in)
       sign_in(resource_name, resource)
       respond_with resource, location: after_sign_in_path_for(resource)

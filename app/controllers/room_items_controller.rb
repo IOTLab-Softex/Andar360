@@ -1,4 +1,6 @@
 # app/controllers/room_items_controller.rb
+require "stringio"
+
 class RoomItemsController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin_or_operator!
@@ -11,6 +13,8 @@ class RoomItemsController < ApplicationController
 
   def new
     @item = RoomItem.new
+    @item.preset_icon = RoomItem.preset_icons.keys.first
+
     if turbo_frame_request?
       render partial: "form", locals: { item: @item }, layout: false
     else
@@ -20,6 +24,9 @@ class RoomItemsController < ApplicationController
 
 def create
   @item = RoomItem.new(item_params.merge(room_id: nil))
+  @item.preset_icon = RoomItem.preset_icons.keys.first if params.dig(:room_item, :preset_icon).blank? && params.dig(:room_item, :icon).blank?
+  attach_preset_icon(@item)
+
   if @item.save
     respond_to do |f|
       f.turbo_stream
@@ -45,7 +52,11 @@ end
 
 
 def update
-  if @item.update(item_params)
+  @item.assign_attributes(item_params)
+  @item.preset_icon = RoomItem.preset_icons.keys.first if !@item.icon.attached? && params.dig(:room_item, :preset_icon).blank? && params.dig(:room_item, :icon).blank?
+  attach_preset_icon(@item)
+
+  if @item.save
     respond_to do |f|
       f.html { redirect_to room_items_path, notice: "Item atualizado." }
       f.turbo_stream
@@ -81,6 +92,24 @@ end
 
   def item_params
     params.require(:room_item).permit(:name, :modelo, :valor, :icon)
+  end
+
+  def attach_preset_icon(item)
+    key = params.dig(:room_item, :preset_icon).to_s
+    key = item.preset_icon.to_s if key.blank?
+    item.preset_icon = key
+
+    return if key.blank?
+    return if params.dig(:room_item, :icon).present?
+
+    preset = RoomItem.preset_icons[key]
+    return unless preset
+
+    item.icon.attach(
+      io: StringIO.new(preset[:svg]),
+      filename: preset[:filename],
+      content_type: "image/svg+xml"
+    )
   end
 
   def authorize_admin_or_operator!

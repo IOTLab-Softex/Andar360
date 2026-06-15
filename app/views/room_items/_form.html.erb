@@ -15,11 +15,32 @@
   </div>
 
   <div class="form-group">
-    <%= f.label :icon, "Ícone" %>
+    <%= f.label :preset_icon, "Icone predefinido" %>
+    <% selected_preset_icon = item.preset_icon.presence || RoomItem.preset_icons.keys.first %>
+
+    <div class="room-item-icon-pack" role="group" aria-label="Icones predefinidos">
+      <% RoomItem.preset_icons.each do |key, preset| %>
+        <% selected = selected_preset_icon == key %>
+        <% radio_id = "room_item_preset_icon_#{key}" %>
+        <%= f.radio_button :preset_icon, key,
+              id: radio_id,
+              checked: selected,
+              class: "room-item-icon-radio" %>
+        <label class="room-item-icon-option" for="<%= radio_id %>" title="<%= preset[:label] %>">
+          <i class="fa-solid <%= preset[:fa] %>" aria-hidden="true"></i>
+          <span><%= preset[:label] %></span>
+        </label>
+      <% end %>
+    </div>
+
+    <small class="room-item-icon-hint">Escolha um icone do pack ou envie um arquivo proprio abaixo.</small>
+  </div>
+
+  <div class="form-group">
+    <%= f.label :icon, "Upload de icone" %>
     <%= f.file_field :icon,
           accept: ".svg,image/*",
-          class: "form-control",
-          required: (item.new_record? || !item.icon.attached?),
+          class: "form-control js-room-item-icon-upload",
           direct_upload: true %>
     <% if item.icon.attached? %>
       <small>Atual: <%= item.icon.filename %></small>
@@ -42,4 +63,60 @@
       </ul>
     </div>
   <% end %>
+
+  <style>
+    .room-item-icon-pack {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      gap: .5rem;
+      margin-top: .45rem;
+    }
+
+    .room-item-icon-option {
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      min-height: 42px;
+      border: 1px solid rgba(148, 163, 184, .45);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, .04);
+      color: inherit;
+      padding: .55rem .65rem;
+      cursor: pointer;
+      text-align: left;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    .room-item-icon-option i {
+      width: 20px;
+      text-align: center;
+      color: var(--color-btn, #0d6efd);
+    }
+
+    .room-item-icon-option span {
+      font-size: .88rem;
+      line-height: 1.1;
+    }
+
+    .room-item-icon-option:hover,
+    .room-item-icon-radio:checked + .room-item-icon-option {
+      border-color: var(--color-btn, #0d6efd);
+      background: rgba(13, 110, 253, .12);
+      box-shadow: 0 0 0 2px rgba(13, 110, 253, .12);
+    }
+
+    .room-item-icon-hint {
+      display: block;
+      margin-top: .4rem;
+      color: var(--color-muted, #6c757d);
+    }
+
+    .room-item-icon-radio {
+      position: absolute;
+      inline-size: 1px;
+      block-size: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 <% end %>

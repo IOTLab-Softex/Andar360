@@ -116,7 +116,7 @@ end
 protected
 
 def configure_permitted_parameters
-  devise_parameter_sanitizer.permit(:sign_in, keys: [:cpf])
+  devise_parameter_sanitizer.permit(:sign_in, keys: [:cpf, :remember_me])
   devise_parameter_sanitizer.permit(:sign_up, keys: [:cpf, :role])
   devise_parameter_sanitizer.permit(:account_update, keys: [:cpf, :role, :password, :password_confirmation, :current_password])
 

@@ -30,7 +30,8 @@ class SolicitacaoCompra < ApplicationRecord
   validate :deve_ter_ao_menos_um_item
 
   def total_geral
-    itens.sum { |i| (i.quantidade || 0) * (i.valor_unitario || 0) }
+    total_itens = itens.sum { |i| i.valor_total.to_d }
+    total_itens.positive? ? total_itens : (valor_estimado || 0).to_d
   end
  def compra_fechada?
     comprado? || cancelado?

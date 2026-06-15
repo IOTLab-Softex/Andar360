@@ -779,8 +779,10 @@
               <% end %>
             <% else %>
               <% if participant.solicitacao_exclusao_pendente.blank? %>
-                <%= link_to edit_participant_path(participant), class: "btn edit", title: "Editar", style: "width: -webkit-fill-available; text-align: center;" do %>
-                  <i class="fa-solid fa-user-pen"></i><div class="hide-sm">Editar</div>
+                <% if current_user.admin? || current_user.operador? %>
+                  <%= link_to edit_participant_path(participant), class: "btn edit", title: "Editar", style: "width: -webkit-fill-available; text-align: center;" do %>
+                    <i class="fa-solid fa-user-pen"></i><div class="hide-sm">Editar</div>
+                  <% end %>
                 <% end %>
                 <% if @can_manage_password_recovery_support && password_recovery_chamado.present? %>
                   <%= button_to send_password_recovery_link_chamado_path(password_recovery_chamado),

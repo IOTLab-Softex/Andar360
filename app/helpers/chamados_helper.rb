@@ -26,18 +26,8 @@ module ChamadosHelper
 
   def pode_alterar_status_chamado?(chamado, user)
     return false if user.nil?
-    return true if user.admin? || user.operador?
 
-    return false unless user.client?
-    return false unless user.participant
-    eh_solicitante = chamado.solicitante_id.present? && chamado.solicitante_id == user.participant.id
-    eh_responsavel = chamado.responsavel.present? && chamado.responsavel == user.participant.name
-
-    if normalizar_status_chamado(chamado.status) == "Concluído"
-      return eh_solicitante
-    end
-
-    eh_solicitante || eh_responsavel
+    user.admin? || user.operador?
   end
 
   def pode_editar_chamado?(chamado, user)

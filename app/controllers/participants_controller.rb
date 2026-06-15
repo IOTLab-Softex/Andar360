@@ -1,4 +1,5 @@
 class ParticipantsController < ApplicationController
+  before_action :require_admin_or_operador!, only: [:new, :create, :edit, :update]
   before_action :require_admin_or_operador!, only: [:block_access, :unblock_access]
   skip_before_action :authenticate_user!, only: [:camera]
   skip_before_action :check_password_change_required, only: [:camera]

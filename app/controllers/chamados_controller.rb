@@ -102,7 +102,10 @@ def create
 
 
 def update
-  if @chamado.update(chamado_params.except(:fotos))
+  atributos = chamado_params.except(:fotos)
+  atributos = atributos.except(:status, :data_resolucao) unless current_user.admin? || current_user.operador?
+
+  if @chamado.update(atributos)
     @chamado.fotos.attach(params[:chamado][:fotos]) if params.dig(:chamado, :fotos)
     
     redirect_to root_path, status: :see_other, notice: "Chamado atualizado com sucesso."
@@ -259,18 +262,8 @@ end
 
   def usuario_pode_alterar_status?
     return false unless current_user
-    return true if current_user.admin? || current_user.operador?
 
-    return false unless current_user.client?
-    return false unless current_user.participant
-    eh_solicitante = @chamado.solicitante_id.present? && @chamado.solicitante_id == current_user.participant.id
-    eh_responsavel = @chamado.responsavel.present? && @chamado.responsavel == current_user.participant.name
-
-    if normalizar_status_chamado(@chamado.status) == "Concluído"
-      return eh_solicitante
-    end
-
-    eh_solicitante || eh_responsavel
+    current_user.admin? || current_user.operador?
   end
 
   def authorize_chamado_access

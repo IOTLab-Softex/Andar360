@@ -106,8 +106,8 @@
               <td class="fx-page">
                 <div class="fx-page-title"><%= fb.page_title.presence || "-" %></div>
                 <small class="fx-page-path"><code><%= fb.page_path %></code></small>
-               <% if fb.page_url.present? %>
-  <%= link_to fb.page_url, class: "fx-open-link", target: "_blank", rel: "noopener" do %>
+               <% if fb.page_url.present? || fb.page_path.present? %>
+  <%= link_to current_host_feedback_url(fb), class: "fx-open-link", target: "_blank", rel: "noopener" do %>
     <i class="fa-solid fa-arrow-up-right-from-square"></i> abrir
   <% end %>
  
