@@ -7,7 +7,7 @@ gem 'net-http-digest_auth'
 gem 'rufus-scheduler'
 gem 'rest-client'
 gem 'ffi'
-gem 'rubyzip', '~> 2.3'
+gem 'rubyzip', '~> 3.5'
 gem 'chunky_png'
 gem 'devise'
 
