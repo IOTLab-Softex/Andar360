@@ -5,10 +5,11 @@ class AiAgentService
   include HTTParty
   base_uri "https://api.openai.com/v1"
 
-  def initialize(user:, message:, history: nil)
+  def initialize(user:, message:, history: nil, quick_mode: false)
     @user = user
     @message = message.to_s.strip
     @history = Array(history).filter_map { |entry| normalize_history_entry(entry) }.last(10)
+    @quick_mode = quick_mode
     @setting = Setting.instance
   end
 
@@ -56,6 +57,7 @@ class AiAgentService
       result[:registrations] = tool_output[:registrations] if tool_output[:registrations].present?
       result[:items] = tool_output[:items] if tool_output[:items].present?
       result[:item_movements] = tool_output[:item_movements] if tool_output[:item_movements].present?
+      result[:end_quick_conversation] = true if tool_output[:end_quick_conversation]
       result[:cancelable_maintenances] = tool_output[:maintenances] if function_call["name"] == "listar_manutencoes_programadas" && tool_output[:maintenances].present?
       if function_call["name"] == "criar_reserva_sala" && tool_output[:reservation_id].present?
         reservation = Reservation.find_by(id: tool_output[:reservation_id])
@@ -170,6 +172,7 @@ class AiAgentService
       Para cliente perguntando se tem objeto em seu nome, use listar_meus_objetos_retirados.
       Para listar objetos use listar_objetos_controle. Para historico use listar_historico_objeto. Para retirada use retirar_objeto_controle. Para devolucao use devolver_objeto_controle.
       Se faltar item para retirar/devolver/historico, pergunte qual objeto. Se faltar responsavel na retirada, use o usuario logado quando fizer sentido.
+      #{quick_conversation_instruction}
       Use datas em ISO 8601 no fuso do sistema. Se houver ambiguidade real, pergunte antes.
     TEXT
   end
@@ -258,6 +261,9 @@ class AiAgentService
     when "listar_meus_objetos_retirados"
       args = JSON.parse(function_call["arguments"].presence || "{}")
       list_my_checked_out_items(args)
+    when "encerrar_conversa_rapida"
+      args = JSON.parse(function_call["arguments"].presence || "{}")
+      end_quick_conversation(args)
     else
       { ok: false, message: "Ferramenta não suportada: #{function_call["name"]}" }
     end
@@ -798,6 +804,33 @@ class AiAgentService
     }
   end
 
+  def end_quick_conversation(args)
+    {
+      ok: true,
+      message: args.fetch("farewell_message").to_s.strip,
+      end_quick_conversation: true
+    }
+  end
+
+  def end_quick_conversation_tool
+    {
+      type: "function",
+      name: "encerrar_conversa_rapida",
+      description: "Encerra a conversa rápida quando a IA entender pelo contexto que o usuário agradeceu, desistiu, se despediu ou não precisa mais de ajuda.",
+      parameters: {
+        type: "object",
+        properties: {
+          farewell_message: {
+            type: "string",
+            description: "Despedida curta e natural criada pela IA de acordo com o contexto da conversa."
+          }
+        },
+        required: ["farewell_message"],
+        additionalProperties: false
+      }
+    }
+  end
+
   def cancel_reservation_tool
     {
       type: "function",
@@ -1180,7 +1213,7 @@ class AiAgentService
   end
 
   def agent_tools
-    [
+    tools = [
       create_reservation_tool,
       cancel_reservation_tool,
       list_cancelable_reservations_tool,
@@ -1203,6 +1236,23 @@ class AiAgentService
       list_registration_approvals_tool,
       registration_approval_status_tool
     ]
+
+    tools << end_quick_conversation_tool if @quick_mode
+    tools
+  end
+
+  def quick_conversation_instruction
+    return "Esta mensagem nao veio do modo de conversa rapida. Nao tente encerrar a interface." unless @quick_mode
+
+    <<~TEXT.squish
+      Esta mensagem veio do modo de conversa rapida por voz.
+      Analise a mensagem atual junto com o historico.
+      Se o usuario demonstrar naturalmente que terminou, agradecer sem fazer outro pedido,
+      desistir, se despedir ou disser que nao precisa mais de ajuda, use obrigatoriamente
+      a ferramenta "encerrar_conversa_rapida".
+      Crie em farewell_message uma despedida curta e natural adequada ao contexto.
+      Nao encerre se existir uma pergunta, pedido ou confirmacao pendente.
+    TEXT
   end
 
   def extract_text(body)

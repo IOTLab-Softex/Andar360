@@ -615,16 +615,16 @@
         </div>
       </dl>
     </div>
-    <div class="modal-footer">
-      <button type="button" class="btn btn-secondary" data-modal-close>
-        <i class="fa-solid fa-arrow-left"></i>
-        Nâo
+    <div class="modal-footer modal-footer--confirmation">
+      <button type="button" class="btn btn-secondary modal-confirm-button" data-modal-close>
+        <i class="fa-solid fa-xmark"></i>
+        Não
       </button>
       <!-- Form que envia o DELETE -->
-      <form id="delete-form" action="" method="post" data-turbo="true" style="display:inline;">
+      <form id="delete-form" action="" method="post" data-turbo="true" class="modal-confirm-form">
         <input type="hidden" name="_method" value="delete">
         <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-        <button type="submit" class="btn btn-danger">
+        <button type="submit" class="btn btn-danger modal-confirm-button">
           <i class="fa-solid fa-trash-can"></i>
           Sim
         </button>
@@ -1167,16 +1167,14 @@
     }
 
     .modal-dialog {
-        width: min(520px, 92vw);
-        background: radial-gradient(circle at top left, #673AB7, transparent 55%), rgb(59 32 107);
-        border-radius: 18px;
-        box-shadow: 0 22px 50px rgba(0, 0, 0, .7);
-        border: 1px solid #673AB7;
-        padding: 18px 20px 16px;
-        transform: translateY(10px) scale(.98);
-        transition: transform .22s
-    ease-out, opacity .22s
-    ease-out;
+      width: min(520px, 92vw);
+      background: var(--color-muted);
+      border-radius: 18px;
+      box-shadow: 0 22px 50px rgba(0, 0, 0, .7);
+      border: 1px solid #ffffff40;
+      padding: 18px 20px 16px;
+      transform: translateY(10px) scale(.98);
+      transition: transform .22s ease-out, opacity .22s ease-out;
     }
 
     .modal-backdrop.is-open .modal-dialog{
@@ -1255,6 +1253,57 @@
       justify-content:flex-end;
       gap:10px;
       margin-top:8px;
+    }
+
+    .modal-footer--confirmation{
+      align-items:stretch;
+    }
+
+    .modal-confirm-form{
+      display:flex;
+      margin:0;
+    }
+
+    .modal-confirm-button{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      min-width:112px;
+      min-height:42px;
+      margin:0;
+      padding:10px 18px;
+      line-height:1;
+      white-space:nowrap;
+    }
+
+    .modal-confirm-form .modal-confirm-button{
+      width:100%;
+    }
+
+    .modal-confirm-button.btn-secondary:hover{
+      background:var(--color-muted);
+      border-color:#ffffff40;
+      color:#fff;
+    }
+
+    .modal-confirm-button.btn-danger:hover{
+      background:#b71c1c;
+      border-color:#b71c1c;
+      color:#fff;
+    }
+
+    @media (max-width: 480px){
+      .modal-footer--confirmation{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+      }
+
+      .modal-confirm-form,
+      .modal-confirm-button{
+        width:100%;
+        min-width:0;
+      }
     }
 
     .btn-danger{

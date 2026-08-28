@@ -367,10 +367,11 @@
 
         <h3 class="subtitle mb-2"><i class="fa-solid fa-users-slash me-2"></i> Zona de Perigo</h3>
         <p class="form-text text-muted mb-3">
-          Participantes vinculados a reservas ou chamados não serão excluídos.
+          Exclui permanentemente todos os participantes e usuários, inclusive os vinculados a reservas ou chamados.
+          Apenas sua conta atual de administrador será mantida.
         </p>
         <button type="button" id="btn-delete-all-participants" class="btn btn-danger">
-          <i class="fa-solid fa-trash me-2"></i> Excluir todos os participantes
+          <i class="fa-solid fa-trash me-2"></i> Excluir participantes e usuários
         </button>
       </section>
 
@@ -1025,7 +1026,7 @@
     if (!btn) return;
 
     btn.addEventListener('click', function() {
-      if (!confirm('Tem certeza? Todos os participantes sem reservas ou chamados serão excluídos permanentemente. Esta ação não pode ser desfeita.')) return;
+      if (!confirm('Tem certeza? Todos os participantes e usuários serão excluídos permanentemente, inclusive os vinculados a reservas ou chamados. Apenas sua conta atual de administrador será mantida. Esta ação não pode ser desfeita.')) return;
 
       const modal   = document.getElementById('delete-all-modal');
       const bar     = document.getElementById('delete-all-bar');
@@ -1057,7 +1058,7 @@
         bar.style.width = '100%';
         barText.textContent = '100%';
         msg.textContent = data.message || 'Concluído!';
-        setTimeout(() => { modal.style.display = 'none'; }, 900);
+        setTimeout(() => { window.location.reload(); }, 1200);
       })
       .catch(err => {
         clearInterval(tick);

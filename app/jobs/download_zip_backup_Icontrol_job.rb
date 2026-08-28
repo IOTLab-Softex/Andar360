@@ -45,6 +45,9 @@ class DownloadZipBackupIcontrolJob < ApplicationJob
 
     Rails.logger.info "[🧩] ZIP mais recente encontrado: #{File.basename(zip_path)}"
     FileUtils.mkdir_p(extract_dir)
+    Dir.children(extract_dir).each do |entry|
+      FileUtils.rm_rf(File.join(extract_dir, entry))
+    end
     Rails.cache.write(
       'backup_status',
       { status: 'executando',

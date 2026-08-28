@@ -7,12 +7,12 @@
       <div>
         <h3 id="ai-agent-title">Agente IA</h3>
         <p>Converse com o assistente sobre dúvidas e tarefas do sistema.</p>
-        <p class="ai-agent-modal__hint">Use <strong>@</strong> para inserir salas, horarios ou pessoas.</p>
+        <p class="ai-agent-modal__hint">Use <strong>@</strong> para inserir salas, horários ou pessoas.</p>
       </div>
     </header>
 
     <div id="ai-agent-messages" class="ai-agent-chat" aria-live="polite">
-      <div class="ai-agent-message ai-agent-message--bot">
+      <div class="ai-agent-message ai-agent-message--bot" data-time="<%= Time.current.strftime("%H:%M") %>">
         Olá! Sou o agente IA. Me diga o que você precisa fazer e eu te ajudo a encontrar o caminho.
       </div>
     </div>
@@ -38,31 +38,31 @@
 <style>
 .ai-agent-modal,
 .ai-agent-fab {
-  --ai-agent-surface: var(--color-header, #ffffff);
-  --ai-agent-surface-2: var(--color-card, #f3f4f6);
-  --ai-agent-text: var(--color-text, #111827);
-  --ai-agent-muted: var(--color-muted, #667085);
-  --ai-agent-border: rgba(15,23,42,.14);
-  --ai-agent-overlay: rgba(15,18,24,.35);
-  --ai-agent-bot-bg: rgba(15,23,42,.08);
-  --ai-agent-input-bg: rgba(15,23,42,.04);
-  --ai-agent-accent: var(--color-accent, #7014f1);
-  --ai-agent-accent-hover: var(--color-accent-hover, #5712b9);
+  --ai-agent-surface: #1f1f24;
+  --ai-agent-surface-2: #2a2a31;
+  --ai-agent-text: #f5f5f5;
+  --ai-agent-muted: #a1a1aa;
+  --ai-agent-border: rgba(255,255,255,.14);
+  --ai-agent-overlay: rgba(10,12,18,.76);
+  --ai-agent-bot-bg: #2a2a31;
+  --ai-agent-input-bg: #24242a;
+  --ai-agent-accent: #7c3aed;
+  --ai-agent-accent-hover: #6d28d9;
   --ai-agent-accent-text: #ffffff;
 }
 
 :root[data-theme="dark"] .ai-agent-modal,
 :root[data-theme="dark"] .ai-agent-fab {
-  --ai-agent-surface: #262528;
-  --ai-agent-surface-2: #343236;
+  --ai-agent-surface: #1f1f24;
+  --ai-agent-surface-2: #2a2a31;
   --ai-agent-text: #f5f5f5;
-  --ai-agent-muted: rgba(255,255,255,.72);
-  --ai-agent-border: rgba(255,255,255,.12);
-  --ai-agent-overlay: rgba(15,18,24,.55);
-  --ai-agent-bot-bg: rgba(255,255,255,.08);
-  --ai-agent-input-bg: rgba(255,255,255,.06);
-  --ai-agent-accent: var(--color-accent, #7014f1);
-  --ai-agent-accent-hover: var(--color-accent-hover, #5712b9);
+  --ai-agent-muted: #a1a1aa;
+  --ai-agent-border: rgba(255,255,255,.14);
+  --ai-agent-overlay: rgba(10,12,18,.82);
+  --ai-agent-bot-bg: #2a2a31;
+  --ai-agent-input-bg: #24242a;
+  --ai-agent-accent: #7c3aed;
+  --ai-agent-accent-hover: #6d28d9;
   --ai-agent-accent-text: #ffffff;
 }
 
@@ -90,13 +90,14 @@
   will-change: transform;
   backface-visibility: hidden;
   z-index: 10;
+  isolation: isolate;
 }
 
 .ai-agent-fab::before {
   content: "";
   position: absolute;
   inset: -2px;
-  z-index: -1;
+  z-index: 2;
   border-radius: inherit;
   background: var(--ai-agent-rainbow);
   padding: 4px;
@@ -120,6 +121,162 @@
   pointer-events: none;
 }
 
+.ai-agent-fab__icon {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.ai-agent-fab__icon--conversation {
+  display: none;
+}
+
+.ai-agent-fab.is-quick-active .ai-agent-fab__icon--default {
+  display: grid;
+}
+
+.ai-agent-fab.is-quick-active {
+  background: #3c1771;
+  border-radius: 50%;
+  box-shadow:
+    0 0 0 5px rgba(124,58,237,.16),
+    0 0 24px rgba(124,58,237,.72),
+    0 12px 30px rgba(0,0,0,.34);
+}
+
+.ai-agent-fab__waves {
+  position: absolute;
+  right: calc(100% - 24px);
+  top: 50%;
+  width: 205px;
+  height: 56px;
+  padding: 0 34px 0 22px;
+  z-index: -2;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  border: 1px solid rgba(139,92,246,.78);
+  border-radius: 999px 0 0 999px;
+  background: rgba(27,24,36,.96);
+  box-shadow:
+    inset 0 0 18px rgba(124,58,237,.12),
+    0 0 20px rgba(124,58,237,.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translate(34px, -50%) scaleX(.06);
+  transform-origin: right center;
+  transition:
+    transform .32s cubic-bezier(.22,.8,.2,1),
+    opacity .2s ease,
+    visibility 0s linear .32s;
+  pointer-events: none;
+}
+
+.ai-agent-fab::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  z-index: 1;
+  border-radius: 50%;
+  background: #3c1771;
+  box-shadow: inset 0 0 18px rgba(124,58,237,.22);
+  pointer-events: none;
+}
+
+.ai-agent-fab__waves::before {
+  content: "Ouvindo...";
+  margin-right: auto;
+  color: #c084fc;
+  font-size: .88rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ai-agent-fab__waves i {
+  display: block;
+  width: 3px;
+  height: calc(8px + (var(--wave-level, .12) * 30px));
+  border-radius: 999px;
+  background: linear-gradient(180deg, #d8b4fe, #7c3aed);
+  box-shadow: 0 0 12px rgba(139,92,246,.75);
+  transition: height 70ms linear, opacity 70ms linear;
+  opacity: calc(.48 + (var(--wave-level, .12) * .52));
+}
+
+.ai-agent-fab.is-listening .ai-agent-fab__waves,
+.ai-agent-fab.is-thinking .ai-agent-fab__waves,
+.ai-agent-fab.is-speaking .ai-agent-fab__waves {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(0, -50%) scaleX(1);
+  transition:
+    transform .34s cubic-bezier(.16,1,.3,1),
+    opacity .18s ease,
+    visibility 0s;
+}
+
+.ai-agent-fab.is-thinking .ai-agent-fab__waves::before {
+  content: "Pensando...";
+}
+
+.ai-agent-fab.is-speaking .ai-agent-fab__waves::before {
+  content: "Falando...";
+}
+
+.ai-agent-fab.is-listening .ai-agent-fab__waves i {
+  animation: none;
+}
+
+.ai-agent-fab.is-thinking .ai-agent-fab__waves i {
+  animation: aiAgentVoicePulse 1s ease-in-out infinite;
+}
+
+.ai-agent-fab.is-speaking .ai-agent-fab__waves i {
+  animation: aiAgentQuickWave .42s ease-in-out infinite alternate;
+}
+
+.ai-agent-fab__waves i:nth-child(2) { animation-delay: -.18s !important; }
+.ai-agent-fab__waves i:nth-child(3) { animation-delay: -.34s !important; }
+.ai-agent-fab__waves i:nth-child(4) { animation-delay: -.1s !important; }
+.ai-agent-fab__waves i:nth-child(5) { animation-delay: -.26s !important; }
+.ai-agent-fab__waves i:nth-child(6) { animation-delay: -.4s !important; }
+.ai-agent-fab__waves i:nth-child(7) { animation-delay: -.14s !important; }
+.ai-agent-fab__waves i:nth-child(8) { animation-delay: -.32s !important; }
+.ai-agent-fab__waves i:nth-child(9) { animation-delay: -.2s !important; }
+
+.ai-agent-fab__quick-bubble {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 18px);
+  width: min(330px, calc(100vw - 36px));
+  max-height: 190px;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border: 1px solid rgba(255,255,255,.16);
+  border-radius: 16px 16px 5px 16px;
+  background: #24242a;
+  color: #f5f5f5;
+  box-shadow: 0 18px 42px rgba(0,0,0,.38);
+  font-size: .9rem;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  z-index: 5;
+}
+
+.ai-agent-fab__quick-bubble[hidden] {
+  display: none;
+}
+
+.ai-agent-fab.is-thinking .ai-agent-fab__icon--default {
+  animation: aiAgentVoicePulse 1s ease-in-out infinite;
+}
+
 .ai-agent-fab__tip {
   position: absolute;
   right: 0;
@@ -139,6 +296,7 @@
   transform: translateY(8px) scale(.98);
   pointer-events: none;
   transition: opacity .18s ease, transform .18s ease;
+  z-index: 5;
 }
 
 .ai-agent-fab__tip::after {
@@ -182,12 +340,13 @@
 }
 
 .ai-agent-modal__dialog {
-  width: min(680px, 96%);
-  max-height: min(88svh, 820px);
-  margin: clamp(32px, 8vh, 90px) auto;
+  width: min(860px, 96%);
+  height: min(88svh, 820px);
+  min-height: 620px;
+  margin: clamp(18px, 5vh, 54px) auto;
   background: var(--ai-agent-surface);
   border: 1px solid var(--ai-agent-border);
-  border-radius: 16px;
+  border-radius: 18px;
   color: var(--ai-agent-text);
   box-shadow: 0 24px 60px rgba(0,0,0,.35);
   display: flex;
@@ -203,15 +362,15 @@
 
 .ai-agent-modal__close {
   position: absolute;
-  top: 10px;
-  right: 12px;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  top: 18px;
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   border: 1px solid var(--ai-agent-border);
   background: var(--ai-agent-bot-bg);
   color: var(--ai-agent-text);
-  font-size: 22px;
+  font-size: 28px;
   line-height: 1;
   cursor: pointer;
 }
@@ -219,15 +378,15 @@
 .ai-agent-modal__header {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 12px;
-  padding: 18px 56px 14px 18px;
+  gap: 16px;
+  padding: 22px 76px 20px 22px;
   border-bottom: 1px solid var(--ai-agent-border);
 }
 
 .ai-agent-modal__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
   display: grid;
   place-items: center;
   background: var(--ai-agent-accent);
@@ -236,8 +395,8 @@
 }
 
 .ai-agent-modal__icon img {
-  width: 25px;
-  height: 25px;
+  width: 29px;
+  height: 29px;
   display: block;
   object-fit: contain;
   filter: brightness(0) invert(1);
@@ -245,50 +404,93 @@
 
 .ai-agent-modal__header h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.35rem;
+  line-height: 1.2;
 }
 
 .ai-agent-modal__header p {
-  margin: 4px 0 0;
+  margin: 5px 0 0;
   color: var(--ai-agent-muted);
-  font-size: .9rem;
+  font-size: .96rem;
 }
 
 .ai-agent-modal__hint {
-  font-size: .78rem !important;
+  font-size: .86rem !important;
 }
 
 .ai-agent-chat {
-  padding: 16px 18px;
+  padding: 36px 30px 28px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 28px;
   overflow-y: auto;
-  min-height: 340px;
+  min-height: 0;
+  flex: 1 1 auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(124,58,237,.72) transparent;
 }
 
 .ai-agent-message {
-  max-width: 88%;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: .94rem;
-  line-height: 1.45;
+  position: relative;
+  max-width: min(72%, 570px);
+  padding: 18px 20px;
+  border-radius: 18px;
+  font-size: 1rem;
+  line-height: 1.52;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
+.ai-agent-message::after {
+  content: attr(data-time);
+  position: absolute;
+  top: calc(100% + 8px);
+  color: var(--ai-agent-muted);
+  font-size: .76rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
 .ai-agent-message--bot {
   align-self: flex-start;
   background: var(--ai-agent-bot-bg);
+  border: 1px solid var(--ai-agent-border);
   color: var(--ai-agent-text);
+  margin-left: 58px;
+}
+
+.ai-agent-message--bot::before {
+  content: "✦";
+  position: absolute;
+  right: calc(100% + 16px);
+  top: 0;
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--ai-agent-accent);
+  color: #fff;
+  font-size: 1.35rem;
+  box-shadow: 0 10px 24px rgba(124,58,237,.28);
+}
+
+.ai-agent-message--bot::after {
+  left: 0;
 }
 
 .ai-agent-message--user {
   align-self: flex-end;
-  background: var(--ai-agent-accent);
+  background: linear-gradient(135deg, #5b21b6, var(--ai-agent-accent));
   color: var(--ai-agent-accent-text);
-  font-weight: 600;
+  font-weight: 500;
+  border-bottom-right-radius: 6px;
+}
+
+.ai-agent-message--user::after {
+  right: 0;
 }
 
 .ai-agent-message--with-cards {
@@ -450,10 +652,23 @@
 .ai-agent-form {
   display: grid;
   grid-template-columns: 1fr auto auto auto;
-  align-items: end;
-  gap: 8px;
-  padding: 12px 18px 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px 44px;
   border-top: 1px solid var(--ai-agent-border);
+  position: relative;
+  background: color-mix(in srgb, var(--ai-agent-surface) 94%, #000 6%);
+}
+
+.ai-agent-form::after {
+  content: "Dica: use @ para mencionar salas, horários ou pessoas.";
+  position: absolute;
+  left: 22px;
+  right: 22px;
+  bottom: 13px;
+  color: var(--ai-agent-muted);
+  font-size: .76rem;
+  text-align: center;
 }
 
 .ai-agent-input-wrap {
@@ -463,13 +678,13 @@
 
 .ai-agent-form textarea {
   width: 100%;
-  min-height: 42px;
+  min-height: 52px;
   max-height: 120px;
-  border-radius: 10px;
-  border: 1px solid var(--ai-agent-border);
+  border-radius: 12px;
+  border: 1px solid rgba(124,58,237,.82);
   background: var(--ai-agent-input-bg);
   color: var(--ai-agent-text);
-  padding: 10px 12px;
+  padding: 14px 16px;
   resize: none;
   line-height: 1.35;
   overflow-y: auto;
@@ -478,6 +693,14 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   word-break: break-word;
+  box-shadow: 0 0 0 2px rgba(124,58,237,.12);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.ai-agent-form textarea:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(124,58,237,.22);
 }
 
 .ai-agent-mentions {
@@ -551,13 +774,23 @@
 }
 
 .ai-agent-form button {
-  width: 42px;
-  height: 42px;
+  width: 52px;
+  height: 52px;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--ai-agent-accent);
   color: var(--ai-agent-accent-text);
   cursor: pointer;
+  font-size: 1rem;
+  transition: transform .16s ease, background-color .16s ease, border-color .16s ease;
+}
+
+.ai-agent-form button:hover {
+  transform: translateY(-1px);
+}
+
+.ai-agent-form button[type="submit"]:hover {
+  background: var(--ai-agent-accent-hover);
 }
 
 .ai-agent-form__voice {
@@ -600,6 +833,96 @@
     bottom: auto;
     right: auto;
   }
+
+  .ai-agent-fab__waves {
+    right: calc(100% - 14px);
+    width: 168px;
+    height: 48px;
+    padding: 0 26px 0 16px;
+  }
+
+  .ai-agent-fab__waves::before {
+    font-size: .76rem;
+  }
+
+  .ai-agent-fab__waves i {
+    width: 3px;
+  }
+
+  .ai-agent-modal {
+    padding: 8px;
+  }
+
+  .ai-agent-modal__dialog {
+    width: 100%;
+    height: calc(100svh - 16px);
+    min-height: 0;
+    margin: 0 auto;
+    border-radius: 14px;
+  }
+
+  .ai-agent-modal__header {
+    padding: 16px 58px 15px 16px;
+    gap: 12px;
+  }
+
+  .ai-agent-modal__icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .ai-agent-modal__header h3 {
+    font-size: 1.12rem;
+  }
+
+  .ai-agent-modal__header p {
+    font-size: .82rem;
+  }
+
+  .ai-agent-chat {
+    padding: 26px 14px 24px;
+    gap: 26px;
+  }
+
+  .ai-agent-message {
+    max-width: 82%;
+    padding: 14px 15px;
+    font-size: .91rem;
+  }
+
+  .ai-agent-message--bot {
+    margin-left: 46px;
+  }
+
+  .ai-agent-message--bot::before {
+    right: calc(100% + 10px);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+  }
+
+  .ai-agent-form {
+    grid-template-columns: minmax(0, 1fr) repeat(3, 44px);
+    gap: 7px;
+    padding: 12px 12px 40px;
+  }
+
+  .ai-agent-form button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .ai-agent-form textarea {
+    min-height: 44px;
+    padding: 11px 12px;
+  }
+
+  .ai-agent-form::after {
+    left: 12px;
+    right: 12px;
+    bottom: 10px;
+    font-size: .68rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -620,6 +943,11 @@
   from { box-shadow: 0 0 0 2px rgba(255,255,255,.18), 0 0 10px rgba(220,53,69,.35); }
   to { box-shadow: 0 0 0 4px rgba(255,255,255,.24), 0 0 18px rgba(220,53,69,.7); }
 }
+
+@keyframes aiAgentQuickWave {
+  from { height: 10px; transform: translateY(3px); opacity: .58; }
+  to { height: 38px; transform: translateY(-3px); opacity: 1; }
+}
 </style>
 
 <script>
@@ -635,6 +963,7 @@
     const mentions = document.getElementById("ai-agent-mentions");
     const messages = document.getElementById("ai-agent-messages");
     const fabTip = fab?.querySelector(".ai-agent-fab__tip");
+    const quickBubble = fab?.querySelector(".ai-agent-fab__quick-bubble");
 
     if (!fab || !modal || !form || !input || !messages || fab.dataset.bound === "1") return;
     fab.dataset.bound = "1";
@@ -659,6 +988,7 @@
 
     function openModal() {
       markFabTipSeen();
+      pauseQuickWakeListener();
       modal.style.display = "block";
       modal.setAttribute("aria-hidden", "false");
       setTimeout(() => input.focus(), 0);
@@ -669,6 +999,7 @@
       modal.setAttribute("aria-hidden", "true");
       setConversationMode(false);
       resetVoiceState();
+      resumeQuickWakeListener();
     }
 
     function showFabTipIfNeeded() {
@@ -693,9 +1024,18 @@
       } catch (_error) {}
     }
 
+    function currentMessageTime() {
+      return new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false
+      }).format(new Date());
+    }
+
     function addMessage(text, type) {
       const message = document.createElement("div");
       message.className = `ai-agent-message ai-agent-message--${type}`;
+      message.dataset.time = currentMessageTime();
       message.textContent = text;
       messages.appendChild(message);
       messages.scrollTop = messages.scrollHeight;
@@ -1217,6 +1557,11 @@
     let openAiAudio = null;
     let agentSpeaking = false;
     let waitingForAgentResponse = false;
+    let stopQuickMode = function () {};
+    let startQuickWakeListener = function () {};
+    let pauseQuickWakeListener = function () {};
+    let resumeQuickWakeListener = function () {};
+    let authorizeQuickWake = function () { return Promise.resolve(false); };
 
     function setConversationMode(active) {
       conversationMode = active;
@@ -1330,6 +1675,7 @@
 
       const pending = document.createElement("div");
       pending.className = "ai-agent-message ai-agent-message--bot";
+      pending.dataset.time = currentMessageTime();
       pending.textContent = "Pensando...";
       messages.appendChild(pending);
       messages.scrollTop = messages.scrollHeight;
@@ -1364,6 +1710,453 @@
         .finally(() => {
           messages.scrollTop = messages.scrollHeight;
         });
+    }
+
+    function setupQuickConversation() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition || !quickBubble) return;
+
+      const recognition = new SpeechRecognition();
+      recognition.lang = "pt-BR";
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      let active = false;
+      let listening = false;
+      let awaitingCommand = false;
+      let quickConversationStarted = false;
+      let paused = false;
+      let microphoneAuthorized = false;
+      let restartTimer = null;
+      let quickSilenceTimer = null;
+      let quickBubbleTimer = null;
+      let waveStream = null;
+      let waveAudioContext = null;
+      let waveAnimationFrame = null;
+      let waveSession = 0;
+      const waveBars = Array.from(fab.querySelectorAll(".ai-agent-fab__waves i"));
+
+      function normalizeQuickSpeech(value) {
+        return (value || "")
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .toLowerCase()
+          .replace(/[^\w\s]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+
+      function wakePhraseMatch(value) {
+        return value.match(/\b(?:ei|hey|e\s+ai|eai)\s+(?:agente|a\s+gente)\b/);
+      }
+
+      function showQuickBubble(text) {
+        quickBubble.textContent = text;
+        quickBubble.hidden = false;
+      }
+
+      function hideQuickBubble() {
+        clearTimeout(quickBubbleTimer);
+        quickBubble.hidden = true;
+        quickBubble.textContent = "";
+      }
+
+      function resetWaveBars() {
+        waveBars.forEach(function (bar) {
+          bar.style.setProperty("--wave-level", ".12");
+        });
+      }
+
+      function stopLiveWave() {
+        waveSession += 1;
+        if (waveAnimationFrame) cancelAnimationFrame(waveAnimationFrame);
+        waveAnimationFrame = null;
+        waveStream?.getTracks().forEach((track) => track.stop());
+        waveStream = null;
+        if (waveAudioContext && waveAudioContext.state !== "closed") waveAudioContext.close();
+        waveAudioContext = null;
+        resetWaveBars();
+      }
+
+      function startLiveWave() {
+        if (!quickConversationStarted || waveStream || !navigator.mediaDevices?.getUserMedia) return;
+
+        const session = ++waveSession;
+        navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        }).then(function (stream) {
+          if (session !== waveSession || !quickConversationStarted) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+          }
+
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+          }
+
+          waveStream = stream;
+          waveAudioContext = new AudioContextClass();
+          const source = waveAudioContext.createMediaStreamSource(stream);
+          const analyser = waveAudioContext.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = .68;
+          source.connect(analyser);
+
+          const frequencies = new Uint8Array(analyser.frequencyBinCount);
+          const renderWave = function () {
+            if (session !== waveSession || !waveStream || !quickConversationStarted) return;
+
+            analyser.getByteFrequencyData(frequencies);
+            const usableBins = Math.max(1, Math.floor(frequencies.length * .48));
+            const center = (waveBars.length - 1) / 2;
+
+            waveBars.forEach(function (bar, index) {
+              const mirroredIndex = Math.round(Math.abs(index - center));
+              const binStart = Math.floor((mirroredIndex / Math.max(center, 1)) * usableBins * .55);
+              const binEnd = Math.min(usableBins, binStart + 8);
+              let total = 0;
+              for (let bin = binStart; bin < binEnd; bin += 1) total += frequencies[bin] || 0;
+              const average = total / Math.max(1, binEnd - binStart);
+              const level = Math.max(.08, Math.min(1, average / 150));
+              bar.style.setProperty("--wave-level", level.toFixed(3));
+            });
+
+            waveAnimationFrame = requestAnimationFrame(renderWave);
+          };
+
+          renderWave();
+        }).catch(function () {
+          resetWaveBars();
+        });
+      }
+
+      function clearQuickSilenceTimer() {
+        clearTimeout(quickSilenceTimer);
+        quickSilenceTimer = null;
+      }
+
+      function endQuickConversation(message = "Conversa rápida encerrada.") {
+        clearQuickSilenceTimer();
+        awaitingCommand = false;
+        quickConversationStarted = false;
+        setQuickState("idle");
+        showQuickBubble(message);
+        clearTimeout(quickBubbleTimer);
+        quickBubbleTimer = setTimeout(hideQuickBubble, 1600);
+        scheduleRestart(250);
+      }
+
+      function scheduleQuickSilenceTimeout() {
+        clearQuickSilenceTimer();
+        quickSilenceTimer = setTimeout(function () {
+          if (!quickConversationStarted || waitingForAgentResponse || agentSpeaking) return;
+
+          endQuickConversation();
+        }, 12_000);
+      }
+
+      function setQuickState(state) {
+        fab.classList.toggle("is-quick-active", quickConversationStarted);
+        fab.classList.toggle("is-listening", quickConversationStarted && state === "listening");
+        fab.classList.toggle("is-thinking", quickConversationStarted && state === "thinking");
+        fab.classList.toggle("is-speaking", quickConversationStarted && state === "speaking");
+
+        if (quickConversationStarted && state === "listening") {
+          startLiveWave();
+        } else {
+          stopLiveWave();
+        }
+      }
+
+      function scheduleRestart(delay = 300) {
+        clearTimeout(restartTimer);
+        if (!active || paused || agentSpeaking || waitingForAgentResponse) return;
+
+        restartTimer = setTimeout(function () {
+          if (!active || paused || listening || agentSpeaking || waitingForAgentResponse) return;
+          try {
+            recognition.start();
+          } catch (_error) {}
+        }, delay);
+      }
+
+      function finishQuickSpeech(endConversation = false) {
+        agentSpeaking = false;
+        if (endConversation) {
+          clearQuickSilenceTimer();
+          awaitingCommand = false;
+          quickConversationStarted = false;
+          setQuickState("idle");
+          clearTimeout(quickBubbleTimer);
+          quickBubbleTimer = setTimeout(hideQuickBubble, 1800);
+          scheduleRestart(350);
+          return;
+        }
+
+        if (quickConversationStarted) {
+          awaitingCommand = true;
+          setQuickState("listening");
+          scheduleQuickSilenceTimeout();
+        } else {
+          setQuickState("idle");
+        }
+        scheduleRestart(350);
+      }
+
+      function speakQuickResponse(text, endConversation = false) {
+        if (!active || !text) return;
+
+        agentSpeaking = true;
+        setQuickState("speaking");
+
+        const browserSpeech = function () {
+          if (!window.speechSynthesis) {
+            finishQuickSpeech(endConversation);
+            return;
+          }
+
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = "pt-BR";
+          utterance.rate = 1;
+          utterance.onend = function () { finishQuickSpeech(endConversation); };
+          utterance.onerror = function () { finishQuickSpeech(endConversation); };
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(utterance);
+        };
+
+        fetch("/ai_agent/speech", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "audio/mpeg",
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+          },
+          body: JSON.stringify({ text: text })
+        })
+          .then(function (response) {
+            if (!response.ok) throw new Error("speech_failed");
+            return response.blob();
+          })
+          .then(function (blob) {
+            if (!active) return;
+
+            const url = URL.createObjectURL(blob);
+            openAiAudio = new Audio(url);
+            openAiAudio.onended = function () {
+              URL.revokeObjectURL(url);
+              openAiAudio = null;
+              finishQuickSpeech(endConversation);
+            };
+            openAiAudio.onerror = function () {
+              URL.revokeObjectURL(url);
+              openAiAudio = null;
+              browserSpeech();
+            };
+            openAiAudio.play().catch(function () {
+              URL.revokeObjectURL(url);
+              openAiAudio = null;
+              browserSpeech();
+            });
+          })
+          .catch(browserSpeech);
+      }
+
+      function sendQuickMessage(text) {
+        const message = text.trim();
+        if (!message) {
+          awaitingCommand = true;
+          showQuickBubble("Estou ouvindo. O que você precisa?");
+          scheduleQuickSilenceTimeout();
+          scheduleRestart();
+          return;
+        }
+
+        clearQuickSilenceTimer();
+        addMessage(message, "user");
+        awaitingCommand = false;
+        waitingForAgentResponse = true;
+        setQuickState("thinking");
+        showQuickBubble("Pensando...");
+
+        fetch("/ai_agent/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "X-CSRF-Token": document.querySelector('meta[name="csrf-token"]')?.content || ""
+          },
+          body: JSON.stringify({ message: message, quick_mode: true })
+        })
+          .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
+          .then(function ({ ok, data }) {
+            const botText = data.message || (ok ? "Pronto." : "Não consegui concluir a solicitação.");
+            waitingForAgentResponse = false;
+            addMessage(botText, "bot");
+            if (!active) return;
+
+            showQuickBubble(botText);
+            speakQuickResponse(botText, data.end_quick_conversation === true);
+          })
+          .catch(function () {
+            const errorText = "Não consegui falar com o agente agora. Tente novamente.";
+            waitingForAgentResponse = false;
+            if (!active) return;
+
+            showQuickBubble(errorText);
+            speakQuickResponse(errorText);
+          });
+      }
+
+      recognition.addEventListener("start", function () {
+        listening = true;
+        setQuickState(awaitingCommand ? "listening" : "idle");
+      });
+
+      recognition.addEventListener("result", function (event) {
+        if (modal.getAttribute("aria-hidden") === "false") return;
+
+        const spoken = Array.from(event.results)
+          .map((result) => result[0]?.transcript || "")
+          .join(" ")
+          .trim();
+        const normalized = normalizeQuickSpeech(spoken);
+
+        if (awaitingCommand) {
+          clearQuickSilenceTimer();
+          sendQuickMessage(spoken);
+          return;
+        }
+
+        const wakeMatch = wakePhraseMatch(normalized);
+        if (!wakeMatch) return;
+
+        quickConversationStarted = true;
+        modal.style.display = "none";
+        modal.setAttribute("aria-hidden", "true");
+        setConversationMode(false);
+
+        const command = spoken
+          .replace(/^.*?\b(?:ei|hey|e\s*a[ií]|eai)\s*,?\s*(?:agente|a\s+gente)\b/i, "")
+          .trim();
+        if (command) {
+          sendQuickMessage(command);
+        } else {
+          awaitingCommand = true;
+          setQuickState("listening");
+          showQuickBubble("Estou ouvindo. O que você precisa?");
+          scheduleQuickSilenceTimeout();
+        }
+      });
+
+      recognition.addEventListener("end", function () {
+        listening = false;
+        if (active && !paused && !agentSpeaking && !waitingForAgentResponse) {
+          setQuickState("idle");
+          scheduleRestart();
+        }
+      });
+
+      recognition.addEventListener("error", function (event) {
+        listening = false;
+        if (event.error === "aborted") return;
+
+        if (["not-allowed", "service-not-allowed"].includes(event.error)) {
+          active = false;
+          microphoneAuthorized = false;
+          setQuickState("idle");
+          showQuickBubble("Permita o acesso ao microfone para usar o modo rápido.");
+          return;
+        }
+
+        if (active && !paused) scheduleRestart(700);
+      });
+
+      stopQuickMode = function () {
+        active = false;
+        awaitingCommand = false;
+        quickConversationStarted = false;
+        clearQuickSilenceTimer();
+        clearTimeout(quickBubbleTimer);
+        clearTimeout(restartTimer);
+        stopLiveWave();
+        if (listening) recognition.abort();
+        stopAgentPlayback();
+        setQuickState("idle");
+        hideQuickBubble();
+        fab.title = "Falar com agente IA";
+        fab.setAttribute("aria-label", "Falar com agente IA");
+      };
+
+      startQuickWakeListener = function () {
+        if (active) return;
+        if (!microphoneAuthorized) return;
+        if (!window.isSecureContext && !["localhost", "127.0.0.1"].includes(window.location.hostname)) {
+          return;
+        }
+
+        active = true;
+        paused = modal.getAttribute("aria-hidden") === "false";
+        awaitingCommand = false;
+        quickConversationStarted = false;
+        setQuickState("idle");
+        hideQuickBubble();
+        if (!paused) scheduleRestart(50);
+      };
+
+      authorizeQuickWake = function () {
+        if (microphoneAuthorized) {
+          startQuickWakeListener();
+          return Promise.resolve(true);
+        }
+
+        if (!navigator.mediaDevices?.getUserMedia) return Promise.resolve(false);
+
+        return navigator.mediaDevices.getUserMedia({ audio: true })
+          .then(function (stream) {
+            stream.getTracks().forEach((track) => track.stop());
+            microphoneAuthorized = true;
+            startQuickWakeListener();
+            return true;
+          })
+          .catch(function () {
+            return false;
+          });
+      };
+
+      pauseQuickWakeListener = function () {
+        paused = true;
+        clearTimeout(restartTimer);
+        if (listening) recognition.abort();
+        fab.classList.remove("is-listening");
+      };
+
+      resumeQuickWakeListener = function () {
+        if (!active) {
+          startQuickWakeListener();
+          return;
+        }
+
+        paused = false;
+        scheduleRestart(100);
+      };
+
+      if (navigator.permissions?.query) {
+        navigator.permissions.query({ name: "microphone" })
+          .then(function (permission) {
+            if (permission.state !== "granted") return;
+
+            microphoneAuthorized = true;
+            startQuickWakeListener();
+          })
+          .catch(function () {});
+      }
     }
 
     function setupVoiceInput() {
@@ -1634,13 +2427,22 @@
       });
     }
 
-    fab.addEventListener("click", openModal);
+    fab.addEventListener("click", function (event) {
+      if (event.target.closest(".ai-agent-fab__quick-bubble")) {
+        openModal();
+        return;
+      }
+
+      authorizeQuickWake();
+      openModal();
+    });
     closeBtn?.addEventListener("click", closeModal);
     modal.addEventListener("click", function (event) {
       if (event.target === modal) closeModal();
     });
     showFabTipIfNeeded();
 
+    setupQuickConversation();
     setupVoiceInput();
 
     conversationBtn?.addEventListener("click", function () {

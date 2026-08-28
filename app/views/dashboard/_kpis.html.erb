@@ -1,4 +1,15 @@
 <div id="kpi-grid" class="kpi-grid">
+  <% if current_user.admin? %>
+    <%= kpi_card(
+          "fa-solid fa-users",
+          "Usuários online",
+          (@kpis[:usuarios_online] || 0),
+          (@kpis[:usuarios_online_label] || "Últimos 7 dias"),
+          sparkline: @kpis[:usuarios_online_series],
+          tone: "green"
+        ) %>
+  <% end %>
+
   <% if current_user.admin? || current_user.role == "operador" %>
     <%= kpi_card("fa-solid fa-helmet-safety", "Próximas Manutenções",
                  @kpis[:manutencoes_pendentes], "Próximas a partir de hoje",

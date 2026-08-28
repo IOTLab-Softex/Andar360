@@ -6,8 +6,12 @@ setlocal EnableDelayedExpansion
 :: CONFIGURACAO
 :: ==========================
 set RUBY_HOME=C:\Ruby33-x64\bin
-set PATH=%RUBY_HOME%;%PATH%
+set RUBY_ROOT=C:\Ruby33-x64
+set RI_FORCE_PATH_FOR_DLL=1
+set RUBYLIB=%CD%\ruby_overrides
+set PATH=%RUBY_HOME%;%RUBY_ROOT%\lib\ruby\3.3.0\x64-mingw-ucrt;%RUBY_ROOT%\msys64\ucrt64\bin;%RUBY_ROOT%\msys64\usr\bin;%PATH%
 set RAILS_ENV=production
+set RACK_ENV=production
 set PORT=3000
 set BIND=0.0.0.0
 set NGINX_DIR=C:\nginx-1.28.0
@@ -63,7 +67,7 @@ if "%choice%"=="3" (
 )
 
 if "%choice%"=="4" (
-    bundle exec rails s -b %BIND% -p %PORT% -e production
+    bundle exec rackup config.ru -s webrick -E production -o %BIND% -p %PORT%
     goto menu
 )
 
@@ -294,9 +298,9 @@ echo ==========================
 echo Iniciando Rails...
 
 if "%modo%"=="oculto" (
-    start /b "" cmd /c "bundle exec rails s -b %BIND% -p %PORT% -e production > log\rails.log 2>&1"
+    start /b "" cmd /c "bundle exec rackup config.ru -s webrick -E production -o %BIND% -p %PORT% > log\rails.log 2>&1"
 ) else (
-    start "Rails Server" cmd /k "bundle exec rails s -b %BIND% -p %PORT% -e production"
+    start "Rails Server" cmd /k "bundle exec rackup config.ru -s webrick -E production -o %BIND% -p %PORT%"
 )
 
 echo ==========================

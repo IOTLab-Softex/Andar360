@@ -106,11 +106,20 @@ kpis = {
 }
 
     if @user&.admin?
+  usuarios_online = User.online.count
+  usuarios_online_por_dia = UserPresence
+    .where(presence_on: inicio..fim)
+    .group(:presence_on)
+    .count
+  usuarios_online_series = (inicio..fim).map { |date| usuarios_online_por_dia[date] || 0 }
   feedbacks_pendentes = Feedback.where(resolved_at: nil).count
   feedbacks_total     = Feedback.count
   feedbacks_7d        = Feedback.where("created_at >= ?", 7.days.ago).count
 
   kpis.merge!(
+    usuarios_online:        usuarios_online,
+    usuarios_online_series: usuarios_online_series,
+    usuarios_online_label:  "#{inicio.strftime('%d/%m')}–#{fim.strftime('%d/%m')}",
     feedbacks_pendentes: feedbacks_pendentes,
     feedbacks_total:     feedbacks_total,
     feedbacks_7d:        feedbacks_7d

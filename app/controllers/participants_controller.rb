@@ -274,35 +274,40 @@ end
 
   def delete_all
     unless current_user.admin?
-      redirect_to participants_path, alert: "⚠️ Apenas administradores podem excluir todos os usuários."
+      redirect_to participants_path, alert: "Apenas administradores podem excluir todos os participantes e usuários."
       return
     end
 
-    participants = scoped_participants
-    total = 0
-    pulados = []
+    participants = Participant.all.to_a
+    users = User.where.not(id: current_user.id)
+    participants_total = participants.size
+    users_total = users.count
 
-    participants.each do |p|
-      if Reservation.where("solicitante_id = :id OR responsavel_id = :id", id: p.id).exists? ||
-         Reservation.joins(:participants).where(participants: { id: p.id }).exists?
-        pulados << p.name
-        next
-      end
-
-      begin
-        p.destroy
-        total += 1
-      rescue ActiveRecord::InvalidForeignKey
-        pulados << p.name
-      end
+    Participant.transaction do
+      current_user.update_column(:participant_id, nil) if current_user.participant_id.present?
+      clear_user_references!(users.select(:id))
+      users.find_each(&:destroy!)
+      participants.each { |participant| permanently_destroy_participant!(participant) }
     end
 
-    mensagem = "#{total} participante(s) excluídos com sucesso."
-    mensagem += " Pulados (#{pulados.count}): #{pulados.first(5).join(', ')}#{pulados.count > 5 ? '...' : ''}" if pulados.any?
+    mensagem = "#{participants_total} participante(s) e #{users_total} usuário(s) excluídos com sucesso. Sua conta de administrador foi mantida."
 
     respond_to do |format|
       format.html { redirect_to participants_path, notice: mensagem }
-      format.json { render json: { message: mensagem, total: total, pulados: pulados.count } }
+      format.json do
+        render json: {
+          message: mensagem,
+          participants_deleted: participants_total,
+          users_deleted: users_total
+        }
+      end
+    end
+  rescue StandardError => e
+    Rails.logger.error("[Participants#delete_all] #{e.class}: #{e.message}")
+
+    respond_to do |format|
+      format.html { redirect_to participants_path, alert: "Não foi possível concluir a exclusão." }
+      format.json { render json: { message: "Não foi possível concluir a exclusão." }, status: :unprocessable_entity }
     end
   end
 
@@ -499,6 +504,13 @@ end
       participant.solicitacao_participantes.destroy_all
 
       AccessLog.where(participant_id: participant.id).delete_all
+      ParticipantsReservation.where(participant_id: participant.id).delete_all
+      if ActiveRecord::Base.connection.table_exists?(:meetings_participants)
+        sql = ActiveRecord::Base.sanitize_sql_array(
+          ["DELETE FROM meetings_participants WHERE participant_id = ?", participant.id]
+        )
+        ActiveRecord::Base.connection.delete(sql)
+      end
       Chamado.where(solicitante_id: participant.id).update_all(solicitante_id: nil)
       Encomenda.where(destinatario_id: participant.id).update_all(destinatario_id: nil)
       Encomenda.where(recebido_por_id: participant.id).update_all(recebido_por_id: nil)
@@ -509,5 +521,13 @@ end
 
       participant.destroy!
     end
+  end
+
+  def clear_user_references!(users)
+    Feedback.where(user_id: users).update_all(user_id: nil)
+    Feedback.where(resolved_by_id: users).update_all(resolved_by_id: nil)
+    FormularioCadastro.where(aprovado_por_id: users).update_all(aprovado_por_id: nil)
+    FormularioCadastro.where(reprovado_por_id: users).update_all(reprovado_por_id: nil)
+    Announcement.where(created_by_id: users).update_all(created_by_id: nil)
   end
 end

@@ -1,0 +1,947 @@
+<!doctype html>
+<html lang="<%= params[:locale].presence || I18n.locale %>">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Aponti TV</title>
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <style>
+      :root {
+        --bg: #070b16;
+        --bg-2: #091022;
+        --sidebar: #060b17;
+        --panel: #121a30;
+        --panel-2: #172036;
+        --panel-3: #1a233a;
+        --stroke: rgba(172, 188, 230, .14);
+        --stroke-strong: rgba(150, 93, 255, .34);
+        --text: #f8faff;
+        --muted: #a7b0c8;
+        --soft: #cfd7ef;
+        --purple: #8b2ff2;
+        --purple-2: #6f22d8;
+        --purple-dark: #24104f;
+        --red: #c82232;
+        --green: #16c784;
+        --blue: #1f62c7;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      body { overflow-x: hidden; }
+
+      button, input { font: inherit; }
+
+      .broadcast-shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 224px minmax(0, 1fr);
+        background:
+          radial-gradient(circle at 40% -14%, rgba(58, 88, 158, .18), transparent 40rem),
+          radial-gradient(circle at 18% 18%, rgba(112, 47, 210, .10), transparent 34rem),
+          linear-gradient(180deg, var(--bg) 0%, #080d1c 100%);
+      }
+
+      .broadcast-sidebar {
+        position: sticky;
+        top: 0;
+        min-height: 100vh;
+        padding: 26px 16px 20px;
+        border-right: 1px solid var(--stroke);
+        background:
+          radial-gradient(circle at 0 0, rgba(91, 32, 181, .16), transparent 14rem),
+          linear-gradient(180deg, rgba(6, 11, 23, .98), rgba(5, 9, 20, .98));
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0 10px;
+        font-size: 1.26rem;
+        font-weight: 800;
+      }
+
+      .brand-mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 36% 32%, #bc74ff, #7a24e7 58%, #251052);
+        box-shadow: 0 0 22px rgba(139, 47, 242, .62);
+        color: white;
+        font-weight: 900;
+      }
+
+      .side-nav,
+      .side-management {
+        display: grid;
+        gap: 6px;
+      }
+
+      .side-title {
+        margin: 10px 10px 8px;
+        color: #77819a;
+        font-size: .74rem;
+        font-weight: 800;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+
+      .side-link {
+        height: 44px;
+        padding: 0 12px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 13px;
+        color: #c4cae0;
+        text-decoration: none;
+        font-size: .9rem;
+        font-weight: 750;
+      }
+
+      .side-link.active {
+        color: white;
+        background: linear-gradient(90deg, rgba(139, 47, 242, .86), rgba(68, 31, 120, .82));
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .06), 0 10px 28px rgba(105, 34, 216, .18);
+      }
+
+      .side-icon {
+        width: 20px;
+        height: 20px;
+        display: grid;
+        place-items: center;
+        color: #b8c1dc;
+        font-size: 1rem;
+        line-height: 1;
+      }
+
+      .premium-box {
+        margin-top: auto;
+        padding: 20px 18px;
+        border-radius: 8px;
+        background:
+          radial-gradient(circle at 50% 0, rgba(143, 70, 255, .32), transparent 7rem),
+          linear-gradient(180deg, rgba(35, 22, 70, .95), rgba(21, 22, 45, .96));
+        border: 1px solid rgba(154, 93, 255, .2);
+        text-align: center;
+      }
+
+      .premium-crown {
+        width: 28px;
+        height: 24px;
+        margin: 0 auto 12px;
+        color: #fbbf24;
+        font-size: 1.35rem;
+      }
+
+      .premium-box strong {
+        display: block;
+        font-size: 1rem;
+        margin-bottom: 10px;
+      }
+
+      .premium-box p {
+        margin: 0 0 18px;
+        color: #aab3cc;
+        line-height: 1.45;
+        font-size: .84rem;
+      }
+
+      .premium-box button,
+      .primary-action,
+      .upload-button {
+        border: 0;
+        color: white;
+        background: linear-gradient(135deg, #9d3cf6, #7b27df);
+        box-shadow: 0 12px 26px rgba(124, 39, 223, .38);
+      }
+
+      .premium-box button {
+        width: 100%;
+        height: 40px;
+        border-radius: 8px;
+        font-weight: 800;
+        cursor: pointer;
+      }
+
+      .user-box {
+        margin: 0 -16px -20px;
+        padding: 18px 16px;
+        border-top: 1px solid var(--stroke);
+        display: grid;
+        grid-template-columns: 44px 1fr auto;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .avatar {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #273049;
+        color: white;
+        font-weight: 800;
+      }
+
+      .user-email { font-weight: 800; font-size: .88rem; }
+      .user-role { color: #7f89a5; font-size: .78rem; margin-top: 3px; }
+
+      .broadcast-main {
+        padding: 26px 30px 20px;
+        min-width: 0;
+        background:
+          radial-gradient(circle at 55% 0, rgba(42, 63, 115, .18), transparent 28rem),
+          linear-gradient(180deg, rgba(9, 15, 32, .72), rgba(8, 13, 28, .1));
+      }
+
+      .topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 24px;
+        margin-bottom: 22px;
+      }
+
+      .page-title h1 {
+        margin: 0 0 6px;
+        font-size: clamp(1.45rem, 1.55vw, 1.75rem);
+        letter-spacing: 0;
+      }
+
+      .page-title p {
+        margin: 0;
+        color: var(--muted);
+        font-size: .98rem;
+      }
+
+      .top-actions {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+
+      .top-pill,
+      .notification-button,
+      .exit-button {
+        height: 40px;
+        border-radius: 8px;
+        border: 1px solid var(--stroke);
+        background: rgba(8, 13, 28, .94);
+        color: #e8ecfb;
+        padding: 0 16px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+      }
+
+      .notification-button {
+        width: 48px;
+        padding: 0;
+        position: relative;
+      }
+
+      .notification-badge {
+        position: absolute;
+        right: -6px;
+        top: -8px;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: var(--purple);
+        display: grid;
+        place-items: center;
+        font-size: .72rem;
+      }
+
+      .exit-button {
+        background: linear-gradient(180deg, #d62c3a, #b51e2a);
+        border-color: rgba(255, 102, 117, .24);
+      }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: 222px 180px 132px 150px 158px;
+        gap: 10px;
+        margin-bottom: 24px;
+      }
+
+      .toolbar button {
+        height: 44px;
+        border-radius: 8px;
+        border: 1px solid var(--stroke);
+        background: rgba(8, 13, 28, .86);
+        color: #e7ebf8;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .02);
+      }
+
+      .toolbar button:nth-child(2) {
+        background: linear-gradient(90deg, rgba(44, 20, 93, .98), rgba(49, 20, 96, .92));
+        border-color: rgba(139, 47, 242, .55);
+      }
+
+      .toolbar .primary-action {
+        border: 0;
+        background: linear-gradient(90deg, #9c3df5, #7f29e6);
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 328px;
+        gap: 16px;
+      }
+
+      .tv-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(230px, 1fr));
+        gap: 16px;
+      }
+
+      .tv-card,
+      .side-card {
+        border: 1px solid var(--stroke);
+        background:
+          radial-gradient(circle at 0 0, rgba(68, 92, 155, .14), transparent 13rem),
+          linear-gradient(180deg, rgba(19, 27, 48, .98), rgba(18, 24, 43, .98));
+        border-radius: 8px;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, .18);
+      }
+
+      .tv-card {
+        padding: 16px;
+        min-width: 0;
+      }
+
+      .card-head {
+        min-height: 50px;
+        display: grid;
+        grid-template-columns: 1fr auto 22px;
+        gap: 10px;
+        align-items: start;
+      }
+
+      .tv-card h2 {
+        margin: 0 0 8px;
+        font-size: .98rem;
+      }
+
+      .tv-card .media {
+        color: #aeb7d1;
+        font-size: .8rem;
+        overflow-wrap: anywhere;
+      }
+
+      .status {
+        display: grid;
+        gap: 8px;
+        justify-items: center;
+      }
+
+      .status-pill,
+      .activity-pill {
+        border-radius: 999px;
+        padding: 7px 10px;
+        font-size: .72rem;
+        font-weight: 900;
+      }
+
+      .status-pill.online {
+        color: #57e8a7;
+        background: rgba(16, 185, 129, .12);
+      }
+
+      .status-pill.offline {
+        color: #ff6472;
+        background: rgba(217, 45, 56, .12);
+      }
+
+      .activity-pill {
+        color: #c9d1e9;
+        background: rgba(255, 255, 255, .04);
+      }
+
+      .activity-pill.active {
+        color: #60f2b3;
+        background: rgba(16, 185, 129, .12);
+      }
+
+      .dots { color: #bbc4dc; font-weight: 900; letter-spacing: 2px; }
+
+      .preview {
+        height: 180px;
+        margin: 16px 0;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, .04);
+        display: grid;
+        place-items: center;
+        overflow: hidden;
+        background: #070b17;
+      }
+
+      .preview.unavailable {
+        background:
+          radial-gradient(circle at 70% 18%, rgba(95, 42, 170, .46), transparent 9rem),
+          radial-gradient(circle at 18% 28%, rgba(117, 39, 219, .38), transparent 8rem),
+          linear-gradient(135deg, #171b3c, #231b53 55%, #20234c);
+        color: #eef1ff;
+        text-align: center;
+      }
+
+      .preview-icon {
+        width: 50px;
+        height: 50px;
+        margin: 0 auto 10px;
+        border: 2px solid rgba(205, 213, 255, .45);
+        border-radius: 12px;
+        display: grid;
+        place-items: center;
+        font-size: 1.35rem;
+      }
+
+      .phone-frame {
+        width: 104px;
+        height: 188px;
+        border-radius: 17px;
+        border: 3px solid #303957;
+        background: #020611;
+        display: grid;
+        align-items: center;
+        overflow: hidden;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, .07), 0 18px 38px rgba(0, 0, 0, .4);
+      }
+
+      .phone-frame.blank { background: #020713; }
+
+      .phone-screen {
+        height: 58px;
+        background:
+          radial-gradient(circle at 0 20%, #f6b17b 0 3px, transparent 4px),
+          radial-gradient(circle at 100% 70%, #f6b17b 0 3px, transparent 4px),
+          linear-gradient(90deg, #751bff, #ad16ff);
+      }
+
+      .metric-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 4px;
+        margin-bottom: 10px;
+      }
+
+      .metric {
+        min-height: 52px;
+        padding: 10px;
+        background: rgba(255, 255, 255, .026);
+        border-radius: 6px;
+      }
+
+      .metric-label {
+        color: #8d98b5;
+        text-transform: uppercase;
+        font-size: .68rem;
+        font-weight: 900;
+        margin-bottom: 6px;
+      }
+
+      .metric-value {
+        color: white;
+        font-size: .82rem;
+        font-weight: 800;
+        line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .web-line {
+        padding: 13px;
+        min-height: 56px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, .026);
+        margin-bottom: 12px;
+      }
+
+      .flow-box {
+        padding: 12px;
+        border: 1px solid rgba(139, 47, 242, .34);
+        background: rgba(37, 18, 70, .28);
+        border-radius: 8px;
+        margin-bottom: 14px;
+      }
+
+      .flow-title {
+        font-size: .9rem;
+        font-weight: 900;
+        margin-bottom: 8px;
+      }
+
+      .flow-url {
+        color: #c4cbea;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: .71rem;
+        overflow-wrap: anywhere;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .card-actions button {
+        height: 34px;
+        border: 0;
+        border-radius: 7px;
+        padding: 0 12px;
+        color: white;
+        font-size: .76rem;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .btn-play { background: var(--purple); }
+      .btn-stop { background: var(--red); }
+      .btn-power { background: #0f8b5f; }
+      .btn-edit { background: var(--blue); }
+      .btn-delete { background: #2b324c; }
+
+      .right-column {
+        display: grid;
+        gap: 18px;
+        align-content: start;
+      }
+
+      .side-card {
+        padding: 18px;
+      }
+
+      .side-card-header {
+        display: grid;
+        grid-template-columns: 42px 1fr auto;
+        gap: 14px;
+        align-items: start;
+        margin-bottom: 16px;
+      }
+
+      .side-card-icon {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        color: #c7ccff;
+        border: 2px solid rgba(199, 204, 255, .5);
+        border-radius: 8px;
+      }
+
+      .side-card h2 {
+        margin: 0 0 4px;
+        font-size: 1.05rem;
+      }
+
+      .side-card p {
+        margin: 0;
+        color: #a4aec8;
+        line-height: 1.35;
+        font-size: .88rem;
+      }
+
+      .wallpaper {
+        aspect-ratio: 16 / 7.8;
+        border-radius: 8px;
+        margin-bottom: 14px;
+        background:
+          linear-gradient(180deg, rgba(255, 255, 255, .18), transparent 42%),
+          radial-gradient(circle at 64% 18%, #ff67d4, transparent 20%),
+          radial-gradient(circle at 50% 46%, #ff9b61, transparent 18%),
+          linear-gradient(160deg, #5722c7 0%, #bc34cd 42%, #65318f 43%, #1d255c 100%);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .wallpaper::before,
+      .wallpaper::after {
+        content: "";
+        position: absolute;
+        inset: auto -8% 0;
+        height: 54%;
+        background: linear-gradient(150deg, transparent 0 16%, rgba(24, 23, 73, .88) 17% 44%, transparent 45%),
+                    linear-gradient(25deg, transparent 0 24%, rgba(29, 41, 102, .95) 25% 58%, transparent 59%);
+      }
+
+      .wallpaper::after {
+        height: 36%;
+        background: linear-gradient(140deg, transparent 0 28%, rgba(13, 19, 54, .98) 29% 64%, transparent 65%);
+      }
+
+      .file-row {
+        display: grid;
+        grid-template-columns: auto minmax(0, 1fr);
+        gap: 8px;
+        align-items: center;
+        height: 42px;
+        border: 1px solid var(--stroke);
+        border-radius: 7px;
+        padding: 5px 8px;
+        margin-bottom: 14px;
+      }
+
+      .file-row button {
+        height: 30px;
+        border: 1px solid var(--stroke);
+        border-radius: 5px;
+        background: #0d1429;
+        color: white;
+        font-weight: 800;
+      }
+
+      .file-row span {
+        color: #c4cbe0;
+        font-size: .8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .upload-button {
+        width: 100%;
+        height: 40px;
+        border-radius: 8px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      .recommendation {
+        text-align: center;
+        color: #a7b0ca;
+        font-size: .78rem;
+        margin-top: 10px;
+      }
+
+      .details-button {
+        height: 38px;
+        border: 1px solid var(--stroke);
+        border-radius: 7px;
+        background: rgba(255, 255, 255, .03);
+        color: white;
+        padding: 0 12px;
+        font-weight: 900;
+        font-size: .78rem;
+      }
+
+      .system-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+
+      .system-stat {
+        min-height: 74px;
+        padding: 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .032);
+        display: grid;
+        grid-template-columns: 36px 1fr;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stat-icon {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        display: grid;
+        place-items: center;
+        background: rgba(139, 53, 244, .14);
+        color: #d3b7ff;
+        font-weight: 900;
+      }
+
+      .stat-number {
+        font-size: 1.35rem;
+        font-weight: 900;
+      }
+
+      .stat-label {
+        color: #9aa5bd;
+        font-size: .75rem;
+      }
+
+      .footer {
+        color: #68738d;
+        text-align: center;
+        margin-top: 28px;
+        font-size: .82rem;
+      }
+
+      @media (max-width: 1380px) {
+        .broadcast-shell { grid-template-columns: 238px minmax(0, 1fr); }
+        .dashboard-grid { grid-template-columns: 1fr; }
+        .right-column { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+
+      @media (max-width: 1040px) {
+        .broadcast-shell { grid-template-columns: 1fr; }
+        .broadcast-sidebar {
+          min-height: auto;
+          position: static;
+          border-right: 0;
+          border-bottom: 1px solid var(--stroke);
+        }
+        .side-nav,
+        .side-management {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+        .premium-box,
+        .user-box { display: none; }
+        .tv-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .toolbar { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+
+      @media (max-width: 720px) {
+        .broadcast-main { padding: 22px 16px; }
+        .topbar { display: grid; }
+        .top-actions { flex-wrap: wrap; }
+        .toolbar,
+        .tv-grid,
+        .right-column,
+        .system-grid,
+        .side-nav,
+        .side-management {
+          grid-template-columns: 1fr;
+        }
+        .side-link { height: 44px; }
+        .preview { height: 190px; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="broadcast-shell">
+      <aside class="broadcast-sidebar" aria-label="Navegacao Aponti TV">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <span>Aponti TV</span>
+        </div>
+
+        <nav class="side-nav">
+          <% [["Dashboard", "▣"], ["TVs", "▭"], ["Aponti Studio", "▤"], ["Biblioteca", "▦"], ["Exportar M3U", "⇲"], ["Configuracoes", "⚙"]].each_with_index do |item, index| %>
+            <a class="side-link <%= "active" if index.zero? %>" href="#">
+              <span class="side-icon"><%= item.last %></span>
+              <span><%= item.first %></span>
+            </a>
+          <% end %>
+        </nav>
+
+        <div>
+          <div class="side-title">Gerenciamento</div>
+          <div class="side-management">
+            <% [["Usuarios", "♙"], ["Logs de Acesso", "▧"], ["Backups", "◴"]].each do |label, icon| %>
+              <a class="side-link" href="#">
+                <span class="side-icon"><%= icon %></span>
+                <span><%= label %></span>
+              </a>
+            <% end %>
+          </div>
+        </div>
+
+        <section class="premium-box">
+          <div class="premium-crown">^</div>
+          <strong>Aponti TV Premium</strong>
+          <p>Recursos avancados para sua experiencia IPTV</p>
+          <button type="button">Saiba mais</button>
+        </section>
+
+        <div class="user-box">
+          <div class="avatar"><%= current_user&.email.to_s.first&.upcase || "A" %></div>
+          <div>
+            <div class="user-email"><%= current_user&.email || "atanael@host.com" %></div>
+            <div class="user-role">Administrador</div>
+          </div>
+          <div aria-hidden="true">v</div>
+        </div>
+      </aside>
+
+      <main class="broadcast-main">
+        <header class="topbar">
+          <div class="page-title">
+            <h1>Painel de Controle</h1>
+            <p>Gerencie suas TVs, playlists e configuracoes</p>
+          </div>
+
+          <div class="top-actions">
+            <button class="top-pill" type="button">◉ Portugues⌄</button>
+            <button class="notification-button" type="button" aria-label="Notificacoes">
+              ♢
+              <span class="notification-badge">3</span>
+            </button>
+            <button class="exit-button" type="button">⇥ Sair</button>
+          </div>
+        </header>
+
+        <section class="toolbar" aria-label="Acoes rapidas">
+          <button class="primary-action" type="button">+ Adicionar Nova TV</button>
+          <button type="button">▣ Aponti Studio</button>
+          <button type="button">▦ Biblioteca</button>
+          <button type="button">⇲ Exportar M3U</button>
+          <button type="button">⚙ Configuracoes</button>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="tv-grid" aria-label="TVs cadastradas">
+            <% @broadcasts.each do |broadcast| %>
+              <article class="tv-card">
+                <div class="card-head">
+                  <div>
+                    <h2><%= broadcast[:name] %></h2>
+                    <div class="media"><%= broadcast[:media] %></div>
+                  </div>
+                  <div class="status">
+                    <span class="status-pill <%= broadcast[:active] ? "online" : "offline" %>"><%= broadcast[:status] %></span>
+                    <span class="activity-pill <%= "active" if broadcast[:active] %>"><%= broadcast[:active] ? "Ativo" : "Inativo" %></span>
+                  </div>
+                  <div class="dots">:</div>
+                </div>
+
+                <% if broadcast[:preview] == :unavailable %>
+                  <div class="preview unavailable">
+                    <div>
+                      <div class="preview-icon">TV</div>
+                      <strong>Preview</strong>
+                      <div class="media">Indisponivel</div>
+                    </div>
+                  </div>
+                <% else %>
+                  <div class="preview">
+                    <div class="phone-frame <%= "blank" if broadcast[:preview] == :blank_phone %>">
+                      <% if broadcast[:preview] == :phone %>
+                        <div class="phone-screen"></div>
+                      <% end %>
+                    </div>
+                  </div>
+                <% end %>
+
+                <div class="metric-grid">
+                  <div class="metric">
+                    <div class="metric-label">App</div>
+                    <div class="metric-value"><%= broadcast[:app] %></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">TV</div>
+                    <div class="metric-value"><%= broadcast[:tv] %></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">IP</div>
+                    <div class="metric-value"><%= broadcast[:ip] %></div>
+                  </div>
+                  <div class="metric">
+                    <div class="metric-label">Energia</div>
+                    <div class="metric-value"><%= broadcast[:energy] %></div>
+                  </div>
+                </div>
+
+                <div class="web-line">
+                  <div class="metric-label">Web oficial</div>
+                  <div class="metric-value"><%= broadcast[:official_web] %></div>
+                </div>
+
+                <div class="flow-box">
+                  <div class="metric-label">Fluxo do app</div>
+                  <div class="flow-title"><%= broadcast[:flow_title] %></div>
+                  <div class="flow-url"><%= broadcast[:flow_url] %></div>
+                </div>
+
+                <div class="card-actions">
+                  <button class="btn-play" type="button">Play</button>
+                  <button class="btn-stop" type="button">Stop</button>
+                  <% if broadcast[:active] %>
+                    <button class="btn-power" type="button">Ligar TV</button>
+                  <% end %>
+                  <button class="btn-edit" type="button">Editar</button>
+                  <button class="btn-delete" type="button">Excluir</button>
+                </div>
+              </article>
+            <% end %>
+          </section>
+
+          <aside class="right-column">
+            <section class="side-card">
+              <div class="side-card-header">
+                <div class="side-card-icon">PC</div>
+                <div>
+                  <h2>Desktop</h2>
+                  <p>Personalize o papel de parede do desktop de todas as TVs.</p>
+                </div>
+              </div>
+              <div class="wallpaper"></div>
+              <div class="file-row">
+                <button type="button">Escolher arquivo</button>
+                <span>Nenhum arquivo selecionado</span>
+              </div>
+              <button class="upload-button" type="button">Upload Wallpaper</button>
+              <div class="recommendation">Recomendado: 1920x1080px (16:9)</div>
+            </section>
+
+            <section class="side-card">
+              <div class="side-card-header">
+                <div>
+                  <h2>Resumo do Sistema</h2>
+                </div>
+                <div></div>
+                <button class="details-button" type="button">Ver detalhes</button>
+              </div>
+
+              <div class="system-grid">
+                <div class="system-stat">
+                  <div class="stat-icon">TV</div>
+                  <div>
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">TVs Cadastradas</div>
+                  </div>
+                </div>
+                <div class="system-stat">
+                  <div class="stat-icon">ON</div>
+                  <div>
+                    <div class="stat-number">1</div>
+                    <div class="stat-label">TVs Online</div>
+                  </div>
+                </div>
+                <div class="system-stat">
+                  <div class="stat-icon">PL</div>
+                  <div>
+                    <div class="stat-number">2</div>
+                    <div class="stat-label">Streams Ativos</div>
+                  </div>
+                </div>
+                <div class="system-stat">
+                  <div class="stat-icon">US</div>
+                  <div>
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Usuarios</div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </aside>
+        </div>
+
+        <footer class="footer">Aponti TV v1.0.0 2024 - Todos os direitos reservados</footer>
+      </main>
+    </div>
+  </body>
+</html>

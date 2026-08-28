@@ -1,4 +1,7 @@
 class User < ApplicationRecord
+  ONLINE_WINDOW = 5.minutes
+  PRESENCE_TOUCH_INTERVAL = 1.minute
+
   DEFAULT_NOTIFICATION_PREFERENCES = %w[info success warning system].freeze
   NOTIFICATION_PREFERENCE_KEYS = DEFAULT_NOTIFICATION_PREFERENCES.freeze
 
@@ -7,6 +10,7 @@ has_many :notifications, dependent: :destroy
 has_many :push_subscriptions, dependent: :destroy
 has_many :announcement_views, dependent: :destroy
 has_many :viewed_announcements, through: :announcement_views, source: :announcement
+has_many :user_presences, dependent: :destroy
 
   # ⚠️ Altere aqui para usar CPF como login
   devise :database_authenticatable, :registerable,
@@ -14,6 +18,12 @@ has_many :viewed_announcements, through: :announcement_views, source: :announcem
          authentication_keys: [:cpf]
 
  enum :role, { client: "client", operador: "operador", admin: "admin" }
+
+  scope :online, -> { where(last_seen_at: ONLINE_WINDOW.ago..) }
+
+  def record_daily_presence!
+    UserPresence.find_or_create_by!(user_id: id, presence_on: Date.current)
+  end
 
 
   validates :cpf, presence: true, uniqueness: true

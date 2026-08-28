@@ -2,6 +2,7 @@ require 'csv'
 require 'base64'
 require 'mini_magick'
 require 'fileutils'
+require 'stringio'
 
 class ImportDadosIcontrolJob < ApplicationJob
   queue_as :default
@@ -42,6 +43,34 @@ class ImportDadosIcontrolJob < ApplicationJob
     raw = File.read(full_path, mode: "rb")
     mime = raw[0, 2].b.start_with?("\xFF\xD8".b) ? "image/jpeg" : "image/png"
     "data:#{mime};base64,#{Base64.strict_encode64(raw)}"
+  end
+
+  def stored_photo_available?(participant)
+    return false unless participant&.photo&.attached?
+
+    participant.photo.blob.service.exist?(participant.photo.blob.key)
+  rescue ActiveStorage::FileNotFoundError, StandardError => e
+    Rails.logger.warn "[Importação] Não foi possível validar a foto de #{participant&.cpf}: #{e.message}"
+    false
+  end
+
+  def attach_photo_data!(participant, photo_data)
+    match = photo_data.match(%r{\Adata:(image/(?:png|jpeg|jpg));base64,(.+)\z}m)
+    raise "Conteúdo da foto em formato inválido" unless match
+
+    content_type = match[1].sub("jpg", "jpeg")
+    extension = content_type == "image/png" ? "png" : "jpg"
+    image_data = Base64.strict_decode64(match[2])
+
+    participant.photo.purge if participant.photo.attached?
+    participant.photo.attach(
+      io: StringIO.new(image_data),
+      filename: "photo_#{SecureRandom.hex(4)}.#{extension}",
+      content_type: content_type
+    )
+    participant.update_column(:photo_base64, photo_data)
+
+    raise "Active Storage não gravou o arquivo da foto" unless stored_photo_available?(participant)
   end
 
   def perform
@@ -145,7 +174,9 @@ class ImportDadosIcontrolJob < ApplicationJob
         foto_base  = foto_rel.present? ? File.join(dir_fotos, File.basename(foto_rel.tr('\\', '/'))) : nil
         photo_data = nil
 
-        if foto_base.present? && (participant.nil? || participant.photo_base64.blank?)
+        photo_was_missing = participant.present? && !stored_photo_available?(participant)
+
+        if foto_base.present? && (participant.nil? || photo_was_missing || participant.photo_base64.blank?)
           begin
             photo_data = resize_image_to_base64(foto_base, 150, 300)
           rescue => e
@@ -164,17 +195,27 @@ class ImportDadosIcontrolJob < ApplicationJob
           telefone:      telefone,
           grupo_empresa: grupo
         }
-        if photo_data
-          attrs[:photo_base64] = photo_data
-        elsif participant.new_record?
+        if participant.new_record? && photo_data.nil?
           attrs[:photo_base64] = nil
         end
         participant.assign_attributes(attrs)
 
         if participant.save
+          if photo_data
+            begin
+              attach_photo_data!(participant, photo_data)
+              Rails.logger.info "[Foto] Anexo salvo para #{participant.name} (#{participant.cpf})#{photo_was_missing ? ' - arquivo ausente reparado' : ''}"
+            rescue => e
+              msg = "Participante salvo, mas a foto não pôde ser anexada para #{nome}: #{e.message}"
+              Rails.logger.error "[Foto] #{msg}"
+              log_import(nome, cpf, "adicionado_sem_foto", msg, sem_foto: true)
+            end
+          end
+
+          has_stored_photo = stored_photo_available?(participant)
           msg = "Participante salvo com sucesso: #{participant.name} (#{participant.cpf})"
           Rails.logger.info "[✅] #{msg}"
-          log_import(nome, cpf, "adicionado", msg, sem_foto: participant.photo_base64.blank?)
+          log_import(nome, cpf, "adicionado", msg, sem_foto: !has_stored_photo)
 
           percentual = (((i + 1).to_f / total_rows) * 100).round
           Rails.cache.write(

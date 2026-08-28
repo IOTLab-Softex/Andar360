@@ -6,7 +6,8 @@ class AiAgentController < ApplicationController
     result = AiAgentService.new(
       user: current_user,
       message: params[:message],
-      history: session[:ai_agent_history]
+      history: session[:ai_agent_history],
+      quick_mode: ActiveModel::Type::Boolean.new.cast(params[:quick_mode])
     ).call
 
     session[:ai_agent_history] = [

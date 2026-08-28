@@ -1,4 +1,6 @@
 Rails.application.routes.draw do
+  resources :broadcasts, only: [:index]
+
   resources :formulario_cadastros
 
 # config/routes.rb

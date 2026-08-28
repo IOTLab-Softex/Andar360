@@ -1,6 +1,15 @@
 <button id="ai-agent-fab" class="ai-agent-fab" title="Falar com agente IA" aria-label="Falar com agente IA">
-  <%= image_tag "icones/icons_custom/solid/estrela_icone.svg", alt: "" %>
+  <span class="ai-agent-fab__icon ai-agent-fab__icon--default">
+    <%= image_tag "icones/icons_custom/solid/estrela_icone.svg", alt: "" %>
+  </span>
+  <span class="ai-agent-fab__icon ai-agent-fab__icon--conversation" aria-hidden="true">
+    <i class="fa-solid fa-wave-square"></i>
+  </span>
+  <span class="ai-agent-fab__waves" aria-hidden="true">
+    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+  </span>
   <span class="ai-agent-fab__tip" aria-hidden="true">
     Solicite reservas, consulte salas e peça ajuda ao Agente IA.
   </span>
+  <span class="ai-agent-fab__quick-bubble" role="status" aria-live="polite" hidden></span>
 </button>

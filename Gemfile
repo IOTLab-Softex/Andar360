@@ -36,7 +36,7 @@ gem "propshaft"
 #gem "sqlite3", ">= 2.1"
 gem 'pg'
 # Use Puma when HTTPS/local SSL is needed.
-gem "puma", ">= 5.0"
+gem "puma", ">= 5.0", require: false
 gem "webrick", platforms: %i[ mingw x64_mingw mswin ]
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"

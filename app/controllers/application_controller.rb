@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
    before_action :configure_permitted_parameters, if: :devise_controller?
   include EmpresaScoping
   before_action :authenticate_user!
+  before_action :track_user_presence
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
 
@@ -85,6 +86,23 @@ def subgrupo_permission_enabled?(permission)
   return false unless sub&.respond_to?(permission)
 
   !!sub.public_send(permission)
+end
+
+def track_user_presence
+  return unless current_user
+  return unless current_user.has_attribute?(:last_seen_at)
+
+  Rails.cache.fetch("user-presence:#{current_user.id}:#{Date.current}", expires_in: 1.hour) do
+    current_user.record_daily_presence!
+    true
+  end
+
+  return if current_user.last_seen_at.present? &&
+            current_user.last_seen_at >= User::PRESENCE_TOUCH_INTERVAL.ago
+
+  current_user.update_column(:last_seen_at, Time.current)
+rescue ActiveRecord::ActiveRecordError => e
+  Rails.logger.warn("[UserPresence] Não foi possível registrar presença: #{e.message}")
 end
 
 

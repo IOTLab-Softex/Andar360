@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_12_000000) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -591,6 +591,16 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_000000) do
     t.index ["grupo_empresa_id"], name: "index_sub_grupo_empresas_on_grupo_empresa_id"
   end
 
+  create_table "user_presences", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.date "presence_on", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["presence_on"], name: "index_user_presences_on_presence_on"
+    t.index ["user_id", "presence_on"], name: "index_user_presences_on_user_id_and_presence_on", unique: true
+    t.index ["user_id"], name: "index_user_presences_on_user_id"
+  end
+
   create_table "users", force: :cascade do |t|
     t.string "email", default: "", null: false
     t.string "encrypted_password", default: "", null: false
@@ -612,9 +622,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_000000) do
     t.boolean "blocked", default: false, null: false
     t.jsonb "dashboard_card_order", default: [], null: false
     t.jsonb "dashboard_hidden_cards", default: [], null: false
+    t.jsonb "notification_preferences", default: ["info", "success", "warning", "system"], null: false
+    t.datetime "last_seen_at"
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true
+    t.index ["last_seen_at"], name: "index_users_on_last_seen_at"
     t.index ["last_sign_in_at"], name: "index_users_on_last_sign_in_at"
     t.index ["participant_id"], name: "index_users_on_participant_id"
     t.index ["reset_password_token"], name: "index_users_on_reset_password_token", unique: true
@@ -654,5 +667,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_12_000000) do
   add_foreign_key "solicitacao_compra_items", "solicitacao_compras"
   add_foreign_key "solicitacao_participantes", "participants"
   add_foreign_key "sub_grupo_empresas", "grupo_empresas"
+  add_foreign_key "user_presences", "users"
   add_foreign_key "users", "participants"
 end
