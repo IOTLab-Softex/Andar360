@@ -146,9 +146,7 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
-    image_processing (1.14.0)
-      mini_magick (>= 4.9.5, < 6)
-      ruby-vips (>= 2.0.17, < 3)
+    image_processing (2.0.3)
     importmap-rails (2.2.3)
       actionpack (>= 6.0.0)
       activesupport (>= 6.0.0)
@@ -344,9 +342,6 @@ GEM
       rubocop-rails (>= 2.30)
     ruby-ole (1.2.13.1)
     ruby-progressbar (1.13.0)
-    ruby-vips (2.3.0)
-      ffi (~> 1.12)
-      logger
     rubyzip (2.4.1)
     rufus-scheduler (3.9.2)
       fugit (~> 1.1, >= 1.11.1)
@@ -439,7 +434,7 @@ DEPENDENCIES
   devise
   ffi
   httparty
-  image_processing (~> 1.2)
+  image_processing (~> 2.0)
   importmap-rails
   inline_svg
   jbuilder
