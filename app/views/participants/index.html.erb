@@ -857,6 +857,9 @@
       <% end %>
     </tbody>
   </table>
+  <% if @has_more_participants %>
+    <div id="participants-load-more" data-next-url="<%= participants_path(request.query_parameters.merge(page: @participants_page + 1)) %>" aria-live="polite" style="height: 1px;"></div>
+  <% end %>
 <% end %>
 <%= form_with url: delete_all_participants_path, method: :delete, local: true, id: "delete-all-form", style: "display: none;" do %>
   <%= hidden_field_tag :grupo_empresa_id, params[:grupo_empresa_id] %>
@@ -1681,3 +1684,33 @@ document.addEventListener("submit", async function(e) {
 
 
 
+
+<script>
+(function () {
+  const sentinel = document.getElementById("participants-load-more");
+  const table = document.getElementById("participantsTable");
+  if (!sentinel || !table || !window.IntersectionObserver) return;
+
+  let loading = false;
+  const observer = new IntersectionObserver(async ([entry]) => {
+    if (!entry.isIntersecting || loading || !sentinel.dataset.nextUrl) return;
+    loading = true;
+    try {
+      const response = await fetch(sentinel.dataset.nextUrl, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+      if (!response.ok) throw new Error("N?o foi poss?vel carregar mais usu?rios.");
+      const documentFragment = new DOMParser().parseFromString(await response.text(), "text/html");
+      const nextTable = documentFragment.getElementById("participantsTable");
+      const nextSentinel = documentFragment.getElementById("participants-load-more");
+      if (!nextTable) return;
+      const rows = nextTable.querySelectorAll("tbody > tr");
+      table.querySelector("tbody").append(...Array.from(rows));
+      if (nextSentinel) sentinel.dataset.nextUrl = nextSentinel.dataset.nextUrl;
+      else { observer.disconnect(); sentinel.remove(); }
+    } catch (error) {
+      sentinel.style.height = "auto";
+      sentinel.textContent = error.message;
+    } finally { loading = false; }
+  }, { rootMargin: "350px" });
+  observer.observe(sentinel);
+})();
+</script>

@@ -177,14 +177,16 @@ class PasswordRecoveriesController < ApplicationController
 
     support_participants = Participant
       .joins(:sub_grupo_empresa)
-      .where(grupo_empresa_id: participant.grupo_empresa_id)
+      .joins(:user)
       .where.not(sub_grupo_empresa_id: nil)
       .where(sub_grupo_empresas: { can_support_access: true })
-      .includes(:user)
+      .where(users: { blocked: [false, nil] })
+      .ativos
+      .distinct
 
     return render json: {
       ok: false,
-      message: "Não existe nenhum usuário de suporte de acesso configurado para essa empresa."
+      message: "Não existe nenhum usuário ativo com suporte de acesso configurado no sistema."
     }, status: :unprocessable_entity if support_participants.empty?
 
     responsavel_participant = support_participants.find { |p| p.user.present? } || support_participants.first

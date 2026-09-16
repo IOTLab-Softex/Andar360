@@ -1,4 +1,16 @@
 class Participant < ApplicationRecord
+  before_validation :normalize_aponti_tv_access
+
+  def aponti_tv_eligible?
+    subgroup = sub_grupo_empresa
+    grupo_empresa_id.present? && subgroup.present? &&
+      subgroup.grupo_empresa_id == grupo_empresa_id && subgroup.can_access_aponti_tv?
+  end
+
+  def normalize_aponti_tv_access
+    self.can_access_aponti_tv = false unless aponti_tv_eligible?
+  end
+
   has_one :user
   has_one :user, dependent: :destroy
   has_many :users, foreign_key: :participant_id

@@ -29,6 +29,9 @@
       <button class="tab-link" data-tab="tab-ai-agent" role="tab" aria-selected="false">
         <i class="fa-solid fa-wand-magic-sparkles"></i> Agente IA
       </button>
+      <button class="tab-link" data-tab="tab-aponti-tv" role="tab" aria-selected="false">
+        <i class="fa-solid fa-tv"></i> Aponti TV
+      </button>
     </div>
 
     <div class="tabs-panels settings-form">
@@ -373,6 +376,28 @@
         <button type="button" id="btn-delete-all-participants" class="btn btn-danger">
           <i class="fa-solid fa-trash me-2"></i> Excluir participantes e usuários
         </button>
+      </section>
+
+      <section id="tab-aponti-tv" class="tab-panel" role="tabpanel" hidden>
+        <h2 class="subtitle mt-4 mb-3"><i class="fa-solid fa-tv me-2"></i> Integra??o com o Aponti TV</h2>
+        <div class="form-check form-group mb-3">
+          <%= f.check_box :aponti_tv_integration_enabled, class: "form-check-input" %>
+          <%= f.label :aponti_tv_integration_enabled, "Permitir comunica??o com o Aponti TV", class: "form-check-label" %>
+          <small class="form-text text-muted d-block">Desative para bloquear temporariamente autentica??o, foto e altera??o de senha feitas pelo Aponti TV.</small>
+        </div>
+        <div class="form-group">
+          <%= f.label :aponti_tv_base_url, "Endere?o do Aponti TV" %>
+          <%= f.url_field :aponti_tv_base_url, class: "form-control", placeholder: "http://localhost:3000" %>
+          <small class="form-text text-muted">Endere?o usado como refer?ncia operacional da integra??o.</small>
+        </div>
+        <div class="form-group">
+          <%= f.label :aponti_tv_integration_token, "Chave compartilhada da integra??o" %>
+          <%= f.password_field :aponti_tv_integration_token, class: "form-control", autocomplete: "new-password", placeholder: "Chave configurada no Aponti TV" %>
+          <small class="form-text text-muted">A chave precisa ser a mesma nos dois sistemas. Ao gerar uma nova chave, ela ? sincronizada automaticamente nesta instala??o local.</small>
+        </div>
+        <%= button_to generate_aponti_tv_token_setting_path(setting), method: :patch, class: "btn btn-warning", form: { data: { turbo: false } } do %>
+          <i class="fa-solid fa-rotate"></i> Gerar nova chave e sincronizar
+        <% end %>
       </section>
 
       <section id="tab-ai-agent" class="tab-panel" role="tabpanel" hidden>

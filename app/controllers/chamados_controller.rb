@@ -19,7 +19,9 @@ class ChamadosController < ApplicationController
   @chamados = @chamados.where(unidade: params[:unidade]) if params[:unidade].present? && params[:unidade] != "Todas as unidades"
   @chamados = @chamados.where(prioridade: params[:prioridade]) if params[:prioridade].present? && params[:prioridade] != "Todas as prioridades"
   @chamados = @chamados.where(responsavel: params[:responsavel]) if params[:responsavel].present? && params[:responsavel] != "Todos os responsáveis"
-  @chamados = @chamados.password_recovery_support_requests if params[:password_recovery_support].present? && params[:password_recovery_support] == "Solicitou suporte de acesso"
+  if params[:password_recovery_support].present? && params[:password_recovery_support] == "Solicitou suporte de acesso"
+    @chamados = can_manage_password_recovery_support? ? Chamado.password_recovery_support_requests : Chamado.none
+  end
 
   if params[:data_inicio].present? && params[:data_fim].present?
     @chamados = @chamados.where(data_resolucao: params[:data_inicio]..params[:data_fim])
@@ -299,13 +301,13 @@ end
   end
 
   def usuario_pode_enviar_link_recuperacao?
-    return false unless current_user
-    return false unless current_user.participant
-    return false unless current_user.participant.sub_grupo_empresa&.can_support_access?
     return false unless @chamado.password_recovery_support_request?
-    return false unless @chamado.solicitante&.grupo_empresa_id.present?
 
-    @chamado.solicitante.grupo_empresa_id == current_user.participant.grupo_empresa_id
+    can_manage_password_recovery_support?
+  end
+
+  def can_manage_password_recovery_support?
+    current_user&.admin? || current_user&.participant&.sub_grupo_empresa&.can_support_access?
   end
 
   def normalizar_status_chamado(status)

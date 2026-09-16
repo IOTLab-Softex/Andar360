@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
+ActiveRecord::Schema[8.0].define(version: 2026_09_14_180000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -347,6 +347,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
     t.integer "grupo_empresa_id"
     t.integer "sub_grupo_empresa_id"
     t.boolean "excluido"
+    t.boolean "can_access_aponti_tv", default: false, null: false
     t.index ["grupo_empresa_id"], name: "index_participants_on_grupo_empresa_id"
     t.index ["sub_grupo_empresa_id"], name: "index_participants_on_sub_grupo_empresa_id"
   end
@@ -530,6 +531,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
     t.string "ai_agent_model", default: "gpt-4o-mini"
     t.text "ai_agent_prompt"
     t.string "ai_agent_voice", default: "coral"
+    t.boolean "aponti_tv_integration_enabled", default: true, null: false
+    t.string "aponti_tv_base_url", default: "http://localhost:3000"
+    t.string "aponti_tv_integration_token"
   end
 
   create_table "solicitacao_compra_items", force: :cascade do |t|
@@ -588,6 +592,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
     t.boolean "can_manage_encomendas", default: false, null: false
     t.boolean "can_manage_import_backup", default: false, null: false
     t.boolean "can_open_doors", default: false, null: false
+    t.boolean "can_access_aponti_tv", default: false, null: false
     t.index ["grupo_empresa_id"], name: "index_sub_grupo_empresas_on_grupo_empresa_id"
   end
 
@@ -624,6 +629,7 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_19_010000) do
     t.jsonb "dashboard_hidden_cards", default: [], null: false
     t.jsonb "notification_preferences", default: ["info", "success", "warning", "system"], null: false
     t.datetime "last_seen_at"
+    t.boolean "can_access_andar360", default: true, null: false
     t.index ["blocked"], name: "index_users_on_blocked"
     t.index ["cpf"], name: "index_users_on_cpf", unique: true
     t.index ["email"], name: "index_users_on_email", unique: true

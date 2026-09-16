@@ -1,4 +1,11 @@
 Rails.application.routes.draw do
+  post "/integrations/aponti_tv/authenticate", to: "integrations/aponti_tv#authenticate"
+  post "/integrations/aponti_tv/authorize", to: "integrations/aponti_tv#authorize"
+  post "/integrations/aponti_tv/change_password", to: "integrations/aponti_tv#change_password"
+  post "/integrations/aponti_tv/photo", to: "integrations/aponti_tv#photo"
+  devise_scope :user do
+    get "/recuperar-senha", to: "users/sessions#recovery", as: :shared_password_recovery
+  end
   resources :broadcasts, only: [:index]
 
   resources :formulario_cadastros
@@ -8,6 +15,7 @@ resources :settings, only: [:index, :edit, :update] do
   member do
     post  :test_mail
     patch :generate_vapid
+    patch :generate_aponti_tv_token
   end
 end
 

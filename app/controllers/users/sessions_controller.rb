@@ -1,5 +1,18 @@
 class Users::SessionsController < Devise::SessionsController
   skip_forgery_protection only: :create
+  skip_before_action :authenticate_user!, :check_password_change_required, only: :recovery
+
+  def recovery
+    # Links antigos podem apontar para /recuperar-senha. Se vierem com um token,
+    # a ?nica tela correta ? a de escolha da nova senha, sem abrir o modal.
+    if params[:reset_password_token].present?
+      redirect_to edit_user_password_path(reset_password_token: params[:reset_password_token])
+      return
+    end
+
+    self.resource = resource_class.new
+    render :new
+  end
 
   def create
     cpf = params.dig(resource_name, :cpf).to_s

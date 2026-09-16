@@ -1,5 +1,13 @@
 class User < ApplicationRecord
   ONLINE_WINDOW = 5.minutes
+  def aponti_tv_access?
+    person = participant
+    subgroup = person&.sub_grupo_empresa
+    !blocked_access? && person.present? && person.can_access_aponti_tv? && person.grupo_empresa.present? &&
+      subgroup.present? && subgroup.grupo_empresa_id == person.grupo_empresa_id &&
+      subgroup.can_access_aponti_tv?
+  end
+
   PRESENCE_TOUCH_INTERVAL = 1.minute
 
   DEFAULT_NOTIFICATION_PREFERENCES = %w[info success warning system].freeze
@@ -59,7 +67,12 @@ end
 
 
 def active_for_authentication?
-  super && !blocked_access?
+  super && can_access_andar360? && !blocked_access?
+end
+
+def self.serialize_from_session(key, salt)
+  user = super
+  user if user&.active_for_authentication?
 end
 
 def inactive_message

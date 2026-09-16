@@ -9,75 +9,9 @@ class ParticipantsController < ApplicationController
   end
 
   def create
-  @participant = Participant.new(participant_params)
-  if @participant.save
-    if params[:criar_usuario] == "1"
-      senha = params[:senha_gerada] || SecureRandom.hex(4)
-
-      user = User.create!(
-        cpf: @participant.cpf, # <- CPF como login
-        email: @participant.email,
-        password: senha,
-        password_confirmation: senha,
-        role: params[:user_role],
-        participant_id: @participant.id,
-        force_password_change: true,
-      )
-
-      Rails.logger.info "Usuário criado: #{user.email} - Senha: #{senha}"
-    end
-
-    redirect_to participants_path, notice: "Participante criado com sucesso!"
-  else
-    flash.now[:alert] = "Não foi possível salvar o participante. Verifique os erros."
-    render action: :new, status: :unprocessable_entity
+    @participant = Participant.new(participant_params)
+    save_participant_access(:new, "Participante criado com sucesso!")
   end
-end
-
-def update
-  @participant = Participant.find(params[:id])
-  if @participant.update(participant_params)
-    if params[:criar_usuario] == "1"
-      senha = params[:manter_senha] == "1" ? nil : (params[:senha_gerada] || SecureRandom.hex(4))
-
-      if @participant.user.present?
-        user = @participant.user
-        user.role = params[:user_role] if params[:user_role].present?
-
-        if senha.present?
-          user.password = senha
-          user.password_confirmation = senha
-          user.force_password_change = true
-          Rails.logger.info "Senha atualizada para #{user.email || user.cpf} - Nova senha: #{senha}"
-        elsif user.force_password_change?
-          user.force_password_change = false
-        end
-
-        user.save!
-      else
-        user = User.create!(
-          cpf: @participant.cpf,
-          email: @participant.email,
-          password: senha || SecureRandom.hex(4),
-          password_confirmation: senha || SecureRandom.hex(4),
-          role: params[:user_role],
-          participant_id: @participant.id,
-          force_password_change: true,
-        )
-        Rails.logger.info "Usuário criado: #{user.email || user.cpf} - Senha: #{senha}"
-      end
-    elsif params[:criar_usuario] != "1" && @participant.user.present?
-      @participant.user.destroy
-      Rails.logger.info "Acesso removido para o participante #{@participant.id}"
-    end
-
-    redirect_to participants_path, notice: "Participante atualizado com sucesso."
-  else
-    flash.now[:alert] = "Não foi possível atualizar o participante. Verifique os erros."
-    render :edit, status: :unprocessable_entity
-  end
-end
-
 
   def edit
     @participant = Participant.find(params[:id])
@@ -85,54 +19,21 @@ end
 
   def update
     @participant = Participant.find(params[:id])
-    if @participant.update(participant_params)
-      if params[:criar_usuario] == "1"
-        senha = params[:manter_senha] == "1" ? nil : (params[:senha_gerada] || SecureRandom.hex(4))
-        senha_final = senha.presence || SecureRandom.hex(4)
-
-        begin
-          if @participant.user.present?
-            user = @participant.user
-            user.role = params[:user_role] if params[:user_role].present?
-
-            if senha.present?
-              user.password = senha_final
-              user.password_confirmation = senha_final
-              user.force_password_change = true
-              Rails.logger.info "Senha atualizada para #{user.email || user.cpf} - Nova senha: #{senha_final}"
-            elsif user.force_password_change?
-              user.force_password_change = false
-            end
-
-            user.save!
-          else
-            user = User.create!(
-              cpf:                   @participant.cpf,
-              email:                 @participant.email,
-              password:              senha_final,
-              password_confirmation: senha_final,
-              role:                  params[:user_role],
-              participant_id:        @participant.id,
-              force_password_change: true
-            )
-            Rails.logger.info "Usuário criado: #{user.email || user.cpf} - Senha: #{senha_final}"
-          end
-        rescue ActiveRecord::RecordInvalid => e
-          return redirect_to edit_participant_path(@participant),
-                             alert: "Participante salvo, mas erro ao gerenciar acesso: #{e.record.errors.full_messages.join(', ')}"
-        end
-
-      elsif params[:criar_usuario] != "1" && @participant.user.present?
-        @participant.user.destroy
-        Rails.logger.info "Acesso removido para o participante #{@participant.id}"
-      end
-
-      redirect_to participants_path, notice: "Participante atualizado com sucesso."
-    else
-      flash.now[:alert] = "Não foi possível atualizar o participante. Verifique os erros."
-      render :edit, status: :unprocessable_entity
-    end
+    @participant.assign_attributes(participant_params)
+    save_participant_access(:edit, "Participante atualizado com sucesso.")
   end
+
+  def save_participant_access(template, message)
+    Participant.transaction do
+      @participant.save!
+      ParticipantAccessManager.call(@participant, params) if current_user.admin?
+    end
+    redirect_to participants_path, notice: message
+  rescue ActiveRecord::RecordInvalid => error
+    flash.now[:alert] = error.record.errors.full_messages.join(', ')
+    render template, status: :unprocessable_entity
+  end
+  private :save_participant_access
 
   def camera
     @camera_tuning = Setting.instance.camera_tuning_config
@@ -144,8 +45,7 @@ end
   # app/controllers/participants_controller.rb
   def index
   tab = params[:tab].presence || "ativos"
-  @can_manage_password_recovery_support = current_user.participant.present? &&
-    current_user.participant.sub_grupo_empresa&.can_support_access?
+  @can_manage_password_recovery_support = can_manage_password_recovery_support?
 
   # --- Empresa padrão + persistência em sessão ---
   if current_user.admin? || current_user.operador?
@@ -268,6 +168,14 @@ end
 
     @password_recovery_chamados_by_participant =
       actionable_password_recovery_scope.order(created_at: :desc).group_by(&:solicitante_id).transform_values(&:first)
+
+    # Carrega a lista em blocos para que empresas com muitos participantes n?o
+    # precisem renderizar todos os registros de uma s? vez.
+    @participants_page = [params[:page].to_i, 1].max
+    @participants_per_page = 50
+    @participants = @participants.order(:name, :id)
+    @participants = @participants.limit(@participants_per_page).offset((@participants_page - 1) * @participants_per_page)
+    @has_more_participants = @participants.count == @participants_per_page
   end
 end
 
@@ -495,7 +403,9 @@ end
   end
 
   def participant_params
-    params.require(:participant).permit(:name, :email, :cpf, :telefone, :photo, :photo_base64, :grupo_empresa_id, :sub_grupo_empresa_id)
+    allowed = [:name, :email, :cpf, :telefone, :photo, :photo_base64, :grupo_empresa_id, :sub_grupo_empresa_id]
+    allowed << :can_access_aponti_tv if current_user.admin?
+    params.require(:participant).permit(*allowed)
   end
 
   def permanently_destroy_participant!(participant)

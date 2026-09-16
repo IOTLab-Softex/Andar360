@@ -507,6 +507,7 @@
     }
 
     openBtn?.addEventListener("click", openModal);
+    if (window.location.pathname === "/recuperar-senha") openModal();
     closeBtn?.addEventListener("click", closeModal);
     modal?.addEventListener("click", (event) => {
       if (event.target.classList.contains("password-recovery-modal__backdrop")) closeModal();

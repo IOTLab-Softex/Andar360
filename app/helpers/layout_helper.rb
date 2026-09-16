@@ -711,6 +711,14 @@ def sidebar_menu
           ])
         end
       end,
+      (content_tag(:li) do
+        link_to(chamados_path(password_recovery_support: "Solicitou suporte de acesso")) do
+          safe_join([
+            content_tag(:span, "", class: "fa-solid fa-key"),
+            " Solicita??es de acesso",
+          ])
+        end
+      end if can_manage_password_recovery_support?),
     ])
   end
 

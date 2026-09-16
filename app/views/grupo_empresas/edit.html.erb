@@ -74,6 +74,7 @@
               :can_request_purchase,
               :can_approve_purchase,
               :can_buy,
+              :can_access_aponti_tv,
               :can_view_monitoring,
               :can_manage_import_backup,
               :can_support_access,
@@ -116,6 +117,17 @@
       </div>
 
 <% readonly_for_client = current_user && current_user.role == "client" %>
+
+<% unless readonly_for_client %>
+<fieldset style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;">
+  <legend>Aponti TV</legend>
+  <label style="display: flex; align-items: center; gap: .35rem;">
+    <%= f.check_box :can_access_aponti_tv, id: "sub_grupo_empresa_can_access_aponti_tv" %>
+    Acessar Aponti TV
+  </label>
+  <small>Permite que os usuários deste subgrupo entrem no Aponti TV com a conta do Andar360.</small>
+</fieldset>
+<% end %>
 
 <fieldset class="groupbox-solicitacao-compra"
           style="margin-top: 1rem; padding: 1rem; border: 1px solid #ccc; border-radius: 8px;<%= ' display:none;' if readonly_for_client %>">
@@ -232,6 +244,8 @@
     document.getElementById('sub_grupo_empresa_can_request_purchase').checked = false;
     document.getElementById('sub_grupo_empresa_can_approve_purchase').checked = false;
     document.getElementById('sub_grupo_empresa_can_buy').checked = false;
+    const chkApontiTv = document.getElementById('sub_grupo_empresa_can_access_aponti_tv');
+    if (chkApontiTv) chkApontiTv.checked = false;
 
 const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monitoring');
   if (chkMonitoring) chkMonitoring.checked = false;
@@ -283,6 +297,8 @@ const chkOpenDoors = document.getElementById('sub_grupo_empresa_can_open_doors')
     document.getElementById('sub_grupo_empresa_can_request_purchase').checked = !!sg.can_request_purchase;
     document.getElementById('sub_grupo_empresa_can_approve_purchase').checked = !!sg.can_approve_purchase;
     document.getElementById('sub_grupo_empresa_can_buy').checked = !!sg.can_buy;
+    const chkApontiTv = document.getElementById('sub_grupo_empresa_can_access_aponti_tv');
+    if (chkApontiTv) chkApontiTv.checked = !!sg.can_access_aponti_tv;
 
 const chkMonitoring = document.getElementById('sub_grupo_empresa_can_view_monitoring');
 if (chkMonitoring) chkMonitoring.checked = !!sg.can_view_monitoring;

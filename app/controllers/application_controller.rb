@@ -3,11 +3,18 @@ class ApplicationController < ActionController::Base
    before_action :configure_permitted_parameters, if: :devise_controller?
   include EmpresaScoping
   before_action :authenticate_user!
+  before_action :enforce_andar360_access!
+
+  def enforce_andar360_access!
+    return unless user_signed_in? && !current_user.can_access_andar360?
+    sign_out(current_user)
+    redirect_to new_user_session_path, alert: "Sua conta não possui acesso ao Andar360."
+  end
   before_action :track_user_presence
   helper_method :scoped_participants, :scoped_grupo_empresas
   before_action :check_password_change_required
 
- helper_method :can_view_monitoring?, :can_manage_import_backup?, :can_manage_items?, :can_manage_encomendas?, :can_access_portaria?
+ helper_method :can_view_monitoring?, :can_manage_import_backup?, :can_manage_items?, :can_manage_encomendas?, :can_access_portaria?, :can_manage_password_recovery_support?
 
   def can_view_monitoring?
     subgrupo_permission_enabled?(:can_view_monitoring)
@@ -27,6 +34,10 @@ class ApplicationController < ActionController::Base
 
   def can_access_portaria?
     can_manage_items? || can_manage_encomendas?
+  end
+
+  def can_manage_password_recovery_support?
+    current_user&.admin? || subgrupo_permission_enabled?(:can_support_access)
   end
 
   def after_sign_in_path_for(resource)

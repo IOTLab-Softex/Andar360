@@ -137,13 +137,20 @@
           <label>
             <%= check_box_tag :criar_usuario,
                               "1",
-                              participant.user.present?,
+                              participant.user&.can_access_andar360?,
                               id: "criar_usuario_checkbox",
                               onclick: "togglePermissoes()" %>
-            Conceder acesso ao sistema
+            Conceder acesso ao Andar360
           </label>
         </div>
 
+          <div id="aponti-tv-access-wrap" <%= 'hidden' unless participant.aponti_tv_eligible? %>>
+            <label>
+              <%= form.check_box :can_access_aponti_tv, id: "participant_aponti_tv_access", onchange: "togglePermissoes()" %>
+              Conceder acesso ao Aponti TV
+            </label>
+            <small class="form-text text-muted">Permite entrar no Aponti TV com a conta e senha do Andar360.</small>
+          </div>
         <div class="form-group" id="permissoes_wrap" style="display: none;">
           <%= label_tag :user_role, "Permissão de Acesso" %>
           <%= select_tag :user_role,
@@ -444,15 +451,16 @@ async function handleImageUpload(event) {
 function togglePermissoes() {
   const checked = document.getElementById("criar_usuario_checkbox").checked;
   document.getElementById("permissoes_wrap").style.display = checked ? "block" : "none";
-  document.getElementById("senha_wrap").style.display = checked ? "block" : "none";
+  const anyAccess = checked || document.getElementById("participant_aponti_tv_access")?.checked;
+  document.getElementById("senha_wrap").style.display = anyAccess ? "block" : "none";
 
   const manterSenha = document.getElementById("manter_senha_checkbox")?.checked;
 
-  if (checked && !manterSenha) {
+  if (anyAccess && !manterSenha) {
     const senha = Math.random().toString(36).slice(-8) + Math.floor(Math.random() * 10);
     document.getElementById("senha_gerada_label").textContent = senha;
     document.getElementById("senha_gerada_input").value = senha;
-  } else if (checked && manterSenha) {
+  } else if (anyAccess && manterSenha) {
     document.getElementById("senha_gerada_label").textContent = "(senha mantida)";
     document.getElementById("senha_gerada_input").value = ""; // não envia nova senha
   } else {
@@ -478,33 +486,50 @@ function togglePermissoes() {
   document.addEventListener("DOMContentLoaded", function () {
   const empresaSelect = document.getElementById("grupo_empresa_select");
   const subgrupoSelect = document.getElementById("subgrupo_select");
+  const apontiWrap = document.getElementById("aponti-tv-access-wrap");
+  const apontiCheckbox = document.getElementById("participant_aponti_tv_access");
+  function atualizarAcessoApontiTv() {
+    const enabled = subgrupoSelect.selectedOptions[0]?.dataset.apontiTv === "true";
+    if (apontiWrap) apontiWrap.hidden = !enabled;
+    if (apontiCheckbox && !enabled) apontiCheckbox.checked = false;
+    if (document.getElementById("criar_usuario_checkbox")) togglePermissoes();
+  }
+  subgrupoSelect?.addEventListener("change", atualizarAcessoApontiTv);
+  let initialSubgroupLoad = true;
 
   if (empresaSelect) {
     empresaSelect.addEventListener("change", function () {
       const empresaId = this.value;
 
       subgrupoSelect.innerHTML = '<option value="">Carregando...</option>';
+      if (apontiWrap) apontiWrap.hidden = true;
+      const requestedCompany = empresaId;
 
       fetch(`/sub_grupo_empresas/por_empresa/${empresaId}`)
         .then(response => response.json())
         .then(data => {
+          if (empresaSelect.value !== requestedCompany) return;
           subgrupoSelect.innerHTML = '<option value="">Selecione um setor</option>';
           data.forEach(sub => {
             const option = document.createElement("option");
             option.value = sub.id;
             option.textContent = sub.nome;
+            option.dataset.apontiTv = String(sub.can_access_aponti_tv === true);
             subgrupoSelect.appendChild(option);
           });
 
           // Marca como selecionado se já tiver valor salvo no form
           const selectedId = "<%= @participant.sub_grupo_empresa_id %>";
-          if (selectedId) {
+          if (initialSubgroupLoad && selectedId) {
             subgrupoSelect.value = selectedId;
           }
+          initialSubgroupLoad = false;
+          atualizarAcessoApontiTv();
 
         })
         .catch(() => {
           subgrupoSelect.innerHTML = '<option value="">Erro ao carregar setores</option>';
+          atualizarAcessoApontiTv();
         });
     });
 

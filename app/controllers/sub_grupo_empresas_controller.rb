@@ -1,5 +1,6 @@
 class SubGrupoEmpresasController < ApplicationController
   before_action :authenticate_user!
+  before_action :authorize_subgroup_scope!, only: [:create, :update, :destroy]
 
   # se quiser, pode travar create/update/destroy só pra admin/operador
   # e liberar só o por_empresa pra cliente:
@@ -20,7 +21,7 @@ class SubGrupoEmpresasController < ApplicationController
   # usado via AJAX pra buscar por empresa
   def por_empresa
     subgrupos = SubGrupoEmpresa.where(grupo_empresa_id: params[:grupo_empresa_id])
-    render json: subgrupos.map { |s| { id: s.id, nome: s.nome } }
+    render json: subgrupos.map { |s| { id: s.id, nome: s.nome, can_access_aponti_tv: s.can_access_aponti_tv? } }
   end
 
   def update
@@ -43,6 +44,18 @@ class SubGrupoEmpresasController < ApplicationController
 
   private
 
+  def authorize_subgroup_scope!
+    return if current_user.admin? || current_user.operador?
+
+    company_id = current_user.participant&.grupo_empresa_id
+    target_company_id = if action_name == "create"
+      params.dig(:sub_grupo_empresa, :grupo_empresa_id).to_i
+    else
+      SubGrupoEmpresa.find(params[:id]).grupo_empresa_id
+    end
+    head :forbidden unless company_id.present? && company_id == target_company_id
+  end
+
   def sub_grupo_empresa_params
     # 🔐 Admin / operador: podem mudar também as permissões de compra
     if current_user&.admin? || current_user&.operador?
@@ -52,6 +65,7 @@ class SubGrupoEmpresasController < ApplicationController
         :can_request_purchase,
         :can_approve_purchase,
         :can_buy,
+        :can_access_aponti_tv,
         :can_view_monitoring,
         :can_manage_import_backup,
         :can_support_access,
@@ -61,10 +75,9 @@ class SubGrupoEmpresasController < ApplicationController
       )
     else
       # 👤 Cliente comum: só pode mudar nome (e empresa, se fizer sentido)
-      params.require(:sub_grupo_empresa).permit(
-        :nome,
-        :grupo_empresa_id
-      )
+      allowed = [:nome]
+      allowed << :grupo_empresa_id if action_name == "create"
+      params.require(:sub_grupo_empresa).permit(*allowed)
     end
   end
 

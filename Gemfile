@@ -89,6 +89,8 @@ group :development do
 end
 
 group :test do
+  # Rails 8.0's test runner uses the Minitest 5 API.
+  gem "minitest", "~> 5.0"
   # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
   gem "capybara"
   gem "selenium-webdriver"

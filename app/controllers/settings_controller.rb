@@ -1,7 +1,9 @@
+require "fileutils"
+
 class SettingsController < ApplicationController
   before_action :authenticate_user!
   before_action :authorize_admin!
-before_action :set_setting, only: [:edit, :update, :test_mail, :generate_vapid]
+before_action :set_setting, only: [:edit, :update, :test_mail, :generate_vapid, :generate_aponti_tv_token]
 
 def show; end
 
@@ -40,6 +42,15 @@ def test_mail
   redirect_to edit_setting_path(@setting), notice: "E-mail de teste enviado para #{to}."
 rescue => e
   redirect_to edit_setting_path(@setting), alert: "Falha: #{e.class} - #{e.message}"
+end
+
+def generate_aponti_tv_token
+  token = SecureRandom.hex(32)
+  @setting.update!(aponti_tv_integration_token: token)
+  sync_aponti_tv_token!(token)
+  redirect_to edit_setting_path(@setting), notice: "Nova chave da integra??o com o Aponti TV gerada e sincronizada."
+rescue StandardError => e
+  redirect_to edit_setting_path(@setting), alert: "N?o foi poss?vel gerar a chave do Aponti TV: #{e.message}"
 end
 
 def generate_vapid
@@ -102,7 +113,19 @@ end
       :camera_min_ratio, :camera_max_ratio, :camera_score_threshold, :camera_good_score,
       :camera_min_zoom, :camera_max_zoom, :camera_zoom_width_factor, :camera_zoom_height_factor,
       :camera_blur_strength, :camera_blur_saturation, :camera_focus_inner_radius, :camera_focus_outer_radius,
-      :camera_auto_capture_enabled, :camera_mesh_style
+      :camera_auto_capture_enabled, :camera_mesh_style,
+      :aponti_tv_integration_enabled, :aponti_tv_base_url, :aponti_tv_integration_token
     )
+  end
+
+  def sync_aponti_tv_token!(token)
+    paths = [
+      Rails.root.join("storage", "aponti_tv_integration_token"),
+      Pathname.new(ENV.fetch("APONTI_TV_TOKEN_PATH", "C:/SoftexTV/softex_tv/storage/andar360_integration_token"))
+    ]
+    paths.each do |path|
+      FileUtils.mkdir_p(path.dirname)
+      File.write(path, token)
+    end
   end
 end
